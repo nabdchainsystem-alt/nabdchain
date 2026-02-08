@@ -12,15 +12,12 @@ interface GuestInviteModalProps {
   onInvite?: (email: string, accessLevel: string) => void;
 }
 
-export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
-  onClose,
-  onInvite,
-}) => {
+export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({ onClose, onInvite }) => {
   const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState<'view' | 'comment' | 'edit'>('view');
   const [message, setMessage] = useState('');
   const [expiration, setExpiration] = useState<'never' | '7days' | '30days' | '90days'>('never');
-  const [selectedBoards, setSelectedBoards] = useState<string[]>([]);
+  const [selectedBoards, _setSelectedBoards] = useState<string[]>([]);
 
   const accessLevels = [
     {
@@ -62,14 +59,9 @@ export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-700">
           <div className="flex items-center gap-2">
             <EnvelopeSimple size={20} className="text-cyan-600" />
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-              Invite Guest
-            </h2>
+            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">Invite Guest</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"
-          >
+          <button onClick={onClose} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
             <X size={20} className="text-stone-500" />
           </button>
         </div>
@@ -78,9 +70,7 @@ export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
         <div className="p-6 space-y-6">
           {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
-              Email Address
-            </label>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Email Address</label>
             <input
               type="email"
               value={email}
@@ -92,9 +82,7 @@ export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
 
           {/* Access Level */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
-              Access Level
-            </label>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Access Level</label>
             <div className="space-y-2">
               {accessLevels.map((level) => (
                 <label
@@ -113,16 +101,15 @@ export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
                     onChange={() => setAccessLevel(level.id)}
                     className="sr-only"
                   />
-                  <level.icon
-                    size={20}
-                    className={accessLevel === level.id ? 'text-cyan-600' : 'text-stone-400'}
-                  />
+                  <level.icon size={20} className={accessLevel === level.id ? 'text-cyan-600' : 'text-stone-400'} />
                   <div>
-                    <p className={`font-medium ${
-                      accessLevel === level.id
-                        ? 'text-cyan-700 dark:text-cyan-300'
-                        : 'text-stone-700 dark:text-stone-300'
-                    }`}>
+                    <p
+                      className={`font-medium ${
+                        accessLevel === level.id
+                          ? 'text-cyan-700 dark:text-cyan-300'
+                          : 'text-stone-700 dark:text-stone-300'
+                      }`}
+                    >
                       {level.label}
                     </p>
                     <p className="text-sm text-stone-500">{level.description}</p>
@@ -170,8 +157,8 @@ export const GuestInviteModal: React.FC<GuestInviteModalProps> = ({
           <div className="flex items-start gap-2 p-3 bg-stone-50 dark:bg-stone-800 rounded-lg">
             <Info size={18} className="text-stone-400 mt-0.5" />
             <p className="text-sm text-stone-500">
-              Guests will receive an email invitation with a unique link to access the workspace.
-              You can revoke access at any time.
+              Guests will receive an email invitation with a unique link to access the workspace. You can revoke access
+              at any time.
             </p>
           </div>
         </div>

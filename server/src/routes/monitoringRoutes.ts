@@ -26,6 +26,15 @@ import {
   ErrorCategory,
   ErrorSeverity,
 } from '../services/observability/errorTracker';
+import { checkDatabaseHealth, getConnectionStatus } from '../lib/prisma';
+import { dbCircuitBreaker } from '../lib/circuitBreaker';
+import { getFeatureFlags } from '../config/runtimeFlags';
+import { register as promRegister } from '../lib/metrics';
+import {
+  requirePortalAuth,
+  requirePortalRole,
+  PortalAuthRequest,
+} from '../middleware/portalAdminMiddleware';
 
 const router = Router();
 
@@ -85,8 +94,80 @@ router.get('/health/ready', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /health/db
+ * Database-specific health check with circuit breaker status
+ * NOTE: Must be registered BEFORE /health/:component to avoid being captured by the param route
+ */
+router.get('/health/db', async (req: Request, res: Response) => {
+  try {
+    const dbHealth = await checkDatabaseHealth();
+    const circuitStatus = dbCircuitBreaker.getStatus();
+
+    const isHealthy = dbHealth.connected && !circuitStatus.state.startsWith('open');
+    const statusCode = isHealthy ? 200 : 503;
+
+    res.status(statusCode).json({
+      status: isHealthy ? 'ok' : 'down',
+      database: {
+        connected: dbHealth.connected,
+        lastError: dbHealth.lastError,
+        lastCheck: dbHealth.lastCheck,
+        responseTimeMs: dbHealth.responseTimeMs,
+      },
+      circuitBreaker: {
+        state: circuitStatus.state,
+        consecutiveFailures: circuitStatus.consecutiveFailures,
+        lastError: circuitStatus.lastError,
+        lastFailureTime: circuitStatus.lastFailureTime,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Database health check failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * GET /health/dev
+ * Development-oriented status endpoint showing workers, scheduler, and DB state
+ * NOTE: Must be registered BEFORE /health/:component to avoid being captured by the param route
+ */
+router.get('/health/dev', async (req: Request, res: Response) => {
+  const featureFlags = getFeatureFlags();
+  const connectionStatus = getConnectionStatus();
+  const circuitStatus = dbCircuitBreaker.getStatus();
+
+  res.json({
+    environment: process.env.NODE_ENV || 'development',
+    features: featureFlags,
+    database: {
+      connected: connectionStatus.connected,
+      lastError: connectionStatus.lastError,
+      lastCheck: connectionStatus.lastCheck,
+      circuitBreaker: {
+        state: circuitStatus.state,
+        failures: circuitStatus.consecutiveFailures,
+      },
+    },
+    tips: !connectionStatus.connected
+      ? [
+          'Database is not connected.',
+          'Run `pnpm db:up` to start local PostgreSQL via Docker.',
+          'Or check your DATABASE_URL in server/.env',
+        ]
+      : undefined,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
  * GET /health/:component
  * Check specific component health
+ * NOTE: This parameterized route must come AFTER specific routes like /health/db and /health/dev
  */
 router.get('/health/:component', async (req: Request, res: Response) => {
   const component = String(req.params.component);
@@ -111,10 +192,21 @@ router.get('/health/:component', async (req: Request, res: Response) => {
 /**
  * GET /metrics
  * Prometheus-compatible metrics endpoint
+ * Serves prom-client metrics (default Node.js + custom HTTP metrics)
+ * combined with the legacy in-app metrics.
  */
-router.get('/metrics', (req: Request, res: Response) => {
-  res.set('Content-Type', 'text/plain; charset=utf-8');
-  res.send(getPrometheusMetrics());
+router.get('/metrics', async (req: Request, res: Response) => {
+  try {
+    const promMetrics = await promRegister.metrics();
+    const legacyMetrics = getPrometheusMetrics();
+
+    res.set('Content-Type', promRegister.contentType);
+    res.send(promMetrics + '\n' + legacyMetrics);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to collect metrics',
+    });
+  }
 });
 
 /**
@@ -140,14 +232,15 @@ router.get('/metrics/summary', (req: Request, res: Response) => {
 });
 
 // ============================================================================
-// Error Tracking Endpoints
+// Error Tracking Endpoints (Admin/Staff only)
 // ============================================================================
 
 /**
  * GET /errors
  * Error statistics and recent errors
+ * Protected: Requires admin or staff role
  */
-router.get('/errors', (req: Request, res: Response) => {
+router.get('/errors', requirePortalAuth(), requirePortalRole('admin', 'staff'), (req: PortalAuthRequest, res: Response) => {
   const stats = getErrorStats();
   res.json({
     timestamp: new Date().toISOString(),
@@ -158,8 +251,9 @@ router.get('/errors', (req: Request, res: Response) => {
 /**
  * GET /errors/recent
  * List of recent errors
+ * Protected: Requires admin or staff role
  */
-router.get('/errors/recent', (req: Request, res: Response) => {
+router.get('/errors/recent', requirePortalAuth(), requirePortalRole('admin', 'staff'), (req: PortalAuthRequest, res: Response) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
   const errors = getRecentErrors(limit);
 
@@ -173,8 +267,9 @@ router.get('/errors/recent', (req: Request, res: Response) => {
 /**
  * GET /errors/category/:category
  * Errors by category
+ * Protected: Requires admin or staff role
  */
-router.get('/errors/category/:category', (req: Request, res: Response) => {
+router.get('/errors/category/:category', requirePortalAuth(), requirePortalRole('admin', 'staff'), (req: PortalAuthRequest, res: Response) => {
   const categoryParam = String(req.params.category);
 
   if (!Object.values(ErrorCategory).includes(categoryParam as ErrorCategory)) {
@@ -197,8 +292,9 @@ router.get('/errors/category/:category', (req: Request, res: Response) => {
 /**
  * GET /errors/severity/:severity
  * Errors by severity
+ * Protected: Requires admin or staff role
  */
-router.get('/errors/severity/:severity', (req: Request, res: Response) => {
+router.get('/errors/severity/:severity', requirePortalAuth(), requirePortalRole('admin', 'staff'), (req: PortalAuthRequest, res: Response) => {
   const severityParam = String(req.params.severity) as ErrorSeverity;
 
   if (!Object.values(ErrorSeverity).includes(severityParam)) {
@@ -221,8 +317,9 @@ router.get('/errors/severity/:severity', (req: Request, res: Response) => {
 /**
  * POST /errors/:fingerprint/resolve
  * Mark an error as resolved
+ * Protected: Requires admin or staff role
  */
-router.post('/errors/:fingerprint/resolve', (req: Request, res: Response) => {
+router.post('/errors/:fingerprint/resolve', requirePortalAuth(), requirePortalRole('admin', 'staff'), (req: PortalAuthRequest, res: Response) => {
   const fingerprint = String(req.params.fingerprint);
   const resolved = resolveError(fingerprint);
 

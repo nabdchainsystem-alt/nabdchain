@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -60,43 +61,11 @@ function calculatePercentChange(current: number, previous: number): number {
 // Dashboard Service
 // =============================================================================
 
-// Mock data for demo portal users
-const MOCK_SELLER_SUMMARY: DashboardSummary = {
-  totalRevenue: 125750,
-  revenueChange: 12,
-  totalOrders: 48,
-  ordersChange: 8,
-  activeListings: 156,
-  listingsChange: 5,
-  pendingRfqs: 12,
-  rfqsChange: -3,
-  period: {
-    current: { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() },
-    previous: { start: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), end: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
-  },
-};
-
-const MOCK_BUYER_SUMMARY: DashboardSummary = {
-  totalRevenue: 45320, // Spend for buyer
-  revenueChange: 15,
-  totalOrders: 23,
-  ordersChange: 10,
-  activeListings: 5, // Active orders for buyer
-  listingsChange: 0,
-  pendingRfqs: 8,
-  rfqsChange: 25,
-  period: {
-    current: { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() },
-    previous: { start: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), end: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
-  },
-};
-
 export const dashboardService = {
   /**
    * Get aggregated dashboard summary for a seller
    */
   async getSellerSummary(sellerId: string): Promise<DashboardSummary> {
-    // Return mock data for demo - in production, remove this block
     try {
       const { currentStart, currentEnd, previousStart, previousEnd } = getDateRanges();
 
@@ -203,7 +172,7 @@ export const dashboardService = {
       },
     };
     } catch (error) {
-      console.error('Error fetching seller dashboard:', error);
+      apiLogger.error('Error fetching seller dashboard:', error);
       // Return empty summary on error - frontend handles empty state
       const { currentStart, currentEnd, previousStart, previousEnd } = getDateRanges();
       return {
@@ -227,7 +196,6 @@ export const dashboardService = {
    * Get aggregated dashboard summary for a buyer
    */
   async getBuyerSummary(buyerId: string): Promise<DashboardSummary> {
-    // Return mock data for demo - in production, remove this block
     try {
       const { currentStart, currentEnd, previousStart, previousEnd } = getDateRanges();
 
@@ -324,7 +292,7 @@ export const dashboardService = {
       },
     };
     } catch (error) {
-      console.error('Error fetching buyer dashboard:', error);
+      apiLogger.error('Error fetching buyer dashboard:', error);
       // Return empty summary on error - frontend handles empty state
       const { currentStart, currentEnd, previousStart, previousEnd } = getDateRanges();
       return {

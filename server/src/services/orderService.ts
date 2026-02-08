@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -132,201 +133,18 @@ export function isTerminalStatus(status: OrderStatus): boolean {
 }
 
 // =============================================================================
-// Mock Data
+// Empty Stats (returned on error instead of mock data)
 // =============================================================================
 
-const MOCK_ORDERS = [
-  {
-    id: 'mock-ord-1',
-    orderNumber: 'ORD-2025-0001',
-    buyerId: 'buyer-1',
-    sellerId: 'seller-1',
-    itemId: 'item-1',
-    itemName: 'Industrial Hydraulic Pump',
-    itemSku: 'HYD-PUMP-001',
-    itemImage: null,
-    rfqId: null,
-    rfqNumber: null,
-    quantity: 5,
-    unitPrice: 2500,
-    totalPrice: 12500,
-    currency: 'SAR',
-    status: 'pending_confirmation',
-    paymentStatus: 'unpaid',
-    fulfillmentStatus: 'not_started',
-    source: 'direct_buy',
-    shippingAddress: JSON.stringify({ name: 'Ahmed Trading', city: 'Riyadh', country: 'Saudi Arabia' }),
-    buyerNotes: 'Urgent delivery needed',
-    sellerNotes: null,
-    internalNotes: null,
-    trackingNumber: null,
-    carrier: null,
-    estimatedDelivery: null,
-    buyerName: 'Ahmed Al-Rashid',
-    buyerEmail: 'ahmed@trading.sa',
-    buyerCompany: 'Al-Rashid Trading Co.',
-    confirmedAt: null,
-    shippedAt: null,
-    deliveredAt: null,
-    cancelledAt: null,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-ord-2',
-    orderNumber: 'ORD-2025-0002',
-    buyerId: 'buyer-2',
-    sellerId: 'seller-1',
-    itemId: 'item-2',
-    itemName: 'Steel Bearings Set',
-    itemSku: 'BRG-STL-100',
-    itemImage: null,
-    rfqId: 'rfq-1',
-    rfqNumber: 'RFQ-2025-0001',
-    quantity: 100,
-    unitPrice: 45,
-    totalPrice: 4500,
-    currency: 'SAR',
-    status: 'confirmed',
-    paymentStatus: 'authorized',
-    fulfillmentStatus: 'packing',
-    source: 'rfq',
-    shippingAddress: JSON.stringify({ name: 'Saudi Motors', city: 'Jeddah', country: 'Saudi Arabia' }),
-    buyerNotes: null,
-    sellerNotes: 'Being prepared for shipment',
-    internalNotes: null,
-    trackingNumber: null,
-    carrier: null,
-    estimatedDelivery: null,
-    buyerName: 'Mohammed Hassan',
-    buyerEmail: 'mhassan@saudimotors.sa',
-    buyerCompany: 'Saudi Motors Ltd.',
-    confirmedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    shippedAt: null,
-    deliveredAt: null,
-    cancelledAt: null,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-ord-3',
-    orderNumber: 'ORD-2025-0003',
-    buyerId: 'buyer-3',
-    sellerId: 'seller-1',
-    itemId: 'item-3',
-    itemName: 'Air Compressor Unit',
-    itemSku: 'CMP-AIR-500',
-    itemImage: null,
-    rfqId: null,
-    rfqNumber: null,
-    quantity: 2,
-    unitPrice: 8500,
-    totalPrice: 17000,
-    currency: 'SAR',
-    status: 'shipped',
-    paymentStatus: 'paid',
-    fulfillmentStatus: 'out_for_delivery',
-    source: 'direct_buy',
-    shippingAddress: JSON.stringify({ name: 'Gulf Industrial', city: 'Dammam', country: 'Saudi Arabia' }),
-    buyerNotes: null,
-    sellerNotes: 'Shipped via SMSA',
-    internalNotes: null,
-    trackingNumber: 'SMSA123456789',
-    carrier: 'SMSA Express',
-    estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    buyerName: 'Khalid Ibrahim',
-    buyerEmail: 'khalid@gulfindustrial.sa',
-    buyerCompany: 'Gulf Industrial Co.',
-    confirmedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    shippedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    deliveredAt: null,
-    cancelledAt: null,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-ord-4',
-    orderNumber: 'ORD-2025-0004',
-    buyerId: 'buyer-4',
-    sellerId: 'seller-1',
-    itemId: 'item-4',
-    itemName: 'Electric Motor 15KW',
-    itemSku: 'MTR-ELC-15K',
-    itemImage: null,
-    rfqId: null,
-    rfqNumber: null,
-    quantity: 3,
-    unitPrice: 3200,
-    totalPrice: 9600,
-    currency: 'SAR',
-    status: 'delivered',
-    paymentStatus: 'paid',
-    fulfillmentStatus: 'delivered',
-    source: 'direct_buy',
-    shippingAddress: JSON.stringify({ name: 'Riyadh Factory', city: 'Riyadh', country: 'Saudi Arabia' }),
-    buyerNotes: null,
-    sellerNotes: null,
-    internalNotes: null,
-    trackingNumber: 'ARAMEX987654321',
-    carrier: 'Aramex',
-    estimatedDelivery: null,
-    buyerName: 'Fahad Al-Saud',
-    buyerEmail: 'fahad@riyadhfactory.sa',
-    buyerCompany: 'Riyadh Factory LLC',
-    confirmedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    shippedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    deliveredAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    cancelledAt: null,
-    createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-ord-5',
-    orderNumber: 'ORD-2025-0005',
-    buyerId: 'buyer-5',
-    sellerId: 'seller-1',
-    itemId: 'item-5',
-    itemName: 'Valve Assembly Kit',
-    itemSku: 'VLV-KIT-200',
-    itemImage: null,
-    rfqId: 'rfq-2',
-    rfqNumber: 'RFQ-2025-0002',
-    quantity: 20,
-    unitPrice: 180,
-    totalPrice: 3600,
-    currency: 'SAR',
-    status: 'in_progress',
-    paymentStatus: 'authorized',
-    fulfillmentStatus: 'packing',
-    source: 'rfq',
-    shippingAddress: JSON.stringify({ name: 'Eastern Province Co', city: 'Al Khobar', country: 'Saudi Arabia' }),
-    buyerNotes: 'Please include installation guide',
-    sellerNotes: null,
-    internalNotes: null,
-    trackingNumber: null,
-    carrier: null,
-    estimatedDelivery: null,
-    buyerName: 'Omar Khalil',
-    buyerEmail: 'omar@easterncorp.sa',
-    buyerCompany: 'Eastern Province Corp.',
-    confirmedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    shippedAt: null,
-    deliveredAt: null,
-    cancelledAt: null,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const MOCK_ORDER_STATS = {
-  total: 48,
-  pendingConfirmation: 5,
-  confirmed: 8,
-  inProgress: 12,
-  shipped: 10,
-  delivered: 11,
-  cancelled: 2,
-  totalRevenue: 125750,
+const EMPTY_ORDER_STATS = {
+  total: 0,
+  pendingConfirmation: 0,
+  confirmed: 0,
+  inProgress: 0,
+  shipped: 0,
+  delivered: 0,
+  cancelled: 0,
+  totalRevenue: 0,
   currency: 'SAR',
 };
 
@@ -420,7 +238,7 @@ export const orderService = {
       // Return actual data (empty array if no orders - production mode)
       return result;
     } catch (error) {
-      console.error('Error fetching seller orders:', error);
+      apiLogger.error('Error fetching seller orders:', error);
       return []; // Return empty array on error - frontend handles empty state
     }
   },
@@ -882,8 +700,8 @@ export const orderService = {
         currency: 'SAR',
       };
     } catch (error) {
-      console.log('Using mock data for seller order stats:', error);
-      return MOCK_ORDER_STATS;
+      apiLogger.error('[OrderService] Error getting seller order stats:', error);
+      return EMPTY_ORDER_STATS;
     }
   },
 
@@ -1017,19 +835,18 @@ export const orderService = {
         },
       };
     } catch (error) {
-      console.log('Using mock data for buyer dashboard:', error);
-      // Return mock data for demo
+      apiLogger.error('Error fetching buyer dashboard:', error);
       return {
-        totalPurchaseSpend: 124500,
-        totalPurchaseOrders: 48,
-        activeSuppliers: 12,
-        avgPurchaseValue: 2594,
+        totalPurchaseSpend: 0,
+        totalPurchaseOrders: 0,
+        activeSuppliers: 0,
+        avgPurchaseValue: 0,
         currency: 'SAR',
         trends: {
-          spend: 12,
-          orders: 8,
-          suppliers: 5,
-          avgValue: 3,
+          spend: 0,
+          orders: 0,
+          suppliers: 0,
+          avgValue: 0,
         },
       };
     }

@@ -15,7 +15,6 @@ import {
   CaretUp,
   Clock,
   CalendarCheck,
-  CalendarX,
   ArrowRight,
   Info,
 } from 'phosphor-react';
@@ -25,11 +24,10 @@ import {
   TimelineStep,
   TimelineStepKey,
   RiskAssessment,
-  RiskLevel,
   getRiskLevelConfig,
-  getTimelineStepConfig,
   formatTimeRemaining,
 } from '../../types/timeline.types';
+import { ThemeStyles } from '../../../../theme/portalColors';
 
 // =============================================================================
 // Types
@@ -99,7 +97,15 @@ const DEFAULT_TIMELINE_STEPS: DefaultTimelineStep[] = [
     label: 'Order Created',
     icon: Package,
     activeStatuses: [],
-    completedStatuses: ['pending_confirmation', 'confirmed', 'processing', 'in_progress', 'shipped', 'delivered', 'closed'],
+    completedStatuses: [
+      'pending_confirmation',
+      'confirmed',
+      'processing',
+      'in_progress',
+      'shipped',
+      'delivered',
+      'closed',
+    ],
     timestampKey: 'createdAt',
   },
   {
@@ -174,7 +180,7 @@ const formatDate = (dateStr?: string): string => {
 
 const calculateSLAForStep = (
   order: Order,
-  step: DefaultTimelineStep
+  step: DefaultTimelineStep,
 ): { remaining: string; urgency: 'ok' | 'warning' | 'critical'; percentUsed: number; deadline: Date } | null => {
   if (!step.slaType) return null;
 
@@ -228,7 +234,7 @@ const calculateSLAForStep = (
 
 interface RiskBannerProps {
   riskAssessment: RiskAssessment;
-  styles: any;
+  styles: ThemeStyles;
 }
 
 const RiskBanner: React.FC<RiskBannerProps> = ({ riskAssessment, styles }) => {
@@ -241,37 +247,42 @@ const RiskBanner: React.FC<RiskBannerProps> = ({ riskAssessment, styles }) => {
 
   const getBgColor = () => {
     switch (riskAssessment.overallRisk) {
-      case 'critical': return styles.isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)';
-      case 'high': return styles.isDark ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)';
-      case 'medium': return styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)';
-      default: return styles.bgSecondary;
+      case 'critical':
+        return styles.isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)';
+      case 'high':
+        return styles.isDark ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)';
+      case 'medium':
+        return styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)';
+      default:
+        return styles.bgSecondary;
     }
   };
 
   const getTextColor = () => {
     switch (riskAssessment.overallRisk) {
-      case 'critical': return styles.error;
-      case 'high': return '#f97316';
-      case 'medium': return styles.warning;
-      default: return styles.textPrimary;
+      case 'critical':
+        return styles.error;
+      case 'high':
+        return '#f97316';
+      case 'medium':
+        return styles.warning;
+      default:
+        return styles.textPrimary;
     }
   };
 
   return (
-    <div
-      className="mx-4 mb-4 rounded-lg overflow-hidden"
-      style={{ backgroundColor: getBgColor() }}
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3"
-      >
+    <div className="mx-4 mb-4 rounded-lg overflow-hidden" style={{ backgroundColor: getBgColor() }}>
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
           <Warning size={18} weight="fill" style={{ color: getTextColor() }} />
           <span className="font-medium text-sm" style={{ color: getTextColor() }}>
             {config.label}
           </span>
-          <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: styles.bgCard, color: styles.textMuted }}>
+          <span
+            className="text-xs px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: styles.bgCard, color: styles.textMuted }}
+          >
             Score: {riskAssessment.riskScore}
           </span>
         </div>
@@ -286,11 +297,7 @@ const RiskBanner: React.FC<RiskBannerProps> = ({ riskAssessment, styles }) => {
         <div className="px-3 pb-3 space-y-3">
           {/* Risk Factors */}
           {riskAssessment.factors.map((factor) => (
-            <div
-              key={factor.id}
-              className="p-2 rounded"
-              style={{ backgroundColor: styles.bgCard }}
-            >
+            <div key={factor.id} className="p-2 rounded" style={{ backgroundColor: styles.bgCard }}>
               <div className="flex items-start gap-2">
                 <Info size={14} style={{ color: getTextColor() }} className="mt-0.5" />
                 <div className="flex-1">
@@ -330,7 +337,10 @@ const RiskBanner: React.FC<RiskBannerProps> = ({ riskAssessment, styles }) => {
                 Predicted Delivery: {formatDate(riskAssessment.predictedDeliveryDate)}
               </span>
               {riskAssessment.predictionConfidence && (
-                <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}>
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded"
+                  style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}
+                >
                   {riskAssessment.predictionConfidence}% confidence
                 </span>
               )}
@@ -346,7 +356,7 @@ interface PromisedVsActualProps {
   promisedDate?: string;
   actualDate?: string;
   variance?: number;
-  styles: any;
+  styles: ThemeStyles;
 }
 
 const PromisedVsActual: React.FC<PromisedVsActualProps> = ({ promisedDate, actualDate, variance, styles }) => {
@@ -357,10 +367,7 @@ const PromisedVsActual: React.FC<PromisedVsActualProps> = ({ promisedDate, actua
   const varianceColor = isEarly ? styles.success : isLate ? styles.error : styles.textMuted;
 
   return (
-    <div
-      className="mx-4 mb-4 p-3 rounded-lg"
-      style={{ backgroundColor: styles.bgSecondary }}
-    >
+    <div className="mx-4 mb-4 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
       <p className="text-xs font-medium mb-2" style={{ color: styles.textMuted }}>
         Delivery Timeline
       </p>
@@ -369,7 +376,9 @@ const PromisedVsActual: React.FC<PromisedVsActualProps> = ({ promisedDate, actua
         <div className="flex-1">
           <div className="flex items-center gap-1.5 mb-1">
             <CalendarCheck size={14} style={{ color: styles.info }} />
-            <span className="text-xs" style={{ color: styles.textMuted }}>Promised</span>
+            <span className="text-xs" style={{ color: styles.textMuted }}>
+              Promised
+            </span>
           </div>
           <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
             {promisedDate ? formatDate(promisedDate) : '—'}
@@ -398,10 +407,7 @@ const PromisedVsActual: React.FC<PromisedVsActualProps> = ({ promisedDate, actua
 
         {/* Variance */}
         {variance !== undefined && actualDate && (
-          <div
-            className="px-2 py-1 rounded"
-            style={{ backgroundColor: `${varianceColor}15` }}
-          >
+          <div className="px-2 py-1 rounded" style={{ backgroundColor: `${varianceColor}15` }}>
             <p className="text-xs font-medium" style={{ color: varianceColor }}>
               {isEarly ? `${variance}d early` : isLate ? `${Math.abs(variance)}d late` : 'On time'}
             </p>
@@ -418,7 +424,7 @@ interface SLAMetricsSummaryProps {
     slasBreached: number;
     avgSlaUtilization: number;
   };
-  styles: any;
+  styles: ThemeStyles;
 }
 
 const SLAMetricsSummary: React.FC<SLAMetricsSummaryProps> = ({ metrics, styles }) => {
@@ -434,20 +440,39 @@ const SLAMetricsSummary: React.FC<SLAMetricsSummaryProps> = ({ metrics, styles }
     >
       <div className="flex items-center gap-4">
         <div>
-          <p className="text-xs" style={{ color: styles.textMuted }}>SLAs Met</p>
+          <p className="text-xs" style={{ color: styles.textMuted }}>
+            SLAs Met
+          </p>
           <p className="text-sm font-semibold" style={{ color: styles.success }}>
             {metrics.slasMet}/{total}
           </p>
         </div>
         <div>
-          <p className="text-xs" style={{ color: styles.textMuted }}>Success Rate</p>
-          <p className="text-sm font-semibold" style={{ color: successRate >= 80 ? styles.success : successRate >= 60 ? styles.warning : styles.error }}>
+          <p className="text-xs" style={{ color: styles.textMuted }}>
+            Success Rate
+          </p>
+          <p
+            className="text-sm font-semibold"
+            style={{ color: successRate >= 80 ? styles.success : successRate >= 60 ? styles.warning : styles.error }}
+          >
             {successRate}%
           </p>
         </div>
         <div>
-          <p className="text-xs" style={{ color: styles.textMuted }}>Avg Utilization</p>
-          <p className="text-sm font-semibold" style={{ color: metrics.avgSlaUtilization <= 70 ? styles.success : metrics.avgSlaUtilization <= 90 ? styles.warning : styles.error }}>
+          <p className="text-xs" style={{ color: styles.textMuted }}>
+            Avg Utilization
+          </p>
+          <p
+            className="text-sm font-semibold"
+            style={{
+              color:
+                metrics.avgSlaUtilization <= 70
+                  ? styles.success
+                  : metrics.avgSlaUtilization <= 90
+                    ? styles.warning
+                    : styles.error,
+            }}
+          >
             {metrics.avgSlaUtilization}%
           </p>
         </div>
@@ -460,11 +485,7 @@ const SLAMetricsSummary: React.FC<SLAMetricsSummaryProps> = ({ metrics, styles }
 // Main Component
 // =============================================================================
 
-export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
-  order,
-  timeline,
-  onReportDelay,
-}) => {
+export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({ order, timeline, onReportDelay }) => {
   const { styles, direction } = usePortal();
   const isRtl = direction === 'rtl';
 
@@ -472,18 +493,15 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
   if (['cancelled', 'failed', 'refunded'].includes(order.status)) {
     return (
       <div className="p-4">
-        <div
-          className="flex items-center gap-3 p-4 rounded-lg"
-          style={{ backgroundColor: `${styles.error}10` }}
-        >
+        <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: `${styles.error}10` }}>
           <XCircle size={24} weight="fill" style={{ color: styles.error }} />
           <div>
             <p className="font-medium" style={{ color: styles.error }}>
               {order.status === 'cancelled'
                 ? 'Order Cancelled'
                 : order.status === 'failed'
-                ? 'Order Failed'
-                : 'Order Refunded'}
+                  ? 'Order Failed'
+                  : 'Order Refunded'}
             </p>
             {order.cancelledAt && (
               <p className="text-sm" style={{ color: styles.textMuted }}>
@@ -518,7 +536,13 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
         status: state,
         actualAt: timestamp,
         slaDeadline: slaInfo?.deadline.toISOString(),
-        slaStatus: slaInfo ? (slaInfo.urgency === 'ok' ? 'on_track' : slaInfo.urgency === 'warning' ? 'at_risk' : 'breached') : undefined,
+        slaStatus: slaInfo
+          ? slaInfo.urgency === 'ok'
+            ? 'on_track'
+            : slaInfo.urgency === 'warning'
+              ? 'at_risk'
+              : 'breached'
+          : undefined,
         slaPercentUsed: slaInfo?.percentUsed,
         slaTimeRemaining: slaInfo?.remaining,
       } as TimelineStep;
@@ -528,9 +552,7 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
   return (
     <div className="pb-4">
       {/* Risk Assessment Banner */}
-      {timeline?.riskAssessment && (
-        <RiskBanner riskAssessment={timeline.riskAssessment} styles={styles} />
-      )}
+      {timeline?.riskAssessment && <RiskBanner riskAssessment={timeline.riskAssessment} styles={styles} />}
 
       {/* Promised vs Actual Delivery */}
       {timeline?.metrics && (
@@ -543,9 +565,7 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
       )}
 
       {/* SLA Metrics Summary */}
-      {timeline?.metrics && (
-        <SLAMetricsSummary metrics={timeline.metrics} styles={styles} />
-      )}
+      {timeline?.metrics && <SLAMetricsSummary metrics={timeline.metrics} styles={styles} />}
 
       {/* Timeline Steps */}
       <div className="px-4 space-y-0">
@@ -557,8 +577,8 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
           const isDelayed = step.status === 'delayed' || step.slaStatus === 'breached';
 
           // Calculate promised vs actual for completed steps
-          const wasLate = isCompleted && step.promisedAt && step.actualAt &&
-            new Date(step.actualAt) > new Date(step.promisedAt);
+          const wasLate =
+            isCompleted && step.promisedAt && step.actualAt && new Date(step.actualAt) > new Date(step.promisedAt);
 
           return (
             <div key={step.key} className={`flex gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
@@ -573,10 +593,10 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                     backgroundColor: isDelayed
                       ? `${styles.error}20`
                       : isCompleted
-                      ? `${styles.success}20`
-                      : isActive
-                      ? `${styles.info}20`
-                      : styles.bgSecondary,
+                        ? `${styles.success}20`
+                        : isActive
+                          ? `${styles.info}20`
+                          : styles.bgSecondary,
                     ringColor: isActive ? styles.info : undefined,
                   }}
                 >
@@ -587,10 +607,10 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                       color: isDelayed
                         ? styles.error
                         : isCompleted
-                        ? styles.success
-                        : isActive
-                        ? styles.info
-                        : styles.textMuted,
+                          ? styles.success
+                          : isActive
+                            ? styles.info
+                            : styles.textMuted,
                     }}
                   />
                 </div>
@@ -616,10 +636,10 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                         color: isDelayed
                           ? styles.error
                           : isCompleted
-                          ? styles.textPrimary
-                          : isActive
-                          ? styles.info
-                          : styles.textMuted,
+                            ? styles.textPrimary
+                            : isActive
+                              ? styles.info
+                              : styles.textMuted,
                       }}
                     >
                       {step.label}
@@ -667,8 +687,8 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                               step.slaStatus === 'on_track'
                                 ? `${styles.success}15`
                                 : step.slaStatus === 'at_risk'
-                                ? `${styles.warning}15`
-                                : `${styles.error}15`,
+                                  ? `${styles.warning}15`
+                                  : `${styles.error}15`,
                           }}
                         >
                           <Timer
@@ -679,8 +699,8 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                                 step.slaStatus === 'on_track'
                                   ? styles.success
                                   : step.slaStatus === 'at_risk'
-                                  ? styles.warning
-                                  : styles.error,
+                                    ? styles.warning
+                                    : styles.error,
                             }}
                             className={step.slaStatus === 'breached' ? 'animate-pulse' : ''}
                           />
@@ -691,8 +711,8 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                                 step.slaStatus === 'on_track'
                                   ? styles.success
                                   : step.slaStatus === 'at_risk'
-                                  ? styles.warning
-                                  : styles.error,
+                                    ? styles.warning
+                                    : styles.error,
                             }}
                           >
                             {step.slaTimeRemaining}
@@ -713,8 +733,8 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({
                                   step.slaStatus === 'on_track'
                                     ? styles.success
                                     : step.slaStatus === 'at_risk'
-                                    ? styles.warning
-                                    : styles.error,
+                                      ? styles.warning
+                                      : styles.error,
                               }}
                             />
                           </div>

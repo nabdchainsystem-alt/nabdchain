@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
@@ -6,7 +6,7 @@ import { apiLogger } from '../utils/logger';
 
 const router = Router();
 
-// Schema for creating/updating products
+// Schema for creating products (with defaults for new records)
 const productSchema = z.object({
   name: z.string().min(1).max(200),
   sku: z.string().min(1).max(50),
@@ -26,6 +26,27 @@ const productSchema = z.object({
   status: z.enum(['active', 'draft', 'out_of_stock']).default('draft'),
   image: z.string().max(500).optional().nullable(),
 });
+
+// For updates: strip defaults so undefined fields don't overwrite existing values
+const updateProductSchema = z.object({
+  name: z.string().min(1).max(200),
+  sku: z.string().min(1).max(50),
+  partNumber: z.string().max(50).optional(),
+  description: z.string().max(2000).optional(),
+  price: z.number().min(0),
+  currency: z.string(),
+  stock: z.number().int().min(0),
+  minOrderQty: z.number().int().min(1),
+  category: z.string().min(1),
+  manufacturer: z.string().max(100).optional(),
+  brand: z.string().max(100).optional(),
+  weight: z.string().max(50).optional(),
+  weightUnit: z.string().max(10),
+  dimensions: z.string().max(100).optional(),
+  material: z.string().max(100).optional(),
+  status: z.enum(['active', 'draft', 'out_of_stock']),
+  image: z.string().max(500).optional().nullable(),
+}).partial();
 
 // GET all products for the seller
 router.get('/products', requireAuth, async (req, res: Response) => {
@@ -60,7 +81,7 @@ router.get('/products', requireAuth, async (req, res: Response) => {
 router.get('/products/:id', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
+    const id = req.params.id as string as string;
 
     const product = await prisma.portalProduct.findFirst({
       where: { id, userId },
@@ -104,8 +125,8 @@ router.post('/products', requireAuth, async (req, res: Response) => {
 router.put('/products/:id', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
-    const data = productSchema.partial().parse(req.body);
+    const id = req.params.id as string as string;
+    const data = updateProductSchema.parse(req.body);
 
     // Verify ownership
     const existing = await prisma.portalProduct.findFirst({
@@ -135,7 +156,7 @@ router.put('/products/:id', requireAuth, async (req, res: Response) => {
 router.delete('/products/:id', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
+    const id = req.params.id as string as string;
 
     const existing = await prisma.portalProduct.findFirst({
       where: { id, userId },

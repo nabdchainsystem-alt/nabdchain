@@ -11,10 +11,7 @@ interface ReportBuilderProps {
   onSave?: () => void;
 }
 
-export const ReportBuilder: React.FC<ReportBuilderProps> = ({
-  reportId,
-  onSave,
-}) => {
+export const ReportBuilder: React.FC<ReportBuilderProps> = ({ _reportId, onSave }) => {
   return (
     <div className="h-full flex flex-col bg-white dark:bg-stone-950">
       {/* Header */}
@@ -43,9 +40,7 @@ export const ReportBuilder: React.FC<ReportBuilderProps> = ({
       <div className="flex-1 flex">
         {/* Sidebar - Widget Library */}
         <div className="w-64 border-r border-stone-200 dark:border-stone-700 p-4">
-          <h3 className="text-xs font-medium text-stone-500 uppercase mb-3">
-            Add Widget
-          </h3>
+          <h3 className="text-xs font-medium text-stone-500 uppercase mb-3">Add Widget</h3>
           <div className="space-y-2">
             {[
               { icon: Table, label: 'Table' },
@@ -63,9 +58,7 @@ export const ReportBuilder: React.FC<ReportBuilderProps> = ({
             ))}
           </div>
 
-          <h3 className="text-xs font-medium text-stone-500 uppercase mt-6 mb-3">
-            Data Sources
-          </h3>
+          <h3 className="text-xs font-medium text-stone-500 uppercase mt-6 mb-3">Data Sources</h3>
           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
             <Plus size={18} />
             Add Data Source
@@ -77,12 +70,8 @@ export const ReportBuilder: React.FC<ReportBuilderProps> = ({
           <div className="h-full border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-xl flex items-center justify-center">
             <div className="text-center">
               <ChartBar size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
-              <p className="text-stone-500 mb-2">
-                Drag widgets here to build your report
-              </p>
-              <p className="text-xs text-stone-400">
-                Report builder coming soon
-              </p>
+              <p className="text-stone-500 mb-2">Drag widgets here to build your report</p>
+              <p className="text-xs text-stone-400">Report builder coming soon</p>
             </div>
           </div>
         </div>

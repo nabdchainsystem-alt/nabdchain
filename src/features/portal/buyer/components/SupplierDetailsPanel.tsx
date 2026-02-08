@@ -11,17 +11,13 @@ import {
   TrendUp,
   Package,
   Warning,
-  CheckCircle,
   Clock,
-  Percent,
   Users,
   Envelope,
   Phone,
   MapPin,
   Tag,
-  Note,
   FileDoc,
-  CaretRight,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import type { Supplier } from '../../types/supplier.types';
@@ -31,7 +27,6 @@ import {
   formatDeliveryDeviation,
   formatResponseTime,
   calculateDeliveryScore,
-  RELIABILITY_WEIGHTS,
 } from '../../types/supplier.types';
 
 interface SupplierDetailsPanelProps {
@@ -56,10 +51,7 @@ const MetricCard: React.FC<{
   const { styles } = usePortal();
 
   return (
-    <div
-      className="p-3 rounded-lg"
-      style={{ backgroundColor: styles.bgSecondary }}
-    >
+    <div className="p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
       <div className="flex items-center gap-2 mb-1.5">
         <span style={{ color: styles.textMuted }}>{icon}</span>
         <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: styles.textMuted }}>
@@ -67,10 +59,7 @@ const MetricCard: React.FC<{
         </span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span
-          className="text-lg font-semibold"
-          style={{ color: color || styles.textPrimary }}
-        >
+        <span className="text-lg font-semibold" style={{ color: color || styles.textPrimary }}>
           {value}
         </span>
         {subtext && (
@@ -128,10 +117,7 @@ const PerformanceTrendChart: React.FC = () => {
   const range = max - min;
 
   return (
-    <div
-      className="p-4 rounded-lg"
-      style={{ backgroundColor: styles.bgSecondary }}
-    >
+    <div className="p-4 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium" style={{ color: styles.textSecondary }}>
           Performance Trend (12 months)
@@ -169,9 +155,9 @@ const NotesTagsSection: React.FC<{
   tags: string[];
   onAddTag?: (tag: string) => void;
   onRemoveTag?: (tag: string) => void;
-}> = ({ tags, onAddTag, onRemoveTag }) => {
+}> = ({ tags, _onAddTag, onRemoveTag }) => {
   const { styles } = usePortal();
-  const [newTag, setNewTag] = useState('');
+  const [_newTag, _setNewTag] = useState('');
   const [notes, setNotes] = useState('');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
 
@@ -185,7 +171,7 @@ const NotesTagsSection: React.FC<{
           </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {tags.map(tag => (
+          {tags.map((tag) => (
             <span
               key={tag}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]"
@@ -197,10 +183,7 @@ const NotesTagsSection: React.FC<{
               <Tag size={10} />
               {tag}
               {onRemoveTag && (
-                <button
-                  onClick={() => onRemoveTag(tag)}
-                  className="hover:opacity-70"
-                >
+                <button onClick={() => onRemoveTag(tag)} className="hover:opacity-70">
                   <X size={8} />
                 </button>
               )}
@@ -231,7 +214,7 @@ const NotesTagsSection: React.FC<{
         {isEditingNotes ? (
           <textarea
             value={notes}
-            onChange={e => setNotes(e.target.value)}
+            onChange={(e) => setNotes(e.target.value)}
             placeholder="Add notes about this supplier..."
             className="w-full px-3 py-2 rounded-lg text-xs resize-none"
             style={{
@@ -311,9 +294,9 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
 
   const tierConfig = getSupplierTierConfig(supplier.tier);
   const riskConfig = getRiskLevelConfig(supplier.riskLevel);
-  const deliveryDeviation = formatDeliveryDeviation(supplier.metrics.averageDeliveryDeviation);
+  const _deliveryDeviation = formatDeliveryDeviation(supplier.metrics.averageDeliveryDeviation);
   const responseTime = formatResponseTime(supplier.metrics.averageResponseTimeHours);
-  const deliveryScore = calculateDeliveryScore(supplier.metrics);
+  const _deliveryScore = calculateDeliveryScore(supplier.metrics);
 
   // Risk chip color
   const riskColorMap = {
@@ -325,14 +308,16 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
   const riskColor = riskColorMap[riskConfig.color];
 
   // Calculate on-time percentage
-  const onTimePercentage = supplier.metrics.totalOrders > 0
-    ? Math.round((supplier.metrics.onTimeDeliveries / supplier.metrics.totalOrders) * 100)
-    : 0;
+  const onTimePercentage =
+    supplier.metrics.totalOrders > 0
+      ? Math.round((supplier.metrics.onTimeDeliveries / supplier.metrics.totalOrders) * 100)
+      : 0;
 
   // Disputes rate (mock calculation)
-  const disputesRate = supplier.metrics.returnedOrders > 0
-    ? ((supplier.metrics.returnedOrders / supplier.metrics.totalOrders) * 100).toFixed(1)
-    : '0';
+  const disputesRate =
+    supplier.metrics.returnedOrders > 0
+      ? ((supplier.metrics.returnedOrders / supplier.metrics.totalOrders) * 100).toFixed(1)
+      : '0';
 
   // Generate risk insights based on supplier data
   const riskInsights: Array<{ title: string; description: string; severity: 'low' | 'medium' | 'high' }> = [];
@@ -389,10 +374,7 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3
-                className="font-semibold text-sm truncate"
-                style={{ color: styles.textPrimary }}
-              >
+              <h3 className="font-semibold text-sm truncate" style={{ color: styles.textPrimary }}>
                 {supplier.name}
               </h3>
               <span
@@ -414,18 +396,15 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
           onClick={onClose}
           className="p-1.5 rounded-md transition-colors flex-shrink-0"
           style={{ color: styles.textMuted }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
           <X size={16} />
         </button>
       </div>
 
       {/* Quick Actions */}
-      <div
-        className="flex items-center gap-2 p-4 flex-shrink-0"
-        style={{ borderBottom: `1px solid ${styles.border}` }}
-      >
+      <div className="flex items-center gap-2 p-4 flex-shrink-0" style={{ borderBottom: `1px solid ${styles.border}` }}>
         <button
           onClick={onRequestQuote}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors"
@@ -492,8 +471,8 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
                 supplier.reliabilityScore >= 75
                   ? styles.success
                   : supplier.reliabilityScore >= 50
-                  ? styles.warning
-                  : styles.error
+                    ? styles.warning
+                    : styles.error
               }
             />
             <MetricCard
@@ -508,17 +487,18 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
               subtext="avg"
               icon={<Timer size={12} />}
             />
-            <MetricCard
-              label="Response"
-              value={responseTime}
-              subtext="avg"
-              icon={<ChatCircle size={12} />}
-            />
+            <MetricCard label="Response" value={responseTime} subtext="avg" icon={<ChatCircle size={12} />} />
             <MetricCard
               label="Disputes"
               value={`${disputesRate}%`}
               icon={<Warning size={12} />}
-              color={parseFloat(disputesRate) > 5 ? styles.error : parseFloat(disputesRate) > 2 ? styles.warning : styles.success}
+              color={
+                parseFloat(disputesRate) > 5
+                  ? styles.error
+                  : parseFloat(disputesRate) > 2
+                    ? styles.warning
+                    : styles.success
+              }
             />
             <MetricCard
               label="Total Spend"
@@ -588,7 +568,8 @@ export const SupplierDetailsPanel: React.FC<SupplierDetailsPanelProps> = ({
             )}
             <div className="flex items-center gap-2 text-xs" style={{ color: styles.textPrimary }}>
               <MapPin size={12} style={{ color: styles.textMuted }} />
-              {supplier.city ? `${supplier.city}, ` : ''}{supplier.country}
+              {supplier.city ? `${supplier.city}, ` : ''}
+              {supplier.country}
             </div>
           </div>
         </section>

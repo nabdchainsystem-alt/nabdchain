@@ -19,6 +19,7 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
   minDate,
   maxDate,
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, direction, t } = usePortal();
   const isRtl = direction === 'rtl';
   const [isOpen, setIsOpen] = useState(false);
@@ -84,13 +85,24 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
 
-  const weekDays = isRtl
-    ? ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب']
-    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const weekDays = isRtl ? ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب'] : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const monthNames = isRtl
     ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    : [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
 
   const formatDisplayDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -129,10 +141,7 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
           }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
             <button
               type="button"
               onClick={isRtl ? nextMonth : prevMonth}
@@ -198,10 +207,10 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
                       color: isSelected
                         ? '#fff'
                         : disabled
-                        ? styles.textMuted
-                        : isToday
-                        ? styles.info
-                        : styles.textPrimary,
+                          ? styles.textMuted
+                          : isToday
+                            ? styles.info
+                            : styles.textPrimary,
                       fontWeight: isToday || isSelected ? 600 : 400,
                       opacity: disabled ? 0.4 : 1,
                       cursor: disabled ? 'not-allowed' : 'pointer',
@@ -226,10 +235,7 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
           </div>
 
           {/* Footer */}
-          <div
-            className="flex items-center justify-between px-3 py-2 border-t"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between px-3 py-2 border-t" style={{ borderColor: styles.border }}>
             <button
               type="button"
               onClick={() => {

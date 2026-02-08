@@ -4,15 +4,7 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  Star,
-  Clock,
-  WarningCircle,
-  Package,
-  ShieldCheck,
-  TrendUp,
-  Buildings,
-} from 'phosphor-react';
+import { Star, Clock, WarningCircle, Package, ShieldCheck, Buildings } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import {
   BuyerSupplierMetrics,
@@ -54,11 +46,9 @@ const StarRating: React.FC<{ score: number; max?: number }> = ({ score, max = 5 
         <Star
           key={i}
           size={14}
-          weight={i < fullStars ? 'fill' : (i === fullStars && hasHalf ? 'fill' : 'regular')}
+          weight={i < fullStars ? 'fill' : i === fullStars && hasHalf ? 'fill' : 'regular'}
           style={{
-            color: i < fullStars || (i === fullStars && hasHalf)
-              ? '#f59e0b'
-              : styles.textMuted,
+            color: i < fullStars || (i === fullStars && hasHalf) ? '#f59e0b' : styles.textMuted,
             opacity: i === fullStars && hasHalf ? 0.5 : 1,
           }}
         />
@@ -81,10 +71,7 @@ const ProgressBar: React.FC<{
 
   return (
     <div className="flex items-center gap-2">
-      <div
-        className="flex-1 h-2 rounded-full overflow-hidden"
-        style={{ backgroundColor: styles.bgCard }}
-      >
+      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgCard }}>
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${percentage}%`, backgroundColor: color }}
@@ -99,12 +86,9 @@ const ProgressBar: React.FC<{
   );
 };
 
-export const SupplierPerformanceCard: React.FC<SupplierPerformanceCardProps> = ({
-  metrics,
-  sellerName,
-}) => {
+export const SupplierPerformanceCard: React.FC<SupplierPerformanceCardProps> = ({ metrics, sellerName }) => {
   const { styles, t, direction } = usePortal();
-  const isRtl = direction === 'rtl';
+  const _isRtl = direction === 'rtl';
 
   // No metrics available
   if (!metrics) {
@@ -134,17 +118,11 @@ export const SupplierPerformanceCard: React.FC<SupplierPerformanceCardProps> = (
     );
   }
 
-  const onTimeColor = metrics.onTimeDeliveryRate >= 90
-    ? styles.success
-    : metrics.onTimeDeliveryRate >= 70
-      ? '#f59e0b'
-      : styles.error;
+  const onTimeColor =
+    metrics.onTimeDeliveryRate >= 90 ? styles.success : metrics.onTimeDeliveryRate >= 70 ? '#f59e0b' : styles.error;
 
   return (
-    <div
-      className="p-4 rounded-lg border"
-      style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
-    >
+    <div className="p-4 rounded-lg border" style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -214,10 +192,7 @@ export const SupplierPerformanceCard: React.FC<SupplierPerformanceCardProps> = (
 
       {/* Issue count warning */}
       {metrics.issueCount > 0 && (
-        <div
-          className="flex items-center gap-2 mt-4 p-2 rounded-lg"
-          style={{ backgroundColor: `${styles.error}10` }}
-        >
+        <div className="flex items-center gap-2 mt-4 p-2 rounded-lg" style={{ backgroundColor: `${styles.error}10` }}>
           <WarningCircle size={16} style={{ color: styles.error }} weight="fill" />
           <span className="text-xs" style={{ color: styles.error }}>
             {metrics.issueCount} {t('buyer.purchases.previousIssues') || 'previous issue(s) reported'}
@@ -227,10 +202,7 @@ export const SupplierPerformanceCard: React.FC<SupplierPerformanceCardProps> = (
 
       {/* Excellent badge */}
       {metrics.reliabilityTier === 'excellent' && metrics.issueCount === 0 && (
-        <div
-          className="flex items-center gap-2 mt-4 p-2 rounded-lg"
-          style={{ backgroundColor: `${styles.success}10` }}
-        >
+        <div className="flex items-center gap-2 mt-4 p-2 rounded-lg" style={{ backgroundColor: `${styles.success}10` }}>
           <ShieldCheck size={16} style={{ color: styles.success }} weight="fill" />
           <span className="text-xs" style={{ color: styles.success }}>
             {t('buyer.purchases.trustedSupplier') || 'Trusted supplier with excellent track record'}

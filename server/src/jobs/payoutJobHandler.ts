@@ -3,9 +3,8 @@
 // =============================================================================
 
 import { sellerPayoutService } from '../services/sellerPayoutService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { jobLog } from '../services/observability/structuredLogger';
 
 export const payoutJobHandler = {
   /**
@@ -13,15 +12,15 @@ export const payoutJobHandler = {
    * Runs daily at 2 AM
    */
   async createDailyPayouts(): Promise<void> {
-    console.log('[PayoutJob] Starting daily payout creation...');
+    jobLog.info('Starting daily payout creation...');
 
     try {
       const result = await sellerPayoutService.createBatchPayouts(new Date());
 
-      console.log(`[PayoutJob] Daily payouts created:`, {
+      jobLog.info('Daily payouts created', {
         created: result.created,
         skipped: result.skipped,
-        errors: result.errors.length,
+        errorCount: result.errors.length,
       });
 
       // Log to audit trail
@@ -43,7 +42,7 @@ export const payoutJobHandler = {
         },
       });
     } catch (error) {
-      console.error('[PayoutJob] Failed to create daily payouts:', error);
+      jobLog.error('Failed to create daily payouts', error);
 
       await prisma.auditAlert.create({
         data: {
@@ -62,7 +61,7 @@ export const payoutJobHandler = {
    * Runs every Sunday at 5 AM
    */
   async generateWeeklyReport(): Promise<void> {
-    console.log('[PayoutJob] Generating weekly payout report...');
+    jobLog.info('Generating weekly payout report...');
 
     try {
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -107,7 +106,7 @@ export const payoutJobHandler = {
         },
       };
 
-      console.log('[PayoutJob] Weekly report generated:', report);
+      jobLog.info('Weekly report generated', { report });
 
       // Store report as an alert for admin visibility
       await prisma.auditAlert.create({
@@ -122,7 +121,7 @@ export const payoutJobHandler = {
         },
       });
     } catch (error) {
-      console.error('[PayoutJob] Failed to generate weekly report:', error);
+      jobLog.error('Failed to generate weekly report', error);
     }
   },
 
@@ -131,7 +130,7 @@ export const payoutJobHandler = {
    * This is typically triggered after external payment processing
    */
   async processReadyPayouts(): Promise<void> {
-    console.log('[PayoutJob] Processing ready payouts...');
+    jobLog.info('Processing ready payouts...');
 
     try {
       // Find payouts in 'processing' state that have been there for > 24 hours
@@ -146,7 +145,7 @@ export const payoutJobHandler = {
       });
 
       if (staleProcessing.length > 0) {
-        console.log(`[PayoutJob] Found ${staleProcessing.length} stale processing payouts`);
+        jobLog.warn(`Found ${staleProcessing.length} stale processing payouts`, { count: staleProcessing.length });
 
         await prisma.auditAlert.create({
           data: {
@@ -162,7 +161,7 @@ export const payoutJobHandler = {
         });
       }
     } catch (error) {
-      console.error('[PayoutJob] Failed to process ready payouts:', error);
+      jobLog.error('Failed to process ready payouts', error);
     }
   },
 
@@ -170,7 +169,7 @@ export const payoutJobHandler = {
    * Check for failed payouts that can be retried
    */
   async retryFailedPayouts(): Promise<void> {
-    console.log('[PayoutJob] Checking failed payouts for retry...');
+    jobLog.info('Checking failed payouts for retry...');
 
     try {
       // Find payouts that failed in the last 48 hours
@@ -198,7 +197,7 @@ export const payoutJobHandler = {
       });
 
       if (retriable.length > 0) {
-        console.log(`[PayoutJob] Found ${retriable.length} payouts eligible for retry`);
+        jobLog.info(`Found ${retriable.length} payouts eligible for retry`, { count: retriable.length });
 
         // Create alert for admin review
         await prisma.auditAlert.create({
@@ -215,7 +214,7 @@ export const payoutJobHandler = {
         });
       }
     } catch (error) {
-      console.error('[PayoutJob] Failed to check retriable payouts:', error);
+      jobLog.error('Failed to check retriable payouts', error);
     }
   },
 };

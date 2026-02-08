@@ -2,17 +2,15 @@ import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from
 import {
   FileText,
   Package,
-  TrendUp,
   ArrowRight,
-  CurrencyDollar,
-  Warning,
   ArrowClockwise,
   Storefront,
   CheckCircle,
   Wallet,
   ChartLineUp,
 } from 'phosphor-react';
-import { Container, StatCard, SkeletonStatCard, SkeletonBarChart, Skeleton, EmptyState, QuickActionCard } from '../../components';
+import { SkeletonStatCard, SkeletonBarChart, Skeleton, QuickActionCard } from '../../components';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 import {
@@ -70,7 +68,7 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
       const token = await getToken();
       if (!token) return;
       const pulse = await sellerHomeSummaryService.getPulse(token, pulseDays);
-      setSummary(prev => prev ? { ...prev, pulse } : prev);
+      setSummary((prev) => (prev ? { ...prev, pulse } : prev));
     } catch {
       // Keep existing pulse data
     }
@@ -101,23 +99,20 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
     return isRtl ? 'إليك ملخص أعمالك' : "Here's your business at a glance";
   }, [summary, isRtl]);
 
-  const handleNavigate = useCallback((route: string, filter?: string) => {
-    onNavigate(route, filter);
-  }, [onNavigate]);
+  const handleNavigate = useCallback(
+    (route: string, filter?: string) => {
+      onNavigate(route, filter);
+    },
+    [onNavigate],
+  );
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: styles.bgPrimary }}
-    >
+    <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
       {/* Centered Container */}
       <div className="w-full max-w-[1120px] mx-auto px-6 lg:px-8">
         {/* Greeting Header */}
         <header className={`pt-8 pb-4 ${isRtl ? 'text-right' : ''}`}>
-          <h1
-            className="text-2xl font-semibold tracking-tight"
-            style={{ color: styles.textPrimary }}
-          >
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: styles.textPrimary }}>
             {greeting}
           </h1>
           {subtitle && (
@@ -131,9 +126,7 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
         {loadingState === 'loading' && <LoadingSkeleton styles={styles} />}
 
         {/* Error State */}
-        {loadingState === 'error' && (
-          <ErrorState styles={styles} isRtl={isRtl} onRetry={fetchSummary} />
-        )}
+        {loadingState === 'error' && <ErrorState styles={styles} isRtl={isRtl} onRetry={fetchSummary} />}
 
         {/* Empty State - New Seller */}
         {loadingState === 'empty' && summary && (
@@ -150,19 +143,10 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
         {loadingState === 'success' && summary && (
           <div className="space-y-8 pb-12">
             {/* Quick Tools - Soft Buttons */}
-            <QuickToolsSection
-              kpis={summary.kpis}
-              styles={styles}
-              isRtl={isRtl}
-              onNavigate={handleNavigate}
-            />
+            <QuickToolsSection kpis={summary.kpis} styles={styles} isRtl={isRtl} onNavigate={handleNavigate} />
 
             {/* KPI Cards - Polished */}
-            <KPISection
-              kpis={summary.kpis}
-              styles={styles}
-              isRtl={isRtl}
-            />
+            <KPISection kpis={summary.kpis} styles={styles} isRtl={isRtl} />
 
             {/* Business Pulse Chart */}
             <section>
@@ -170,27 +154,20 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
                 <h2 className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                   {isRtl ? 'نبض الأعمال' : 'Business Pulse'}
                 </h2>
-                <TimeRangeToggle
-                  value={pulseDays}
-                  onChange={setPulseDays}
-                  styles={styles}
-                  isRtl={isRtl}
-                />
+                <TimeRangeToggle value={pulseDays} onChange={setPulseDays} styles={styles} isRtl={isRtl} />
               </div>
               <Suspense fallback={<ChartSkeleton styles={styles} />}>
                 <BusinessPulseChart
                   data={summary.pulse}
-                  emptyMessage={isRtl ? 'نشاطك سيظهر هنا عند بدء الطلبات' : 'Your activity will appear here once orders start'}
+                  emptyMessage={
+                    isRtl ? 'نشاطك سيظهر هنا عند بدء الطلبات' : 'Your activity will appear here once orders start'
+                  }
                 />
               </Suspense>
             </section>
 
             {/* Quick Actions - Minimal */}
-            <QuickActionsSection
-              styles={styles}
-              isRtl={isRtl}
-              onNavigate={handleNavigate}
-            />
+            <QuickActionsSection styles={styles} isRtl={isRtl} onNavigate={handleNavigate} />
           </div>
         )}
       </div>
@@ -243,7 +220,10 @@ const QuickToolsSection: React.FC<{
 
   return (
     <section>
-      <h2 className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`} style={{ color: styles.textMuted }}>
+      <h2
+        className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`}
+        style={{ color: styles.textMuted }}
+      >
         {isRtl ? 'أدوات سريعة' : 'Quick tools'}
       </h2>
       <div className={`flex flex-wrap gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
@@ -302,7 +282,7 @@ const TimeRangeToggle: React.FC<{
           backgroundColor: value === days ? styles.bgSecondary : 'transparent',
         }}
       >
-        {days === 7 ? (isRtl ? '7 أيام' : '7d') : (isRtl ? '30 يوم' : '30d')}
+        {days === 7 ? (isRtl ? '7 أيام' : '7d') : isRtl ? '30 يوم' : '30d'}
       </button>
     ))}
   </div>
@@ -318,82 +298,60 @@ const KPISection: React.FC<{
   isRtl: boolean;
 }> = React.memo(({ kpis, styles, isRtl }) => (
   <section>
-    <h2 className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`} style={{ color: styles.textMuted }}>
+    <h2
+      className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`}
+      style={{ color: styles.textMuted }}
+    >
       {isRtl ? 'نظرة عامة' : 'Overview'}
     </h2>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <KPICard
+        id="revenue"
         label={isRtl ? 'الإيرادات' : 'Revenue'}
         value={kpis.revenue > 0 ? `${kpis.currency} ${kpis.revenue.toLocaleString()}` : '--'}
-        change={kpis.revenueChange !== 0 ? `${kpis.revenueChange >= 0 ? '+' : ''}${kpis.revenueChange}%` : undefined}
-        positive={kpis.revenueChange >= 0}
-        styles={styles}
-        isRtl={isRtl}
+        change={kpis.revenueChange !== 0 ? `${kpis.revenueChange >= 0 ? '+' : ''}${kpis.revenueChange}%` : ''}
+        trend={kpis.revenueChange > 0 ? 'up' : kpis.revenueChange < 0 ? 'down' : 'neutral'}
+        icon={<Wallet size={18} />}
+        color="emerald"
       />
       <KPICard
+        id="activeOrders"
         label={isRtl ? 'الطلبات النشطة' : 'Active Orders'}
         value={kpis.activeOrders.toString()}
-        subtitle={kpis.ordersNeedingAction > 0 ? `${kpis.ordersNeedingAction} ${isRtl ? 'بحاجة اهتمام' : 'need action'}` : undefined}
-        styles={styles}
-        isRtl={isRtl}
+        subtitle={
+          kpis.ordersNeedingAction > 0
+            ? `${kpis.ordersNeedingAction} ${isRtl ? 'بحاجة اهتمام' : 'need action'}`
+            : undefined
+        }
+        change=""
+        trend="neutral"
+        icon={<Package size={18} />}
+        color="blue"
       />
       <KPICard
+        id="rfqInbox"
         label={isRtl ? 'صندوق الطلبات' : 'RFQ Inbox'}
         value={kpis.rfqInbox.toString()}
         subtitle={kpis.newRfqs > 0 ? `${kpis.newRfqs} ${isRtl ? 'جديد' : 'new'}` : undefined}
-        styles={styles}
-        isRtl={isRtl}
+        change=""
+        trend="neutral"
+        icon={<FileText size={18} />}
+        color="violet"
       />
       <KPICard
+        id="pendingPayout"
         label={isRtl ? 'أرباح معلقة' : 'Pending Payout'}
         value={kpis.pendingPayout > 0 ? `${kpis.currency} ${kpis.pendingPayout.toLocaleString()}` : '--'}
-        styles={styles}
-        isRtl={isRtl}
+        change=""
+        trend="neutral"
+        icon={<Wallet size={18} />}
+        color="amber"
       />
     </div>
   </section>
 ));
 
 KPISection.displayName = 'KPISection';
-
-// =============================================================================
-// KPI Card - Clean & Subtle
-// =============================================================================
-
-const KPICard: React.FC<{
-  label: string;
-  value: string;
-  change?: string;
-  positive?: boolean;
-  subtitle?: string;
-  styles: Record<string, string>;
-  isRtl: boolean;
-}> = ({ label, value, change, positive, subtitle, styles, isRtl }) => (
-  <div
-    className={`p-4 rounded-lg ${isRtl ? 'text-right' : ''}`}
-    style={{
-      backgroundColor: styles.bgCard,
-      border: `1px solid ${styles.border}`,
-    }}
-  >
-    <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
-      {label}
-    </p>
-    <p className="text-xl font-semibold tracking-tight" style={{ color: styles.textPrimary }}>
-      {value}
-    </p>
-    {change && (
-      <p className="text-xs mt-1" style={{ color: positive ? styles.success : styles.textMuted }}>
-        {change}
-      </p>
-    )}
-    {subtitle && (
-      <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
-        {subtitle}
-      </p>
-    )}
-  </div>
-);
 
 // =============================================================================
 // Quick Actions Section - Smaller & Calmer
@@ -413,7 +371,10 @@ const QuickActionsSection: React.FC<{
 
   return (
     <section>
-      <h2 className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`} style={{ color: styles.textMuted }}>
+      <h2
+        className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`}
+        style={{ color: styles.textMuted }}
+      >
         {isRtl ? 'إجراءات سريعة' : 'Quick actions'}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -460,9 +421,7 @@ const LoadingSkeleton: React.FC<{ styles: Record<string, string> }> = () => (
 // Chart Skeleton - Uses centralized component
 // =============================================================================
 
-const ChartSkeleton: React.FC<{ styles: Record<string, string> }> = () => (
-  <SkeletonBarChart />
-);
+const ChartSkeleton: React.FC<{ styles: Record<string, string> }> = () => <SkeletonBarChart />;
 
 // =============================================================================
 // Error State
@@ -511,10 +470,7 @@ const NewSellerState: React.FC<{
       >
         <Storefront size={28} weight="duotone" style={{ color: styles.textMuted }} />
       </div>
-      <h2
-        className="text-xl font-semibold mb-2"
-        style={{ color: styles.textPrimary }}
-      >
+      <h2 className="text-xl font-semibold mb-2" style={{ color: styles.textPrimary }}>
         {isRtl ? 'مرحباً بك في متجرك' : 'Welcome to your store'}
       </h2>
       <p className="text-sm mb-6" style={{ color: styles.textMuted }}>
@@ -535,22 +491,19 @@ const NewSellerState: React.FC<{
       {/* Onboarding steps */}
       {onboarding && (
         <div className="mt-10 pt-6 border-t text-left" style={{ borderColor: styles.border }}>
-          <p className={`text-xs font-medium uppercase tracking-wider mb-4 ${isRtl ? 'text-right' : ''}`} style={{ color: styles.textMuted }}>
+          <p
+            className={`text-xs font-medium uppercase tracking-wider mb-4 ${isRtl ? 'text-right' : ''}`}
+            style={{ color: styles.textMuted }}
+          >
             {isRtl ? 'خطوات البدء' : 'Getting started'}
           </p>
           <div className="space-y-3">
             {onboarding.steps.map((step) => (
-              <div
-                key={step.id}
-                className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse text-right' : ''}`}
-              >
+              <div key={step.id} className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse text-right' : ''}`}>
                 {step.completed ? (
                   <CheckCircle size={16} weight="fill" style={{ color: styles.success }} />
                 ) : (
-                  <div
-                    className="w-4 h-4 rounded-full border"
-                    style={{ borderColor: styles.border }}
-                  />
+                  <div className="w-4 h-4 rounded-full border" style={{ borderColor: styles.border }} />
                 )}
                 <span
                   className="text-sm flex-1"

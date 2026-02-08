@@ -21,11 +21,7 @@ import {
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { Order } from '../../types/order.types';
-import {
-  DelayReasonCode,
-  TimelineStepKey,
-  DELAY_REASON_CONFIGS,
-} from '../../types/timeline.types';
+import { DelayReasonCode, TimelineStepKey, DELAY_REASON_CONFIGS } from '../../types/timeline.types';
 
 // =============================================================================
 // Types
@@ -118,14 +114,9 @@ const AFFECTED_STEPS: { key: TimelineStepKey; label: string }[] = [
 // Component
 // =============================================================================
 
-export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
-  isOpen,
-  order,
-  onClose,
-  onSubmit,
-}) => {
+export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({ isOpen, order, onClose, onSubmit }) => {
   const { styles, direction } = usePortal();
-  const isRtl = direction === 'rtl';
+  const _isRtl = direction === 'rtl';
 
   const [selectedReason, setSelectedReason] = useState<DelayReasonCode | null>(null);
   const [customReason, setCustomReason] = useState('');
@@ -231,10 +222,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
       />
 
       {/* Modal */}
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        dir={direction}
-      >
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir={direction}>
         <div
           className="w-full max-w-md rounded-xl overflow-hidden shadow-2xl transition-all duration-300"
           style={{
@@ -245,10 +233,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between px-5 py-4 border-b"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: styles.border }}>
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -283,10 +268,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
               <div className="p-4 space-y-4">
                 {Object.entries(DELAY_REASONS_BY_CATEGORY).map(([category, reasons]) => (
                   <div key={category}>
-                    <p
-                      className="text-xs font-medium mb-2 px-1"
-                      style={{ color: styles.textMuted }}
-                    >
+                    <p className="text-xs font-medium mb-2 px-1" style={{ color: styles.textMuted }}>
                       {CATEGORY_LABELS[category]}
                     </p>
                     <div className="space-y-1">
@@ -312,16 +294,10 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
                               <Icon size={18} style={{ color: styles.textSecondary }} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: styles.textPrimary }}
-                              >
+                              <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                                 {reason.label}
                               </p>
-                              <p
-                                className="text-xs truncate"
-                                style={{ color: styles.textMuted }}
-                              >
+                              <p className="text-xs truncate" style={{ color: styles.textMuted }}>
                                 {reason.description}
                               </p>
                             </div>
@@ -349,11 +325,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
                       <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                         {selectedReasonConfig.label}
                       </p>
-                      <button
-                        onClick={handleBack}
-                        className="text-xs"
-                        style={{ color: styles.info }}
-                      >
+                      <button onClick={handleBack} className="text-xs" style={{ color: styles.info }}>
                         Change reason
                       </button>
                     </div>
@@ -363,10 +335,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
                 {/* Custom Reason (for "other") */}
                 {selectedReason === 'other' && (
                   <div>
-                    <label
-                      className="block text-sm font-medium mb-1.5"
-                      style={{ color: styles.textPrimary }}
-                    >
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                       Describe the reason
                     </label>
                     <input
@@ -386,10 +355,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
 
                 {/* Affected Step */}
                 <div>
-                  <label
-                    className="block text-sm font-medium mb-1.5"
-                    style={{ color: styles.textPrimary }}
-                  >
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                     Affected Step
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -413,10 +379,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
 
                 {/* Impact Days */}
                 <div>
-                  <label
-                    className="block text-sm font-medium mb-1.5"
-                    style={{ color: styles.textPrimary }}
-                  >
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                     Expected Delay (days)
                   </label>
                   <div className="flex items-center gap-3">
@@ -427,10 +390,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
                     >
                       -
                     </button>
-                    <div
-                      className="flex-1 text-center py-2 rounded-lg"
-                      style={{ backgroundColor: styles.bgSecondary }}
-                    >
+                    <div className="flex-1 text-center py-2 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                       <span className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
                         {impactDays}
                       </span>
@@ -450,10 +410,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
 
                 {/* Estimated Resolution Date */}
                 <div>
-                  <label
-                    className="block text-sm font-medium mb-1.5"
-                    style={{ color: styles.textPrimary }}
-                  >
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                     <span className="flex items-center gap-2">
                       <CalendarBlank size={14} />
                       Estimated Resolution
@@ -474,10 +431,7 @@ export const DelayReasonModal: React.FC<DelayReasonModalProps> = ({
 
                 {/* Notes */}
                 <div>
-                  <label
-                    className="block text-sm font-medium mb-1.5"
-                    style={{ color: styles.textPrimary }}
-                  >
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                     <span className="flex items-center gap-2">
                       <NotePencil size={14} />
                       Additional Notes

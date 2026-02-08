@@ -1,511 +1,41 @@
 import 'dotenv/config'; // Must be first
-import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { clerkClient } from '@clerk/clerk-sdk-node';
-import authRoutes from './routes/authRoutes';
-import emailRoutes from './routes/emailRoutes';
-import inviteRoutes from './routes/inviteRoutes';
-import teamRoutes from './routes/teamRoutes';
-import boardRoutes from './routes/boardRoutes';
-import roomRoutes from './routes/roomRoutes';
-import vaultRoutes from './routes/vaultRoutes';
-import docRoutes from './routes/docRoutes';
-import talkRoutes from './routes/talkRoutes';
-import assignmentRoutes from './routes/assignmentRoutes';
-import adminRoutes from './routes/adminRoutes';
-import userRoutes from './routes/userRoutes';
-import uploadRoutes from './routes/uploadRoutes';
-import aiRoutes from './routes/aiRoutes';
-import gtdRoutes from './routes/gtdRoutes';
-import notesRoutes from './routes/notesRoutes';
-import mobileRoutes from './routes/mobileRoutes';
-import commentsRoutes from './routes/commentsRoutes';
-import notificationsRoutes from './routes/notificationsRoutes';
-import timeTrackingRoutes from './routes/timeTrackingRoutes';
-import templatesRoutes from './routes/templatesRoutes';
-import portalRoutes from './routes/portalRoutes';
-import itemRoutes from './routes/itemRoutes';
-import orderRoutes from './routes/orderRoutes';
-import dashboardRoutes from './routes/dashboardRoutes';
-import customerRoutes from './routes/customerRoutes';
-import inventoryRoutes from './routes/inventoryRoutes';
-import expenseRoutes from './routes/expenseRoutes';
-import buyerWorkspaceRoutes from './routes/buyerWorkspaceRoutes';
-import sellerSettingsRoutes from './routes/sellerSettingsRoutes';
-import publicSellerRoutes from './routes/publicSellerRoutes';
-import sellerWorkspaceRoutes from './routes/sellerWorkspaceRoutes';
-import buyerPurchasesRoutes from './routes/buyerPurchasesRoutes';
-import invoiceRoutes from './routes/invoiceRoutes';
-import paymentRoutes from './routes/paymentRoutes';
-import disputeRoutes from './routes/disputeRoutes';
-import returnRoutes from './routes/returnRoutes';
-import payoutRoutes from './routes/payoutRoutes';
-import automationRoutes from './routes/automationRoutes';
-import trustRoutes from './routes/trustRoutes';
-import portalAuthRoutes from './routes/portalAuthRoutes';
-import featureGatingRoutes from './routes/featureGatingRoutes';
-import analyticsRoutes from './routes/analyticsRoutes';
-import sellerHomeRoutes from './routes/sellerHomeRoutes';
-import buyerCartRoutes from './routes/buyerCartRoutes';
-import orderTimelineRoutes from './routes/orderTimelineRoutes';
-import permissionRoutes from './routes/permissionRoutes';
-import { initializeScheduler } from './jobs/scheduler';
-import { requireAuth } from './middleware/auth';
 import { validateEnv, isProduction, getEnv } from './utils/env';
+import {
+  isWorkersEnabled,
+  isSchedulerEnabled,
+  isEventOutboxWorkerEnabled,
+  isJobQueueWorkerEnabled,
+  getFeatureFlags,
+} from './config/runtimeFlags';
 import { prisma } from './lib/prisma';
 import { initializeSocket } from './socket/index';
 import { portalNotificationService } from './services/portalNotificationService';
-import { serverLogger, authLogger, dbLogger } from './utils/logger';
-
-// API versioning
-import { apiVersionMiddleware, getApiVersionInfo } from './middleware/apiVersion';
-import v1Routes from './routes/v1';
-
-// Background workers
+import { initializeScheduler } from './jobs/scheduler';
+import { appLogger } from './services/observability';
+import { initializeObservability } from './services/observability';
+import { initBullMQ, shutdownBullMQ } from './lib/bullmq';
+import { initLogTransport, shutdownLogTransport } from './lib/logTransport';
 import { eventOutboxWorker } from './workers/eventOutboxWorker';
 import { jobQueueWorker } from './workers/jobQueueWorker';
-
-// Observability imports
-import { initializeObservability, appLogger } from './services/observability';
-import { observabilityMiddleware, errorTrackingMiddleware } from './middleware/observabilityMiddleware';
-import monitoringRoutes from './routes/monitoringRoutes';
+import { createApp } from './app';
 
 // Validate environment variables at startup
 validateEnv();
 
-const app = express();
+const app = createApp();
 const PORT = parseInt(getEnv('PORT', '3001'), 10);
 
 // Create HTTP server for Socket.io
 const httpServer = createServer(app);
-
-// Security middleware
-app.use(helmet({
-    contentSecurityPolicy: isProduction ? undefined : false, // Disable CSP in dev for easier debugging
-}));
-
-// Rate limiting - 100 requests per minute per IP
-const limiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 100,
-    message: { error: 'Too many requests, please try again later' },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-app.use(limiter);
-
-// CORS configuration
-const allowedOrigins = isProduction
-    ? [
-        getEnv('CORS_ORIGIN', 'https://nabdchain.com'),
-        'https://nabdchain.com',
-        'https://www.nabdchain.com',
-        'https://app.nabdchain.com',
-        'https://mobile.nabdchain.com',
-        'https://nabdchain.vercel.app'
-    ]
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
-
-const corsOptions: cors.CorsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin (mobile apps, curl, etc.)
-        if (!origin) {
-            return callback(null, true);
-        }
-        // In development, allow ALL localhost origins
-        if (!isProduction) {
-            return callback(null, true);
-        }
-        // Check if origin exactly matches an allowed origin (secure matching)
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'X-User-Id', 'Idempotency-Key'],
-};
-app.use(cors(corsOptions));
-
-// Observability middleware (must be early in the chain)
-app.use(observabilityMiddleware({
-    excludePaths: ['/health', '/health/live', '/health/ready', '/metrics'],
-    slowRequestThresholdMs: 1000,
-}));
-
-// Monitoring routes (no auth required)
-app.use('/', monitoringRoutes);
-
-app.use(express.json({ limit: '10mb' })); // Reduced from 50mb for security
-
-// Auth Middleware & User Sync
-app.use(async (req: any, res, next) => {
-    // Skip auth for public routes if any (none for now)
-    if (req.method === 'OPTIONS') return next();
-
-    if (req.path === '/health' ||
-        req.path.startsWith('/api/auth/google/callback') ||
-        req.path.startsWith('/api/auth/outlook/callback') ||
-        req.path.startsWith('/api/auth/portal/') ||
-        req.path.startsWith('/api/gating/') ||
-        req.path.startsWith('/api/public/')) {
-        return next();
-    }
-
-    // Run Clerk Auth
-    requireAuth(req, res as any, async (err: any) => {
-        if (err) {
-            // console.error('[AuthMiddleware] Error:', err.message);
-            return res.status(401).json({ error: 'Unauthenticated' });
-        }
-
-        // Sync User to DB with real email from Clerk
-        if (req.auth?.userId) {
-            try {
-                // Check if user exists with placeholder email and needs update
-                const existingUser = await prisma.user.findUnique({
-                    where: { id: req.auth.userId }
-                });
-
-                if (!existingUser) {
-                    // New user - fetch email from Clerk
-                    try {
-                        const clerkUser = await clerkClient.users.getUser(req.auth.userId);
-                        const email = clerkUser.emailAddresses?.[0]?.emailAddress || `${req.auth.userId}@placeholder.com`;
-                        const name = clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim() : null;
-
-                        await prisma.user.create({
-                            data: {
-                                id: req.auth.userId,
-                                email: email.toLowerCase(),
-                                name,
-                                avatarUrl: clerkUser.imageUrl || null,
-                                lastActiveAt: new Date()
-                            }
-                        });
-                    } catch (clerkErr) {
-                        // Fallback if Clerk fetch fails
-                        await prisma.user.create({
-                            data: {
-                                id: req.auth.userId,
-                                email: `${req.auth.userId}@placeholder.com`,
-                                lastActiveAt: new Date()
-                            }
-                        });
-                    }
-                } else if (existingUser.email.includes('@placeholder.com')) {
-                    // User exists with placeholder - update with real email
-                    try {
-                        const clerkUser = await clerkClient.users.getUser(req.auth.userId);
-                        const email = clerkUser.emailAddresses?.[0]?.emailAddress;
-                        if (email) {
-                            await prisma.user.update({
-                                where: { id: req.auth.userId },
-                                data: {
-                                    email: email.toLowerCase(),
-                                    name: clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim() : existingUser.name,
-                                    avatarUrl: clerkUser.imageUrl || existingUser.avatarUrl
-                                }
-                            });
-                        }
-                    } catch (clerkErr) {
-                        // Ignore - keep placeholder for now
-                    }
-                } else {
-                    // Update lastActiveAt for existing users (track online status)
-                    await prisma.user.update({
-                        where: { id: req.auth.userId },
-                        data: { lastActiveAt: new Date() }
-                    });
-                }
-            } catch (e) {
-                dbLogger.error('User Sync Error', e);
-            }
-        }
-        next();
-    });
-});
-
-// --- HELPERS ---
-
-function handleError(res: express.Response, error: unknown) {
-    serverLogger.error('Request error:', error);
-    const message = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: message });
-}
-
-// --- API Versioning ---
-// Apply version middleware to all /api routes
-app.use('/api', apiVersionMiddleware());
-
-// Version info endpoint
-app.get('/api/version', getApiVersionInfo);
-
-// Mount versioned routes (explicit v1 prefix)
-app.use('/api/v1', v1Routes);
-
-// --- Legacy routes (backward compatibility, aliased to v1) ---
-app.use('/api/auth', authRoutes);
-app.use('/api/auth/portal', portalAuthRoutes);
-app.use('/api/email', emailRoutes);
-app.use('/api/invite', inviteRoutes);
-app.use('/api/team', teamRoutes);
-app.use('/api/boards', boardRoutes);
-app.use('/api', roomRoutes);  // Handles /api/rooms, /api/rows, /api/columns
-app.use('/api/vault', vaultRoutes);
-app.use('/api/docs', docRoutes);
-app.use('/api/talk', talkRoutes);
-app.use('/api/assignments', assignmentRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/gtd', gtdRoutes);
-app.use('/api/notes', notesRoutes);
-app.use('/api/mobile', mobileRoutes);
-app.use('/api/comments', commentsRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/time-entries', timeTrackingRoutes);
-app.use('/api/templates', templatesRoutes);
-app.use('/api/portal', portalRoutes);
-app.use('/api/items', itemRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/orders', orderTimelineRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/buyer', buyerWorkspaceRoutes);
-app.use('/api/seller', sellerSettingsRoutes);
-app.use('/api/seller', sellerWorkspaceRoutes);
-app.use('/api/seller', sellerHomeRoutes);
-app.use('/api/public', publicSellerRoutes);
-app.use('/api/purchases', buyerPurchasesRoutes);
-app.use('/api/buyer-cart', buyerCartRoutes);
-app.use('/api/invoices', invoiceRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/disputes', disputeRoutes);
-app.use('/api/returns', returnRoutes);
-app.use('/api/payouts', payoutRoutes);
-app.use('/api/automation', automationRoutes);
-app.use('/api/trust', trustRoutes);
-app.use('/api/gating', featureGatingRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/portal/permissions', permissionRoutes);
-
-// --- Workspace Routes ---
-app.get('/api/workspaces', requireAuth, async (req: any, res) => {
-    try {
-        const userId = req.auth.userId;
-
-        // Find all workspaces where user is owner or member
-        const workspaces = await prisma.workspace.findMany({
-            where: {
-                OR: [
-                    { ownerId: userId },
-                    { users: { some: { id: userId } } }
-                ]
-            }
-        });
-
-        // If user has no workspace, create one automatically
-        if (workspaces.length === 0) {
-            const newWorkspace = await prisma.workspace.create({
-                data: {
-                    name: `Main Workspace`,
-                    icon: 'Briefcase',
-                    color: 'from-blue-500 to-indigo-600',
-                    ownerId: userId,
-                    users: { connect: { id: userId } }
-                }
-            });
-
-            // Maintain legacy workspaceId on User for now as "current"
-            await prisma.user.update({
-                where: { id: userId },
-                data: { workspaceId: newWorkspace.id }
-            });
-
-            return res.json([newWorkspace]);
-        }
-
-        res.json(workspaces);
-    } catch (e) { handleError(res, e); }
-});
-
-app.post('/api/workspaces', requireAuth, async (req: any, res) => {
-    try {
-        const userId = req.auth.userId;
-        const { name, icon, color } = req.body;
-        serverLogger.info(`Creating workspace for user: ${userId}`, { name, icon, color });
-
-        // Ensure user exists first (redundant check but good for debug)
-        const userExists = await prisma.user.findUnique({ where: { id: userId } });
-        if (!userExists) {
-            dbLogger.error(`User ${userId} not found in DB!`);
-            // Auto-create if missing (failsafe for dev mode inconsistencies)
-            await prisma.user.create({
-                data: {
-                    id: userId,
-                    email: userId === 'user_developer_admin' ? 'master@nabdchain.com' : `${userId}@placeholder.com`,
-                    name: 'Recovered User'
-                }
-            });
-        }
-
-        const newWorkspace = await prisma.workspace.create({
-            data: {
-                name: name || 'New Workspace',
-                icon: icon || 'Briefcase',
-                color: color || 'from-blue-500 to-indigo-600',
-                ownerId: userId,
-                users: { connect: { id: userId } }
-            }
-        });
-
-        // Log Activity
-        await prisma.activity.create({
-            data: {
-                userId,
-                workspaceId: newWorkspace.id,
-                type: 'WORKSPACE_CREATED',
-                content: `Created workspace: ${newWorkspace.name}`,
-            }
-        });
-
-        serverLogger.info(`Workspace created: ${newWorkspace.id}`);
-
-        // Update user's active workspace
-        await prisma.user.update({
-            where: { id: userId },
-            data: { workspaceId: newWorkspace.id }
-        });
-
-        res.json(newWorkspace);
-    } catch (e) {
-        serverLogger.error('Workspace creation failed:', e);
-        handleError(res, e);
-    }
-});
-
-app.patch('/api/workspaces/:id', requireAuth, async (req: any, res) => {
-    try {
-        const userId = req.auth.userId;
-        const { id } = req.params;
-        const { name, icon } = req.body;
-
-        // Check ownership or membership? For now, only owner can edit
-        const workspace = await prisma.workspace.findUnique({ where: { id } });
-        if (!workspace || workspace.ownerId !== userId) {
-            return res.status(403).json({ error: "Forbidden" });
-        }
-
-        const updated = await prisma.workspace.update({
-            where: { id },
-            data: { name, icon }
-        });
-
-        res.json(updated);
-    } catch (e) { handleError(res, e); }
-});
-
-app.delete('/api/workspaces/:id', requireAuth, async (req: any, res) => {
-    try {
-        const userId = req.auth.userId;
-        const { id } = req.params;
-
-        // Only owner can delete
-        const workspace = await prisma.workspace.findUnique({ where: { id } });
-        if (!workspace || workspace.ownerId !== userId) {
-            return res.status(403).json({ error: "Forbidden" });
-        }
-
-        // Log Activity
-        await prisma.activity.create({
-            data: {
-                userId,
-                workspaceId: id, // Will be SetNull on delete, preserving the log properly
-                type: 'WORKSPACE_DELETED',
-                content: `Deleted workspace: ${workspace.name}`,
-            }
-        });
-
-        await prisma.workspace.delete({ where: { id } });
-
-        // If this was the user's active workspace, clear it or pick another
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (user?.workspaceId === id) {
-            const nextWorkspace = await prisma.workspace.findFirst({
-                where: { OR: [{ ownerId: userId }, { users: { some: { id: userId } } }] }
-            });
-            await prisma.user.update({
-                where: { id: userId },
-                data: { workspaceId: nextWorkspace?.id || null }
-            });
-        }
-
-        res.json({ success: true });
-    } catch (e) { handleError(res, e); }
-});
-// --- Activity Routes ---
-app.get('/api/activities', requireAuth, async (req: any, res) => {
-    try {
-        const userId = req.auth.userId;
-        const { workspaceId } = req.query;
-
-        let where: any = { userId };
-        if (workspaceId) {
-            // Include activities for this workspace OR activities without a workspace (legacy data)
-            where = {
-                userId,
-                OR: [
-                    { workspaceId: workspaceId as string },
-                    { workspaceId: null }
-                ]
-            };
-        }
-
-        const activities = await prisma.activity.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            take: 20
-        });
-        res.json(activities);
-    } catch (e) { handleError(res, e); }
-});
-
-app.post('/api/activities', requireAuth, async (req: any, res) => {
-    try {
-        const userId = req.auth.userId;
-        const { type, content, metadata, workspaceId, boardId } = req.body;
-        const activity = await prisma.activity.create({
-            data: {
-                userId,
-                workspaceId,
-                boardId,
-                type,
-                content,
-                metadata: metadata ? JSON.stringify(metadata) : null
-            }
-        });
-        res.json(activity);
-    } catch (e) { handleError(res, e); }
-});
-
-// Prefixed routes above replace these legacy ones.
-// All board/card/thread/room logic should stay in routes/*.ts files going forward.
 
 // Socket.io WebSocket server
 const io = new SocketIOServer(httpServer, {
     cors: {
         origin: isProduction
             ? ['https://nabdchain.com', 'https://www.nabdchain.com', 'https://app.nabdchain.com', 'https://mobile.nabdchain.com']
-            : true, // Allow all origins in development
+            : true,
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -517,27 +47,53 @@ initializeSocket(io);
 // Initialize portal notification service with Socket.IO
 portalNotificationService.initialize(io);
 
-// Initialize background job scheduler (cron-based)
-initializeScheduler();
+// Log feature flags
+const featureFlags = getFeatureFlags();
+appLogger.info('Feature flags:', featureFlags);
 
-// Initialize background workers (database-backed queues)
-eventOutboxWorker.start();
-jobQueueWorker.start();
-appLogger.info('Background workers initialized (EventOutbox, JobQueue)');
+// Initialize background job scheduler (cron-based) - only if enabled
+if (isSchedulerEnabled()) {
+    initializeScheduler();
+    appLogger.info('Background job scheduler initialized');
+} else {
+    appLogger.info('Background job scheduler DISABLED (set ENABLE_SCHEDULER=true to enable)');
+}
+
+// Initialize background workers (database-backed queues) - only if enabled
+if (isWorkersEnabled()) {
+    if (isEventOutboxWorkerEnabled()) {
+        eventOutboxWorker.start();
+        appLogger.info('EventOutbox worker started');
+    } else {
+        appLogger.info('EventOutbox worker DISABLED (set ENABLE_EVENT_OUTBOX_WORKER=true to enable)');
+    }
+
+    if (isJobQueueWorkerEnabled()) {
+        jobQueueWorker.start();
+        appLogger.info('JobQueue worker started');
+    } else {
+        appLogger.info('JobQueue worker DISABLED (set ENABLE_JOB_QUEUE_WORKER=true to enable)');
+    }
+} else {
+    appLogger.info('Background workers DISABLED (set ENABLE_WORKERS=true to enable)');
+}
 
 // Initialize observability services
 initializeObservability(prisma);
 
-// Error tracking middleware (must be after all routes)
-app.use(errorTrackingMiddleware());
+// Initialize BullMQ (Redis job queue)
+initBullMQ();
+
+// Initialize log transport (Datadog/ELK/webhook)
+initLogTransport();
 
 httpServer.listen(PORT, () => {
     appLogger.info(`NABD API running on port ${PORT}`, {
         environment: isProduction ? 'production' : 'development',
         nodeVersion: process.version,
+        featureFlags,
     });
     appLogger.info('WebSocket server enabled');
-    appLogger.info('Background job scheduler initialized');
     appLogger.info('Observability services initialized');
 });
 
@@ -545,23 +101,35 @@ httpServer.listen(PORT, () => {
 const gracefulShutdown = async (signal: string) => {
     appLogger.info(`Received ${signal}, starting graceful shutdown...`);
 
-    // Stop accepting new connections
     httpServer.close(() => {
         appLogger.info('HTTP server closed');
     });
 
-    // Stop background workers
-    try {
-        await Promise.all([
-            eventOutboxWorker.stop(),
-            jobQueueWorker.stop(),
-        ]);
-        appLogger.info('Background workers stopped');
-    } catch (error) {
-        appLogger.error('Error stopping workers:', error);
+    if (isWorkersEnabled()) {
+        try {
+            const stopPromises: Promise<void>[] = [];
+            if (isJobQueueWorkerEnabled()) {
+                stopPromises.push(jobQueueWorker.stop());
+            }
+            if (isEventOutboxWorkerEnabled()) {
+                stopPromises.push(eventOutboxWorker.stop());
+            }
+            if (stopPromises.length > 0) {
+                await Promise.all(stopPromises);
+                appLogger.info('Background workers stopped');
+            }
+        } catch (error) {
+            appLogger.error('Error stopping workers:', error);
+        }
     }
 
-    // Disconnect from database
+    try {
+        await shutdownBullMQ();
+        await shutdownLogTransport();
+    } catch (error) {
+        appLogger.error('Error stopping BullMQ/log transport:', error);
+    }
+
     try {
         await prisma.$disconnect();
         appLogger.info('Database connection closed');
@@ -574,4 +142,3 @@ const gracefulShutdown = async (signal: string) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-

@@ -15,9 +15,9 @@ export type PriceTrend = 'up' | 'down' | 'stable';
 
 export interface PurchaseFilters {
   status?: string;
-  healthStatus?: OrderHealthStatus;
-  urgency?: UrgencyLevel;
-  savings?: SavingsCategory;
+  healthStatus?: OrderHealthStatus | 'all';
+  urgency?: UrgencyLevel | 'all';
+  savings?: SavingsCategory | 'all';
   search?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -372,7 +372,7 @@ export async function calculateSupplierMetrics(buyerId: string, sellerId: string
     totalOrders: orders.length,
     issueCount,
     avgDeliveryDays: avgDeliveryDays ? Math.round(avgDeliveryDays * 10) / 10 : null,
-    reliabilityTier: 'average' as const,
+    reliabilityTier: 'average' as 'excellent' | 'good' | 'average' | 'poor',
   };
 
   metrics.reliabilityTier = getReliabilityTier({

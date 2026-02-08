@@ -1,76 +1,417 @@
 import React, { useState } from 'react';
-import { X, MagnifyingGlass as Search } from 'phosphor-react';
+import { MagnifyingGlass as Search } from 'phosphor-react';
 
 interface IconPickerProps {
-    onSelect: (icon: string) => void;
-    onClose: () => void;
+  onSelect: (icon: string) => void;
+  onClose: () => void;
 }
 
 const EMOJI_CATEGORIES = [
-    {
-        name: 'Recent',
-        emojis: ['📄', '📝', '✅', '📅', '🚀', '💡', '🎨', '🔥']
-    },
-    {
-        name: 'Documents',
-        emojis: ['📄', '📃', '📑', '🧾', '📊', '📈', '📉', '📋', '📁', '📂', '🗂️', '🗞️', '📰', '📓', '📕', '📗', '📘', '📙', '📚', '📖', '🔖', '🔗', '📎', '📌', '📍']
-    },
-    {
-        name: 'Work',
-        emojis: ['💼', '👔', '🧑‍💻', '💻', '🖥️', '🖨️', '🖱️', '⌨️', '📱', '📞', '📠', '🔋', '🔌', '📡', '💡', '🕯️', '🔦', '🏮', '🪔', '💸', '💵', '💴', '💶', '💷', '💰', '💳', '💎', '⚖️', '🔨', '🛠️', '⛏️', '🔩', '⚙️', '⛓️', '🔫', '💣', '🔪', '🗡️', '⚔️', '🛡️', '🚬', '⚰️', '⚱️', '🏺']
-    },
-    {
-        name: 'Faces',
-        emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '☺️', 'bf', '😚', 'codec', '🤪', '😜', '😝', '😛', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', 'smirk', '😒', 'roll', 'grim', 'lie', 'relieved', 'pensive', 'sleepy', 'drool', 'sleeping', 'mask', 'sick', 'hurt', 'nauseated', 'vomit', 'sneeze', 'hot', 'cold', 'woozy', 'dizzy', 'explode', 'cowboy', 'party', 'sunglasses', 'nerd', 'monocle', 'confused', 'worried', 'frown', 'open_mouth', 'hushed', 'astonished', 'flushed', 'pleading', 'frowning', 'anguished', 'fearful', 'cold_sweat', 'disappointed_relieved', 'cry', 'sob', 'scream', 'confounded', 'persevere', 'disappointed', 'sweat', 'weary', 'tired', 'yawn', 'triumph', 'rage', 'angry', 'cursing', 'smiling_imp', 'imp', 'skull', 'skull_crossbones', 'poop', 'clown', 'ogre', 'goblin', 'ghost', 'alien', 'space_invader', 'robot', 'smiley_cat', 'smile_cat', 'joy_cat', 'heart_eyes_cat', 'smirk_cat', 'kissing_cat', 'scream_cat', 'crying_cat', 'pouting_cat', 'see_no_evil', 'hear_no_evil', 'speak_no_evil', 'wave', 'raised_back_of_hand', 'raised_hand', 'vulcan_salute', 'ok_hand', 'pinched_fingers', 'pinching_hand', 'crossed_fingers', 'love_you_gesture', 'rock_on', 'call_me', 'point_left', 'point_right', 'point_up_2', 'middle_finger', 'point_down', 'point_up', 'thumbs_up', 'thumbs_down', 'fist', 'fist_oncoming', 'fist_left', 'fist_right', 'clap', 'raised_hands', 'open_hands', 'palms_up_together', 'handshake', 'pray', 'writing_hand', 'nail_care', 'selfie', 'muscle', 'mechanical_arm', 'mechanical_leg', 'leg', 'foot', 'ear', 'ear_with_hearing_aid', 'nose', 'brain', 'tooth', 'bone', 'eyes', 'eye', 'tongue', 'mouth', 'lips', 'baby', 'child', 'boy', 'girl', 'person', 'person_blond', 'man', 'woman', 'older_person', 'older_man', 'older_woman', 'frown_person', 'pouting_face', 'no_good', 'ok_woman', 'information_desk_person', 'raising_hand', 'bow', 'face_palm', 'shrug', 'doctor', 'student', 'teacher', 'judge', 'farmer', 'cook', 'mechanic', 'factory_worker', 'office_worker', 'scientist', 'technologist', 'singer', 'artist', 'pilot', 'astronaut', 'firefighter', 'police_officer', 'detective', 'guard', 'ninja', 'construction_worker', 'prince', 'princess', 'person_with_turban', 'man_with_gua_pi_mao', 'person_with_headscarf', 'person_in_tuxedo', 'person_with_veil', 'pregnant_woman', 'breast_feeding', 'angel', 'santa', 'mrs_claus', 'superhero', 'supervillain', 'mage', 'fairy', 'vampire', 'mermaid', 'merman', 'elf', 'genie', 'zombie', 'massage', 'haircut', 'walking', 'standing', 'kneeling', 'person_with_probing_cane', 'person_in_motorized_wheelchair', 'person_in_manual_wheelchair', 'runner', 'woman_dancing', 'man_dancing', 'business_suit_levitating', 'dancers', 'sauna', 'climbing', 'fencing', 'horse_racing', 'skier', 'snowboarder', 'golfing', 'surfer', 'rowboat', 'swimmer', 'bouncing_ball_person', 'weight_lifting', 'bicyclist', 'mountain_bicyclist', 'cartwheeling', 'wrestling', 'water_polo', 'handball', 'juggling', 'lotus_position', 'bath', 'bed', 'two_women_holding_hands', 'two_men_holding_hands', 'couple', 'family', 'speaking_head', 'silhouette', 'busts_in_silhouette', 'footprints']
-    }
+  {
+    name: 'Recent',
+    emojis: ['📄', '📝', '✅', '📅', '🚀', '💡', '🎨', '🔥'],
+  },
+  {
+    name: 'Documents',
+    emojis: [
+      '📄',
+      '📃',
+      '📑',
+      '🧾',
+      '📊',
+      '📈',
+      '📉',
+      '📋',
+      '📁',
+      '📂',
+      '🗂️',
+      '🗞️',
+      '📰',
+      '📓',
+      '📕',
+      '📗',
+      '📘',
+      '📙',
+      '📚',
+      '📖',
+      '🔖',
+      '🔗',
+      '📎',
+      '📌',
+      '📍',
+    ],
+  },
+  {
+    name: 'Work',
+    emojis: [
+      '💼',
+      '👔',
+      '🧑‍💻',
+      '💻',
+      '🖥️',
+      '🖨️',
+      '🖱️',
+      '⌨️',
+      '📱',
+      '📞',
+      '📠',
+      '🔋',
+      '🔌',
+      '📡',
+      '💡',
+      '🕯️',
+      '🔦',
+      '🏮',
+      '🪔',
+      '💸',
+      '💵',
+      '💴',
+      '💶',
+      '💷',
+      '💰',
+      '💳',
+      '💎',
+      '⚖️',
+      '🔨',
+      '🛠️',
+      '⛏️',
+      '🔩',
+      '⚙️',
+      '⛓️',
+      '🔫',
+      '💣',
+      '🔪',
+      '🗡️',
+      '⚔️',
+      '🛡️',
+      '🚬',
+      '⚰️',
+      '⚱️',
+      '🏺',
+    ],
+  },
+  {
+    name: 'Faces',
+    emojis: [
+      '😀',
+      '😃',
+      '😄',
+      '😁',
+      '😆',
+      '😅',
+      '🤣',
+      '😂',
+      '🙂',
+      '🙃',
+      '😉',
+      '😊',
+      '😇',
+      '🥰',
+      '😍',
+      '🤩',
+      '😘',
+      '😗',
+      '☺️',
+      'bf',
+      '😚',
+      'codec',
+      '🤪',
+      '😜',
+      '😝',
+      '😛',
+      '🤑',
+      '🤗',
+      '🤭',
+      '🤫',
+      '🤔',
+      '🤐',
+      '🤨',
+      '😐',
+      '😑',
+      '😶',
+      'smirk',
+      '😒',
+      'roll',
+      'grim',
+      'lie',
+      'relieved',
+      'pensive',
+      'sleepy',
+      'drool',
+      'sleeping',
+      'mask',
+      'sick',
+      'hurt',
+      'nauseated',
+      'vomit',
+      'sneeze',
+      'hot',
+      'cold',
+      'woozy',
+      'dizzy',
+      'explode',
+      'cowboy',
+      'party',
+      'sunglasses',
+      'nerd',
+      'monocle',
+      'confused',
+      'worried',
+      'frown',
+      'open_mouth',
+      'hushed',
+      'astonished',
+      'flushed',
+      'pleading',
+      'frowning',
+      'anguished',
+      'fearful',
+      'cold_sweat',
+      'disappointed_relieved',
+      'cry',
+      'sob',
+      'scream',
+      'confounded',
+      'persevere',
+      'disappointed',
+      'sweat',
+      'weary',
+      'tired',
+      'yawn',
+      'triumph',
+      'rage',
+      'angry',
+      'cursing',
+      'smiling_imp',
+      'imp',
+      'skull',
+      'skull_crossbones',
+      'poop',
+      'clown',
+      'ogre',
+      'goblin',
+      'ghost',
+      'alien',
+      'space_invader',
+      'robot',
+      'smiley_cat',
+      'smile_cat',
+      'joy_cat',
+      'heart_eyes_cat',
+      'smirk_cat',
+      'kissing_cat',
+      'scream_cat',
+      'crying_cat',
+      'pouting_cat',
+      'see_no_evil',
+      'hear_no_evil',
+      'speak_no_evil',
+      'wave',
+      'raised_back_of_hand',
+      'raised_hand',
+      'vulcan_salute',
+      'ok_hand',
+      'pinched_fingers',
+      'pinching_hand',
+      'crossed_fingers',
+      'love_you_gesture',
+      'rock_on',
+      'call_me',
+      'point_left',
+      'point_right',
+      'point_up_2',
+      'middle_finger',
+      'point_down',
+      'point_up',
+      'thumbs_up',
+      'thumbs_down',
+      'fist',
+      'fist_oncoming',
+      'fist_left',
+      'fist_right',
+      'clap',
+      'raised_hands',
+      'open_hands',
+      'palms_up_together',
+      'handshake',
+      'pray',
+      'writing_hand',
+      'nail_care',
+      'selfie',
+      'muscle',
+      'mechanical_arm',
+      'mechanical_leg',
+      'leg',
+      'foot',
+      'ear',
+      'ear_with_hearing_aid',
+      'nose',
+      'brain',
+      'tooth',
+      'bone',
+      'eyes',
+      'eye',
+      'tongue',
+      'mouth',
+      'lips',
+      'baby',
+      'child',
+      'boy',
+      'girl',
+      'person',
+      'person_blond',
+      'man',
+      'woman',
+      'older_person',
+      'older_man',
+      'older_woman',
+      'frown_person',
+      'pouting_face',
+      'no_good',
+      'ok_woman',
+      'information_desk_person',
+      'raising_hand',
+      'bow',
+      'face_palm',
+      'shrug',
+      'doctor',
+      'student',
+      'teacher',
+      'judge',
+      'farmer',
+      'cook',
+      'mechanic',
+      'factory_worker',
+      'office_worker',
+      'scientist',
+      'technologist',
+      'singer',
+      'artist',
+      'pilot',
+      'astronaut',
+      'firefighter',
+      'police_officer',
+      'detective',
+      'guard',
+      'ninja',
+      'construction_worker',
+      'prince',
+      'princess',
+      'person_with_turban',
+      'man_with_gua_pi_mao',
+      'person_with_headscarf',
+      'person_in_tuxedo',
+      'person_with_veil',
+      'pregnant_woman',
+      'breast_feeding',
+      'angel',
+      'santa',
+      'mrs_claus',
+      'superhero',
+      'supervillain',
+      'mage',
+      'fairy',
+      'vampire',
+      'mermaid',
+      'merman',
+      'elf',
+      'genie',
+      'zombie',
+      'massage',
+      'haircut',
+      'walking',
+      'standing',
+      'kneeling',
+      'person_with_probing_cane',
+      'person_in_motorized_wheelchair',
+      'person_in_manual_wheelchair',
+      'runner',
+      'woman_dancing',
+      'man_dancing',
+      'business_suit_levitating',
+      'dancers',
+      'sauna',
+      'climbing',
+      'fencing',
+      'horse_racing',
+      'skier',
+      'snowboarder',
+      'golfing',
+      'surfer',
+      'rowboat',
+      'swimmer',
+      'bouncing_ball_person',
+      'weight_lifting',
+      'bicyclist',
+      'mountain_bicyclist',
+      'cartwheeling',
+      'wrestling',
+      'water_polo',
+      'handball',
+      'juggling',
+      'lotus_position',
+      'bath',
+      'bed',
+      'two_women_holding_hands',
+      'two_men_holding_hands',
+      'couple',
+      'family',
+      'speaking_head',
+      'silhouette',
+      'busts_in_silhouette',
+      'footprints',
+    ],
+  },
 ];
 
-export const IconPicker: React.FC<IconPickerProps> = ({ onSelect, onClose }) => {
-    const [search, setSearch] = useState('');
+export const IconPicker: React.FC<IconPickerProps> = ({ onSelect, _onClose }) => {
+  const [search, setSearch] = useState('');
 
-    const filteredCategories = EMOJI_CATEGORIES.map(cat => ({
-        ...cat,
-        emojis: cat.emojis.filter(emoji => emoji.includes(search) || cat.name.toLowerCase().includes(search.toLowerCase()))
-    })).filter(cat => cat.emojis.length > 0);
+  const filteredCategories = EMOJI_CATEGORIES.map((cat) => ({
+    ...cat,
+    emojis: cat.emojis.filter(
+      (emoji) => emoji.includes(search) || cat.name.toLowerCase().includes(search.toLowerCase()),
+    ),
+  })).filter((cat) => cat.emojis.length > 0);
 
-    return (
-        <div className="absolute left-0 top-full mt-2 w-[350px] bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden z-[50] flex flex-col h-[400px] animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="p-3 border-b border-stone-100 dark:border-stone-800">
-                <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" size={14} />
-                    <input
-                        type="text"
-                        placeholder="Search icons..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-800 rounded-md outline-none border-none focus:ring-2 ring-blue-500/20"
-                        autoFocus
-                    />
-                </div>
-            </div>
-
-            {/* Emoji Grid */}
-            <div className="flex-1 overflow-y-auto p-2">
-                {filteredCategories.map(category => (
-                    <div key={category.name} className="mb-4">
-                        <div className="px-2 mb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">
-                            {category.name}
-                        </div>
-                        <div className="grid grid-cols-8 gap-1">
-                            {category.emojis.map(emoji => (
-                                <button
-                                    key={emoji}
-                                    onClick={() => onSelect(emoji)}
-                                    className="aspect-square flex items-center justify-center text-xl hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
+  return (
+    <div className="absolute left-0 top-full mt-2 w-[350px] bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden z-[50] flex flex-col h-[400px] animate-in fade-in zoom-in-95 duration-200">
+      {/* Header */}
+      <div className="p-3 border-b border-stone-100 dark:border-stone-800">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" size={14} />
+          <input
+            type="text"
+            placeholder="Search icons..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-800 rounded-md outline-none border-none focus:ring-2 ring-blue-500/20"
+            autoFocus
+          />
         </div>
-    );
+      </div>
+
+      {/* Emoji Grid */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {filteredCategories.map((category) => (
+          <div key={category.name} className="mb-4">
+            <div className="px-2 mb-2 text-xs font-semibold text-stone-400 uppercase tracking-wider">
+              {category.name}
+            </div>
+            <div className="grid grid-cols-8 gap-1">
+              {category.emojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => onSelect(emoji)}
+                  className="aspect-square flex items-center justify-center text-xl hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };

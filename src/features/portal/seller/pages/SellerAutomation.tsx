@@ -56,11 +56,16 @@ const formatRelativeTime = (dateStr: string): string => {
 
 const getRuleTypeIcon = (type: RuleType) => {
   switch (type) {
-    case 'rfq_rule': return ChatDots;
-    case 'order_rule': return ShoppingCart;
-    case 'inventory_rule': return Package;
-    case 'dispute_rule': return ListChecks;
-    default: return Lightning;
+    case 'rfq_rule':
+      return ChatDots;
+    case 'order_rule':
+      return ShoppingCart;
+    case 'inventory_rule':
+      return Package;
+    case 'dispute_rule':
+      return ListChecks;
+    default:
+      return Lightning;
   }
 };
 
@@ -74,7 +79,9 @@ const getTriggerDescription = (triggerType: string): string => {
     dispute_opened: 'When a dispute is opened',
     order_status_change: 'When order status changes',
   };
-  return descriptions[triggerType] || TRIGGER_TYPE_LABELS[triggerType as keyof typeof TRIGGER_TYPE_LABELS] || triggerType;
+  return (
+    descriptions[triggerType] || TRIGGER_TYPE_LABELS[triggerType as keyof typeof TRIGGER_TYPE_LABELS] || triggerType
+  );
 };
 
 // Human-friendly action descriptions
@@ -118,7 +125,7 @@ const exampleAutomations = [
 // Component
 // =============================================================================
 
-export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }) => {
+export const SellerAutomation: React.FC<SellerAutomationProps> = ({ _onNavigate }) => {
   const { getToken } = useAuth();
   const { styles, direction } = usePortal();
   const isRtl = direction === 'rtl';
@@ -195,7 +202,7 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
     }
   };
 
-  const activeRulesCount = rules.filter(r => r.isEnabled).length;
+  const activeRulesCount = rules.filter((r) => r.isEnabled).length;
 
   // Loading state
   if (loading && rules.length === 0) {
@@ -279,20 +286,14 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ onNavigate }
                 Automate your workflow
               </h2>
               <p className="text-base max-w-md mx-auto" style={{ color: styles.textMuted }}>
-                Set up simple rules to handle routine tasks automatically.
-                Here are some ideas to get you started:
+                Set up simple rules to handle routine tasks automatically. Here are some ideas to get you started:
               </p>
             </div>
 
             {/* Example automations */}
             <div className="space-y-3 mb-8">
               {exampleAutomations.map((example, idx) => (
-                <ExampleCard
-                  key={idx}
-                  example={example}
-                  styles={styles}
-                  isRtl={isRtl}
-                />
+                <ExampleCard key={idx} example={example} styles={styles} isRtl={isRtl} />
               ))}
             </div>
 
@@ -363,13 +364,9 @@ const SimpleRuleCard: React.FC<{
 
             {/* Trigger → Action flow */}
             <div className={`flex items-center gap-2 text-sm flex-wrap ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <span style={{ color: styles.textMuted }}>
-                {getTriggerDescription(rule.triggerType)}
-              </span>
+              <span style={{ color: styles.textMuted }}>{getTriggerDescription(rule.triggerType)}</span>
               <ArrowRight size={14} style={{ color: styles.textMuted }} className="shrink-0" />
-              <span style={{ color: styles.textSecondary }}>
-                {getActionDescription(rule.actionType)}
-              </span>
+              <span style={{ color: styles.textSecondary }}>{getActionDescription(rule.actionType)}</span>
             </div>
 
             {/* Last run info */}
@@ -429,10 +426,7 @@ const ExampleCard: React.FC<{
   styles: ReturnType<typeof usePortal>['styles'];
   isRtl: boolean;
 }> = ({ example, styles, isRtl }) => (
-  <div
-    className="rounded-lg p-4 border"
-    style={{ backgroundColor: styles.bgPrimary, borderColor: styles.border }}
-  >
+  <div className="rounded-lg p-4 border" style={{ backgroundColor: styles.bgPrimary, borderColor: styles.border }}>
     <div className="flex items-center justify-between mb-2">
       <span className="font-medium text-sm" style={{ color: styles.textPrimary }}>
         {example.title}
@@ -461,12 +455,15 @@ const SimpleTemplatesModal: React.FC<{
   onSelect: (templateId: string) => void;
 }> = ({ templates, styles, isRtl, onClose, onSelect }) => {
   // Group templates by category
-  const groupedTemplates = templates.reduce((acc, template) => {
-    const category = template.category || 'General';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(template);
-    return acc;
-  }, {} as Record<string, RuleTemplate[]>);
+  const groupedTemplates = templates.reduce(
+    (acc, template) => {
+      const category = template.category || 'General';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(template);
+      return acc;
+    },
+    {} as Record<string, RuleTemplate[]>,
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -476,10 +473,7 @@ const SimpleTemplatesModal: React.FC<{
         style={{ backgroundColor: styles.bgCard }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between p-5 border-b"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: styles.border }}>
           <div>
             <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
               Add a Rule
@@ -507,7 +501,15 @@ const SimpleTemplatesModal: React.FC<{
                 {category}
               </h3>
               <div className="space-y-2">
-                {categoryTemplates.map((template) => (
+                {(
+                  categoryTemplates as {
+                    id: string;
+                    name: string;
+                    description?: string;
+                    triggerType: string;
+                    actionType: string;
+                  }[]
+                ).map((template) => (
                   <button
                     key={template.id}
                     onClick={() => onSelect(template.id)}
@@ -528,9 +530,7 @@ const SimpleTemplatesModal: React.FC<{
                           {template.name}
                         </h4>
                         <div className={`flex items-center gap-2 text-sm ${isRtl ? 'flex-row-reverse' : ''}`}>
-                          <span style={{ color: styles.textMuted }}>
-                            {getTriggerDescription(template.triggerType)}
-                          </span>
+                          <span style={{ color: styles.textMuted }}>{getTriggerDescription(template.triggerType)}</span>
                           <ArrowRight size={12} style={{ color: styles.textMuted }} />
                           <span style={{ color: styles.textSecondary }}>
                             {getActionDescription(template.actionType)}

@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';

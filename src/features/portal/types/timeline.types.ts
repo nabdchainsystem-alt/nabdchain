@@ -4,8 +4,6 @@
 // Enhanced timeline tracking with delay reasons and SLA breach detection
 // =============================================================================
 
-import { OrderStatus, PaymentStatus, FulfillmentStatus } from './order.types';
-
 // =============================================================================
 // Delay Reason Codes
 // =============================================================================
@@ -14,18 +12,18 @@ import { OrderStatus, PaymentStatus, FulfillmentStatus } from './order.types';
  * Standard delay reason codes for tracking why orders are delayed
  */
 export type DelayReasonCode =
-  | 'supplier_stockout'       // Item out of stock at supplier
-  | 'production_delay'        // Manufacturing/production issues
-  | 'carrier_delay'           // Shipping carrier delay
-  | 'customs_clearance'       // Customs/import processing
-  | 'weather'                 // Weather-related delays
-  | 'buyer_request'           // Buyer requested delay
-  | 'internal_processing'     // Internal operational delays
-  | 'quality_check'           // Quality inspection required
-  | 'address_issue'           // Delivery address problems
-  | 'payment_hold'            // Payment verification required
-  | 'documentation'           // Missing documentation
-  | 'other';                  // Other reasons
+  | 'supplier_stockout' // Item out of stock at supplier
+  | 'production_delay' // Manufacturing/production issues
+  | 'carrier_delay' // Shipping carrier delay
+  | 'customs_clearance' // Customs/import processing
+  | 'weather' // Weather-related delays
+  | 'buyer_request' // Buyer requested delay
+  | 'internal_processing' // Internal operational delays
+  | 'quality_check' // Quality inspection required
+  | 'address_issue' // Delivery address problems
+  | 'payment_hold' // Payment verification required
+  | 'documentation' // Missing documentation
+  | 'other'; // Other reasons
 
 /**
  * Delay reason configuration for display
@@ -200,20 +198,20 @@ export interface TimelineStep {
   icon: string;
   status: 'completed' | 'active' | 'pending' | 'skipped' | 'delayed';
   // Timestamps
-  promisedAt?: string;       // When we promised to complete this step
-  actualAt?: string;         // When it was actually completed
-  startedAt?: string;        // When this step started (for active steps)
+  promisedAt?: string; // When we promised to complete this step
+  actualAt?: string; // When it was actually completed
+  startedAt?: string; // When this step started (for active steps)
   // SLA metrics
-  slaHours?: number;         // SLA duration in hours
-  slaDays?: number;          // SLA duration in days
-  slaDeadline?: string;      // Calculated deadline
+  slaHours?: number; // SLA duration in hours
+  slaDays?: number; // SLA duration in days
+  slaDeadline?: string; // Calculated deadline
   slaStatus?: 'on_track' | 'at_risk' | 'breached';
-  slaPercentUsed?: number;   // 0-100
+  slaPercentUsed?: number; // 0-100
   slaTimeRemaining?: string; // Human readable
   // Delay info
   isDelayed?: boolean;
   delayReason?: DelayReasonCode;
-  delayDuration?: number;    // Minutes delayed
+  delayDuration?: number; // Minutes delayed
   // Events for this step
   events?: TimelineEvent[];
 }
@@ -243,22 +241,22 @@ export interface OrderTimeline {
  */
 export interface TimelineMetrics {
   // Time metrics (in hours)
-  totalLeadTime?: number;        // Order to delivery
-  confirmationTime?: number;     // Order to confirmation
-  processingTime?: number;       // Confirmation to shipped
-  shippingTime?: number;         // Shipped to delivered
+  totalLeadTime?: number; // Order to delivery
+  confirmationTime?: number; // Order to confirmation
+  processingTime?: number; // Confirmation to shipped
+  shippingTime?: number; // Shipped to delivered
   // SLA performance
   slasMet: number;
   slasBreached: number;
-  avgSlaUtilization: number;     // Average % of SLA used
+  avgSlaUtilization: number; // Average % of SLA used
   // Delay metrics
   totalDelays: number;
-  totalDelayTime: number;        // Total delay in hours
+  totalDelayTime: number; // Total delay in hours
   delaysByReason: Record<DelayReasonCode, number>;
   // Comparison to promise
   promisedDeliveryDate?: string;
   actualDeliveryDate?: string;
-  deliveryVariance?: number;     // Days early (positive) or late (negative)
+  deliveryVariance?: number; // Days early (positive) or late (negative)
 }
 
 // =============================================================================
@@ -285,21 +283,21 @@ export interface RiskFactor {
 }
 
 export type RiskFactorType =
-  | 'sla_approaching'        // SLA deadline approaching
-  | 'sla_breached'           // SLA already breached
-  | 'delay_reported'         // Active delay on order
-  | 'historical_pattern'     // Seller has history of delays
-  | 'high_value_order'       // Large order value at risk
-  | 'payment_pending'        // Payment not yet received
-  | 'carrier_issues'         // Known carrier problems
-  | 'external_factors';      // Weather, holidays, etc.
+  | 'sla_approaching' // SLA deadline approaching
+  | 'sla_breached' // SLA already breached
+  | 'delay_reported' // Active delay on order
+  | 'historical_pattern' // Seller has history of delays
+  | 'high_value_order' // Large order value at risk
+  | 'payment_pending' // Payment not yet received
+  | 'carrier_issues' // Known carrier problems
+  | 'external_factors'; // Weather, holidays, etc.
 
 /**
  * Complete risk assessment for an order
  */
 export interface RiskAssessment {
   overallRisk: RiskLevel;
-  riskScore: number;           // 0-100, higher = more risk
+  riskScore: number; // 0-100, higher = more risk
   factors: RiskFactor[];
   recommendations: string[];
   lastAssessedAt: string;
@@ -320,8 +318,8 @@ export interface SLAConfig {
   step: TimelineStepKey;
   hours?: number;
   days?: number;
-  warningThreshold: number;    // Percentage at which to warn (e.g., 70)
-  criticalThreshold: number;   // Percentage at which to escalate (e.g., 90)
+  warningThreshold: number; // Percentage at which to warn (e.g., 70)
+  criticalThreshold: number; // Percentage at which to escalate (e.g., 90)
 }
 
 /**
@@ -393,7 +391,7 @@ export function getRiskLevelConfig(level: RiskLevel): {
 export function calculateSLAStatus(
   percentUsed: number,
   warningThreshold: number = 70,
-  criticalThreshold: number = 90
+  criticalThreshold: number = 90,
 ): 'on_track' | 'at_risk' | 'breached' {
   if (percentUsed >= 100) return 'breached';
   if (percentUsed >= criticalThreshold) return 'at_risk';

@@ -11,6 +11,7 @@ import {
   BrandingConfig,
   DEFAULT_BRANDING,
   QuoteComparisonExportData,
+  QuoteExportData,
   RFQExportData,
   OrderExportData,
   InvoiceExportData,

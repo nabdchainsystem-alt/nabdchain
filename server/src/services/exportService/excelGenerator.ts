@@ -162,7 +162,7 @@ export class ExcelGenerator {
         break;
     }
 
-    return this.workbook.xlsx.writeBuffer() as Promise<Buffer>;
+    return this.workbook.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 
   // ============================================================================
@@ -213,7 +213,7 @@ export class ExcelGenerator {
     }
 
     // Auto-fit columns
-    summarySheet.columns.forEach((col) => {
+    summarySheet.columns.forEach((col: Partial<ExcelJS.Column>) => {
       col.width = 50;
     });
 
@@ -328,7 +328,7 @@ export class ExcelGenerator {
       }
 
       // Auto-fit
-      sheet.columns.forEach((col) => {
+      sheet.columns.forEach((col: Partial<ExcelJS.Column>) => {
         col.width = Math.max(col.width || 10, 12);
       });
     });
@@ -707,7 +707,7 @@ export class ExcelGenerator {
   private addDataTable(
     sheet: ExcelJS.Worksheet,
     columns: ExcelColumnConfig[],
-    data: Record<string, unknown>[]
+    data: Record<string, unknown>[] | unknown[]
   ): void {
     // Headers
     const headerRow = sheet.addRow(columns.map((c) => c.header));
@@ -733,7 +733,7 @@ export class ExcelGenerator {
     // Data rows
     data.forEach((item, rowIndex) => {
       const rowData = columns.map((col) => {
-        const value = item[col.key];
+        const value = (item as Record<string, unknown>)[col.key];
         return this.formatCellValue(value, col);
       });
 

@@ -2,7 +2,7 @@
 // Purchase Intelligence Types
 // =============================================================================
 
-import { Order, OrderStatus, OrderHealthStatus } from './order.types';
+import { Order, OrderStatus, OrderHealthStatus, ExceptionType } from './order.types';
 
 // =============================================================================
 // Enums & Categories
@@ -22,10 +22,10 @@ export interface PriceComparison {
   historicalAvg: number;
   historicalMin: number;
   historicalMax: number;
-  variance: number;           // percentage difference from avg
+  variance: number; // percentage difference from avg
   trend: PriceTrend;
   recommendation: SavingsCategory;
-  purchaseCount: number;      // how many times bought this item
+  purchaseCount: number; // how many times bought this item
 }
 
 export interface PriceHistoryEntry {
@@ -48,8 +48,8 @@ export interface PriceHistoryEntry {
 export interface BuyerSupplierMetrics {
   sellerId: string;
   sellerName: string;
-  onTimeDeliveryRate: number;   // 0-100
-  qualityScore: number;          // 1-5
+  onTimeDeliveryRate: number; // 0-100
+  qualityScore: number; // 1-5
   totalOrders: number;
   issueCount: number;
   avgDeliveryDays: number | null;
@@ -60,20 +60,14 @@ export interface BuyerSupplierMetrics {
 // Timeline
 // =============================================================================
 
-export type TimelineState =
-  | 'created'
-  | 'confirmed'
-  | 'processing'
-  | 'shipped'
-  | 'in_transit'
-  | 'delivered';
+export type TimelineState = 'created' | 'confirmed' | 'processing' | 'shipped' | 'in_transit' | 'delivered';
 
 export interface PurchaseTimelineEvent {
   id: string;
   state: TimelineState;
   label: string;
   actualDate?: string;
-  expectedDate?: string;      // SLA deadline
+  expectedDate?: string; // SLA deadline
   isCompleted: boolean;
   isCurrent: boolean;
   isDelayed: boolean;
@@ -85,6 +79,15 @@ export interface PurchaseTimelineEvent {
 // =============================================================================
 
 export interface Purchase extends Order {
+  // Health indicators
+  healthStatus?: OrderHealthStatus;
+  healthScore?: number;
+
+  // Exception data
+  hasException?: boolean;
+  exceptionType?: ExceptionType;
+  exceptionMessage?: string;
+
   // Price intelligence (captured at order time)
   historicalAvgPrice?: number | null;
   priceVariance?: number | null;
@@ -159,9 +162,9 @@ export interface PurchaseStats {
  */
 export function getUrgencyColor(urgency: UrgencyLevel): string {
   const colors: Record<UrgencyLevel, string> = {
-    low: '#22c55e',      // green
-    medium: '#3b82f6',   // blue
-    high: '#f59e0b',     // amber
+    low: '#22c55e', // green
+    medium: '#3b82f6', // blue
+    high: '#f59e0b', // amber
     critical: '#ef4444', // red
   };
   return colors[urgency];
@@ -185,9 +188,9 @@ export function getUrgencyLabel(urgency: UrgencyLevel): string {
  */
 export function getSavingsColor(savings: SavingsCategory): string {
   const colors: Record<SavingsCategory, string> = {
-    good_deal: '#22c55e',    // green
-    average: '#6b7280',       // gray
-    overpaying: '#ef4444',   // red
+    good_deal: '#22c55e', // green
+    average: '#6b7280', // gray
+    overpaying: '#ef4444', // red
   };
   return colors[savings];
 }
@@ -209,10 +212,10 @@ export function getSavingsLabel(savings: SavingsCategory): string {
  */
 export function getReliabilityColor(tier: ReliabilityTier): string {
   const colors: Record<ReliabilityTier, string> = {
-    excellent: '#22c55e',    // green
-    good: '#3b82f6',         // blue
-    average: '#f59e0b',      // amber
-    poor: '#ef4444',         // red
+    excellent: '#22c55e', // green
+    good: '#3b82f6', // blue
+    average: '#f59e0b', // amber
+    poor: '#ef4444', // red
   };
   return colors[tier];
 }
@@ -235,9 +238,9 @@ export function getReliabilityLabel(tier: ReliabilityTier): string {
  */
 export function getTrendColor(trend: PriceTrend): string {
   const colors: Record<PriceTrend, string> = {
-    up: '#ef4444',      // red (prices going up = bad)
-    down: '#22c55e',    // green (prices going down = good)
-    stable: '#6b7280',  // gray
+    up: '#ef4444', // red (prices going up = bad)
+    down: '#22c55e', // green (prices going down = good)
+    stable: '#6b7280', // gray
   };
   return colors[trend];
 }

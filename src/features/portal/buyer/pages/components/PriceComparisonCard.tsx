@@ -4,18 +4,11 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  TrendUp,
-  TrendDown,
-  Minus,
-  CurrencyDollar,
-  ChartLine,
-} from 'phosphor-react';
+import { TrendUp, TrendDown, Minus, CurrencyDollar, ChartLine } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import {
   PriceComparison,
   PriceTrend,
-  SavingsCategory,
   getTrendColor,
   getSavingsColor,
   getSavingsLabel,
@@ -79,9 +72,7 @@ export const PriceComparisonCard: React.FC<PriceComparisonCardProps> = ({
 
   // Calculate position on the price range bar
   const range = comparison.historicalMax - comparison.historicalMin || 1;
-  const position = Math.min(100, Math.max(0,
-    ((currentPrice - comparison.historicalMin) / range) * 100
-  ));
+  const position = Math.min(100, Math.max(0, ((currentPrice - comparison.historicalMin) / range) * 100));
 
   return (
     <div
@@ -133,10 +124,7 @@ export const PriceComparisonCard: React.FC<PriceComparisonCardProps> = ({
 
       {/* Price range bar */}
       <div className="mb-4">
-        <div
-          className="h-2 rounded-full relative overflow-hidden"
-          style={{ backgroundColor: styles.bgCard }}
-        >
+        <div className="h-2 rounded-full relative overflow-hidden" style={{ backgroundColor: styles.bgCard }}>
           {/* Range visualization */}
           <div
             className="absolute h-full rounded-full"
@@ -160,16 +148,15 @@ export const PriceComparisonCard: React.FC<PriceComparisonCardProps> = ({
         {/* Range labels */}
         <div className="flex justify-between mt-1.5 text-xs" style={{ color: styles.textMuted }}>
           <span>{formatCurrency(comparison.historicalMin)}</span>
-          <span>{t('buyer.purchases.avg') || 'Avg'}: {formatCurrency(comparison.historicalAvg)}</span>
+          <span>
+            {t('buyer.purchases.avg') || 'Avg'}: {formatCurrency(comparison.historicalAvg)}
+          </span>
           <span>{formatCurrency(comparison.historicalMax)}</span>
         </div>
       </div>
 
       {/* Stats row */}
-      <div
-        className="flex items-center justify-between pt-3 border-t text-xs"
-        style={{ borderColor: styles.border }}
-      >
+      <div className="flex items-center justify-between pt-3 border-t text-xs" style={{ borderColor: styles.border }}>
         <div className="flex items-center gap-1">
           <ChartLine size={12} style={{ color: styles.textMuted }} />
           <span style={{ color: styles.textMuted }}>
@@ -178,7 +165,8 @@ export const PriceComparisonCard: React.FC<PriceComparisonCardProps> = ({
         </div>
         {isGoodDeal && (
           <span style={{ color: styles.success }}>
-            {t('buyer.purchases.savingMoney') || 'Saving'} {formatCurrency(Math.abs(comparison.historicalAvg - currentPrice))}
+            {t('buyer.purchases.savingMoney') || 'Saving'}{' '}
+            {formatCurrency(Math.abs(comparison.historicalAvg - currentPrice))}
           </span>
         )}
         {isOverpaying && (

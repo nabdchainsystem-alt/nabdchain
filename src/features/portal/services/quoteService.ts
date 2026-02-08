@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { API_URL } from '../../../config/api';
+import { portalApiLogger } from '../../../utils/logger';
 import {
   Quote,
   QuoteWithRFQ,
@@ -29,7 +30,13 @@ export const quoteService = {
    * Entry condition: RFQ must be in UNDER_REVIEW status
    */
   async createDraft(token: string, data: CreateQuoteData): Promise<QuoteWithRFQ> {
-    const response = await fetch(`${API_URL}/items/quotes`, {
+    const url = `${API_URL}/items/quotes`;
+
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[QuoteService] POST ${url}`, data);
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,10 +47,17 @@ export const quoteService = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      if (import.meta.env.DEV) {
+        console.error(`[QuoteService] Create draft failed:`, response.status, error);
+      }
       throw new Error(error.error || 'Failed to create quote');
     }
 
-    return response.json();
+    const quote = await response.json();
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[QuoteService] Draft created:`, quote);
+    }
+    return quote;
   },
 
   /**
@@ -111,11 +125,7 @@ export const quoteService = {
   /**
    * Update a quote (draft or create revision for sent)
    */
-  async updateQuote(
-    token: string,
-    quoteId: string,
-    data: UpdateQuoteData
-  ): Promise<QuoteWithRFQ | null> {
+  async updateQuote(token: string, quoteId: string, data: UpdateQuoteData): Promise<QuoteWithRFQ | null> {
     const response = await fetch(`${API_URL}/items/quotes/${quoteId}`, {
       method: 'PUT',
       headers: {
@@ -142,7 +152,13 @@ export const quoteService = {
    * This also updates the RFQ status to QUOTED
    */
   async sendQuote(token: string, quoteId: string): Promise<QuoteWithRFQ | null> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/send`, {
+    const url = `${API_URL}/items/quotes/${quoteId}/send`;
+
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[QuoteService] POST ${url}`);
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -150,15 +166,25 @@ export const quoteService = {
     });
 
     if (response.status === 404) {
+      if (import.meta.env.DEV) {
+        console.error(`[QuoteService] Quote not found: ${quoteId}`);
+      }
       return null;
     }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      if (import.meta.env.DEV) {
+        console.error(`[QuoteService] Send quote failed:`, response.status, error);
+      }
       throw new Error(error.error || 'Failed to send quote');
     }
 
-    return response.json();
+    const quote = await response.json();
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[QuoteService] Quote sent:`, quote);
+    }
+    return quote;
   },
 
   /**
@@ -235,7 +261,7 @@ export const quoteService = {
     token: string,
     quoteId: string,
     file: File,
-    type: QuoteAttachmentType = 'other'
+    type: QuoteAttachmentType = 'other',
   ): Promise<QuoteAttachment> {
     const formData = new FormData();
     formData.append('file', file);
@@ -280,20 +306,13 @@ export const quoteService = {
   /**
    * Remove an attachment from a quote
    */
-  async removeAttachment(
-    token: string,
-    quoteId: string,
-    attachmentId: string
-  ): Promise<boolean> {
-    const response = await fetch(
-      `${API_URL}/items/quotes/${quoteId}/attachments/${attachmentId}`,
-      {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  async removeAttachment(token: string, quoteId: string, attachmentId: string): Promise<boolean> {
+    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.status === 404) {
       return false;

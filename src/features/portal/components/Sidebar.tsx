@@ -18,6 +18,7 @@ import {
   ShieldWarning,
   CurrencyDollar,
   Lightning,
+  ArrowsLeftRight,
 } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 
@@ -88,13 +89,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setIsResizing(true);
   }, []);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-    const newWidth = isRtl ? window.innerWidth - e.clientX : e.clientX;
-    if (newWidth >= minWidth && newWidth <= maxWidth) {
-      setSidebarWidth(newWidth);
-    }
-  }, [isResizing, isRtl, setSidebarWidth]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = isRtl ? window.innerWidth - e.clientX : e.clientX;
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setSidebarWidth(newWidth);
+      }
+    },
+    [isResizing, isRtl, setSidebarWidth],
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
@@ -127,14 +131,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           borderColor: styles.border,
           fontFamily: styles.fontBody,
           transition: isResizing ? 'none' : 'width 0.2s',
-          ...(isRtl ? { right: 0, borderLeft: `1px solid ${styles.border}` } : { left: 0, borderRight: `1px solid ${styles.border}` }),
+          ...(isRtl
+            ? { right: 0, borderLeft: `1px solid ${styles.border}` }
+            : { left: 0, borderRight: `1px solid ${styles.border}` }),
         }}
       >
         {/* Header: Logo + Collapse */}
-        <div
-          className="h-16 flex items-center justify-between px-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="h-16 flex items-center justify-between px-4 border-b" style={{ borderColor: styles.border }}>
           <button
             onClick={() => onNavigate('home')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -164,9 +167,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            {sidebarCollapsed
-              ? (isRtl ? <CaretLeft size={14} weight="bold" /> : <CaretRight size={14} weight="bold" />)
-              : (isRtl ? <CaretRight size={14} weight="bold" /> : <CaretLeft size={14} weight="bold" />)}
+            {sidebarCollapsed ? (
+              isRtl ? (
+                <CaretLeft size={14} weight="bold" />
+              ) : (
+                <CaretRight size={14} weight="bold" />
+              )
+            ) : isRtl ? (
+              <CaretRight size={14} weight="bold" />
+            ) : (
+              <CaretLeft size={14} weight="bold" />
+            )}
           </button>
         </div>
 
@@ -175,32 +186,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-3 py-3">
             <button
               onClick={onRoleSwitch}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group"
               style={{
                 backgroundColor: styles.bgSecondary,
                 color: styles.textSecondary,
               }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = styles.bgSecondary)}
+              title={`Switch to ${role === 'buyer' ? 'Seller' : 'Buyer'}`}
             >
-              <RoleIcon size={16} weight="fill" />
-              <span className="text-xs font-medium uppercase tracking-wide">{roleLabel}</span>
+              <div className="flex items-center gap-2.5">
+                <RoleIcon size={16} weight="fill" />
+                <span className="text-xs font-medium uppercase tracking-wide">{roleLabel}</span>
+              </div>
+              <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                <ArrowsLeftRight size={14} weight="bold" />
+                {role === 'buyer' ? (
+                  <Storefront size={14} weight="regular" />
+                ) : (
+                  <ShoppingCart size={14} weight="regular" />
+                )}
+              </div>
             </button>
           </div>
         ) : (
           <div className="px-2 py-3 flex justify-center">
             <button
               onClick={onRoleSwitch}
-              className="p-2 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-all group relative"
               style={{
                 backgroundColor: styles.bgSecondary,
                 color: styles.textSecondary,
               }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = styles.bgSecondary)}
-              title={roleLabel}
+              title={`Switch to ${role === 'buyer' ? 'Seller' : 'Buyer'}`}
             >
-              <RoleIcon size={18} weight="fill" />
+              <div className="flex items-center gap-1">
+                <RoleIcon size={16} weight="fill" />
+                <ArrowsLeftRight size={12} weight="bold" className="opacity-60 group-hover:opacity-100" />
+              </div>
             </button>
           </div>
         )}
@@ -239,9 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <Icon size={18} weight={isActive ? 'fill' : 'regular'} />
                   {!sidebarCollapsed && (
-                    <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>
-                      {item.label}
-                    </span>
+                    <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
                   )}
                 </button>
               );
@@ -289,9 +312,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Spacer for content - this updates parent layout */}
       <style>{`
         .portal-content-area {
-          ${isRtl
-            ? `margin-right: ${currentWidth}px; margin-left: 0; transition: ${isResizing ? 'none' : 'margin-right 0.2s'};`
-            : `margin-left: ${currentWidth}px; margin-right: 0; transition: ${isResizing ? 'none' : 'margin-left 0.2s'};`
+          ${
+            isRtl
+              ? `margin-right: ${currentWidth}px; margin-left: 0; transition: ${isResizing ? 'none' : 'margin-right 0.2s'};`
+              : `margin-left: ${currentWidth}px; margin-right: 0; transition: ${isResizing ? 'none' : 'margin-left 0.2s'};`
           }
         }
       `}</style>

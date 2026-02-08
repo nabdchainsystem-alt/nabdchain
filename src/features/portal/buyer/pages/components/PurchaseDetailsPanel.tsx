@@ -4,20 +4,7 @@
 // =============================================================================
 
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  FileText,
-  Clock,
-  Truck,
-  ChartLine,
-  MapPin,
-  Package,
-  ChatCircle,
-  WarningCircle,
-  Buildings,
-  Copy,
-  Check,
-} from 'phosphor-react';
+import { X, FileText, Clock, Truck, ChartLine, MapPin, WarningCircle, Copy, Check } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import { Purchase, PriceComparison, BuyerSupplierMetrics, PurchaseTimelineEvent } from '../../../types/purchase.types';
 import { getOrderStatusConfig, getHealthStatusConfig } from '../../../types/order.types';
@@ -119,11 +106,7 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
   return (
     <>
       {/* Backdrop - transparent, just for click-outside */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ top: '64px' }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={onClose} />
 
       {/* Panel */}
       <div
@@ -135,16 +118,10 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
           backgroundColor: styles.bgCard,
           borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
           borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
-          boxShadow: styles.isDark
-            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
-            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          boxShadow: styles.isDark ? '-12px 0 40px rgba(0, 0, 0, 0.6)' : '-8px 0 30px rgba(0, 0, 0, 0.1)',
           right: isRtl ? 'auto' : 0,
           left: isRtl ? 0 : 'auto',
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-            ? 'translateX(-100%)'
-            : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
@@ -172,10 +149,14 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
                 className="text-xs px-2 py-0.5 rounded font-medium"
                 style={{
                   backgroundColor: `var(--color-${statusConfig.color}, ${styles.info})20`,
-                  color: statusConfig.color === 'success' ? styles.success
-                    : statusConfig.color === 'error' ? styles.error
-                    : statusConfig.color === 'warning' ? '#f59e0b'
-                    : styles.info,
+                  color:
+                    statusConfig.color === 'success'
+                      ? styles.success
+                      : statusConfig.color === 'error'
+                        ? styles.error
+                        : statusConfig.color === 'warning'
+                          ? '#f59e0b'
+                          : styles.info,
                 }}
               >
                 {statusConfig.label}
@@ -184,12 +165,18 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
               <span
                 className="text-xs px-2 py-0.5 rounded font-medium"
                 style={{
-                  backgroundColor: healthConfig.color === 'success' ? `${styles.success}15`
-                    : healthConfig.color === 'warning' ? '#f59e0b15'
-                    : `${styles.error}15`,
-                  color: healthConfig.color === 'success' ? styles.success
-                    : healthConfig.color === 'warning' ? '#f59e0b'
-                    : styles.error,
+                  backgroundColor:
+                    healthConfig.color === 'success'
+                      ? `${styles.success}15`
+                      : healthConfig.color === 'warning'
+                        ? '#f59e0b15'
+                        : `${styles.error}15`,
+                  color:
+                    healthConfig.color === 'success'
+                      ? styles.success
+                      : healthConfig.color === 'warning'
+                        ? '#f59e0b'
+                        : styles.error,
                 }}
               >
                 {healthConfig.label}
@@ -208,10 +195,7 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
         </div>
 
         {/* Tabs */}
-        <div
-          className="flex border-b flex-shrink-0"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex border-b flex-shrink-0" style={{ borderColor: styles.border }}>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -224,10 +208,7 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
                 <tab.icon size={16} />
                 {tab.label}
                 {isActive && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-0.5"
-                    style={{ backgroundColor: styles.info }}
-                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: styles.info }} />
                 )}
               </button>
             );
@@ -239,25 +220,28 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
           {activeTab === 'overview' && (
             <div className="space-y-4">
               {/* Item Info */}
-              <div
-                className="p-4 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="p-4 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                 <h3 className="text-sm font-semibold mb-3" style={{ color: styles.textPrimary }}>
                   {t('buyer.purchases.itemDetails') || 'Item Details'}
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span style={{ color: styles.textMuted }}>{t('buyer.purchases.item') || 'Item'}:</span>
-                    <p className="font-medium" style={{ color: styles.textPrimary }}>{purchase.itemName}</p>
+                    <p className="font-medium" style={{ color: styles.textPrimary }}>
+                      {purchase.itemName}
+                    </p>
                   </div>
                   <div>
                     <span style={{ color: styles.textMuted }}>{t('buyer.purchases.sku') || 'SKU'}:</span>
-                    <p className="font-mono" style={{ color: styles.textPrimary }}>{purchase.itemSku}</p>
+                    <p className="font-mono" style={{ color: styles.textPrimary }}>
+                      {purchase.itemSku}
+                    </p>
                   </div>
                   <div>
                     <span style={{ color: styles.textMuted }}>{t('buyer.purchases.quantity') || 'Quantity'}:</span>
-                    <p className="font-medium" style={{ color: styles.textPrimary }}>{purchase.quantity}</p>
+                    <p className="font-medium" style={{ color: styles.textPrimary }}>
+                      {purchase.quantity}
+                    </p>
                   </div>
                   <div>
                     <span style={{ color: styles.textMuted }}>{t('buyer.purchases.total') || 'Total'}:</span>
@@ -276,10 +260,7 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
               />
 
               {/* Supplier Performance Card */}
-              <SupplierPerformanceCard
-                metrics={supplierMetrics || null}
-                sellerName={purchase.buyerName}
-              />
+              <SupplierPerformanceCard metrics={supplierMetrics || null} sellerName={purchase.buyerName} />
 
               {/* Issue Alert */}
               {purchase.hasException && (
@@ -306,9 +287,7 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
             </div>
           )}
 
-          {activeTab === 'timeline' && (
-            <PurchaseTimeline events={timeline} />
-          )}
+          {activeTab === 'timeline' && <PurchaseTimeline events={timeline} />}
 
           {activeTab === 'tracking' && (
             <div className="space-y-4">
@@ -353,9 +332,7 @@ export const PurchaseDetailsPanel: React.FC<PurchaseDetailsPanelProps> = ({
                         <span style={{ color: styles.textMuted }}>
                           {t('buyer.purchases.estimatedDelivery') || 'Estimated Delivery'}:
                         </span>
-                        <span style={{ color: styles.textPrimary }}>
-                          {formatDate(purchase.estimatedDelivery)}
-                        </span>
+                        <span style={{ color: styles.textPrimary }}>{formatDate(purchase.estimatedDelivery)}</span>
                       </div>
                     </div>
                   </div>

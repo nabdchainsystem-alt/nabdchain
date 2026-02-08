@@ -5,16 +5,13 @@ import {
   User,
   Cube,
   Truck,
-  MapPin,
   CurrencyDollar,
   Clock,
   CheckCircle,
   XCircle,
-  ArrowRight,
   CaretDown,
   CaretUp,
   FileText,
-  CalendarBlank,
   CopySimple,
   Check,
   ListBullets,
@@ -32,7 +29,7 @@ import {
 } from '../../types/order.types';
 import { EnhancedOrderTimeline } from './EnhancedOrderTimeline';
 import { DelayReasonModal, DelayReasonData } from './DelayReasonModal';
-import { orderTimelineApiService, generateMockTimeline } from '../../services/orderTimelineService';
+import { orderTimelineApiService } from '../../services/orderTimelineService';
 import { OrderTimeline } from '../../types/timeline.types';
 
 interface OrderDetailsPanelProps {
@@ -68,7 +65,8 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
   onMarkDelivered,
   onCancel,
 }) => {
-  const { styles, t, direction, sellerId } = usePortal();
+  const { styles, t, direction, ...portalRest } = usePortal();
+  const sellerId = (portalRest as Record<string, unknown>).sellerId as string | undefined;
   const isRtl = direction === 'rtl';
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'timeline'>('details');
@@ -86,19 +84,8 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
 
   const loadTimelineData = useCallback(async () => {
     if (!order || !sellerId) {
-      // Generate mock timeline if no seller context
-      if (order) {
-        const mockTimeline = generateMockTimeline({
-          id: order.id,
-          orderNumber: order.orderNumber,
-          status: order.status,
-          createdAt: order.createdAt,
-          confirmedAt: order.confirmedAt,
-          shippedAt: order.shippedAt,
-          deliveredAt: order.deliveredAt,
-        });
-        setTimelineData(mockTimeline);
-      }
+      // No seller context - show empty state
+      setTimelineData(null);
       return;
     }
 
@@ -107,18 +94,9 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
       const data = await orderTimelineApiService.getOrderTimeline(order.id, sellerId);
       setTimelineData(data);
     } catch (error) {
-      console.error('Failed to load timeline:', error);
-      // Fall back to mock data
-      const mockTimeline = generateMockTimeline({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        createdAt: order.createdAt,
-        confirmedAt: order.confirmedAt,
-        shippedAt: order.shippedAt,
-        deliveredAt: order.deliveredAt,
-      });
-      setTimelineData(mockTimeline);
+      console.error('[OrderDetailsPanel] Failed to load timeline:', error);
+      // Show empty state on error - no mock fallback
+      setTimelineData(null);
     } finally {
       setIsLoadingTimeline(false);
     }
@@ -217,11 +195,7 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
   return (
     <>
       {/* Backdrop - transparent, just for click-outside */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ top: '64px' }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={onClose} />
 
       {/* Panel */}
       <div
@@ -233,16 +207,10 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
           backgroundColor: styles.bgCard,
           borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
           borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
-          boxShadow: styles.isDark
-            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
-            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          boxShadow: styles.isDark ? '-12px 0 40px rgba(0, 0, 0, 0.6)' : '-8px 0 30px rgba(0, 0, 0, 0.1)',
           right: isRtl ? 'auto' : 0,
           left: isRtl ? 0 : 'auto',
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-            ? 'translateX(-100%)'
-            : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
@@ -280,7 +248,10 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
         </div>
 
         {/* Status Bar */}
-        <div className="px-6 py-3 border-b flex items-center gap-3 flex-shrink-0" style={{ borderColor: styles.border }}>
+        <div
+          className="px-6 py-3 border-b flex items-center gap-3 flex-shrink-0"
+          style={{ borderColor: styles.border }}
+        >
           <span
             className="inline-flex px-2.5 py-1 rounded text-xs font-medium"
             style={{
@@ -360,12 +331,16 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
                         {t('seller.orders.quantity')}: <strong>{order.quantity}</strong>
                       </span>
                       <span className="text-sm" style={{ color: styles.textSecondary }}>
-                        {t('seller.orders.unitPrice')}: <strong>{formatCurrency(order.unitPrice, order.currency)}</strong>
+                        {t('seller.orders.unitPrice')}:{' '}
+                        <strong>{formatCurrency(order.unitPrice, order.currency)}</strong>
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: styles.border }}>
+                <div
+                  className="flex items-center justify-between mt-3 pt-3 border-t"
+                  style={{ borderColor: styles.border }}
+                >
                   <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                     {t('seller.orders.totalPrice')}
                   </span>
@@ -382,15 +357,33 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
                   <InfoRow label="Company" value={order.buyerCompany} styles={styles} />
                 )}
                 {order.buyerEmail && (
-                  <InfoRow label="Email" value={order.buyerEmail} styles={styles} copyable onCopy={handleCopy} copiedField={copiedField} />
+                  <InfoRow
+                    label="Email"
+                    value={order.buyerEmail}
+                    styles={styles}
+                    copyable
+                    onCopy={handleCopy}
+                    copiedField={copiedField}
+                  />
                 )}
               </Section>
 
               {/* Order Info */}
               <Section title={t('seller.orders.orderInfo')} icon={FileText} styles={styles}>
-                <InfoRow label={t('seller.orders.source')} value={order.source === 'rfq' ? t('seller.orders.fromRfq') : t('seller.orders.directBuy')} styles={styles} />
+                <InfoRow
+                  label={t('seller.orders.source')}
+                  value={order.source === 'rfq' ? t('seller.orders.fromRfq') : t('seller.orders.directBuy')}
+                  styles={styles}
+                />
                 {order.rfqNumber && (
-                  <InfoRow label="RFQ #" value={order.rfqNumber} styles={styles} copyable onCopy={handleCopy} copiedField={copiedField} />
+                  <InfoRow
+                    label="RFQ #"
+                    value={order.rfqNumber}
+                    styles={styles}
+                    copyable
+                    onCopy={handleCopy}
+                    copiedField={copiedField}
+                  />
                 )}
                 <InfoRow label={t('seller.orders.created')} value={formatDate(order.createdAt)} styles={styles} />
                 {order.confirmedAt && (
@@ -421,7 +414,11 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
                     <InfoRow label={t('seller.orders.carrier')} value={order.carrier} styles={styles} />
                   )}
                   {order.estimatedDelivery && (
-                    <InfoRow label={t('seller.orders.estimatedDelivery')} value={order.estimatedDelivery} styles={styles} />
+                    <InfoRow
+                      label={t('seller.orders.estimatedDelivery')}
+                      value={order.estimatedDelivery}
+                      styles={styles}
+                    />
                   )}
                   {order.shippingAddress && (
                     <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
@@ -432,7 +429,12 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
                         {order.shippingAddress.name}
                         <br />
                         {order.shippingAddress.street1}
-                        {order.shippingAddress.street2 && <><br />{order.shippingAddress.street2}</>}
+                        {order.shippingAddress.street2 && (
+                          <>
+                            <br />
+                            {order.shippingAddress.street2}
+                          </>
+                        )}
                         <br />
                         {order.shippingAddress.city}
                         {order.shippingAddress.state && `, ${order.shippingAddress.state}`}
@@ -455,7 +457,12 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
                     <NoteBlock label={t('seller.orders.sellerNotes')} content={order.sellerNotes} styles={styles} />
                   )}
                   {order.internalNotes && (
-                    <NoteBlock label={t('seller.orders.internalNotes')} content={order.internalNotes} styles={styles} isInternal />
+                    <NoteBlock
+                      label={t('seller.orders.internalNotes')}
+                      content={order.internalNotes}
+                      styles={styles}
+                      isInternal
+                    />
                   )}
                 </Section>
               )}
@@ -470,24 +477,28 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
               ) : (
                 <EnhancedOrderTimeline
                   order={order}
-                  timeline={timelineData ? {
-                    steps: timelineData.steps || [],
-                    riskAssessment: timelineData.riskAssessment || {
-                      overallRisk: 'low',
-                      riskScore: 0,
-                      factors: [],
-                      recommendations: [],
-                      lastAssessedAt: new Date().toISOString(),
-                    },
-                    metrics: {
-                      slasMet: timelineData.metrics?.slasMet || 0,
-                      slasBreached: timelineData.metrics?.slasBreached || 0,
-                      avgSlaUtilization: timelineData.metrics?.avgSlaUtilization || 0,
-                      promisedDeliveryDate: timelineData.metrics?.promisedDeliveryDate?.toString(),
-                      actualDeliveryDate: timelineData.metrics?.actualDeliveryDate?.toString(),
-                      deliveryVariance: timelineData.metrics?.deliveryVariance,
-                    },
-                  } : undefined}
+                  timeline={
+                    timelineData
+                      ? {
+                          steps: timelineData.steps || [],
+                          riskAssessment: timelineData.riskAssessment || {
+                            overallRisk: 'low',
+                            riskScore: 0,
+                            factors: [],
+                            recommendations: [],
+                            lastAssessedAt: new Date().toISOString(),
+                          },
+                          metrics: {
+                            slasMet: timelineData.metrics?.slasMet || 0,
+                            slasBreached: timelineData.metrics?.slasBreached || 0,
+                            avgSlaUtilization: timelineData.metrics?.avgSlaUtilization || 0,
+                            promisedDeliveryDate: timelineData.metrics?.promisedDeliveryDate?.toString(),
+                            actualDeliveryDate: timelineData.metrics?.actualDeliveryDate?.toString(),
+                            deliveryVariance: timelineData.metrics?.deliveryVariance,
+                          },
+                        }
+                      : undefined
+                  }
                   onReportDelay={handleReportDelay}
                 />
               )}
@@ -533,13 +544,17 @@ export const OrderDetailsPanel: React.FC<OrderDetailsPanelProps> = ({
                                 style={{ backgroundColor: styles.bgSecondary }}
                               >
                                 {entry.action === 'created' && <Package size={12} style={{ color: styles.info }} />}
-                                {entry.action === 'confirmed' && <CheckCircle size={12} style={{ color: styles.success }} />}
-                                {entry.action === 'shipped' && <Truck size={12} style={{ color: styles.info }} />}
-                                {entry.action === 'delivered' && <CheckCircle size={12} weight="fill" style={{ color: styles.success }} />}
-                                {entry.action === 'cancelled' && <XCircle size={12} style={{ color: styles.error }} />}
-                                {!['created', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(entry.action) && (
-                                  <Clock size={12} style={{ color: styles.textMuted }} />
+                                {entry.action === 'confirmed' && (
+                                  <CheckCircle size={12} style={{ color: styles.success }} />
                                 )}
+                                {entry.action === 'shipped' && <Truck size={12} style={{ color: styles.info }} />}
+                                {entry.action === 'delivered' && (
+                                  <CheckCircle size={12} weight="fill" style={{ color: styles.success }} />
+                                )}
+                                {entry.action === 'cancelled' && <XCircle size={12} style={{ color: styles.error }} />}
+                                {!['created', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(
+                                  entry.action,
+                                ) && <Clock size={12} style={{ color: styles.textMuted }} />}
                               </div>
                               {index < order.auditLog.length - 1 && (
                                 <div className="w-px flex-1 my-1" style={{ backgroundColor: styles.border }} />
@@ -667,11 +682,7 @@ const InfoRow: React.FC<{
         {value}
       </span>
       {copyable && onCopy && (
-        <button
-          onClick={() => onCopy(value, label)}
-          className="p-0.5 rounded"
-          style={{ color: styles.textMuted }}
-        >
+        <button onClick={() => onCopy(value, label)} className="p-0.5 rounded" style={{ color: styles.textMuted }}>
           {copiedField === label ? <Check size={12} /> : <CopySimple size={12} />}
         </button>
       )}

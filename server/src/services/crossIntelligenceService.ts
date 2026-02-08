@@ -5,9 +5,7 @@
  * and invisible ranking between buyers and sellers.
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // ============================================================================
 // TYPES
@@ -267,7 +265,7 @@ export async function generatePricingGuidance(
   sellerId: string,
   rfqId: string
 ): Promise<PricingGuidance> {
-  const rfq = await prisma.marketplaceRFQ.findUnique({
+  const rfq = await prisma.itemRFQ.findUnique({
     where: { id: rfqId },
     include: { item: true },
   });
@@ -276,7 +274,7 @@ export async function generatePricingGuidance(
     throw new Error('RFQ not found');
   }
 
-  const marketData = await getMarketPriceData(rfq.itemId);
+  const marketData = await getMarketPriceData(rfq.itemId!);
   const transactions = await getTransactionHistory(rfq.buyerId, sellerId);
 
   // Calculate adjustments
@@ -286,8 +284,8 @@ export async function generatePricingGuidance(
 
   const volumeAdjustment = calculateVolumeDiscount(rfq.quantity, rfq.item?.minOrderQty || 1);
 
-  const urgencyPremium = rfq.deadline
-    ? calculateUrgencyPremium(new Date(rfq.deadline))
+  const urgencyPremium = rfq.requiredDeliveryDate
+    ? calculateUrgencyPremium(new Date(rfq.requiredDeliveryDate))
     : 0;
 
   const optimalPrice = marketData.median * (1 - loyaltyAdjustment / 100 - volumeAdjustment / 100 + urgencyPremium / 100);

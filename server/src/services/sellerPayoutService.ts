@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
+import type { SellerPayout } from '@prisma/client';
 
 // =============================================================================
 // Types
@@ -169,15 +170,6 @@ async function calculateEligiblePayouts(sellerId: string): Promise<PayoutEligibi
         },
       },
     },
-    include: {
-      order: {
-        select: {
-          id: true,
-          orderNumber: true,
-          status: true,
-        },
-      },
-    },
   });
 
   // Filter out invoices with open disputes
@@ -185,7 +177,11 @@ async function calculateEligiblePayouts(sellerId: string): Promise<PayoutEligibi
 
   for (const invoice of eligibleInvoices) {
     // Check if order is closed
-    if (invoice.order?.status !== 'closed') continue;
+    const order = await prisma.marketplaceOrder.findUnique({
+      where: { id: invoice.orderId },
+      select: { status: true },
+    });
+    if (order?.status !== 'closed') continue;
 
     // Check for open disputes on the order
     const openDispute = await prisma.marketplaceDispute.findFirst({
@@ -201,7 +197,7 @@ async function calculateEligiblePayouts(sellerId: string): Promise<PayoutEligibi
       invoiceId: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
       orderId: invoice.orderId,
-      orderNumber: invoice.order?.orderNumber || '',
+      orderNumber: invoice.orderNumber,
       totalAmount: invoice.totalAmount,
       platformFeeAmount: invoice.platformFeeAmount || 0,
       netToSeller: invoice.netToSeller || invoice.totalAmount,
@@ -244,7 +240,7 @@ async function calculateEligiblePayouts(sellerId: string): Promise<PayoutEligibi
  */
 async function createPayout(
   input: CreatePayoutInput
-): Promise<{ success: boolean; payout?: any; error?: string }> {
+): Promise<{ success: boolean; payout?: SellerPayout; error?: string }> {
   const { sellerId, periodStart, periodEnd } = input;
 
   // Verify seller has verified bank account
@@ -398,7 +394,7 @@ async function createBatchPayouts(
 async function approvePayout(
   payoutId: string,
   adminId: string
-): Promise<{ success: boolean; payout?: any; error?: string }> {
+): Promise<{ success: boolean; payout?: SellerPayout; error?: string }> {
   const payout = await prisma.sellerPayout.findUnique({
     where: { id: payoutId },
   });
@@ -444,7 +440,7 @@ async function approvePayout(
 async function processPayout(
   payoutId: string,
   adminId: string
-): Promise<{ success: boolean; payout?: any; error?: string }> {
+): Promise<{ success: boolean; payout?: SellerPayout; error?: string }> {
   const payout = await prisma.sellerPayout.findUnique({
     where: { id: payoutId },
   });
@@ -491,7 +487,7 @@ async function settlePayout(
   payoutId: string,
   bankReference: string,
   adminId?: string
-): Promise<{ success: boolean; payout?: any; error?: string }> {
+): Promise<{ success: boolean; payout?: SellerPayout; error?: string }> {
   const payout = await prisma.sellerPayout.findUnique({
     where: { id: payoutId },
   });
@@ -540,7 +536,7 @@ async function failPayout(
   payoutId: string,
   reason: string,
   adminId?: string
-): Promise<{ success: boolean; payout?: any; error?: string }> {
+): Promise<{ success: boolean; payout?: SellerPayout; error?: string }> {
   const payout = await prisma.sellerPayout.findUnique({
     where: { id: payoutId },
   });
@@ -589,7 +585,7 @@ async function holdPayout(
   reason: string,
   holdUntil?: Date,
   adminId?: string
-): Promise<{ success: boolean; payout?: any; error?: string }> {
+): Promise<{ success: boolean; payout?: SellerPayout; error?: string }> {
   const payout = await prisma.sellerPayout.findUnique({
     where: { id: payoutId },
   });
@@ -636,7 +632,7 @@ async function holdPayout(
 async function getSellerPayouts(
   sellerId: string,
   filters: PayoutFilters = {}
-): Promise<{ payouts: any[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+): Promise<{ payouts: SellerPayout[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
   const { status, dateFrom, dateTo, page = 1, limit = 20 } = filters;
 
   const where: any = { sellerId };
@@ -874,23 +870,20 @@ async function getFundsTimeline(
     },
     orderBy: { paidAt: 'desc' },
     take: limit,
-    include: {
-      order: {
-        select: {
-          id: true,
-          orderNumber: true,
-          status: true,
-          closedAt: true,
-        },
-      },
-    },
   });
 
   const now = new Date();
   const entries = [];
 
   for (const invoice of recentInvoices) {
-    if (!invoice.order || !invoice.paidAt) continue;
+    if (!invoice.paidAt) continue;
+
+    // Look up the order separately (no relation on MarketplaceInvoice)
+    const order = await prisma.marketplaceOrder.findUnique({
+      where: { id: invoice.orderId },
+      select: { id: true, orderNumber: true, status: true, closedAt: true },
+    });
+    if (!order) continue;
 
     const paidAt = new Date(invoice.paidAt);
     const holdEndDate = new Date(paidAt);
@@ -923,7 +916,7 @@ async function getFundsTimeline(
       }
       payoutId = payoutLineItem.payout.id;
       payoutNumber = payoutLineItem.payout.payoutNumber;
-    } else if (invoice.order.status !== 'closed') {
+    } else if (order.status !== 'closed') {
       status = 'order_completed';
     } else if (now < holdEndDate) {
       status = 'funds_held';
@@ -945,7 +938,7 @@ async function getFundsTimeline(
     entries.push({
       id: invoice.id,
       orderId: invoice.orderId,
-      orderNumber: invoice.order.orderNumber,
+      orderNumber: order.orderNumber,
       amount: invoice.netToSeller || invoice.totalAmount,
       currency: invoice.currency,
       status,

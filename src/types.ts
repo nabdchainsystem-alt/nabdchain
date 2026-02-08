@@ -1,9 +1,8 @@
-
 export enum StatusColor {
   DONE = '#00b369',
   WORKING = '#e59935',
   STUCK = '#cb3d52',
-  EMPTY = '#aeaeae'
+  EMPTY = '#aeaeae',
 }
 
 export type PriorityLevel = 'Urgent' | 'High' | 'Medium' | 'Low';
@@ -52,17 +51,72 @@ export interface BoardColumn {
 }
 
 export type BoardViewType =
-  | 'kanban' | 'table' | 'datatable' | 'list' | 'doc' | 'calendar' | 'gantt'
-  | 'pivot_table' | 'overview' | 'warehouse_capacity_map' | 'gtd' | 'cornell'
-  | 'dashboards' | 'whiteboard' | 'automation_rules' | 'goals_okrs' | 'workload'
-  | 'recurring' | 'spreadsheet' | 'timeline' | 'forms' | 'purchase_overview' | 'supplier_performance' | 'purchase_behavior' | 'cost_control' | 'purchase_funnel' | 'dependency_risk' | 'forecast_planning'
-  | 'inventory_overview' | 'stock_movement' | 'inventory_aging' | 'stock_accuracy' | 'reorder_planning' | 'warehouse_performance' | 'inventory_forecast'
-  | 'sales_insights' | 'sales_performance' | 'sales_analysis' | 'sales_forecast' | 'sales_funnel' | 'sales_segmentation' | 'sales_promotions' | 'expenses_overview' | 'category_analysis' | 'fixed_variable'
-  | 'trends_anomalies' | 'approval_flow' | 'dept_accountability' | 'forecast_optimization'
-  | 'customer_overview' | 'segmentation_value' | 'behavior_patterns'
-  | 'retention_churn' | 'journey_touchpoints' | 'satisfaction_feedback' | 'forecast_risk'
-  | 'supplier_overview' | 'supplier_delivery' | 'supplier_cost' | 'supplier_quality' | 'supplier_lead_time' | 'supplier_risk' | 'supplier_strategic'
-  | 'supplier_performance' | 'supplier_risk_compliance' | 'supplier_orders'
+  | 'kanban'
+  | 'table'
+  | 'datatable'
+  | 'list'
+  | 'doc'
+  | 'calendar'
+  | 'gantt'
+  | 'pivot_table'
+  | 'overview'
+  | 'warehouse_capacity_map'
+  | 'gtd'
+  | 'cornell'
+  | 'dashboards'
+  | 'whiteboard'
+  | 'automation_rules'
+  | 'goals_okrs'
+  | 'workload'
+  | 'recurring'
+  | 'spreadsheet'
+  | 'timeline'
+  | 'forms'
+  | 'purchase_overview'
+  | 'supplier_performance'
+  | 'purchase_behavior'
+  | 'cost_control'
+  | 'purchase_funnel'
+  | 'dependency_risk'
+  | 'forecast_planning'
+  | 'inventory_overview'
+  | 'stock_movement'
+  | 'inventory_aging'
+  | 'stock_accuracy'
+  | 'reorder_planning'
+  | 'warehouse_performance'
+  | 'inventory_forecast'
+  | 'sales_insights'
+  | 'sales_performance'
+  | 'sales_analysis'
+  | 'sales_forecast'
+  | 'sales_funnel'
+  | 'sales_segmentation'
+  | 'sales_promotions'
+  | 'expenses_overview'
+  | 'category_analysis'
+  | 'fixed_variable'
+  | 'trends_anomalies'
+  | 'approval_flow'
+  | 'dept_accountability'
+  | 'forecast_optimization'
+  | 'customer_overview'
+  | 'segmentation_value'
+  | 'behavior_patterns'
+  | 'retention_churn'
+  | 'journey_touchpoints'
+  | 'satisfaction_feedback'
+  | 'forecast_risk'
+  | 'supplier_overview'
+  | 'supplier_delivery'
+  | 'supplier_cost'
+  | 'supplier_quality'
+  | 'supplier_lead_time'
+  | 'supplier_risk'
+  | 'supplier_strategic'
+  | 'supplier_performance'
+  | 'supplier_risk_compliance'
+  | 'supplier_orders'
   | 'dept_data';
 
 export interface Board {
@@ -90,7 +144,36 @@ export interface Workspace {
   nameDirection?: 'rtl' | 'ltr' | 'auto';
 }
 
-export type ViewState = 'dashboard' | 'board' | 'inbox' | 'teams' | 'vault' | 'my_work' | 'flow_hub' | 'process_map' | 'procurement' | 'warehouse' | 'shipping' | 'fleet' | 'vendors' | 'planning' | 'maintenance' | 'production' | 'quality' | 'sales_factory' | 'sales_listing' | 'sales' | 'finance' | 'it_support' | 'hr' | 'marketing' | 'local_marketplace' | 'foreign_marketplace' | 'cornell_notes' | 'quick_notes' | 'settings' | 'test' | 'arcade';
+export type ViewState =
+  | 'dashboard'
+  | 'board'
+  | 'inbox'
+  | 'teams'
+  | 'vault'
+  | 'my_work'
+  | 'flow_hub'
+  | 'process_map'
+  | 'procurement'
+  | 'warehouse'
+  | 'shipping'
+  | 'fleet'
+  | 'vendors'
+  | 'planning'
+  | 'maintenance'
+  | 'production'
+  | 'quality'
+  | 'sales_factory'
+  | 'sales_listing'
+  | 'sales'
+  | 'finance'
+  | 'it_support'
+  | 'hr'
+  | 'marketing'
+  | 'cornell_notes'
+  | 'quick_notes'
+  | 'settings'
+  | 'test'
+  | 'arcade';
 
 export interface RecentlyVisitedItem {
   id: string;
@@ -102,4 +185,3 @@ export interface RecentlyVisitedItem {
   color?: string;
   boardId?: string; // Optional, for board items
 }
-

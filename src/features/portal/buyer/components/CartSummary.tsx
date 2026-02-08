@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   PaperPlaneTilt,
   SpinnerGap,
-  Info,
   Storefront,
   Package,
   Trash,
@@ -150,7 +149,10 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
                 <span className="text-sm font-semibold" style={{ color: styles.success }}>
                   Buy Now
                 </span>
-                <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${styles.success}15`, color: styles.success }}>
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: `${styles.success}15`, color: styles.success }}
+                >
                   {buyNowItemCount}
                 </span>
               </div>
@@ -182,7 +184,10 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
                 <span className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
                   Request Quote
                 </span>
-                <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#f59e0b15', color: '#f59e0b' }}>
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: '#f59e0b15', color: '#f59e0b' }}
+                >
                   {rfqItemCount}
                 </span>
               </div>
@@ -252,9 +257,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
             ) : (
               <Lightning size={18} weight="fill" />
             )}
-            <span>
-              Buy Now ({buyNowItemCount})
-            </span>
+            <span>Buy Now ({buyNowItemCount})</span>
             <ArrowRight size={16} className={isRtl ? 'rotate-180' : ''} />
           </button>
         )}
@@ -277,9 +280,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
             ) : (
               <PaperPlaneTilt size={18} weight="bold" />
             )}
-            <span>
-              Request Quote ({rfqItemCount})
-            </span>
+            <span>Request Quote ({rfqItemCount})</span>
           </button>
         )}
 

@@ -3,7 +3,7 @@
 // Handles API calls for seller feature access checks
 // =============================================================================
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -49,12 +49,13 @@ export interface SingleFeatureResponse {
 export const featureGatingService = {
   /**
    * Get all feature access status for current seller
+   * Uses JWT Bearer token for authentication (no legacy x-user-id header)
    */
   async getFeatureAccess(): Promise<FeatureAccessResponse> {
-    const userId = localStorage.getItem('portal_user_id');
+    const token = portalApiClient.getAccessToken();
 
-    if (!userId) {
-      // Return all denied if no user
+    if (!token) {
+      // Return all denied if no token
       const allDenied: Record<GatedAction, GatingResult> = {
         view_portal: { allowed: false, reason: 'Not authenticated', reasonCode: 'NOT_AUTHENTICATED' },
         create_draft: { allowed: false, reason: 'Not authenticated', reasonCode: 'NOT_AUTHENTICATED' },
@@ -68,22 +69,17 @@ export const featureGatingService = {
       return { success: false, status: 'incomplete', features: allDenied };
     }
 
-    const response = await fetch(`${API_BASE}/api/gating/features`, {
-      headers: {
-        'x-user-id': userId,
-      },
-    });
-
-    return response.json();
+    return portalApiClient.get<FeatureAccessResponse>('/api/gating/features');
   },
 
   /**
    * Check if a specific action is allowed
+   * Uses JWT Bearer token for authentication (no legacy x-user-id header)
    */
   async checkFeature(action: GatedAction): Promise<SingleFeatureResponse> {
-    const userId = localStorage.getItem('portal_user_id');
+    const token = portalApiClient.getAccessToken();
 
-    if (!userId) {
+    if (!token) {
       return {
         success: false,
         allowed: false,
@@ -92,13 +88,7 @@ export const featureGatingService = {
       };
     }
 
-    const response = await fetch(`${API_BASE}/api/gating/features/${action}`, {
-      headers: {
-        'x-user-id': userId,
-      },
-    });
-
-    return response.json();
+    return portalApiClient.get<SingleFeatureResponse>(`/api/gating/features/${action}`);
   },
 
   /**
@@ -131,14 +121,49 @@ export const featureGatingService = {
   },
 
   /**
+   * Get default features based on status (conservative defaults)
+   */
+  getDefaultFeatures(status: SellerStatus): Record<GatedAction, GatingResult> {
+    const denied: GatingResult = { allowed: false, reason: 'Feature access pending', reasonCode: 'PENDING' };
+    const allowed: GatingResult = { allowed: true };
+
+    if (status === 'approved') {
+      return {
+        view_portal: allowed,
+        create_draft: allowed,
+        publish_listing: allowed,
+        send_quote: allowed,
+        accept_order: allowed,
+        confirm_delivery: allowed,
+        send_invoice: allowed,
+        receive_payout: allowed,
+      };
+    }
+
+    return {
+      view_portal: status !== 'suspended' ? allowed : denied,
+      create_draft: status !== 'suspended' ? allowed : denied,
+      publish_listing: denied,
+      send_quote: denied,
+      accept_order: denied,
+      confirm_delivery: denied,
+      send_invoice: denied,
+      receive_payout: denied,
+    };
+  },
+
+  /**
    * Cache feature access in localStorage
    */
   cacheFeatureAccess(data: { status: SellerStatus; features: Record<GatedAction, GatingResult> }): void {
     try {
-      localStorage.setItem('seller_feature_access', JSON.stringify({
-        ...data,
-        timestamp: Date.now(),
-      }));
+      localStorage.setItem(
+        'seller_feature_access',
+        JSON.stringify({
+          ...data,
+          timestamp: Date.now(),
+        }),
+      );
     } catch {
       // Ignore storage errors
     }
@@ -149,56 +174,6 @@ export const featureGatingService = {
    */
   clearCache(): void {
     localStorage.removeItem('seller_feature_access');
-  },
-
-  /**
-   * Get default features based on status (for offline/sync use)
-   */
-  getDefaultFeatures(status: SellerStatus): Record<GatedAction, GatingResult> {
-    const defaults: Record<SellerStatus, Record<GatedAction, GatingResult>> = {
-      incomplete: {
-        view_portal: { allowed: true },
-        create_draft: { allowed: false, reason: 'Complete your profile to create listings', reasonCode: 'PROFILE_INCOMPLETE', redirectTo: '/portal/seller/onboarding' },
-        publish_listing: { allowed: false, reason: 'Your account must be verified to publish listings', reasonCode: 'NOT_VERIFIED' },
-        send_quote: { allowed: false, reason: 'Your account must be verified to send quotes', reasonCode: 'NOT_VERIFIED' },
-        accept_order: { allowed: false, reason: 'Your account must be verified to accept orders', reasonCode: 'NOT_VERIFIED' },
-        confirm_delivery: { allowed: false, reason: 'Your account must be verified to confirm deliveries', reasonCode: 'NOT_VERIFIED' },
-        send_invoice: { allowed: false, reason: 'Your account must be verified to send invoices', reasonCode: 'NOT_VERIFIED' },
-        receive_payout: { allowed: false, reason: 'Your bank account must be verified to receive payouts', reasonCode: 'BANK_NOT_VERIFIED' },
-      },
-      pending_review: {
-        view_portal: { allowed: true },
-        create_draft: { allowed: true },
-        publish_listing: { allowed: false, reason: 'Your account is pending verification. This usually takes 1-2 business days.', reasonCode: 'PENDING_VERIFICATION' },
-        send_quote: { allowed: false, reason: 'Your account is pending verification. This usually takes 1-2 business days.', reasonCode: 'PENDING_VERIFICATION' },
-        accept_order: { allowed: false, reason: 'Your account is pending verification. This usually takes 1-2 business days.', reasonCode: 'PENDING_VERIFICATION' },
-        confirm_delivery: { allowed: false, reason: 'Your account is pending verification. This usually takes 1-2 business days.', reasonCode: 'PENDING_VERIFICATION' },
-        send_invoice: { allowed: false, reason: 'Your account is pending verification. This usually takes 1-2 business days.', reasonCode: 'PENDING_VERIFICATION' },
-        receive_payout: { allowed: false, reason: 'Your bank account must be verified to receive payouts', reasonCode: 'BANK_NOT_VERIFIED' },
-      },
-      approved: {
-        view_portal: { allowed: true },
-        create_draft: { allowed: true },
-        publish_listing: { allowed: true },
-        send_quote: { allowed: true },
-        accept_order: { allowed: true },
-        confirm_delivery: { allowed: true },
-        send_invoice: { allowed: true },
-        receive_payout: { allowed: true },
-      },
-      suspended: {
-        view_portal: { allowed: true },
-        create_draft: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-        publish_listing: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-        send_quote: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-        accept_order: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-        confirm_delivery: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-        send_invoice: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-        receive_payout: { allowed: false, reason: 'Your account has been suspended. Contact support for assistance.', reasonCode: 'ACCOUNT_SUSPENDED' },
-      },
-    };
-
-    return defaults[status];
   },
 };
 

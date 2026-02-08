@@ -56,7 +56,7 @@ export const QuickActionCard: React.FC<QuickActionCardProps> = ({
           <span
             className="px-1.5 py-0.5 text-xs font-medium rounded-full"
             style={{
-              backgroundColor: styles.accent,
+              backgroundColor: styles.info,
               color: '#fff',
             }}
           >

@@ -1,4 +1,6 @@
 import { Server, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
 import { socketLogger } from '../utils/logger';
 
 interface RoomUser {
@@ -8,10 +10,45 @@ interface RoomUser {
     avatarUrl?: string;
 }
 
-// Store for active users in rooms (in-memory for now, use Redis for scaling)
+// In-memory fallback for room user tracking (presence data)
+// Socket.IO Redis adapter handles room membership; this tracks extra user metadata
 const rooms: Record<string, RoomUser[]> = {};
 
+/**
+ * Attach Redis adapter to Socket.IO for horizontal scaling.
+ * Falls back gracefully to in-memory if Redis is unavailable.
+ */
+export const attachRedisAdapter = (io: Server): void => {
+    const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL;
+    if (!redisUrl) {
+        socketLogger.warn('No REDIS_URL configured — Socket.IO using in-memory adapter (single-instance only)');
+        return;
+    }
+
+    try {
+        const pubClient = new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 3 });
+        const subClient = pubClient.duplicate();
+
+        pubClient.on('error', (err) => socketLogger.error('Redis pub client error', err));
+        subClient.on('error', (err) => socketLogger.error('Redis sub client error', err));
+
+        Promise.all([pubClient.connect(), subClient.connect()])
+            .then(() => {
+                io.adapter(createAdapter(pubClient, subClient));
+                socketLogger.info('Socket.IO Redis adapter connected — horizontal scaling enabled');
+            })
+            .catch((err) => {
+                socketLogger.error('Failed to connect Redis adapter, falling back to in-memory', err);
+            });
+    } catch (err) {
+        socketLogger.error('Failed to initialize Redis adapter', err);
+    }
+};
+
 export const initializeSocket = (io: Server) => {
+    // Attempt Redis adapter attachment
+    attachRedisAdapter(io);
+
     io.on('connection', (socket: Socket) => {
         socketLogger.info(`Client connected: ${socket.id}`);
 

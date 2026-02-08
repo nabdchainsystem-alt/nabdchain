@@ -1,210 +1,237 @@
 import React, { useState } from 'react';
-import { Folder, Image, FileText, Globe, DotsThreeVertical as MoreVertical, Trash as Trash2, ArrowSquareOut as ExternalLink, File, Star, PencilSimple as Edit2, ArrowCounterClockwise as Restore } from 'phosphor-react';
+import {
+  Folder,
+  Image,
+  FileText,
+  Globe,
+  DotsThreeVertical as MoreVertical,
+  Trash as Trash2,
+  ArrowSquareOut as ExternalLink,
+  File,
+  Star,
+  PencilSimple as Edit2,
+  ArrowCounterClockwise as Restore,
+} from 'phosphor-react';
 import { VaultItem } from '../types';
 
 interface Props {
-    items: VaultItem[];
-    onNavigate: (folderId: string) => void;
-    onDelete: (itemId: string) => void;
-    onToggleFavorite: (item: VaultItem) => void;
-    onRename: (item: VaultItem) => void;
-    onMove: (item: VaultItem) => void;
-    onRestore?: (item: VaultItem) => void;
-    activeDragItem?: VaultItem | null;
+  items: VaultItem[];
+  onNavigate: (folderId: string) => void;
+  onDelete: (itemId: string) => void;
+  onToggleFavorite: (item: VaultItem) => void;
+  onRename: (item: VaultItem) => void;
+  onMove: (item: VaultItem) => void;
+  onRestore?: (item: VaultItem) => void;
+  activeDragItem?: VaultItem | null;
 }
 
-export const VaultGrid: React.FC<Props> = ({ items, onNavigate, onDelete, onToggleFavorite, onRename, onMove, onRestore }) => {
-    const [contextMenu, setContextMenu] = useState<{ id: string, x: number, y: number } | null>(null);
+export const VaultGrid: React.FC<Props> = ({
+  items,
+  onNavigate,
+  onDelete,
+  onToggleFavorite,
+  onRename,
+  onMove,
+  onRestore,
+}) => {
+  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
-    const handleContextMenu = (e: React.MouseEvent, itemId: string) => {
-        e.preventDefault();
-        setContextMenu({ id: itemId, x: e.clientX, y: e.clientY });
-    };
+  const handleContextMenu = (e: React.MouseEvent, itemId: string) => {
+    e.preventDefault();
+    setContextMenu({ id: itemId, x: e.clientX, y: e.clientY });
+  };
 
-    const handleItemClick = (item: VaultItem) => {
-        // Placeholder for selection
-    };
+  const handleItemClick = (_item: VaultItem) => {
+    // Placeholder for selection
+  };
 
-    const handleDoubleClick = (e: React.MouseEvent, item: VaultItem) => {
-        e.stopPropagation();
-        if (item.type === 'folder') {
-            onNavigate(item.id);
-        } else if (item.previewUrl) {
-            window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
-        }
-    };
+  const handleDoubleClick = (e: React.MouseEvent, item: VaultItem) => {
+    e.stopPropagation();
+    if (item.type === 'folder') {
+      onNavigate(item.id);
+    } else if (item.previewUrl) {
+      window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
-    const getFileIcon = (item: VaultItem) => {
-        const ext = item.title.split('.').pop()?.toLowerCase();
-        if (ext === 'pdf') return <FileText size={32} className="text-red-500" />;
-        if (['xls', 'xlsx', 'csv'].includes(ext || '')) return <FileText size={32} className="text-green-500" />;
-        if (['doc', 'docx'].includes(ext || '')) return <FileText size={32} className="text-blue-500" />;
-        if (['zip', 'rar'].includes(ext || '')) return <Folder size={32} className="text-yellow-600" />;
+  const getFileIcon = (item: VaultItem) => {
+    const ext = item.title.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return <FileText size={32} className="text-red-500" />;
+    if (['xls', 'xlsx', 'csv'].includes(ext || '')) return <FileText size={32} className="text-green-500" />;
+    if (['doc', 'docx'].includes(ext || '')) return <FileText size={32} className="text-blue-500" />;
+    if (['zip', 'rar'].includes(ext || '')) return <Folder size={32} className="text-yellow-600" />;
 
-        switch (item.type) {
-            case 'folder': return <Folder size={36} className="fill-blue-500/20 text-blue-600 dark:fill-blue-400/20 dark:text-blue-400" />;
-            case 'image': return <Image size={32} />;
-            case 'weblink': return <Globe size={32} />;
-            default: return <File size={32} className="text-gray-400" />;
-        }
-    };
+    switch (item.type) {
+      case 'folder':
+        return <Folder size={36} className="fill-blue-500/20 text-blue-600 dark:fill-blue-400/20 dark:text-blue-400" />;
+      case 'image':
+        return <Image size={32} />;
+      case 'weblink':
+        return <Globe size={32} />;
+      default:
+        return <File size={32} className="text-gray-400" />;
+    }
+  };
 
-    return (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-6" onClick={() => setContextMenu(null)}>
-            {items.map(item => (
-                <div
-                    key={item.id}
-                    onContextMenu={(e) => handleContextMenu(e, item.id)}
-                    onClick={() => handleItemClick(item)}
-                    onDoubleClick={(e) => handleDoubleClick(e, item)}
-                    className={`
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-6" onClick={() => setContextMenu(null)}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          onContextMenu={(e) => handleContextMenu(e, item.id)}
+          onClick={() => handleItemClick(item)}
+          onDoubleClick={(e) => handleDoubleClick(e, item)}
+          className={`
                         group relative flex flex-col items-center p-4 rounded-xl transition-all duration-200 cursor-pointer
                         hover:bg-gray-100 dark:hover:bg-[#20232b]
                         ${contextMenu?.id === item.id ? 'bg-gray-100 dark:bg-monday-dark-elevated ring-2 ring-indigo-500/20' : ''}
                     `}
-                >
-                    {/* Context Menu */}
-                    {contextMenu?.id === item.id && (
-                        <div
-                            className="absolute top-10 right-4 z-50 bg-white dark:bg-monday-dark-surface rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 w-40 animate-in fade-in zoom-in-95 duration-100"
-                            style={{ position: 'absolute' }} // Simplified positioning for now
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {item.isDeleted ? (
-                                // Trash item context menu
-                                <>
-                                    {onRestore && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onRestore(item);
-                                                setContextMenu(null);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
-                                        >
-                                            <Restore size={14} /> Restore
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(item.id);
-                                            setContextMenu(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                                    >
-                                        <Trash2 size={14} /> Delete Permanently
-                                    </button>
-                                </>
-                            ) : (
-                                // Normal item context menu
-                                <>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (item.type === 'folder') onNavigate(item.id);
-                                            else if (item.previewUrl) window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
-                                            setContextMenu(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                                    >
-                                        <ExternalLink size={14} /> Open
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onRename(item);
-                                            setContextMenu(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                                    >
-                                        <Edit2 size={14} /> Rename
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onMove(item);
-                                            setContextMenu(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                                    >
-                                        <Folder size={14} /> Move to
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onToggleFavorite(item);
-                                            setContextMenu(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                                    >
-                                        <Star size={14} className={item.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''} />
-                                        {item.isFavorite ? 'Unfavorite' : 'Favorite'}
-                                    </button>
-                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(item.id);
-                                            setContextMenu(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                                    >
-                                        <Trash2 size={14} /> Move to Trash
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
+        >
+          {/* Context Menu */}
+          {contextMenu?.id === item.id && (
+            <div
+              className="absolute top-10 right-4 z-50 bg-white dark:bg-monday-dark-surface rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 w-40 animate-in fade-in zoom-in-95 duration-100"
+              style={{ position: 'absolute' }} // Simplified positioning for now
+              onClick={(e) => e.stopPropagation()}
+            >
+              {item.isDeleted ? (
+                // Trash item context menu
+                <>
+                  {onRestore && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRestore(item);
+                        setContextMenu(null);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                    >
+                      <Restore size={14} /> Restore
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item.id);
+                      setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                  >
+                    <Trash2 size={14} /> Delete Permanently
+                  </button>
+                </>
+              ) : (
+                // Normal item context menu
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (item.type === 'folder') onNavigate(item.id);
+                      else if (item.previewUrl) window.open(item.previewUrl, '_blank', 'noopener,noreferrer');
+                      setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <ExternalLink size={14} /> Open
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRename(item);
+                      setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Edit2 size={14} /> Rename
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMove(item);
+                      setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Folder size={14} /> Move to
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(item);
+                      setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Star size={14} className={item.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''} />
+                    {item.isFavorite ? 'Unfavorite' : 'Favorite'}
+                  </button>
+                  <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item.id);
+                      setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                  >
+                    <Trash2 size={14} /> Move to Trash
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
-                    <div className="mb-3 relative">
-                        <div className={`
+          <div className="mb-3 relative">
+            <div
+              className={`
                              w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110
                              ${item.type === 'folder' ? 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50' : ''}
                              ${item.type === 'document' ? 'bg-gray-100 text-gray-500 dark:bg-gray-800' : ''}
                              ${item.type === 'image' ? 'bg-purple-100 text-purple-500 dark:bg-purple-500/20' : ''}
                              ${item.type === 'weblink' ? 'bg-cyan-100 text-cyan-500 dark:bg-cyan-500/20' : ''}
-                         `}>
-                            {item.previewUrl && item.type === 'image' ? (
-                                <img src={item.previewUrl} alt={item.title} className="w-full h-full object-cover rounded-2xl" />
-                            ) : (
-                                getFileIcon(item)
-                            )}
-                        </div>
+                         `}
+            >
+              {item.previewUrl && item.type === 'image' ? (
+                <img src={item.previewUrl} alt={item.title} className="w-full h-full object-cover rounded-2xl" />
+              ) : (
+                getFileIcon(item)
+              )}
+            </div>
 
-                        {item.type === 'weblink' && (
-                            <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <Globe size={10} className="text-cyan-500" />
-                            </div>
-                        )}
+            {item.type === 'weblink' && (
+              <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-100 dark:border-gray-700">
+                <Globe size={10} className="text-cyan-500" />
+              </div>
+            )}
 
-                        {item.isFavorite && (
-                            <div className="absolute -top-1 -left-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <Star size={10} className="text-yellow-400 fill-current" />
-                            </div>
-                        )}
+            {item.isFavorite && (
+              <div className="absolute -top-1 -left-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm border border-gray-100 dark:border-gray-700">
+                <Star size={10} className="text-yellow-400 fill-current" />
+              </div>
+            )}
 
-                        <button
-                            className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleContextMenu(e, item.id);
-                            }}
-                        >
-                            <MoreVertical size={14} className="text-gray-500" />
-                        </button>
-                    </div>
+            <button
+              className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleContextMenu(e, item.id);
+              }}
+            >
+              <MoreVertical size={14} className="text-gray-500" />
+            </button>
+          </div>
 
-                    <div className="text-center w-full">
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate w-full px-2" title={item.title}>
-                            {item.title}
-                        </h3>
-                        <span className="text-xs text-gray-400">
-                            {item.subtitle || (item.type === 'folder' ? '0 items' : '')}
-                        </span>
-                    </div>
-                </div>
-            ))}
+          <div className="text-center w-full">
+            <h3
+              className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate w-full px-2"
+              title={item.title}
+            >
+              {item.title}
+            </h3>
+            <span className="text-xs text-gray-400">{item.subtitle || (item.type === 'folder' ? '0 items' : '')}</span>
+          </div>
         </div>
-    );
+      ))}
+    </div>
+  );
 };

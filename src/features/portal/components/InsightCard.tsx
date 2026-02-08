@@ -1,5 +1,15 @@
 import React from 'react';
-import { IconProps, ArrowRight, Warning, CheckCircle, Info, TrendUp, WarningCircle, Lightbulb, Star } from 'phosphor-react';
+import {
+  IconProps,
+  ArrowRight,
+  Warning,
+  CheckCircle,
+  Info,
+  TrendUp,
+  WarningCircle,
+  Lightbulb,
+  Star,
+} from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 
 // =============================================================================
@@ -48,21 +58,20 @@ interface InsightCardProps {
  * - Action button
  * - Dismissible option
  */
-export const InsightCard: React.FC<InsightCardProps> = ({
-  insight,
-  compact = false,
-  className = '',
-}) => {
+export const InsightCard: React.FC<InsightCardProps> = ({ insight, compact = false, className = '' }) => {
   const { styles } = usePortal();
 
-  const typeConfig: Record<InsightType, {
-    icon: React.ComponentType<IconProps>;
-    color: string;
-    bgLight: string;
-    bgDark: string;
-    borderLight: string;
-    borderDark: string;
-  }> = {
+  const typeConfig: Record<
+    InsightType,
+    {
+      icon: React.ComponentType<IconProps>;
+      color: string;
+      bgLight: string;
+      bgDark: string;
+      borderLight: string;
+      borderDark: string;
+    }
+  > = {
     alert: {
       icon: WarningCircle,
       color: '#ef4444',
@@ -132,10 +141,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({
     >
       {/* Priority indicator bar */}
       {isHighPriority && (
-        <div
-          className="absolute left-0 top-0 bottom-0 w-1"
-          style={{ backgroundColor: config.color }}
-        />
+        <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: config.color }} />
       )}
 
       <div className={`flex ${compact ? 'gap-2' : 'gap-3'} ${isHighPriority ? 'ml-2' : ''}`}>
@@ -144,11 +150,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({
           className={`flex-shrink-0 rounded-lg flex items-center justify-center ${compact ? 'w-8 h-8' : 'w-10 h-10'}`}
           style={{ backgroundColor: `${config.color}20` }}
         >
-          <Icon
-            size={compact ? 16 : 20}
-            weight="bold"
-            style={{ color: config.color }}
-          />
+          <Icon size={compact ? 16 : 20} weight="bold" style={{ color: config.color }} />
         </div>
 
         {/* Content */}
@@ -162,10 +164,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({
                 {insight.title}
               </h4>
               {!compact && insight.description && (
-                <p
-                  className="mt-1 text-xs leading-relaxed"
-                  style={{ color: styles.textSecondary }}
-                >
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: styles.textSecondary }}>
                   {insight.description}
                 </p>
               )}
@@ -174,10 +173,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({
             {/* Metric */}
             {insight.metric && (
               <div className="flex-shrink-0 text-right">
-                <div
-                  className={`font-semibold ${compact ? 'text-base' : 'text-lg'}`}
-                  style={{ color: config.color }}
-                >
+                <div className={`font-semibold ${compact ? 'text-base' : 'text-lg'}`} style={{ color: config.color }}>
                   {insight.metric.value}
                 </div>
                 {insight.metric.label && (
@@ -212,7 +208,9 @@ export const InsightCard: React.FC<InsightCardProps> = ({
             className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity"
             style={{ backgroundColor: styles.bgSecondary }}
           >
-            <span className="text-xs" style={{ color: styles.textMuted }}>×</span>
+            <span className="text-xs" style={{ color: styles.textMuted }}>
+              ×
+            </span>
           </button>
         )}
       </div>
@@ -266,7 +264,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Star size={14} weight="fill" style={{ color: styles.primary }} />
+          <Star size={14} weight="fill" style={{ color: styles.info }} />
           <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
             {title}
           </h3>
@@ -282,11 +280,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
         </div>
 
         {hasMore && !showAll && onShowAll && (
-          <button
-            onClick={onShowAll}
-            className="text-xs font-medium hover:underline"
-            style={{ color: styles.primary }}
-          >
+          <button onClick={onShowAll} className="text-xs font-medium hover:underline" style={{ color: styles.info }}>
             View all
           </button>
         )}
@@ -295,11 +289,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
       {/* Insights List */}
       <div className={compact ? 'space-y-2' : 'space-y-3'}>
         {visibleInsights.map((insight) => (
-          <InsightCard
-            key={insight.id}
-            insight={insight}
-            compact={compact}
-          />
+          <InsightCard key={insight.id} insight={insight} compact={compact} />
         ))}
       </div>
     </div>
@@ -363,10 +353,7 @@ export const QuickStatInsight: React.FC<QuickStatInsightProps> = ({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p
-            className="text-xs font-medium uppercase tracking-wider"
-            style={{ color: styles.textMuted }}
-          >
+          <p className="text-xs font-medium uppercase tracking-wider" style={{ color: styles.textMuted }}>
             {label}
           </p>
           <p
@@ -400,10 +387,7 @@ export const QuickStatInsight: React.FC<QuickStatInsightProps> = ({
 
       {/* Insight line */}
       {insight && (
-        <div
-          className="mt-3 pt-3 border-t flex items-center gap-2"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="mt-3 pt-3 border-t flex items-center gap-2" style={{ borderColor: styles.border }}>
           <Lightbulb size={12} weight="fill" style={{ color: statusColor }} />
           <span className="text-xs flex-1" style={{ color: styles.textSecondary }}>
             {insight}
@@ -412,7 +396,7 @@ export const QuickStatInsight: React.FC<QuickStatInsightProps> = ({
             <button
               onClick={action.onClick}
               className="text-xs font-medium hover:underline"
-              style={{ color: styles.primary }}
+              style={{ color: styles.info }}
             >
               {action.label}
             </button>

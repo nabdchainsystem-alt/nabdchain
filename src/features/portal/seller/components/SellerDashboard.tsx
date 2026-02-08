@@ -1,143 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
-import {
-  CurrencyDollar,
-  ShoppingCart,
-  Cube,
-  ChatCircleDots,
-  TrendUp,
-  TrendDown,
-  ArrowClockwise,
-  Package,
-} from 'phosphor-react';
+import { CurrencyDollar, ShoppingCart, Cube, ChatCircleDots, ArrowClockwise, Package } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { dashboardService, DashboardSummary } from '../../services/dashboardService';
 import { EmptyState, Button } from '../../components';
-
-// =============================================================================
-// Types
-// =============================================================================
-
-interface KpiCardProps {
-  label: string;
-  value: string | number;
-  icon: React.ComponentType<{ size: number; weight?: string }>;
-  change: number;
-  loading?: boolean;
-}
-
-// =============================================================================
-// Skeleton Component
-// =============================================================================
-
-const KpiCardSkeleton: React.FC = () => {
-  const { styles } = usePortal();
-
-  return (
-    <div
-      className="p-5 rounded-lg border transition-colors animate-pulse"
-      style={{
-        borderColor: styles.border,
-        backgroundColor: styles.bgCard,
-      }}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div
-            className="h-3 w-24 rounded mb-3"
-            style={{ backgroundColor: styles.bgSecondary }}
-          />
-          <div
-            className="h-8 w-32 rounded mb-2"
-            style={{ backgroundColor: styles.bgSecondary }}
-          />
-          <div
-            className="h-4 w-28 rounded"
-            style={{ backgroundColor: styles.bgSecondary }}
-          />
-        </div>
-        <div
-          className="w-10 h-10 rounded-md"
-          style={{ backgroundColor: styles.bgSecondary }}
-        />
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// KPI Card Component
-// =============================================================================
-
-const KpiCard: React.FC<KpiCardProps> = ({
-  label,
-  value,
-  icon: Icon,
-  change,
-  loading = false,
-}) => {
-  const { styles, t } = usePortal();
-
-  if (loading) {
-    return <KpiCardSkeleton />;
-  }
-
-  const isPositive = change >= 0;
-  const TrendIcon = isPositive ? TrendUp : TrendDown;
-  const changeColor = isPositive ? styles.success : '#ef4444';
-
-  return (
-    <div
-      className="p-5 rounded-lg border transition-all hover:shadow-sm"
-      style={{
-        borderColor: styles.border,
-        backgroundColor: styles.bgCard,
-      }}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <p
-            className="text-xs font-medium uppercase tracking-wider"
-            style={{ color: styles.textMuted }}
-          >
-            {label}
-          </p>
-          <p
-            className="mt-2 text-2xl font-semibold"
-            style={{
-              color: styles.textPrimary,
-              fontFamily: styles.fontHeading,
-            }}
-          >
-            {value}
-          </p>
-          <div className="mt-2 flex items-center gap-1.5">
-            <TrendIcon size={14} weight="bold" style={{ color: changeColor }} />
-            <span
-              className="text-xs font-medium"
-              style={{ color: changeColor }}
-            >
-              {isPositive ? '+' : ''}{change}%
-            </span>
-            <span
-              className="text-xs"
-              style={{ color: styles.textMuted }}
-            >
-              {t('seller.dashboard.fromLastMonth')}
-            </span>
-          </div>
-        </div>
-        <div
-          className="w-10 h-10 rounded-md flex items-center justify-center"
-          style={{ backgroundColor: styles.bgSecondary }}
-        >
-          <Icon size={20} weight="light" style={{ color: styles.textMuted }} />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // =============================================================================
 // Main Dashboard Component
@@ -212,32 +80,44 @@ export const SellerDashboard: React.FC = () => {
     <div>
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard
+        <KPICard
+          id="totalRevenue"
           label={t('seller.dashboard.totalRevenue')}
           value={loading ? '' : formatCurrency(summary?.totalRevenue ?? 0)}
-          icon={CurrencyDollar}
-          change={summary?.revenueChange ?? 0}
+          change={`${(summary?.revenueChange ?? 0) >= 0 ? '+' : ''}${summary?.revenueChange ?? 0}%`}
+          trend={(summary?.revenueChange ?? 0) > 0 ? 'up' : (summary?.revenueChange ?? 0) < 0 ? 'down' : 'neutral'}
+          icon={<CurrencyDollar size={18} />}
+          color="emerald"
           loading={loading}
         />
-        <KpiCard
+        <KPICard
+          id="totalOrders"
           label={t('seller.dashboard.totalOrders')}
           value={loading ? '' : formatNumber(summary?.totalOrders ?? 0)}
-          icon={ShoppingCart}
-          change={summary?.ordersChange ?? 0}
+          change={`${(summary?.ordersChange ?? 0) >= 0 ? '+' : ''}${summary?.ordersChange ?? 0}%`}
+          trend={(summary?.ordersChange ?? 0) > 0 ? 'up' : (summary?.ordersChange ?? 0) < 0 ? 'down' : 'neutral'}
+          icon={<ShoppingCart size={18} />}
+          color="blue"
           loading={loading}
         />
-        <KpiCard
+        <KPICard
+          id="activeListings"
           label={t('seller.dashboard.activeListings')}
           value={loading ? '' : formatNumber(summary?.activeListings ?? 0)}
-          icon={Cube}
-          change={summary?.listingsChange ?? 0}
+          change={`${(summary?.listingsChange ?? 0) >= 0 ? '+' : ''}${summary?.listingsChange ?? 0}%`}
+          trend={(summary?.listingsChange ?? 0) > 0 ? 'up' : (summary?.listingsChange ?? 0) < 0 ? 'down' : 'neutral'}
+          icon={<Cube size={18} />}
+          color="violet"
           loading={loading}
         />
-        <KpiCard
+        <KPICard
+          id="pendingRfqs"
           label={t('seller.dashboard.pendingRfqs')}
           value={loading ? '' : formatNumber(summary?.pendingRfqs ?? 0)}
-          icon={ChatCircleDots}
-          change={summary?.rfqsChange ?? 0}
+          icon={<ChatCircleDots size={18} />}
+          change={`${(summary?.rfqsChange ?? 0) >= 0 ? '+' : ''}${summary?.rfqsChange ?? 0}%`}
+          trend={(summary?.rfqsChange ?? 0) > 0 ? 'up' : (summary?.rfqsChange ?? 0) < 0 ? 'down' : 'neutral'}
+          color="amber"
           loading={loading}
         />
       </div>
@@ -347,10 +227,7 @@ export const SellerDashboard: React.FC = () => {
         style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
       >
         <div className="p-4 border-b" style={{ borderColor: styles.border }}>
-          <h3
-            className="text-sm font-semibold"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-          >
+          <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
             Recent Orders
           </h3>
         </div>
@@ -358,38 +235,29 @@ export const SellerDashboard: React.FC = () => {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ backgroundColor: styles.bgSecondary }}>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: styles.textMuted }}>Order ID</th>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: styles.textMuted }}>Customer</th>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: styles.textMuted }}>Product</th>
-                <th className="px-4 py-3 text-right font-medium" style={{ color: styles.textMuted }}>Amount</th>
-                <th className="px-4 py-3 text-center font-medium" style={{ color: styles.textMuted }}>Status</th>
+                <th className="px-4 py-3 text-left font-medium" style={{ color: styles.textMuted }}>
+                  Order ID
+                </th>
+                <th className="px-4 py-3 text-left font-medium" style={{ color: styles.textMuted }}>
+                  Customer
+                </th>
+                <th className="px-4 py-3 text-left font-medium" style={{ color: styles.textMuted }}>
+                  Product
+                </th>
+                <th className="px-4 py-3 text-right font-medium" style={{ color: styles.textMuted }}>
+                  Amount
+                </th>
+                <th className="px-4 py-3 text-center font-medium" style={{ color: styles.textMuted }}>
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { id: 'ORD-2024-0048', customer: 'Al-Faisal Trading', product: 'Industrial Pump', amount: 4500, status: 'Delivered' },
-                { id: 'ORD-2024-0047', customer: 'Gulf Equipment Co.', product: 'Valve Assembly', amount: 2800, status: 'Shipped' },
-                { id: 'ORD-2024-0046', customer: 'Saudi Parts Ltd.', product: 'Motor Controller', amount: 6200, status: 'Processing' },
-                { id: 'ORD-2024-0045', customer: 'Eastern Supply', product: 'Bearing Set', amount: 1350, status: 'Pending' },
-              ].map((order) => (
-                <tr key={order.id} className="border-t" style={{ borderColor: styles.border }}>
-                  <td className="px-4 py-3 font-medium" style={{ color: styles.textPrimary }}>{order.id}</td>
-                  <td className="px-4 py-3" style={{ color: styles.textSecondary }}>{order.customer}</td>
-                  <td className="px-4 py-3" style={{ color: styles.textSecondary }}>{order.product}</td>
-                  <td className="px-4 py-3 text-right font-medium" style={{ color: styles.textPrimary }}>SAR {order.amount.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className="px-2 py-1 rounded-full text-xs font-medium"
-                      style={{
-                        backgroundColor: order.status === 'Delivered' ? '#dcfce7' : order.status === 'Shipped' ? '#dbeafe' : order.status === 'Processing' ? '#fef3c7' : '#f3f4f6',
-                        color: order.status === 'Delivered' ? '#166534' : order.status === 'Shipped' ? '#1e40af' : order.status === 'Processing' ? '#92400e' : '#374151',
-                      }}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center" style={{ color: styles.textMuted }}>
+                  No recent orders yet
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

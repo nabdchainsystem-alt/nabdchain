@@ -3,9 +3,8 @@
 // Enforces seller verification-based access control
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -297,7 +296,7 @@ export const featureGatingService = {
         });
       }
     } catch (error) {
-      console.error('Failed to log gating denial:', error);
+      apiLogger.error('Failed to log gating denial:', error);
     }
   },
 };

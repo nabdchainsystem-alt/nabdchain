@@ -6,9 +6,8 @@
 // Once ISSUED, content is frozen; only status can change.
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -128,8 +127,8 @@ async function logInvoiceEvent(
   actorId: string | null,
   actorType: 'buyer' | 'seller' | 'system',
   eventType: string,
-  fromStatus?: string,
-  toStatus?: string,
+  fromStatus?: string | null,
+  toStatus?: string | null,
   metadata?: Record<string, unknown>
 ): Promise<void> {
   await prisma.marketplaceInvoiceEvent.create({
@@ -271,7 +270,7 @@ export const marketplaceInvoiceService = {
         },
       };
     } catch (error) {
-      console.error('Error creating invoice from order:', error);
+      apiLogger.error('Error creating invoice from order:', error);
       return { success: false, error: 'Failed to create invoice' };
     }
   },
@@ -561,7 +560,7 @@ export const marketplaceInvoiceService = {
         },
       };
     } catch (error) {
-      console.error('Error issuing invoice:', error);
+      apiLogger.error('Error issuing invoice:', error);
       return { success: false, error: 'Failed to issue invoice' };
     }
   },
@@ -620,7 +619,7 @@ export const marketplaceInvoiceService = {
         },
       };
     } catch (error) {
-      console.error('Error cancelling invoice:', error);
+      apiLogger.error('Error cancelling invoice:', error);
       return { success: false, error: 'Failed to cancel invoice' };
     }
   },
@@ -680,7 +679,7 @@ export const marketplaceInvoiceService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error marking invoice as paid:', error);
+      apiLogger.error('Error marking invoice as paid:', error);
       return { success: false, error: 'Failed to mark invoice as paid' };
     }
   },
@@ -727,7 +726,7 @@ export const marketplaceInvoiceService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error marking invoice as overdue:', error);
+      apiLogger.error('Error marking invoice as overdue:', error);
       return { success: false, error: 'Failed to mark invoice as overdue' };
     }
   },

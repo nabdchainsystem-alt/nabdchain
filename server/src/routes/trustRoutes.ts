@@ -2,18 +2,21 @@
 // Trust Routes - Stage 8: Automation, Payouts & Scale
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import {
+  requirePortalAuth,
+  requirePortalRole,
+  PortalAuthRequest,
+} from '../middleware/portalAdminMiddleware';
 import {
   calculateTrustScore,
   getRelationshipTrust,
 } from '../services/crossIntelligenceService';
 import { scaleSafetyService } from '../services/scaleSafetyService';
 import { apiLogger } from '../utils/logger';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 const router = Router();
 
 // =============================================================================
@@ -39,9 +42,9 @@ const performanceSchema = z.object({
  * GET /api/trust/score
  * Get own trust score
  */
-router.get('/score', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/score', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -66,9 +69,9 @@ router.get('/score', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/trust/performance
  * Get performance metrics
  */
-router.get('/performance', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/performance', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -215,9 +218,9 @@ router.get('/performance', requireAuth, async (req: AuthRequest, res: Response) 
  * GET /api/trust/history
  * Get trust score history (events)
  */
-router.get('/history', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -271,14 +274,14 @@ router.get('/history', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/trust/relationship/:partyId
  * Get relationship trust with a specific buyer/seller
  */
-router.get('/relationship/:partyId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/relationship/:partyId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const partyId = req.params.partyId;
+    const partyId = req.params.partyId as string;
     const relationship = await getRelationshipTrust(partyId, userId);
 
     return res.json(relationship);
@@ -292,9 +295,9 @@ router.get('/relationship/:partyId', requireAuth, async (req: AuthRequest, res: 
  * GET /api/trust/rate-limits
  * Get current rate limit status
  */
-router.get('/rate-limits', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/rate-limits', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -312,14 +315,14 @@ router.get('/rate-limits', requireAuth, async (req: AuthRequest, res: Response) 
  * GET /api/trust/feature/:feature
  * Check access to a feature based on trust
  */
-router.get('/feature/:feature', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/feature/:feature', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const feature = req.params.feature;
+    const feature = req.params.feature as string;
     const access = await scaleSafetyService.checkFeatureAccess(userId, feature);
 
     return res.json(access);
@@ -337,14 +340,8 @@ router.get('/feature/:feature', requireAuth, async (req: AuthRequest, res: Respo
  * GET /api/trust/admin/alerts
  * Get active alerts (admin only)
  */
-router.get('/admin/alerts', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/admin/alerts', requirePortalAuth(), requirePortalRole('admin', 'staff'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
     const alerts = await scaleSafetyService.getActiveAlerts({
       page: Number(req.query.page) || 1,
       limit: Number(req.query.limit) || 50,
@@ -361,14 +358,8 @@ router.get('/admin/alerts', requireAuth, async (req: AuthRequest, res: Response)
  * GET /api/trust/admin/alerts/stats
  * Get alert statistics (admin only)
  */
-router.get('/admin/alerts/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/admin/alerts/stats', requirePortalAuth(), requirePortalRole('admin', 'staff'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
     const stats = await scaleSafetyService.getAlertStats();
 
     return res.json(stats);
@@ -382,15 +373,10 @@ router.get('/admin/alerts/stats', requireAuth, async (req: AuthRequest, res: Res
  * POST /api/trust/admin/alerts/:id/acknowledge
  * Acknowledge an alert (admin only)
  */
-router.post('/admin/alerts/:id/acknowledge', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/alerts/:id/acknowledge', requirePortalAuth(), requirePortalRole('admin', 'staff'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
-    const result = await scaleSafetyService.acknowledgeAlert(req.params.id, userId);
+    const adminId = req.portalUser!.id;
+    const result = await scaleSafetyService.acknowledgeAlert(req.params.id as string, adminId);
 
     if (!result.success) {
       return res.status(400).json({ error: 'Failed to acknowledge alert' });
@@ -407,17 +393,12 @@ router.post('/admin/alerts/:id/acknowledge', requireAuth, async (req: AuthReques
  * POST /api/trust/admin/alerts/:id/resolve
  * Resolve an alert (admin only)
  */
-router.post('/admin/alerts/:id/resolve', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/alerts/:id/resolve', requirePortalAuth(), requirePortalRole('admin', 'staff'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    const adminId = req.portalUser!.id;
     const resolution = req.body.resolution as string | undefined;
 
-    // TODO: Add admin role check
-    const result = await scaleSafetyService.resolveAlert(req.params.id, userId, resolution);
+    const result = await scaleSafetyService.resolveAlert(req.params.id as string, adminId, resolution);
 
     if (!result.success) {
       return res.status(400).json({ error: 'Failed to resolve alert' });
@@ -434,20 +415,14 @@ router.post('/admin/alerts/:id/resolve', requireAuth, async (req: AuthRequest, r
  * POST /api/trust/admin/seller/:sellerId/soft-cap
  * Apply soft cap to a seller (admin only)
  */
-router.post('/admin/seller/:sellerId/soft-cap', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/seller/:sellerId/soft-cap', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const reason = req.body.reason as string;
     if (!reason) {
       return res.status(400).json({ error: 'Reason is required' });
     }
 
-    // TODO: Add admin role check
-    const result = await scaleSafetyService.applySoftCap(req.params.sellerId, reason);
+    const result = await scaleSafetyService.applySoftCap(req.params.sellerId as string, reason);
 
     if (!result.success) {
       return res.status(400).json({ error: 'Failed to apply soft cap' });
@@ -464,15 +439,9 @@ router.post('/admin/seller/:sellerId/soft-cap', requireAuth, async (req: AuthReq
  * DELETE /api/trust/admin/seller/:sellerId/soft-cap
  * Remove soft cap from a seller (admin only)
  */
-router.delete('/admin/seller/:sellerId/soft-cap', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/admin/seller/:sellerId/soft-cap', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
-    const result = await scaleSafetyService.removeSoftCap(req.params.sellerId);
+    const result = await scaleSafetyService.removeSoftCap(req.params.sellerId as string);
 
     if (!result.success) {
       return res.status(400).json({ error: 'Failed to remove soft cap' });

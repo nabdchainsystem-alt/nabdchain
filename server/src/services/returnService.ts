@@ -6,9 +6,9 @@
 //            APPROVED -> IN_TRANSIT -> RECEIVED -> REFUND_PROCESSED -> CLOSED
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import type { MarketplaceReturn } from '@prisma/client';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -165,7 +165,7 @@ async function logReturnEvent(
  * Create a return request from a dispute
  * Called when dispute resolution requires physical return
  */
-async function createReturn(input: CreateReturnInput): Promise<{ success: boolean; return?: any; error?: string }> {
+async function createReturn(input: CreateReturnInput): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     // Validate dispute exists
     const dispute = await prisma.marketplaceDispute.findUnique({
@@ -220,7 +220,7 @@ async function createReturn(input: CreateReturnInput): Promise<{ success: boolea
 
     return { success: true, return: returnRequest };
   } catch (error) {
-    console.error('Error creating return:', error);
+    apiLogger.error('Error creating return:', error);
     return { success: false, error: 'Failed to create return request' };
   }
 }
@@ -272,7 +272,7 @@ async function getReturn(returnId: string, userId: string): Promise<any | null> 
 async function getBuyerReturns(
   buyerId: string,
   filters: ReturnFilters = {}
-): Promise<{ returns: any[]; total: number; page: number; limit: number }> {
+): Promise<{ returns: MarketplaceReturn[]; total: number; page: number; limit: number }> {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
@@ -331,7 +331,7 @@ async function getBuyerReturns(
 async function getSellerReturns(
   sellerId: string,
   filters: ReturnFilters = {}
-): Promise<{ returns: any[]; total: number; page: number; limit: number }> {
+): Promise<{ returns: MarketplaceReturn[]; total: number; page: number; limit: number }> {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
@@ -414,7 +414,7 @@ async function getSellerReturnStats(sellerId: string): Promise<ReturnStats> {
 /**
  * Seller approves a return request
  */
-async function approveReturn(input: ApproveReturnInput): Promise<{ success: boolean; return?: any; error?: string }> {
+async function approveReturn(input: ApproveReturnInput): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     const returnRequest = await prisma.marketplaceReturn.findUnique({
       where: { id: input.returnId },
@@ -459,10 +459,10 @@ async function approveReturn(input: ApproveReturnInput): Promise<{ success: bool
         ...updated,
         returnItems: JSON.parse(updated.returnItems),
         returnAddress: input.returnAddress,
-      },
+      } as unknown as MarketplaceReturn,
     };
   } catch (error) {
-    console.error('Error approving return:', error);
+    apiLogger.error('Error approving return:', error);
     return { success: false, error: 'Failed to approve return' };
   }
 }
@@ -474,7 +474,7 @@ async function rejectReturn(
   returnId: string,
   sellerId: string,
   reason: string
-): Promise<{ success: boolean; return?: any; error?: string }> {
+): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     const returnRequest = await prisma.marketplaceReturn.findUnique({
       where: { id: returnId },
@@ -520,7 +520,7 @@ async function rejectReturn(
       },
     };
   } catch (error) {
-    console.error('Error rejecting return:', error);
+    apiLogger.error('Error rejecting return:', error);
     return { success: false, error: 'Failed to reject return' };
   }
 }
@@ -528,7 +528,7 @@ async function rejectReturn(
 /**
  * Buyer marks return as shipped
  */
-async function markReturnShipped(input: ShipReturnInput): Promise<{ success: boolean; return?: any; error?: string }> {
+async function markReturnShipped(input: ShipReturnInput): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     const returnRequest = await prisma.marketplaceReturn.findUnique({
       where: { id: input.returnId },
@@ -578,7 +578,7 @@ async function markReturnShipped(input: ShipReturnInput): Promise<{ success: boo
       },
     };
   } catch (error) {
-    console.error('Error marking return as shipped:', error);
+    apiLogger.error('Error marking return as shipped:', error);
     return { success: false, error: 'Failed to update return' };
   }
 }
@@ -586,7 +586,7 @@ async function markReturnShipped(input: ShipReturnInput): Promise<{ success: boo
 /**
  * Seller confirms return received
  */
-async function confirmReturnReceived(input: ReceiveReturnInput): Promise<{ success: boolean; return?: any; error?: string }> {
+async function confirmReturnReceived(input: ReceiveReturnInput): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     const returnRequest = await prisma.marketplaceReturn.findUnique({
       where: { id: input.returnId },
@@ -637,7 +637,7 @@ async function confirmReturnReceived(input: ReceiveReturnInput): Promise<{ succe
       },
     };
   } catch (error) {
-    console.error('Error confirming return receipt:', error);
+    apiLogger.error('Error confirming return receipt:', error);
     return { success: false, error: 'Failed to confirm receipt' };
   }
 }
@@ -649,7 +649,7 @@ async function processRefund(
   returnId: string,
   sellerId: string,
   amount: number
-): Promise<{ success: boolean; return?: any; error?: string }> {
+): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     const returnRequest = await prisma.marketplaceReturn.findUnique({
       where: { id: returnId },
@@ -696,7 +696,7 @@ async function processRefund(
       },
     };
   } catch (error) {
-    console.error('Error processing refund:', error);
+    apiLogger.error('Error processing refund:', error);
     return { success: false, error: 'Failed to process refund' };
   }
 }
@@ -707,7 +707,7 @@ async function processRefund(
 async function closeReturn(
   returnId: string,
   actorId: string
-): Promise<{ success: boolean; return?: any; error?: string }> {
+): Promise<{ success: boolean; return?: MarketplaceReturn; error?: string }> {
   try {
     const returnRequest = await prisma.marketplaceReturn.findUnique({
       where: { id: returnId },
@@ -754,7 +754,7 @@ async function closeReturn(
       },
     };
   } catch (error) {
-    console.error('Error closing return:', error);
+    apiLogger.error('Error closing return:', error);
     return { success: false, error: 'Failed to close return' };
   }
 }

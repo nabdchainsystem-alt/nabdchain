@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs/promises';
+import { apiLogger } from '../../utils/logger';
 import { PDFGenerator } from './pdfGenerator';
 import { ExcelGenerator } from './excelGenerator';
 import {
@@ -70,7 +71,7 @@ export class ExportService {
     try {
       await fs.mkdir(this.storageDir, { recursive: true });
     } catch (error) {
-      console.error('Failed to create export storage directory:', error);
+      apiLogger.error('Failed to create export storage directory:', error);
     }
   }
 
@@ -127,7 +128,7 @@ export class ExportService {
         expiresAt,
       };
     } catch (error) {
-      console.error('Export generation failed:', error);
+      apiLogger.error('Export generation failed:', error);
       return {
         success: false,
         jobId,
@@ -329,7 +330,7 @@ export const exportService = new ExportService();
 
 // Start cleanup job
 setInterval(() => {
-  exportService.cleanupExpiredFiles().catch(console.error);
+  exportService.cleanupExpiredFiles().catch(apiLogger.error);
 }, EXPORT_CONFIG.cleanupIntervalMs);
 
 export default exportService;

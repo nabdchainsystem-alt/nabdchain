@@ -15,7 +15,6 @@ import {
   CaretRight,
   CaretDown,
   CaretUp,
-  MagnifyingGlass,
   Funnel,
   X,
   ArrowsClockwise,
@@ -41,14 +40,8 @@ import {
   Scales,
   IdentificationCard,
 } from 'phosphor-react';
-import { Button, EmptyState, PortalDatePicker, SkeletonKPICard, SkeletonTableRow } from '../../components';
-import {
-  Select,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '../../components/ui';
+import { Button, EmptyState, PortalDatePicker, SkeletonTableRow } from '../../components';
+import { Select, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../../components/ui';
 import { usePortal } from '../../context/PortalContext';
 import {
   SellerPayout,
@@ -141,9 +134,7 @@ const PayoutSummaryCards: React.FC<{
       icon: CheckCircle,
       label: 'Last Payout',
       value: lastPayout ? lastPayout.netAmount : 0,
-      subtext: lastPayout
-        ? formatDate(lastPayout.settledAt || lastPayout.createdAt)
-        : 'No payouts yet',
+      subtext: lastPayout ? formatDate(lastPayout.settledAt || lastPayout.createdAt) : 'No payouts yet',
       color: styles.info,
       bgColor: 'rgba(59,130,246,0.08)',
       isAmount: true,
@@ -173,10 +164,7 @@ const PayoutSummaryCards: React.FC<{
           }}
         >
           <div className="flex items-start justify-between mb-3">
-            <div
-              className="p-2 rounded-lg"
-              style={{ backgroundColor: item.bgColor }}
-            >
+            <div className="p-2 rounded-lg" style={{ backgroundColor: item.bgColor }}>
               <item.icon size={20} style={{ color: item.color }} />
             </div>
           </div>
@@ -187,7 +175,9 @@ const PayoutSummaryCards: React.FC<{
             {item.showDash
               ? '—'
               : item.isDate
-                ? (item.dateValue ? formatDate(item.dateValue) : '—')
+                ? item.dateValue
+                  ? formatDate(item.dateValue)
+                  : '—'
                 : formatCurrency(item.value, stats.currency)}
           </p>
           <p className="text-xs" style={{ color: styles.textMuted }}>
@@ -224,15 +214,16 @@ const BalanceBreakdownSection: React.FC<{
   const holdReasonSummaries: HoldReasonSummary[] = [];
   const categoryMap = new Map<HoldReasonCategory, { amount: number; count: number; earliest?: string }>();
 
-  onHoldPayouts.forEach(payout => {
+  onHoldPayouts.forEach((payout) => {
     const category = getHoldReasonCategory(payout.holdReason);
     const existing = categoryMap.get(category) || { amount: 0, count: 0 };
     categoryMap.set(category, {
       amount: existing.amount + payout.netAmount,
       count: existing.count + 1,
-      earliest: !existing.earliest || (payout.holdUntil && payout.holdUntil < existing.earliest)
-        ? payout.holdUntil || undefined
-        : existing.earliest,
+      earliest:
+        !existing.earliest || (payout.holdUntil && payout.holdUntil < existing.earliest)
+          ? payout.holdUntil || undefined
+          : existing.earliest,
     });
   });
 
@@ -250,10 +241,7 @@ const BalanceBreakdownSection: React.FC<{
   const totalOnHold = onHoldPayouts.reduce((sum, p) => sum + p.netAmount, 0);
 
   return (
-    <div
-      className="rounded-xl border p-5 mb-6"
-      style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-    >
+    <div className="rounded-xl border p-5 mb-6" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Wallet size={20} style={{ color: styles.textPrimary }} />
@@ -281,7 +269,9 @@ const BalanceBreakdownSection: React.FC<{
             <div className="p-1.5 rounded-md" style={{ backgroundColor: 'rgba(34,197,94,0.1)' }}>
               <CheckCircle size={16} weight="fill" style={{ color: styles.success }} />
             </div>
-            <span className="text-sm font-medium" style={{ color: styles.success }}>Available</span>
+            <span className="text-sm font-medium" style={{ color: styles.success }}>
+              Available
+            </span>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: styles.textPrimary }}>
             {formatCurrency(eligible?.eligibleAmount || 0, stats.currency)}
@@ -305,7 +295,9 @@ const BalanceBreakdownSection: React.FC<{
             <div className="p-1.5 rounded-md" style={{ backgroundColor: 'rgba(59,130,246,0.1)' }}>
               <Timer size={16} weight="fill" style={{ color: styles.info }} />
             </div>
-            <span className="text-sm font-medium" style={{ color: styles.info }}>Pending</span>
+            <span className="text-sm font-medium" style={{ color: styles.info }}>
+              Pending
+            </span>
           </div>
           <p className="text-2xl font-bold mb-1" style={{ color: styles.textPrimary }}>
             {formatCurrency(eligible?.pendingAmount ?? stats.totalPending, stats.currency)}
@@ -366,10 +358,14 @@ const BalanceBreakdownSection: React.FC<{
                   <div className="flex items-center gap-3">
                     <div className="p-1.5 rounded" style={{ backgroundColor: `${colors.text}20` }}>
                       {reason.category === 'dispute' && <Scales size={14} style={{ color: colors.text }} />}
-                      {reason.category === 'verification' && <IdentificationCard size={14} style={{ color: colors.text }} />}
+                      {reason.category === 'verification' && (
+                        <IdentificationCard size={14} style={{ color: colors.text }} />
+                      )}
                       {reason.category === 'review' && <Eye size={14} style={{ color: colors.text }} />}
                       {reason.category === 'compliance' && <ShieldWarning size={14} style={{ color: colors.text }} />}
-                      {(reason.category === 'system' || reason.category === 'other') && <Info size={14} style={{ color: colors.text }} />}
+                      {(reason.category === 'system' || reason.category === 'other') && (
+                        <Info size={14} style={{ color: colors.text }} />
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
@@ -424,11 +420,16 @@ const ExpectedPayoutSection: React.FC<{
   const getFrequencyExplanation = () => {
     if (!settings) return 'Based on your payout schedule';
     switch (settings.payoutFrequency) {
-      case 'daily': return 'Payouts processed daily';
-      case 'weekly': return 'Payouts processed weekly';
-      case 'biweekly': return 'Payouts processed bi-weekly';
-      case 'monthly': return 'Payouts processed monthly';
-      default: return 'Based on your schedule';
+      case 'daily':
+        return 'Payouts processed daily';
+      case 'weekly':
+        return 'Payouts processed weekly';
+      case 'biweekly':
+        return 'Payouts processed bi-weekly';
+      case 'monthly':
+        return 'Payouts processed monthly';
+      default:
+        return 'Based on your schedule';
     }
   };
 
@@ -438,10 +439,7 @@ const ExpectedPayoutSection: React.FC<{
       style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
     >
       <div className="flex items-center gap-4">
-        <div
-          className="p-3 rounded-lg"
-          style={{ backgroundColor: 'rgba(139,92,246,0.08)' }}
-        >
+        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(139,92,246,0.08)' }}>
           <Hourglass size={24} style={{ color: '#8B5CF6' }} />
         </div>
         <div>
@@ -483,25 +481,17 @@ const WithdrawalSection: React.FC<{
   styles: ReturnType<typeof usePortal>['styles'];
   onOpenSettings: () => void;
 }> = ({ eligible, settings, styles, onOpenSettings }) => {
-  const canWithdraw = eligible &&
-    eligible.bankVerified &&
-    eligible.eligibleAmount > 0 &&
-    !eligible.withdrawalDisabledReason;
+  const canWithdraw =
+    eligible && eligible.bankVerified && eligible.eligibleAmount > 0 && !eligible.withdrawalDisabledReason;
 
-  const disabledReason = eligible?.withdrawalDisabledReason ||
-    (!eligible?.bankVerified ? TRUST_MICROCOPY.bankVerificationNeeded : null);
+  const disabledReason =
+    eligible?.withdrawalDisabledReason || (!eligible?.bankVerified ? TRUST_MICROCOPY.bankVerificationNeeded : null);
 
   return (
-    <div
-      className="rounded-xl border p-4 mb-6"
-      style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-    >
+    <div className="rounded-xl border p-4 mb-6" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div
-            className="p-3 rounded-lg"
-            style={{ backgroundColor: 'rgba(34,197,94,0.08)' }}
-          >
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(34,197,94,0.08)' }}>
             <Wallet size={24} style={{ color: styles.success }} />
           </div>
           <div>
@@ -565,11 +555,16 @@ const FundsTimeline: React.FC<{
 }> = ({ entries, loading, styles }) => {
   const getStatusColor = (status: FundsTimelineEntry['status']) => {
     switch (status) {
-      case 'paid': return { bg: 'rgba(34,197,94,0.1)', text: styles.success, dot: styles.success };
-      case 'eligible': return { bg: 'rgba(59,130,246,0.1)', text: styles.info, dot: styles.info };
-      case 'funds_held': return { bg: 'rgba(245,158,11,0.1)', text: '#F59E0B', dot: '#F59E0B' };
-      case 'order_completed': return { bg: 'rgba(107,114,128,0.1)', text: styles.textMuted, dot: styles.textMuted };
-      default: return { bg: styles.bgSecondary, text: styles.textMuted, dot: styles.textMuted };
+      case 'paid':
+        return { bg: 'rgba(34,197,94,0.1)', text: styles.success, dot: styles.success };
+      case 'eligible':
+        return { bg: 'rgba(59,130,246,0.1)', text: styles.info, dot: styles.info };
+      case 'funds_held':
+        return { bg: 'rgba(245,158,11,0.1)', text: '#F59E0B', dot: '#F59E0B' };
+      case 'order_completed':
+        return { bg: 'rgba(107,114,128,0.1)', text: styles.textMuted, dot: styles.textMuted };
+      default:
+        return { bg: styles.bgSecondary, text: styles.textMuted, dot: styles.textMuted };
     }
   };
 
@@ -591,7 +586,9 @@ const FundsTimeline: React.FC<{
       >
         <div className="flex items-center gap-2 mb-4">
           <Clock size={18} style={{ color: styles.textMuted }} />
-          <h3 className="font-medium" style={{ color: styles.textPrimary }}>Funds Timeline</h3>
+          <h3 className="font-medium" style={{ color: styles.textPrimary }}>
+            Funds Timeline
+          </h3>
         </div>
         <div className="flex items-center justify-center py-8">
           <Spinner size={24} className="animate-spin" style={{ color: styles.info }} />
@@ -608,7 +605,9 @@ const FundsTimeline: React.FC<{
       >
         <div className="flex items-center gap-2 mb-4">
           <Clock size={18} style={{ color: styles.textMuted }} />
-          <h3 className="font-medium" style={{ color: styles.textPrimary }}>Funds Timeline</h3>
+          <h3 className="font-medium" style={{ color: styles.textPrimary }}>
+            Funds Timeline
+          </h3>
         </div>
         <p className="text-sm text-center py-4" style={{ color: styles.textMuted }}>
           Your funds flow will appear here once you have completed orders.
@@ -618,14 +617,13 @@ const FundsTimeline: React.FC<{
   }
 
   return (
-    <div
-      className="rounded-xl border p-6 mb-6"
-      style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-    >
+    <div className="rounded-xl border p-6 mb-6" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock size={18} style={{ color: styles.textMuted }} />
-          <h3 className="font-medium" style={{ color: styles.textPrimary }}>Funds Timeline</h3>
+          <h3 className="font-medium" style={{ color: styles.textPrimary }}>
+            Funds Timeline
+          </h3>
         </div>
         <p className="text-xs" style={{ color: styles.textMuted }}>
           {TRUST_MICROCOPY.fundsSecurelyHeld}
@@ -643,15 +641,9 @@ const FundsTimeline: React.FC<{
             >
               {/* Status dot with connector line */}
               <div className="flex flex-col items-center">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: colors.dot }}
-                />
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.dot }} />
                 {index < entries.length - 1 && (
-                  <div
-                    className="w-0.5 h-6 mt-1"
-                    style={{ backgroundColor: styles.border }}
-                  />
+                  <div className="w-0.5 h-6 mt-1" style={{ backgroundColor: styles.border }} />
                 )}
               </div>
 
@@ -673,9 +665,7 @@ const FundsTimeline: React.FC<{
                   {entry.status === 'funds_held' && entry.holdEndDate && (
                     <> · {formatDaysRemaining(entry.holdEndDate)}</>
                   )}
-                  {entry.payoutNumber && (
-                    <> · {entry.payoutNumber}</>
-                  )}
+                  {entry.payoutNumber && <> · {entry.payoutNumber}</>}
                 </p>
               </div>
 
@@ -766,13 +756,13 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
       setSettings(settingsRes);
 
       // Find the last settled payout for the summary
-      const settledPayouts = payoutsRes.payouts.filter(p => p.status === 'settled');
+      const settledPayouts = payoutsRes.payouts.filter((p) => p.status === 'settled');
       if (settledPayouts.length > 0) {
         setLastPayout(settledPayouts[0]);
       }
 
       // Extract on-hold payouts for balance breakdown
-      const heldPayouts = payoutsRes.payouts.filter(p => p.status === 'on_hold');
+      const heldPayouts = payoutsRes.payouts.filter((p) => p.status === 'on_hold');
       setOnHoldPayouts(heldPayouts);
     } catch (error) {
       console.error('Failed to fetch payouts:', error);
@@ -821,7 +811,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
       ['IBAN', payout.ibanMasked],
     ];
 
-    const csvContent = rows.map(row => row.join(',')).join('\n');
+    const csvContent = rows.map((row) => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -845,12 +835,18 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
   const StatusBadge: React.FC<{ status: PayoutStatus; holdReason?: string | null }> = ({ status, holdReason }) => {
     const getStatusColor = () => {
       switch (status) {
-        case 'settled': return { bg: 'rgba(34,197,94,0.1)', text: styles.success };
-        case 'processing': return { bg: 'rgba(59,130,246,0.1)', text: styles.info };
-        case 'pending': return { bg: 'rgba(234,179,8,0.1)', text: '#F59E0B' };
-        case 'on_hold': return { bg: 'rgba(249,115,22,0.1)', text: '#F97316' };
-        case 'failed': return { bg: 'rgba(239,68,68,0.1)', text: styles.error };
-        default: return { bg: styles.bgSecondary, text: styles.textMuted };
+        case 'settled':
+          return { bg: 'rgba(34,197,94,0.1)', text: styles.success };
+        case 'processing':
+          return { bg: 'rgba(59,130,246,0.1)', text: styles.info };
+        case 'pending':
+          return { bg: 'rgba(234,179,8,0.1)', text: '#F59E0B' };
+        case 'on_hold':
+          return { bg: 'rgba(249,115,22,0.1)', text: '#F97316' };
+        case 'failed':
+          return { bg: 'rgba(239,68,68,0.1)', text: styles.error };
+        default:
+          return { bg: styles.bgSecondary, text: styles.textMuted };
       }
     };
 
@@ -899,38 +895,29 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
               <Gear size={16} className="mr-1" />
               Settings
             </Button>
-            <Button onClick={() => { fetchData(); fetchTimeline(); }} variant="outline" size="sm">
+            <Button
+              onClick={() => {
+                fetchData();
+                fetchTimeline();
+              }}
+              variant="outline"
+              size="sm"
+            >
               <ArrowsClockwise size={16} className={loading ? 'animate-spin' : ''} />
             </Button>
           </div>
         </div>
 
         {/* Payout Summary Cards - 4 clear cards */}
-        {stats && (
-          <PayoutSummaryCards
-            stats={stats}
-            eligible={eligible}
-            lastPayout={lastPayout}
-            styles={styles}
-          />
-        )}
+        {stats && <PayoutSummaryCards stats={stats} eligible={eligible} lastPayout={lastPayout} styles={styles} />}
 
         {/* Balance Breakdown - Available / Pending / On Hold with trust indicators */}
         {stats && (
-          <BalanceBreakdownSection
-            stats={stats}
-            eligible={eligible}
-            onHoldPayouts={onHoldPayouts}
-            styles={styles}
-          />
+          <BalanceBreakdownSection stats={stats} eligible={eligible} onHoldPayouts={onHoldPayouts} styles={styles} />
         )}
 
         {/* Expected Payout Date - Clear explanation */}
-        <ExpectedPayoutSection
-          eligible={eligible}
-          settings={settings}
-          styles={styles}
-        />
+        <ExpectedPayoutSection eligible={eligible} settings={settings} styles={styles} />
 
         {/* Withdrawal Section - Clear eligibility and action */}
         <WithdrawalSection
@@ -965,17 +952,15 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
         )}
 
         {/* Funds Timeline - Shows lifecycle of funds */}
-        <FundsTimeline
-          entries={timelineEntries}
-          loading={timelineLoading}
-          styles={styles}
-        />
+        <FundsTimeline entries={timelineEntries} loading={timelineLoading} styles={styles} />
 
         {/* Payout History Section Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Receipt size={18} style={{ color: styles.textMuted }} />
-            <h2 className="font-medium" style={{ color: styles.textPrimary }}>Payout History</h2>
+            <h2 className="font-medium" style={{ color: styles.textPrimary }}>
+              Payout History
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             {/* Sort Toggle */}
@@ -1000,12 +985,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
             >
               <Funnel size={14} />
               Filters
-              {hasActiveFilters && (
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: styles.info }}
-                />
-              )}
+              {hasActiveFilters && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: styles.info }} />}
             </button>
           </div>
         </div>
@@ -1020,7 +1000,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
               {/* Status */}
               <Select
                 value={filters.status || 'all'}
-                onChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : v as PayoutStatus })}
+                onChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : (v as PayoutStatus) })}
                 placeholder="Status"
                 options={[
                   { value: 'all', label: 'All Status' },
@@ -1103,25 +1083,46 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
               <table className="w-full">
                 <thead className="sticky top-0 z-10">
                   <tr style={{ backgroundColor: styles.tableHeader, borderBottom: `1px solid ${styles.tableBorder}` }}>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Payout ID
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Amount
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Fee
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Net
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Expected / Paid
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+                    <th
+                      className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: styles.textMuted }}
+                    >
                       Actions
                     </th>
                   </tr>
@@ -1131,7 +1132,9 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
                     <tr
                       key={payout.id}
                       className="group transition-colors cursor-pointer"
-                      style={{ borderBottom: index === payouts.length - 1 ? 'none' : `1px solid ${styles.tableBorder}` }}
+                      style={{
+                        borderBottom: index === payouts.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
+                      }}
                       onClick={() => setSelectedPayout(payout)}
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.tableRowHover)}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -1174,7 +1177,9 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
                                 : payout.status === 'processing'
                                   ? 'In progress'
                                   : payout.status === 'on_hold'
-                                    ? (payout.holdUntil ? formatDate(payout.holdUntil) : 'On hold')
+                                    ? payout.holdUntil
+                                      ? formatDate(payout.holdUntil)
+                                      : 'On hold'
                                     : '—'}
                           </p>
                           <p className="text-xs" style={{ color: styles.textMuted }}>
@@ -1238,9 +1243,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
               className="px-4 py-3 flex items-center justify-between text-sm"
               style={{ borderTop: `1px solid ${styles.tableBorder}`, backgroundColor: styles.tableHeader }}
             >
-              <span style={{ color: styles.textMuted }}>
-                Showing {payouts.length} payouts
-              </span>
+              <span style={{ color: styles.textMuted }}>Showing {payouts.length} payouts</span>
               {totalPages > 1 && (
                 <div className="flex items-center gap-2">
                   <button
@@ -1248,7 +1251,9 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
                     disabled={page === 1}
                     className="p-1.5 rounded transition-colors disabled:opacity-40"
                     style={{ color: styles.textMuted }}
-                    onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                    onMouseEnter={(e) =>
+                      !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = styles.bgHover)
+                    }
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <CaretLeft size={16} />
@@ -1261,7 +1266,9 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
                     disabled={page === totalPages}
                     className="p-1.5 rounded transition-colors disabled:opacity-40"
                     style={{ color: styles.textMuted }}
-                    onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                    onMouseEnter={(e) =>
+                      !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = styles.bgHover)
+                    }
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <CaretRight size={16} />
@@ -1275,11 +1282,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
 
       {/* Payout Details Modal */}
       {selectedPayout && (
-        <PayoutDetailsModal
-          payout={selectedPayout}
-          onClose={() => setSelectedPayout(null)}
-          styles={styles}
-        />
+        <PayoutDetailsModal payout={selectedPayout} onClose={() => setSelectedPayout(null)} styles={styles} />
       )}
 
       {/* Settings Modal */}
@@ -1351,32 +1354,37 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
     const type = eventType as PayoutEventType;
     return {
       label: PAYOUT_EVENT_LABELS[type] || eventType.replace(/_/g, ' '),
-      color: eventType.includes('FAILED') ? styles.error
-        : eventType.includes('HOLD') ? '#F97316'
-        : eventType.includes('SETTLED') || eventType.includes('CONFIRMED') ? styles.success
-        : styles.info,
+      color: eventType.includes('FAILED')
+        ? styles.error
+        : eventType.includes('HOLD')
+          ? '#F97316'
+          : eventType.includes('SETTLED') || eventType.includes('CONFIRMED')
+            ? styles.success
+            : styles.info,
     };
   };
 
   const getStatusColor = (status: PayoutStatus) => {
     switch (status) {
-      case 'settled': return { bg: 'rgba(34,197,94,0.1)', text: styles.success };
-      case 'processing': return { bg: 'rgba(59,130,246,0.1)', text: styles.info };
-      case 'pending': return { bg: 'rgba(234,179,8,0.1)', text: '#F59E0B' };
-      case 'on_hold': return { bg: 'rgba(249,115,22,0.1)', text: '#F97316' };
-      case 'failed': return { bg: 'rgba(239,68,68,0.1)', text: styles.error };
-      default: return { bg: styles.bgSecondary, text: styles.textMuted };
+      case 'settled':
+        return { bg: 'rgba(34,197,94,0.1)', text: styles.success };
+      case 'processing':
+        return { bg: 'rgba(59,130,246,0.1)', text: styles.info };
+      case 'pending':
+        return { bg: 'rgba(234,179,8,0.1)', text: '#F59E0B' };
+      case 'on_hold':
+        return { bg: 'rgba(249,115,22,0.1)', text: '#F97316' };
+      case 'failed':
+        return { bg: 'rgba(239,68,68,0.1)', text: styles.error };
+      default:
+        return { bg: styles.bgSecondary, text: styles.textMuted };
     }
   };
 
   const statusColors = getStatusColor(payout.status);
 
-  // Use actual line items if available, otherwise show placeholder
-  const invoices: PayoutLineItem[] = payout.lineItems || [
-    { id: '1', payoutId: payout.id, invoiceId: 'inv-1', invoiceNumber: 'INV-001', orderId: 'ord-1', orderNumber: 'ORD-001', invoiceTotal: payout.grossAmount * 0.4, platformFee: payout.platformFeeTotal * 0.4, netAmount: payout.netAmount * 0.4 },
-    { id: '2', payoutId: payout.id, invoiceId: 'inv-2', invoiceNumber: 'INV-002', orderId: 'ord-2', orderNumber: 'ORD-002', invoiceTotal: payout.grossAmount * 0.35, platformFee: payout.platformFeeTotal * 0.35, netAmount: payout.netAmount * 0.35 },
-    { id: '3', payoutId: payout.id, invoiceId: 'inv-3', invoiceNumber: 'INV-003', orderId: 'ord-3', orderNumber: 'ORD-003', invoiceTotal: payout.grossAmount * 0.25, platformFee: payout.platformFeeTotal * 0.25, netAmount: payout.netAmount * 0.25 },
-  ];
+  // Use actual line items from API
+  const invoices: PayoutLineItem[] = payout.lineItems || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1386,10 +1394,7 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
         style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: styles.border }}>
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
               {payout.payoutNumber}
@@ -1470,27 +1475,42 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm" style={{ color: styles.textMuted }}>Total from orders</span>
+                    <span className="text-sm" style={{ color: styles.textMuted }}>
+                      Total from orders
+                    </span>
                     <span className="font-medium" style={{ color: styles.textPrimary }}>
                       {formatCurrency(payout.grossAmount, payout.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm" style={{ color: styles.textMuted }}>Platform fee</span>
+                    <span className="text-sm" style={{ color: styles.textMuted }}>
+                      Platform fee
+                    </span>
                     <span className="font-medium" style={{ color: styles.error }}>
                       -{formatCurrency(payout.platformFeeTotal, payout.currency)}
                     </span>
                   </div>
                   {payout.adjustments !== 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm" style={{ color: styles.textMuted }}>Adjustments</span>
-                      <span className="font-medium" style={{ color: payout.adjustments >= 0 ? styles.success : styles.error }}>
-                        {payout.adjustments >= 0 ? '+' : ''}{formatCurrency(payout.adjustments, payout.currency)}
+                      <span className="text-sm" style={{ color: styles.textMuted }}>
+                        Adjustments
+                      </span>
+                      <span
+                        className="font-medium"
+                        style={{ color: payout.adjustments >= 0 ? styles.success : styles.error }}
+                      >
+                        {payout.adjustments >= 0 ? '+' : ''}
+                        {formatCurrency(payout.adjustments, payout.currency)}
                       </span>
                     </div>
                   )}
-                  <div className="border-t pt-3 flex justify-between items-center" style={{ borderColor: styles.border }}>
-                    <span className="font-medium" style={{ color: styles.textPrimary }}>You receive</span>
+                  <div
+                    className="border-t pt-3 flex justify-between items-center"
+                    style={{ borderColor: styles.border }}
+                  >
+                    <span className="font-medium" style={{ color: styles.textPrimary }}>
+                      You receive
+                    </span>
                     <span className="text-lg font-bold" style={{ color: styles.success }}>
                       {formatCurrency(payout.netAmount, payout.currency)}
                     </span>
@@ -1502,12 +1522,18 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
               <div className="rounded-lg p-4" style={{ backgroundColor: styles.bgSecondary }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Bank size={18} style={{ color: styles.textMuted }} />
-                  <h3 className="font-medium" style={{ color: styles.textPrimary }}>Bank Account</h3>
+                  <h3 className="font-medium" style={{ color: styles.textPrimary }}>
+                    Bank Account
+                  </h3>
                 </div>
                 <div className="space-y-2">
                   <p style={{ color: styles.textPrimary }}>{payout.bankName}</p>
-                  <p className="text-sm" style={{ color: styles.textMuted }}>{payout.accountHolder}</p>
-                  <p className="text-sm font-mono" style={{ color: styles.textMuted }}>{payout.ibanMasked}</p>
+                  <p className="text-sm" style={{ color: styles.textMuted }}>
+                    {payout.accountHolder}
+                  </p>
+                  <p className="text-sm font-mono" style={{ color: styles.textMuted }}>
+                    {payout.ibanMasked}
+                  </p>
                   {payout.bankReference && (
                     <p className="text-xs" style={{ color: styles.textMuted }}>
                       Ref: {payout.bankReference}
@@ -1518,17 +1544,12 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
 
               {/* Hold Notice - Clear explanation */}
               {payout.holdReason && (
-                <div
-                  className="rounded-lg p-4"
-                  style={{ backgroundColor: 'rgba(249,115,22,0.08)' }}
-                >
+                <div className="rounded-lg p-4" style={{ backgroundColor: 'rgba(249,115,22,0.08)' }}>
                   <div className="flex items-start gap-3">
                     <ShieldWarning size={20} style={{ color: '#F97316' }} className="mt-0.5" />
                     <div>
                       <p className="font-medium text-sm" style={{ color: '#F97316' }}>
-                        {payout.holdReason.toLowerCase().includes('dispute')
-                          ? 'On hold due to dispute'
-                          : 'On hold'}
+                        {payout.holdReason.toLowerCase().includes('dispute') ? 'On hold due to dispute' : 'On hold'}
                       </p>
                       <p className="text-sm mt-1" style={{ color: styles.textMuted }}>
                         {payout.holdReason}
@@ -1545,7 +1566,9 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
 
               {/* Timeline - Simplified with clear language */}
               <div>
-                <h3 className="font-medium mb-3" style={{ color: styles.textPrimary }}>Timeline</h3>
+                <h3 className="font-medium mb-3" style={{ color: styles.textPrimary }}>
+                  Timeline
+                </h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: styles.success }} />
@@ -1614,7 +1637,9 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t" style={{ borderColor: styles.border }}>
-                        <span className="font-medium" style={{ color: styles.textPrimary }}>You receive</span>
+                        <span className="font-medium" style={{ color: styles.textPrimary }}>
+                          You receive
+                        </span>
                         <span className="font-medium" style={{ color: styles.success }}>
                           {formatCurrency(invoice.netAmount, payout.currency)}
                         </span>
@@ -1687,20 +1712,14 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
                         )}
 
                         {/* Actor icon */}
-                        <div
-                          className="shrink-0 p-2 rounded-full"
-                          style={{ backgroundColor: `${actorInfo.color}15` }}
-                        >
+                        <div className="shrink-0 p-2 rounded-full" style={{ backgroundColor: `${actorInfo.color}15` }}>
                           <ActorIcon size={16} style={{ color: actorInfo.color }} />
                         </div>
 
                         {/* Event details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span
-                              className="text-sm font-medium"
-                              style={{ color: eventInfo.color }}
-                            >
+                            <span className="text-sm font-medium" style={{ color: eventInfo.color }}>
                               {eventInfo.label}
                             </span>
                             <span className="text-xs" style={{ color: styles.textMuted }}>
@@ -1735,14 +1754,11 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
 
                           {/* Metadata details */}
                           {event.metadata && Object.keys(event.metadata).length > 0 && (
-                            <div
-                              className="text-xs p-2 rounded mt-2"
-                              style={{ backgroundColor: styles.bgCard }}
-                            >
+                            <div className="text-xs p-2 rounded mt-2" style={{ backgroundColor: styles.bgCard }}>
                               {Object.entries(event.metadata).map(([key, value]) => (
                                 <div key={key} className="flex justify-between">
                                   <span style={{ color: styles.textMuted }}>
-                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
                                   </span>
                                   <span style={{ color: styles.textPrimary }}>
                                     {typeof value === 'number' && key.toLowerCase().includes('amount')
@@ -1778,18 +1794,15 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
               >
                 <ShieldCheck size={16} style={{ color: styles.success }} />
                 <p className="text-xs" style={{ color: styles.textMuted }}>
-                  All payout activities are logged and cannot be modified. This audit trail provides
-                  complete transparency into your payout lifecycle.
+                  All payout activities are logged and cannot be modified. This audit trail provides complete
+                  transparency into your payout lifecycle.
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        <div
-          className="flex justify-end gap-2 p-4 border-t"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex justify-end gap-2 p-4 border-t" style={{ borderColor: styles.border }}>
           <Button onClick={onClose} variant="outline">
             Close
           </Button>
@@ -1857,10 +1870,7 @@ const PayoutSettingsModal: React.FC<PayoutSettingsModalProps> = ({ settings, onC
 
         <div className="p-6 space-y-4">
           {/* Trust message */}
-          <div
-            className="p-3 rounded-lg flex items-center gap-2"
-            style={{ backgroundColor: 'rgba(34,197,94,0.08)' }}
-          >
+          <div className="p-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'rgba(34,197,94,0.08)' }}>
             <CheckCircle size={16} style={{ color: styles.success }} />
             <p className="text-xs" style={{ color: styles.textMuted }}>
               {TRUST_MICROCOPY.fundsSecurelyHeld}. Configure how and when you receive payouts.
@@ -1895,10 +1905,12 @@ const PayoutSettingsModal: React.FC<PayoutSettingsModalProps> = ({ settings, onC
               <Select
                 value={String(payoutDay)}
                 onChange={(v) => setPayoutDay(Number(v))}
-                options={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, idx) => ({
-                  value: String(idx),
-                  label: day,
-                }))}
+                options={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
+                  (day, idx) => ({
+                    value: String(idx),
+                    label: day,
+                  }),
+                )}
                 className="w-full"
               />
             </div>
@@ -1982,9 +1994,7 @@ const PayoutSettingsModal: React.FC<PayoutSettingsModalProps> = ({ settings, onC
           <Button onClick={onClose} variant="outline">
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save Settings
-          </Button>
+          <Button onClick={handleSave}>Save Settings</Button>
         </div>
       </div>
     </div>

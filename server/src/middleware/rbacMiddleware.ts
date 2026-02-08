@@ -9,6 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { permissionService, UserPermissions } from '../services/permissionService';
 import { auditService } from '../services/auditService';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -111,7 +112,7 @@ export function requirePermission(...permissions: string[]) {
 
       next();
     } catch (error) {
-      console.error('RBAC middleware error:', error);
+      apiLogger.error('RBAC middleware error:', error);
       return res.status(500).json({
         error: 'Internal Server Error',
         code: 'RBAC_ERROR',
@@ -170,7 +171,7 @@ export function requireAllPermissions(...permissions: string[]) {
 
       next();
     } catch (error) {
-      console.error('RBAC middleware error:', error);
+      apiLogger.error('RBAC middleware error:', error);
       return res.status(500).json({
         error: 'Internal Server Error',
         code: 'RBAC_ERROR',
@@ -202,7 +203,7 @@ export function loadPermissions() {
         req.permissions = await permissionService.getUserPermissions(userId);
       } catch (error) {
         // Don't block on error, just continue without permissions
-        console.error('Failed to load permissions:', error);
+        apiLogger.error('Failed to load permissions:', error);
       }
     }
 
@@ -287,7 +288,7 @@ export function requireRole(role: string) {
 
       next();
     } catch (error) {
-      console.error('RBAC middleware error:', error);
+      apiLogger.error('RBAC middleware error:', error);
       return res.status(500).json({
         error: 'Internal Server Error',
         code: 'RBAC_ERROR',

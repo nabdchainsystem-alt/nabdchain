@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Envelope, DeviceMobile, Moon, Clock } from 'phosphor-react';
+import { Envelope, DeviceMobile, Moon } from 'phosphor-react';
 import type { NotificationPreferences } from '../types';
 
 // =============================================================================
@@ -12,10 +12,7 @@ interface NotificationSettingsProps {
   onSave?: (preferences: NotificationPreferences) => void;
 }
 
-export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
-  preferences,
-  onSave,
-}) => {
+export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ preferences, onSave }) => {
   const [settings, setSettings] = useState<Partial<NotificationPreferences>>(
     preferences || {
       emailEnabled: true,
@@ -33,7 +30,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       quietHoursEnabled: false,
       quietHoursStart: '22:00',
       quietHoursEnd: '08:00',
-    }
+    },
   );
 
   const Toggle: React.FC<{
@@ -62,9 +59,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-4">
         <div className="flex items-center gap-2 mb-4">
           <Envelope size={20} className="text-stone-600 dark:text-stone-400" />
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-            Email Notifications
-          </h3>
+          <h3 className="font-semibold text-stone-800 dark:text-stone-200">Email Notifications</h3>
         </div>
 
         <div className="space-y-3">
@@ -99,7 +94,9 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
             <span className="text-sm text-stone-600 dark:text-stone-400">Email digest</span>
             <select
               value={settings.emailDigest || 'none'}
-              onChange={(e) => setSettings({ ...settings, emailDigest: e.target.value as NotificationPreferences['emailDigest'] })}
+              onChange={(e) =>
+                setSettings({ ...settings, emailDigest: e.target.value as NotificationPreferences['emailDigest'] })
+              }
               disabled={!settings.emailEnabled}
               className="px-3 py-1 text-sm border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800"
             >
@@ -115,9 +112,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-4">
         <div className="flex items-center gap-2 mb-4">
           <DeviceMobile size={20} className="text-stone-600 dark:text-stone-400" />
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-            Push Notifications
-          </h3>
+          <h3 className="font-semibold text-stone-800 dark:text-stone-200">Push Notifications</h3>
         </div>
 
         <div className="space-y-3">
@@ -153,9 +148,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-4">
         <div className="flex items-center gap-2 mb-4">
           <Moon size={20} className="text-stone-600 dark:text-stone-400" />
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-            Quiet Hours
-          </h3>
+          <h3 className="font-semibold text-stone-800 dark:text-stone-200">Quiet Hours</h3>
         </div>
 
         <div className="space-y-3">
@@ -200,9 +193,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
         Save Preferences
       </button>
 
-      <p className="text-xs text-center text-stone-400">
-        Notification settings - Full functionality coming soon
-      </p>
+      <p className="text-xs text-center text-stone-400">Notification settings - Full functionality coming soon</p>
     </div>
   );
 };

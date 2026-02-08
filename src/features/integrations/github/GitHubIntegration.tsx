@@ -21,8 +21,8 @@ export const GitHubIntegration: React.FC<GitHubIntegrationProps> = ({
   onDisconnect,
 }) => {
   const handleConnect = () => {
-    // TODO: Implement GitHub OAuth/App installation flow
-    featureLogger.debug('[GitHub] Connect - NOT IMPLEMENTED');
+    // Future: GitHub OAuth / App installation flow
+    featureLogger.debug('[GitHub] Connect');
     onConnect?.();
   };
 
@@ -51,9 +51,7 @@ export const GitHubIntegration: React.FC<GitHubIntegrationProps> = ({
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                Available Features:
-              </h4>
+              <h4 className="text-sm font-medium text-stone-700 dark:text-stone-300">Available Features:</h4>
               <ul className="text-sm text-stone-600 dark:text-stone-400 space-y-1">
                 <li className="flex items-center gap-2">
                   <Check size={14} className="text-green-500" />
@@ -88,9 +86,7 @@ export const GitHubIntegration: React.FC<GitHubIntegrationProps> = ({
             </p>
 
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                What you'll get:
-              </h4>
+              <h4 className="text-sm font-medium text-stone-700 dark:text-stone-300">What you'll get:</h4>
               <ul className="text-sm text-stone-600 dark:text-stone-400 space-y-1">
                 <li className="flex items-center gap-2">
                   <ArrowRight size={14} className="text-blue-500" />
@@ -124,9 +120,7 @@ export const GitHubIntegration: React.FC<GitHubIntegrationProps> = ({
 
       {/* Coming Soon Notice */}
       <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-100 dark:border-amber-900/30">
-        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
-          GitHub integration coming soon
-        </p>
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">GitHub integration coming soon</p>
       </div>
     </div>
   );

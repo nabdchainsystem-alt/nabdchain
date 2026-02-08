@@ -2,7 +2,7 @@
 // Customer Routes - Aggregated Customer Data API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { customerService } from '../services/customerService';
 import { apiLogger } from '../utils/logger';

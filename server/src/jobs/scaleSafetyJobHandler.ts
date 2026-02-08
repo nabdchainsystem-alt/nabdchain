@@ -3,9 +3,8 @@
 // =============================================================================
 
 import { scaleSafetyService } from '../services/scaleSafetyService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { jobLog } from '../services/observability/structuredLogger';
 
 export const scaleSafetyJobHandler = {
   /**
@@ -13,12 +12,12 @@ export const scaleSafetyJobHandler = {
    * Runs daily at 3 AM
    */
   async runAnomalyDetection(): Promise<void> {
-    console.log('[ScaleSafetyJob] Running anomaly detection...');
+    jobLog.info('Running anomaly detection...');
 
     try {
       const result = await scaleSafetyService.runAnomalyDetectionForAllSellers();
 
-      console.log('[ScaleSafetyJob] Anomaly detection complete:', {
+      jobLog.info('Anomaly detection complete', {
         sellersChecked: result.sellersChecked,
         anomaliesDetected: result.anomaliesDetected,
       });
@@ -41,7 +40,7 @@ export const scaleSafetyJobHandler = {
         });
       }
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to run anomaly detection:', error);
+      jobLog.error('Failed to run anomaly detection', error);
     }
   },
 
@@ -50,7 +49,7 @@ export const scaleSafetyJobHandler = {
    * Runs daily at 4 AM
    */
   async resetDailyRateLimits(): Promise<void> {
-    console.log('[ScaleSafetyJob] Resetting daily rate limits...');
+    jobLog.info('Resetting daily rate limits...');
 
     try {
       const today = new Date();
@@ -73,9 +72,9 @@ export const scaleSafetyJobHandler = {
         },
       });
 
-      console.log(`[ScaleSafetyJob] Reset ${result.count} daily rate limits`);
+      jobLog.info(`Reset ${result.count} daily rate limits`, { count: result.count });
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to reset rate limits:', error);
+      jobLog.error('Failed to reset rate limits', error);
     }
   },
 
@@ -84,7 +83,7 @@ export const scaleSafetyJobHandler = {
    * Runs weekly
    */
   async cleanupOldAlerts(): Promise<void> {
-    console.log('[ScaleSafetyJob] Cleaning up old alerts...');
+    jobLog.info('Cleaning up old alerts...');
 
     try {
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -97,9 +96,9 @@ export const scaleSafetyJobHandler = {
         },
       });
 
-      console.log(`[ScaleSafetyJob] Deleted ${result.count} old resolved alerts`);
+      jobLog.info(`Deleted ${result.count} old resolved alerts`, { count: result.count });
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to cleanup old alerts:', error);
+      jobLog.error('Failed to cleanup old alerts', error);
     }
   },
 
@@ -108,7 +107,7 @@ export const scaleSafetyJobHandler = {
    * Reviews health scores and applies caps automatically
    */
   async reviewSoftCaps(): Promise<void> {
-    console.log('[ScaleSafetyJob] Reviewing soft caps...');
+    jobLog.info('Reviewing soft caps...');
 
     try {
       // Find sellers with critical risk level
@@ -119,7 +118,7 @@ export const scaleSafetyJobHandler = {
         },
       });
 
-      console.log(`[ScaleSafetyJob] Found ${criticalSellers.length} sellers needing soft caps`);
+      jobLog.info(`Found ${criticalSellers.length} sellers needing soft caps`, { count: criticalSellers.length });
 
       for (const seller of criticalSellers) {
         const riskReasons = seller.riskReasons
@@ -141,7 +140,7 @@ export const scaleSafetyJobHandler = {
         },
       });
 
-      console.log(`[ScaleSafetyJob] Found ${cappedSellers.length} sellers eligible for cap removal`);
+      jobLog.info(`Found ${cappedSellers.length} sellers eligible for cap removal`, { count: cappedSellers.length });
 
       for (const seller of cappedSellers) {
         await scaleSafetyService.removeSoftCap(seller.sellerId);
@@ -159,7 +158,7 @@ export const scaleSafetyJobHandler = {
         });
       }
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to review soft caps:', error);
+      jobLog.error('Failed to review soft caps', error);
     }
   },
 
@@ -167,7 +166,7 @@ export const scaleSafetyJobHandler = {
    * Generate daily platform health report
    */
   async generatePlatformHealthReport(): Promise<void> {
-    console.log('[ScaleSafetyJob] Generating platform health report...');
+    jobLog.info('Generating platform health report...');
 
     try {
       // Get count of distinct sellers who have orders
@@ -219,7 +218,7 @@ export const scaleSafetyJobHandler = {
         },
       };
 
-      console.log('[ScaleSafetyJob] Platform health report:', report);
+      jobLog.info('Platform health report generated', { report });
 
       // Store as alert for admin visibility
       await prisma.auditAlert.create({
@@ -234,7 +233,7 @@ export const scaleSafetyJobHandler = {
         },
       });
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to generate platform health report:', error);
+      jobLog.error('Failed to generate platform health report', error);
     }
   },
 
@@ -242,7 +241,7 @@ export const scaleSafetyJobHandler = {
    * Check for expired holds and release them
    */
   async processExpiredHolds(): Promise<void> {
-    console.log('[ScaleSafetyJob] Processing expired holds...');
+    jobLog.info('Processing expired holds...');
 
     try {
       const now = new Date();
@@ -255,7 +254,7 @@ export const scaleSafetyJobHandler = {
         },
       });
 
-      console.log(`[ScaleSafetyJob] Found ${expiredHolds.length} expired holds`);
+      jobLog.info(`Found ${expiredHolds.length} expired holds`, { count: expiredHolds.length });
 
       for (const payout of expiredHolds) {
         // Move back to pending for processing
@@ -284,7 +283,7 @@ export const scaleSafetyJobHandler = {
         });
       }
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to process expired holds:', error);
+      jobLog.error('Failed to process expired holds', error);
     }
   },
 
@@ -292,7 +291,7 @@ export const scaleSafetyJobHandler = {
    * Monitor API rate limit usage patterns
    */
   async monitorRateLimitUsage(): Promise<void> {
-    console.log('[ScaleSafetyJob] Monitoring rate limit usage...');
+    jobLog.info('Monitoring rate limit usage...');
 
     try {
       // Find sellers who frequently hit rate limits
@@ -308,7 +307,7 @@ export const scaleSafetyJobHandler = {
       });
 
       if (frequentlyThrottled.length > 0) {
-        console.log(`[ScaleSafetyJob] ${frequentlyThrottled.length} sellers frequently hitting rate limits`);
+        jobLog.info(`${frequentlyThrottled.length} sellers frequently hitting rate limits`, { count: frequentlyThrottled.length });
 
         await prisma.auditAlert.create({
           data: {
@@ -327,7 +326,7 @@ export const scaleSafetyJobHandler = {
         });
       }
     } catch (error) {
-      console.error('[ScaleSafetyJob] Failed to monitor rate limit usage:', error);
+      jobLog.error('Failed to monitor rate limit usage', error);
     }
   },
 };

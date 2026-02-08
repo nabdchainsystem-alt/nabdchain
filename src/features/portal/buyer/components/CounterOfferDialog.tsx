@@ -1,14 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  X,
-  CurrencyDollar,
-  Truck,
-  ArrowsClockwise,
-  Warning,
-  Info,
-  ArrowRight,
-  Spinner,
-} from 'phosphor-react';
+import { X, CurrencyDollar, Truck, ArrowsClockwise, Info, ArrowRight, Spinner } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { Quote, CreateCounterOfferData } from '../../types/item.types';
 
@@ -51,7 +42,10 @@ function formatPrice(amount: number, currency: string = 'SAR'): string {
   return `${currency} ${amount.toLocaleString()}`;
 }
 
-function calculatePriceChange(original: number, proposed: number): {
+function calculatePriceChange(
+  original: number,
+  proposed: number,
+): {
   difference: number;
   percent: number;
   isReduction: boolean;
@@ -87,6 +81,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
   onSubmit,
   isSubmitting = false,
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, direction } = usePortal();
 
   // Form state
@@ -101,7 +96,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
 
   // Parsed values for calculations
   const proposedPrice = parseFloat(form.proposedPrice) || 0;
-  const proposedQuantity = form.proposedQuantity ? parseInt(form.proposedQuantity, 10) : quote.quantity;
+  const _proposedQuantity = form.proposedQuantity ? parseInt(form.proposedQuantity, 10) : quote.quantity;
 
   // Price change calculation
   const priceChange = useMemo(() => {
@@ -222,10 +217,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity"
-        onClick={handleClose}
-      />
+      <div className="fixed inset-0 bg-black/50 z-50 transition-opacity" onClick={handleClose} />
 
       {/* Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -234,10 +226,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
           style={{ backgroundColor: styles.bgCard }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between p-4 border-b"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: styles.border }}>
             <div className="flex items-center gap-2">
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -268,10 +257,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
           <form onSubmit={handleSubmit}>
             <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
               {/* Original Quote Summary */}
-              <div
-                className="p-3 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                 <p className="text-xs font-medium mb-2" style={{ color: styles.textMuted }}>
                   ORIGINAL QUOTE
                 </p>
@@ -285,9 +271,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Truck size={16} style={{ color: styles.textMuted }} />
-                      <span style={{ color: styles.textSecondary }}>
-                        {quote.deliveryDays} days
-                      </span>
+                      <span style={{ color: styles.textSecondary }}>{quote.deliveryDays} days</span>
                     </div>
                   </div>
                   <span className="text-sm" style={{ color: styles.textMuted }}>
@@ -298,10 +282,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
 
               {/* Proposed Price Input */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1.5"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                   Proposed Total Price <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -337,9 +318,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
                 {priceChange && !errors.proposedPrice && (
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex items-center gap-1.5 text-sm">
-                      <span style={{ color: styles.textMuted }}>
-                        {formatPrice(quote.totalPrice, quote.currency)}
-                      </span>
+                      <span style={{ color: styles.textMuted }}>{formatPrice(quote.totalPrice, quote.currency)}</span>
                       <ArrowRight size={14} style={{ color: styles.textMuted }} />
                       <span
                         style={{
@@ -365,10 +344,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
 
               {/* Proposed Quantity (Optional) */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1.5"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                   Proposed Quantity
                   <span className="ml-1 text-xs font-normal" style={{ color: styles.textMuted }}>
                     (optional)
@@ -398,10 +374,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
 
               {/* Proposed Delivery Days (Optional) */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1.5"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                   Proposed Lead Time (days)
                   <span className="ml-1 text-xs font-normal" style={{ color: styles.textMuted }}>
                     (optional)
@@ -419,7 +392,8 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
                   }`}
                   style={{
                     backgroundColor: styles.bgPrimary,
-                    borderColor: touched.proposedDeliveryDays && errors.proposedDeliveryDays ? '#ef4444' : styles.border,
+                    borderColor:
+                      touched.proposedDeliveryDays && errors.proposedDeliveryDays ? '#ef4444' : styles.border,
                     color: styles.textPrimary,
                   }}
                   disabled={isSubmitting}
@@ -431,10 +405,7 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
 
               {/* Message */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1.5"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                   Message to Seller
                   <span className="ml-1 text-xs font-normal" style={{ color: styles.textMuted }}>
                     (optional)
@@ -473,17 +444,14 @@ export const CounterOfferDialog: React.FC<CounterOfferDialogProps> = ({
               >
                 <Info size={18} style={{ color: styles.info }} className="mt-0.5 flex-shrink-0" />
                 <p className="text-xs" style={{ color: styles.isDark ? '#93c5fd' : '#4338ca' }}>
-                  The seller will be notified of your counter-offer. They can accept, reject, or send
-                  a revised quote. Counter-offers expire in 7 days if not responded to.
+                  The seller will be notified of your counter-offer. They can accept, reject, or send a revised quote.
+                  Counter-offers expire in 7 days if not responded to.
                 </p>
               </div>
             </div>
 
             {/* Footer */}
-            <div
-              className="flex items-center justify-end gap-3 p-4 border-t"
-              style={{ borderColor: styles.border }}
-            >
+            <div className="flex items-center justify-end gap-3 p-4 border-t" style={{ borderColor: styles.border }}>
               <button
                 type="button"
                 onClick={handleClose}

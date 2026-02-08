@@ -109,33 +109,30 @@ interface ItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPr
   destructive?: boolean;
 }
 
-export const DropdownMenuItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  ItemProps
->(({ className, inset, destructive, ...props }, ref) => {
-  const { styles } = usePortal();
+export const DropdownMenuItem = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Item>, ItemProps>(
+  ({ className, inset, destructive, ...props }, ref) => {
+    const { styles } = usePortal();
 
-  return (
-    <DropdownMenuPrimitive.Item
-      ref={ref}
-      className={`relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors ${
-        inset ? 'pl-8' : ''
-      } ${className || ''}`}
-      style={{
-        color: destructive ? styles.error : styles.textPrimary,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = destructive
-          ? `${styles.error}10`
-          : styles.bgHover;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
-      {...props}
-    />
-  );
-});
+    return (
+      <DropdownMenuPrimitive.Item
+        ref={ref}
+        className={`relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors ${
+          inset ? 'pl-8' : ''
+        } ${className || ''}`}
+        style={{
+          color: destructive ? styles.error : styles.textPrimary,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = destructive ? `${styles.error}10` : styles.bgHover;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        {...props}
+      />
+    );
+  },
+);
 DropdownMenuItem.displayName = 'DropdownMenuItem';
 
 // CheckboxItem
@@ -177,11 +174,7 @@ interface RadioItemProps {
   value: string;
 }
 
-export const DropdownMenuRadioItem: React.FC<RadioItemProps> = ({
-  className,
-  children,
-  value,
-}) => {
+export const DropdownMenuRadioItem: React.FC<RadioItemProps> = ({ className, children, value }) => {
   const { styles } = usePortal();
 
   return (
@@ -205,21 +198,20 @@ interface LabelProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuP
   inset?: boolean;
 }
 
-export const DropdownMenuLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
-  LabelProps
->(({ className, inset, ...props }, ref) => {
-  const { styles } = usePortal();
+export const DropdownMenuLabel = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Label>, LabelProps>(
+  ({ className, inset, ...props }, ref) => {
+    const { styles } = usePortal();
 
-  return (
-    <DropdownMenuPrimitive.Label
-      ref={ref}
-      className={`px-3 py-2 text-xs font-semibold uppercase tracking-wider ${inset ? 'pl-8' : ''} ${className || ''}`}
-      style={{ color: styles.textMuted }}
-      {...props}
-    />
-  );
-});
+    return (
+      <DropdownMenuPrimitive.Label
+        ref={ref}
+        className={`px-3 py-2 text-xs font-semibold uppercase tracking-wider ${inset ? 'pl-8' : ''} ${className || ''}`}
+        style={{ color: styles.textMuted }}
+        {...props}
+      />
+    );
+  },
+);
 DropdownMenuLabel.displayName = 'DropdownMenuLabel';
 
 // Separator
@@ -241,6 +233,7 @@ export const DropdownMenuSeparator = React.forwardRef<
 DropdownMenuSeparator.displayName = 'DropdownMenuSeparator';
 
 // Shortcut
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ShortcutProps extends React.HTMLAttributes<HTMLSpanElement> {}
 
 export const DropdownMenuShortcut: React.FC<ShortcutProps> = ({ className, ...props }) => {

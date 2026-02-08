@@ -2,9 +2,8 @@
 // Automation Rules Service - Stage 8: Automation, Payouts & Scale
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -429,7 +428,7 @@ async function updateEntityStatus(entityType: EntityType, entityId: string, stat
       await prisma.marketplaceOrder.update({ where: { id: entityId }, data: { status } });
       break;
     case 'dispute':
-      await prisma.dispute.update({ where: { id: entityId }, data: { status } });
+      await prisma.marketplaceDispute.update({ where: { id: entityId }, data: { status } });
       break;
     default:
       // Item doesn't have a status field to update in this context
@@ -451,7 +450,7 @@ async function updateEntityPriority(entityType: EntityType, entityId: string, pr
       }
       break;
     case 'dispute':
-      await prisma.dispute.update({ where: { id: entityId }, data: { priority } });
+      await prisma.marketplaceDispute.update({ where: { id: entityId }, data: { priorityLevel: priority } });
       break;
     default:
       break;
@@ -489,21 +488,21 @@ async function createNotification(sellerId: string, message: string, context: Ru
 
   // Create notification (using existing notification system if available)
   // For now, we'll log it - in production, integrate with notification service
-  console.log(`[Automation Notification] Seller: ${sellerId}, Message: ${finalMessage}`);
+  apiLogger.info(`[Automation Notification] Seller: ${sellerId}, Message: ${finalMessage}`);
 
   // If there's a Notification model, create one
   // await prisma.notification.create({ data: { userId: sellerId, message: finalMessage, type: 'automation' } });
 }
 
 async function addDisputeAutoResponse(disputeId: string, message: string): Promise<void> {
-  // Add auto-response to dispute messages
-  await prisma.disputeMessage.create({
+  // Add auto-response as dispute event
+  await prisma.marketplaceDisputeEvent.create({
     data: {
       disputeId,
-      senderId: 'system',
-      senderType: 'system',
-      message,
-      isInternal: false,
+      actorId: null,
+      actorType: 'system',
+      eventType: 'NOTE_ADDED',
+      metadata: JSON.stringify({ message, isAutoResponse: true }),
     },
   });
 }
@@ -518,17 +517,18 @@ async function hideItem(itemId: string): Promise<void> {
 async function escalateEntity(entityType: EntityType, entityId: string, escalateTo: string, reason?: string): Promise<void> {
   // Update entity to escalated status and record escalation
   if (entityType === 'dispute') {
-    await prisma.dispute.update({
+    await prisma.marketplaceDispute.update({
       where: { id: entityId },
       data: {
         status: 'escalated',
+        isEscalated: true,
         escalatedAt: new Date(),
-        escalatedTo: escalateTo,
+        escalationReason: `Escalated to: ${escalateTo}`,
       },
     });
 
     // Add escalation event
-    await prisma.disputeEvent.create({
+    await prisma.marketplaceDisputeEvent.create({
       data: {
         disputeId: entityId,
         actorId: 'system',
@@ -570,7 +570,7 @@ export const automationRulesService = {
 
       return { success: true, rule };
     } catch (error) {
-      console.error('Error creating automation rule:', error);
+      apiLogger.error('Error creating automation rule:', error);
       return { success: false, error: 'Failed to create automation rule' };
     }
   },
@@ -600,7 +600,7 @@ export const automationRulesService = {
 
       return { success: true, rule };
     } catch (error) {
-      console.error('Error updating automation rule:', error);
+      apiLogger.error('Error updating automation rule:', error);
       return { success: false, error: 'Failed to update automation rule' };
     }
   },
@@ -620,7 +620,7 @@ export const automationRulesService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting automation rule:', error);
+      apiLogger.error('Error deleting automation rule:', error);
       return { success: false, error: 'Failed to delete automation rule' };
     }
   },
@@ -669,7 +669,7 @@ export const automationRulesService = {
         },
       };
     } catch (error) {
-      console.error('Error fetching seller rules:', error);
+      apiLogger.error('Error fetching seller rules:', error);
       return { rules: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
     }
   },
@@ -700,7 +700,7 @@ export const automationRulesService = {
         })),
       };
     } catch (error) {
-      console.error('Error fetching rule:', error);
+      apiLogger.error('Error fetching rule:', error);
       return null;
     }
   },
@@ -723,7 +723,7 @@ export const automationRulesService = {
 
       return { success: true, rule };
     } catch (error) {
-      console.error('Error toggling rule:', error);
+      apiLogger.error('Error toggling rule:', error);
       return { success: false, error: 'Failed to toggle rule' };
     }
   },
@@ -817,7 +817,7 @@ export const automationRulesService = {
 
       return { success: true, results };
     } catch (error) {
-      console.error('Error evaluating rules:', error);
+      apiLogger.error('Error evaluating rules:', error);
       return { success: false, error: 'Failed to evaluate rules', results: [] };
     }
   },
@@ -828,9 +828,8 @@ export const automationRulesService = {
 
   async onRFQReceived(rfqId: string, sellerId: string) {
     try {
-      const rfq = await prisma.rFQ.findUnique({
+      const rfq = await prisma.itemRFQ.findUnique({
         where: { id: rfqId },
-        include: { buyer: true },
       });
 
       if (!rfq) {
@@ -843,25 +842,23 @@ export const automationRulesService = {
         where: { userId: rfq.buyerId },
       });
       if (trustScore) {
-        buyerTrustScore = trustScore.overallScore;
+        buyerTrustScore = trustScore.score;
       }
 
       // Build context
       const context: RuleContext = {
         entityId: rfqId,
-        entityNumber: rfq.rfqNumber,
+        entityNumber: rfq.rfqNumber ?? undefined,
         entityData: rfq as unknown as Record<string, unknown>,
         buyerId: rfq.buyerId,
         buyerTrustScore,
         sellerId,
-        margin: rfq.estimatedMargin ?? undefined,
-        totalValue: rfq.estimatedValue ?? undefined,
         quantity: rfq.quantity ?? undefined,
       };
 
       return await this.evaluateRulesForEntity('rfq', rfqId, sellerId, context);
     } catch (error) {
-      console.error('Error in onRFQReceived:', error);
+      apiLogger.error('Error in onRFQReceived:', error);
       return { success: false, error: 'Failed to process RFQ automation' };
     }
   },
@@ -878,9 +875,9 @@ export const automationRulesService = {
 
       // Calculate days overdue if applicable
       let daysOverdue: number | undefined;
-      if (order.expectedDeliveryDate && newStatus !== 'delivered' && newStatus !== 'closed') {
+      if (order.estimatedDelivery && newStatus !== 'delivered' && newStatus !== 'closed') {
         const now = new Date();
-        const expected = new Date(order.expectedDeliveryDate);
+        const expected = new Date(order.estimatedDelivery);
         if (now > expected) {
           daysOverdue = Math.floor((now.getTime() - expected.getTime()) / (1000 * 60 * 60 * 24));
         }
@@ -892,13 +889,13 @@ export const automationRulesService = {
         entityNumber: order.orderNumber,
         entityData: { ...order as unknown as Record<string, unknown>, status: newStatus },
         sellerId,
-        totalValue: order.totalAmount,
+        totalValue: order.totalPrice,
         daysOverdue,
       };
 
       return await this.evaluateRulesForEntity('order', orderId, sellerId, context);
     } catch (error) {
-      console.error('Error in onOrderStatusChange:', error);
+      apiLogger.error('Error in onOrderStatusChange:', error);
       return { success: false, error: 'Failed to process order automation' };
     }
   },
@@ -926,7 +923,7 @@ export const automationRulesService = {
 
       return await this.evaluateRulesForEntity(entityType, entityId, sellerId, context);
     } catch (error) {
-      console.error('Error in onSLAWarning:', error);
+      apiLogger.error('Error in onSLAWarning:', error);
       return { success: false, error: 'Failed to process SLA warning automation' };
     }
   },
@@ -951,14 +948,14 @@ export const automationRulesService = {
 
       return await this.evaluateRulesForEntity('item', itemId, sellerId, context);
     } catch (error) {
-      console.error('Error in onStockChange:', error);
+      apiLogger.error('Error in onStockChange:', error);
       return { success: false, error: 'Failed to process stock change automation' };
     }
   },
 
   async onDisputeOpened(disputeId: string, sellerId: string) {
     try {
-      const dispute = await prisma.dispute.findUnique({ where: { id: disputeId } });
+      const dispute = await prisma.marketplaceDispute.findUnique({ where: { id: disputeId } });
 
       if (!dispute) {
         return { success: false, error: 'Dispute not found' };
@@ -973,7 +970,7 @@ export const automationRulesService = {
 
       return await this.evaluateRulesForEntity('dispute', disputeId, sellerId, context);
     } catch (error) {
-      console.error('Error in onDisputeOpened:', error);
+      apiLogger.error('Error in onDisputeOpened:', error);
       return { success: false, error: 'Failed to process dispute automation' };
     }
   },
@@ -1031,7 +1028,7 @@ export const automationRulesService = {
         },
       };
     } catch (error) {
-      console.error('Error fetching execution history:', error);
+      apiLogger.error('Error fetching execution history:', error);
       return { executions: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
     }
   },
@@ -1083,7 +1080,7 @@ export const automationRulesService = {
         }, {} as Record<string, number>),
       };
     } catch (error) {
-      console.error('Error fetching execution stats:', error);
+      apiLogger.error('Error fetching execution stats:', error);
       return {
         period,
         total: 0,

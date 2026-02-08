@@ -5,16 +5,7 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  X,
-  Lightning,
-  Package,
-  Storefront,
-  ShieldCheck,
-  SpinnerGap,
-  WarningCircle,
-  CheckCircle,
-} from 'phosphor-react';
+import { X, Lightning, Package, Storefront, ShieldCheck, SpinnerGap, WarningCircle, CheckCircle } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { CartItem, CartSellerGroup } from '../../types/cart.types';
 
@@ -40,7 +31,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
   onConfirm,
   isProcessing,
   items,
-  sellerGroups,
+  _sellerGroups,
   totalAmount,
   itemCount,
   sellerCount,
@@ -59,10 +50,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={isProcessing ? undefined : onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={isProcessing ? undefined : onClose} />
 
       {/* Modal */}
       <div
@@ -103,10 +91,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
         {/* Content */}
         <div className="p-5 space-y-4">
           {/* Order Summary Stats */}
-          <div
-            className="p-4 rounded-xl grid grid-cols-3 gap-4"
-            style={{ backgroundColor: styles.bgSecondary }}
-          >
+          <div className="p-4 rounded-xl grid grid-cols-3 gap-4" style={{ backgroundColor: styles.bgSecondary }}>
             <div className="text-center">
               <Package size={20} className="mx-auto mb-1" style={{ color: styles.info }} />
               <p className="text-lg font-bold" style={{ color: styles.textPrimary }}>
@@ -184,10 +169,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
 
                     {/* Item Details */}
                     <div className={`flex-1 min-w-0 ${isRtl ? 'text-right' : ''}`}>
-                      <p
-                        className="text-sm font-medium truncate"
-                        style={{ color: styles.textPrimary }}
-                      >
+                      <p className="text-sm font-medium truncate" style={{ color: styles.textPrimary }}>
                         {item.item?.name || item.itemName}
                       </p>
                       <p className="text-xs" style={{ color: styles.textMuted }}>
@@ -206,10 +188,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
               })}
 
               {remainingCount > 0 && (
-                <p
-                  className="text-center text-sm py-2"
-                  style={{ color: styles.textMuted }}
-                >
+                <p className="text-center text-sm py-2" style={{ color: styles.textMuted }}>
                   +{remainingCount} more {remainingCount === 1 ? 'item' : 'items'}
                 </p>
               )}
@@ -241,12 +220,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
             className={`flex items-start gap-2 p-3 rounded-lg ${isRtl ? 'flex-row-reverse' : ''}`}
             style={{ backgroundColor: `${styles.warning}10` }}
           >
-            <WarningCircle
-              size={18}
-              weight="fill"
-              className="flex-shrink-0 mt-0.5"
-              style={{ color: styles.warning }}
-            />
+            <WarningCircle size={18} weight="fill" className="flex-shrink-0 mt-0.5" style={{ color: styles.warning }} />
             <p className="text-xs" style={{ color: styles.textSecondary }}>
               {t('cart.buyNow.priceLockedNotice') ||
                 'By confirming, you agree to purchase at the displayed prices. Orders will be created and sent to sellers for confirmation.'}
@@ -255,10 +229,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div
-          className="px-5 py-4 flex gap-3"
-          style={{ borderTop: `1px solid ${styles.border}` }}
-        >
+        <div className="px-5 py-4 flex gap-3" style={{ borderTop: `1px solid ${styles.border}` }}>
           <button
             onClick={onClose}
             disabled={isProcessing}

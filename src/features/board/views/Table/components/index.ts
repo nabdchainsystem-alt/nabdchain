@@ -22,5 +22,14 @@ export { EditableName } from './EditableName';
 // Avatar components
 export { PersonAvatarItem } from './PersonAvatarItem';
 
+// Modals
+export { RoomTableModals } from './RoomTableModals';
+
+// Toolbar
+export { RoomTableToolbar } from './RoomTableToolbar';
+
+// Table body
+export { RoomTableBody } from './RoomTableBody';
+
 // Pickers (re-export from pickers folder)
 export * from './pickers';

@@ -1,0 +1,37 @@
+# =============================================================================
+# Local Development Database
+# =============================================================================
+# PostgreSQL for local development. Use `pnpm db:up` to start.
+#
+# Usage:
+#   pnpm db:up     - Start PostgreSQL
+#   pnpm db:down   - Stop PostgreSQL
+#   pnpm db:reset  - Reset database (destroy data and start fresh)
+#
+# Connection string (add to server/.env):
+#   DATABASE_URL="postgresql://nabd:nabd_dev@localhost:5432/nabd_chain"
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nabd-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: nabd
+      POSTGRES_PASSWORD: nabd_dev
+      POSTGRES_DB: nabd_chain
+    volumes:
+      - nabd_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nabd -d nabd_chain"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  nabd_postgres_data:
+    name: nabd_postgres_data

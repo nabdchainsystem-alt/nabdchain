@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Heartbeat,
@@ -5,217 +6,45 @@ import {
   TrendUp,
   TrendDown,
   Package,
-  Users,
-  Clock,
-  ShieldCheck,
-  ChartLine,
-  ArrowRight,
+  CurrencyDollar,
+  ArrowClockwise,
   CaretRight,
   Lightning,
-  Eye,
-  Cube,
-  CurrencyDollar,
-  CalendarBlank,
-  WarningCircle,
   CheckCircle,
-  Info,
-  ArrowClockwise,
-  Target,
+  WarningCircle,
+  Bell,
   ShoppingCart,
-  Percent,
-  Bank,
-  Buildings,
-  Truck,
-  Timer,
-  Gauge,
-  Graph,
   FileText,
+  Truck,
+  Gauge,
+  ChartLine,
+  ArrowRight,
+  ListChecks,
 } from 'phosphor-react';
 import { Container, PageHeader } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
+import { Skeleton } from '../../components/LoadingSkeleton';
+import { MemoizedChart } from '../../../../components/common/MemoizedChart';
+import type { EChartsOption } from 'echarts';
+import { sellerHomeSummaryService } from '../../services/sellerHomeSummaryService';
+import type {
+  SellerHomeSummary,
+  SellerHomeKPIs,
+  SellerAlert,
+  SellerFocus,
+  OnboardingProgress,
+  BusinessPulseData,
+  SystemHealth,
+} from '../../services/sellerHomeSummaryService';
 
 // =============================================================================
-// Types - Business Health Metrics
+// Types
 // =============================================================================
-
-interface FulfillmentRisk {
-  ordersAtRisk: number;
-  ordersCritical: number;
-  ordersDelayed: number;
-  avgFulfillmentTime: number; // hours
-  slaCompliance: number; // percentage
-  predictedLateShipments: number;
-  riskTrend: 'improving' | 'stable' | 'worsening';
-}
-
-interface InventoryExposure {
-  totalInventoryValue: number;
-  overstockValue: number;
-  overstockItems: number;
-  lowTurnoverItems: number;
-  deadStockValue: number;
-  healthyStockPercentage: number;
-  avgDaysToSell: number;
-  exposureRisk: 'low' | 'moderate' | 'high';
-}
-
-interface RevenueConcentration {
-  topBuyerPercentage: number;
-  topBuyerName: string;
-  top5BuyersPercentage: number;
-  singleProductPercentage: number;
-  topProductName: string;
-  diversificationScore: number; // 0-100
-  monthlyRecurringRevenue: number;
-  revenueAtRisk: number;
-}
-
-interface BuyerBehavior {
-  activeQuotes: number;
-  quotesToOrderRate: number;
-  repeatBuyerRate: number;
-  avgOrderValue: number;
-  buyerChurnRisk: number;
-  newBuyersThisMonth: number;
-  returningBuyersThisMonth: number;
-  avgTimeToReorder: number; // days
-}
-
-interface BusinessHealthSummary {
-  overallScore: number; // 0-100
-  scoreLabel: 'Excellent' | 'Good' | 'Needs Attention' | 'Critical';
-  keyInsights: HealthInsight[];
-  lastUpdated: string;
-}
-
-interface HealthInsight {
-  id: string;
-  type: 'warning' | 'opportunity' | 'positive';
-  title: string;
-  description: string;
-  metric?: string;
-  action?: string;
-  actionPath?: string;
-  priority: 'high' | 'medium' | 'low';
-}
 
 interface SellerDashboardProps {
   onNavigate: (page: string) => void;
 }
-
-// =============================================================================
-// Mock Data Generator
-// =============================================================================
-
-const generateMockData = () => {
-  const fulfillmentRisk: FulfillmentRisk = {
-    ordersAtRisk: 3,
-    ordersCritical: 1,
-    ordersDelayed: 2,
-    avgFulfillmentTime: 18.5,
-    slaCompliance: 94.2,
-    predictedLateShipments: 2,
-    riskTrend: 'stable',
-  };
-
-  const inventoryExposure: InventoryExposure = {
-    totalInventoryValue: 487500,
-    overstockValue: 42300,
-    overstockItems: 8,
-    lowTurnoverItems: 12,
-    deadStockValue: 15600,
-    healthyStockPercentage: 78,
-    avgDaysToSell: 23,
-    exposureRisk: 'moderate',
-  };
-
-  const revenueConcentration: RevenueConcentration = {
-    topBuyerPercentage: 28,
-    topBuyerName: 'Ahmed Industrial Co.',
-    top5BuyersPercentage: 62,
-    singleProductPercentage: 18,
-    topProductName: 'Hydraulic Pump HP-5000',
-    diversificationScore: 68,
-    monthlyRecurringRevenue: 45200,
-    revenueAtRisk: 32400,
-  };
-
-  const buyerBehavior: BuyerBehavior = {
-    activeQuotes: 18,
-    quotesToOrderRate: 42.5,
-    repeatBuyerRate: 67,
-    avgOrderValue: 3450,
-    buyerChurnRisk: 12,
-    newBuyersThisMonth: 8,
-    returningBuyersThisMonth: 24,
-    avgTimeToReorder: 45,
-  };
-
-  const insights: HealthInsight[] = [
-    {
-      id: '1',
-      type: 'warning',
-      title: '3 orders at fulfillment risk',
-      description: 'These orders may miss their delivery SLA if not shipped within 24 hours.',
-      metric: '3 orders',
-      action: 'Review orders',
-      actionPath: 'orders?filter=at_risk',
-      priority: 'high',
-    },
-    {
-      id: '2',
-      type: 'warning',
-      title: 'Revenue concentration alert',
-      description: '28% of your revenue comes from a single buyer. Consider diversifying.',
-      metric: '28%',
-      priority: 'medium',
-    },
-    {
-      id: '3',
-      type: 'opportunity',
-      title: '18 active quotes awaiting response',
-      description: 'Quick responses improve win rate. Average response time is 4.2 hours.',
-      metric: '18 quotes',
-      action: 'View RFQs',
-      actionPath: 'rfqs',
-      priority: 'medium',
-    },
-    {
-      id: '4',
-      type: 'positive',
-      title: 'Repeat buyer rate up 12%',
-      description: '67% of orders this month came from returning buyers.',
-      metric: '+12%',
-      priority: 'low',
-    },
-    {
-      id: '5',
-      type: 'warning',
-      title: '8 items with overstock risk',
-      description: 'SAR 42,300 tied up in slow-moving inventory.',
-      metric: 'SAR 42.3K',
-      action: 'View inventory',
-      actionPath: 'inventory?filter=overstock',
-      priority: 'medium',
-    },
-  ];
-
-  const summary: BusinessHealthSummary = {
-    overallScore: 76,
-    scoreLabel: 'Good',
-    keyInsights: insights,
-    lastUpdated: new Date().toISOString(),
-  };
-
-  return {
-    fulfillmentRisk,
-    inventoryExposure,
-    revenueConcentration,
-    buyerBehavior,
-    summary,
-  };
-};
 
 // =============================================================================
 // Component
@@ -227,53 +56,72 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate }) 
   const isRtl = direction === 'rtl';
 
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<ReturnType<typeof generateMockData> | null>(null);
+  const [data, setData] = useState<SellerHomeSummary | null>(null);
 
-  // Fetch dashboard data
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      // In production, fetch from API
-      // const token = await getToken();
-      // const response = await dashboardService.getBusinessHealth(token);
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setData(generateMockData());
+      const token = await getToken();
+      if (!token) {
+        setData(null);
+        return;
+      }
+      const summary = await sellerHomeSummaryService.getSummary(token, 7);
+      setData(summary);
     } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
+      console.error('[SellerDashboard] Failed to fetch summary:', err);
+      setData(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  if (loading || !data) {
+  if (loading) {
+    return <DashboardSkeleton styles={styles} />;
+  }
+
+  if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: styles.bgPrimary }}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: styles.border, borderTopColor: 'transparent' }} />
-          <p style={{ color: styles.textMuted }}>Loading business health...</p>
-        </div>
+      <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
+        <Container variant="full">
+          <PageHeader
+            title={t('seller.dashboard.title') || 'Dashboard'}
+            subtitle={t('seller.dashboard.subtitle') || 'Your seller overview'}
+          />
+          <div
+            className="rounded-xl p-8 text-center"
+            style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+          >
+            <p style={{ color: styles.textMuted }}>Unable to load dashboard data. Please try again.</p>
+            <button
+              onClick={fetchData}
+              className="mt-4 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ backgroundColor: styles.bgSecondary, color: styles.textPrimary }}
+            >
+              Retry
+            </button>
+          </div>
+        </Container>
       </div>
     );
   }
 
-  const { fulfillmentRisk, inventoryExposure, revenueConcentration, buyerBehavior, summary } = data;
+  const { kpis, alerts, focus, systemHealth, onboarding, pulse, lastUpdated } = data;
 
   return (
     <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
         <PageHeader
-          title={t('seller.dashboard.title') || 'Business Health'}
-          subtitle={t('seller.dashboard.subtitle') || 'Executive overview of your business performance'}
+          title={t('seller.dashboard.title') || 'Dashboard'}
+          subtitle={t('seller.dashboard.subtitle') || 'Your seller overview'}
           actions={
             <div className="flex items-center gap-3">
               <span className="text-xs" style={{ color: styles.textMuted }}>
-                Last updated: {new Date(summary.lastUpdated).toLocaleTimeString()}
+                {new Date(lastUpdated).toLocaleTimeString()}
               </span>
               <button
                 onClick={fetchData}
@@ -281,31 +129,67 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate }) 
                 style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
               >
                 <ArrowClockwise size={14} />
-                Refresh
+                {t('common.refresh') || 'Refresh'}
               </button>
             </div>
           }
         />
 
-        {/* Health Score Banner */}
-        <HealthScoreBanner summary={summary} styles={styles} />
+        {/* Onboarding Progress (new sellers) */}
+        {onboarding && !onboarding.isComplete && (
+          <OnboardingBanner onboarding={onboarding} styles={styles} onNavigate={onNavigate} isRtl={isRtl} t={t} />
+        )}
 
-        {/* Key Insights */}
-        <InsightsPanel insights={summary.keyInsights} styles={styles} onNavigate={onNavigate} isRtl={isRtl} />
+        {/* KPI Cards */}
+        <KPIGrid kpis={kpis} styles={styles} t={t} />
 
-        {/* Main Metrics Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Fulfillment Risk */}
-          <FulfillmentRiskCard risk={fulfillmentRisk} styles={styles} onNavigate={onNavigate} t={t} />
+        {/* Alerts */}
+        {alerts.length > 0 && <AlertsSection alerts={alerts} styles={styles} onNavigate={onNavigate} isRtl={isRtl} />}
 
-          {/* Inventory Exposure */}
-          <InventoryExposureCard exposure={inventoryExposure} styles={styles} onNavigate={onNavigate} t={t} />
+        {/* Focus + Pulse row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          {/* Focus Card */}
+          <FocusCard focus={focus} styles={styles} onNavigate={onNavigate} isRtl={isRtl} t={t} />
 
-          {/* Revenue Concentration */}
-          <RevenueConcentrationCard concentration={revenueConcentration} styles={styles} t={t} />
+          {/* Business Pulse Chart */}
+          <PulseChart pulse={pulse} styles={styles} t={t} />
+        </div>
 
-          {/* Buyer Behavior */}
-          <BuyerBehaviorCard behavior={buyerBehavior} styles={styles} onNavigate={onNavigate} t={t} />
+        {/* System Health (only show if issues) */}
+        {systemHealth.status !== 'healthy' && (
+          <SystemHealthBanner health={systemHealth} styles={styles} isRtl={isRtl} />
+        )}
+
+        {/* Quick Actions */}
+        <div className="mt-6 mb-8">
+          <h3 className="text-sm font-medium mb-3" style={{ color: styles.textPrimary }}>
+            {t('seller.dashboard.quickActions') || 'Quick Actions'}
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: t('seller.nav.orders') || 'Orders', icon: Package, route: 'orders' },
+              { label: t('seller.nav.rfqs') || 'RFQ Inbox', icon: FileText, route: 'rfqs' },
+              { label: t('seller.nav.listings') || 'Listings', icon: ShoppingCart, route: 'listings' },
+              { label: t('seller.nav.analytics') || 'Analytics', icon: ChartLine, route: 'analytics' },
+            ].map((action) => (
+              <button
+                key={action.route}
+                onClick={() => onNavigate(action.route)}
+                className="flex items-center gap-3 p-3 rounded-xl border transition-colors hover:shadow-sm"
+                style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+              >
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: styles.bgSecondary }}
+                >
+                  <action.icon size={18} style={{ color: styles.textSecondary }} />
+                </div>
+                <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                  {action.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </Container>
     </div>
@@ -313,726 +197,484 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate }) 
 };
 
 // =============================================================================
-// Health Score Banner
+// KPI Grid
 // =============================================================================
 
-interface HealthScoreBannerProps {
-  summary: BusinessHealthSummary;
+const KPIGrid: React.FC<{
+  kpis: SellerHomeKPIs;
   styles: any;
-}
-
-const HealthScoreBanner: React.FC<HealthScoreBannerProps> = ({ summary, styles }) => {
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return styles.success;
-    if (score >= 70) return '#3b82f6';
-    if (score >= 50) return '#f59e0b';
-    return styles.error;
+  t: (key: string) => string;
+}> = ({ kpis, styles, t }) => {
+  const formatCurrency = (amount: number, currency: string) => {
+    if (amount >= 1000000) return `${currency} ${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `${currency} ${(amount / 1000).toFixed(1)}K`;
+    return `${currency} ${amount.toFixed(0)}`;
   };
 
-  const scoreColor = getScoreColor(summary.overallScore);
+  const cards = [
+    {
+      label: t('seller.kpi.revenue') || 'Revenue (30d)',
+      value: formatCurrency(kpis.revenue, kpis.currency),
+      change: kpis.revenueChange,
+      icon: CurrencyDollar,
+      color: '#3b82f6',
+    },
+    {
+      label: t('seller.kpi.activeOrders') || 'Active Orders',
+      value: kpis.activeOrders.toString(),
+      badge: kpis.ordersNeedingAction > 0 ? `${kpis.ordersNeedingAction} need action` : undefined,
+      icon: Package,
+      color: '#8b5cf6',
+    },
+    {
+      label: t('seller.kpi.rfqInbox') || 'RFQ Inbox',
+      value: kpis.rfqInbox.toString(),
+      badge: kpis.newRfqs > 0 ? `${kpis.newRfqs} new` : undefined,
+      icon: FileText,
+      color: '#f59e0b',
+    },
+    {
+      label: t('seller.kpi.pendingPayout') || 'Pending Payout',
+      value: formatCurrency(kpis.pendingPayout, kpis.currency),
+      icon: Truck,
+      color: '#10b981',
+    },
+  ];
 
   return (
-    <div
-      className="rounded-xl p-6 mb-6"
-      style={{
-        backgroundColor: styles.bgCard,
-        border: `1px solid ${styles.border}`,
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          {/* Score Circle */}
-          <div className="relative">
-            <svg className="w-24 h-24 transform -rotate-90">
-              <circle
-                cx="48"
-                cy="48"
-                r="40"
-                fill="none"
-                stroke={styles.bgSecondary}
-                strokeWidth="8"
-              />
-              <circle
-                cx="48"
-                cy="48"
-                r="40"
-                fill="none"
-                stroke={scoreColor}
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${(summary.overallScore / 100) * 251.2} 251.2`}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold" style={{ color: scoreColor }}>
-                {summary.overallScore}
-              </span>
-              <span className="text-xs" style={{ color: styles.textMuted }}>/ 100</span>
-            </div>
-          </div>
-
-          {/* Score Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Heartbeat size={20} weight="fill" style={{ color: scoreColor }} />
-              <h3 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
-                Business Health: {summary.scoreLabel}
-              </h3>
-            </div>
-            <p className="text-sm" style={{ color: styles.textMuted }}>
-              Based on fulfillment, inventory, revenue, and buyer metrics
-            </p>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="flex items-center gap-8">
-          <QuickStat
-            icon={Warning}
-            label="Warnings"
-            value={summary.keyInsights.filter(i => i.type === 'warning').length}
-            color="#f59e0b"
-            styles={styles}
-          />
-          <QuickStat
-            icon={Lightning}
-            label="Opportunities"
-            value={summary.keyInsights.filter(i => i.type === 'opportunity').length}
-            color="#3b82f6"
-            styles={styles}
-          />
-          <QuickStat
-            icon={CheckCircle}
-            label="Positives"
-            value={summary.keyInsights.filter(i => i.type === 'positive').length}
-            color={styles.success}
-            styles={styles}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const QuickStat: React.FC<{
-  icon: React.ElementType;
-  label: string;
-  value: number;
-  color: string;
-  styles: any;
-}> = ({ icon: Icon, label, value, color, styles }) => (
-  <div className="text-center">
-    <div
-      className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-1"
-      style={{ backgroundColor: `${color}15` }}
-    >
-      <Icon size={20} weight="fill" style={{ color }} />
-    </div>
-    <div className="text-xl font-bold" style={{ color: styles.textPrimary }}>{value}</div>
-    <div className="text-xs" style={{ color: styles.textMuted }}>{label}</div>
-  </div>
-);
-
-// =============================================================================
-// Insights Panel
-// =============================================================================
-
-interface InsightsPanelProps {
-  insights: HealthInsight[];
-  styles: any;
-  onNavigate: (page: string) => void;
-  isRtl: boolean;
-}
-
-const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights, styles, onNavigate, isRtl }) => {
-  const highPriorityInsights = insights.filter(i => i.priority === 'high' || i.type === 'warning');
-
-  if (highPriorityInsights.length === 0) return null;
-
-  return (
-    <div className="mb-6">
-      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: styles.textSecondary }}>
-        <WarningCircle size={16} />
-        Needs Attention
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {highPriorityInsights.slice(0, 3).map((insight) => (
-          <InsightCard
-            key={insight.id}
-            insight={insight}
-            styles={styles}
-            onNavigate={onNavigate}
-            isRtl={isRtl}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const InsightCard: React.FC<{
-  insight: HealthInsight;
-  styles: any;
-  onNavigate: (page: string) => void;
-  isRtl: boolean;
-}> = ({ insight, styles, onNavigate, isRtl }) => {
-  const config = {
-    warning: { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', icon: Warning },
-    opportunity: { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', icon: Lightning },
-    positive: { color: styles.success, bg: 'rgba(34,197,94,0.1)', icon: TrendUp },
-  };
-
-  const { color, bg, icon: Icon } = config[insight.type];
-
-  return (
-    <div
-      className="rounded-xl p-4"
-      style={{ backgroundColor: bg, border: `1px solid ${color}30` }}
-    >
-      <div className="flex items-start gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {cards.map((card) => (
         <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `${color}20` }}
+          key={card.label}
+          className="p-4 rounded-xl border transition-shadow hover:shadow-md"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
         >
-          <Icon size={18} weight="bold" style={{ color }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold mb-1" style={{ color: styles.textPrimary }}>
-            {insight.title}
-          </h4>
-          <p className="text-xs leading-relaxed" style={{ color: styles.textSecondary }}>
-            {insight.description}
-          </p>
-          {insight.action && insight.actionPath && (
-            <button
-              onClick={() => onNavigate(insight.actionPath!)}
-              className="flex items-center gap-1 mt-2 text-xs font-medium transition-colors"
-              style={{ color }}
+          <div className="flex justify-between items-start mb-3">
+            <span className="text-xs font-medium" style={{ color: styles.textMuted }}>
+              {card.label}
+            </span>
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${card.color}15` }}
             >
-              {insight.action}
-              <CaretRight size={12} style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }} />
-            </button>
+              <card.icon size={18} style={{ color: card.color }} />
+            </div>
+          </div>
+          <div
+            className="text-2xl font-semibold mb-1"
+            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
+          >
+            {card.value}
+          </div>
+          {card.change !== undefined && card.change !== 0 && (
+            <div
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: card.change > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                color: card.change > 0 ? '#10b981' : '#ef4444',
+              }}
+            >
+              {card.change > 0 ? <TrendUp size={10} weight="bold" /> : <TrendDown size={10} weight="bold" />}
+              {card.change > 0 ? '+' : ''}
+              {card.change}%
+            </div>
+          )}
+          {card.badge && (
+            <div
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1"
+              style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}
+            >
+              {card.badge}
+            </div>
           )}
         </div>
-        {insight.metric && (
-          <div className="text-right flex-shrink-0">
-            <span className="text-lg font-bold" style={{ color }}>{insight.metric}</span>
-          </div>
-        )}
-      </div>
+      ))}
     </div>
   );
 };
 
 // =============================================================================
-// Fulfillment Risk Card
+// Alerts Section
 // =============================================================================
 
-interface FulfillmentRiskCardProps {
-  risk: FulfillmentRisk;
+const AlertsSection: React.FC<{
+  alerts: SellerAlert[];
   styles: any;
   onNavigate: (page: string) => void;
-  t: (key: string) => string;
-}
-
-const FulfillmentRiskCard: React.FC<FulfillmentRiskCardProps> = ({ risk, styles, onNavigate, t }) => {
-  const getTrendIcon = () => {
-    if (risk.riskTrend === 'improving') return { icon: TrendDown, color: styles.success, label: 'Improving' };
-    if (risk.riskTrend === 'worsening') return { icon: TrendUp, color: styles.error, label: 'Worsening' };
-    return { icon: Graph, color: styles.textMuted, label: 'Stable' };
-  };
-
-  const trend = getTrendIcon();
-  const TrendIcon = trend.icon;
-
-  return (
-    <MetricCard
-      icon={Truck}
-      title="Order Fulfillment Risk"
-      subtitle="Active orders requiring attention"
-      styles={styles}
-      headerAction={
-        <button
-          onClick={() => onNavigate('orders')}
-          className="text-xs font-medium flex items-center gap-1"
-          style={{ color: styles.info }}
-        >
-          View all <ArrowRight size={12} />
-        </button>
-      }
-    >
-      {/* Risk Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <RiskMetric
-          value={risk.ordersCritical}
-          label="Critical"
-          color={styles.error}
-          styles={styles}
-        />
-        <RiskMetric
-          value={risk.ordersAtRisk}
-          label="At Risk"
-          color="#f59e0b"
-          styles={styles}
-        />
-        <RiskMetric
-          value={risk.ordersDelayed}
-          label="Delayed"
-          color="#f59e0b"
-          styles={styles}
-        />
-      </div>
-
-      {/* Performance Metrics */}
-      <div className="space-y-4">
-        <MetricRow
-          icon={Clock}
-          label="Avg. Fulfillment Time"
-          value={`${risk.avgFulfillmentTime}h`}
-          subvalue="Target: 24h"
-          status={risk.avgFulfillmentTime <= 24 ? 'good' : 'warning'}
-          styles={styles}
-        />
-        <MetricRow
-          icon={ShieldCheck}
-          label="SLA Compliance"
-          value={`${risk.slaCompliance}%`}
-          status={risk.slaCompliance >= 95 ? 'good' : risk.slaCompliance >= 90 ? 'warning' : 'error'}
-          styles={styles}
-        />
-        <MetricRow
-          icon={Warning}
-          label="Predicted Late Shipments"
-          value={risk.predictedLateShipments.toString()}
-          subvalue="Next 48 hours"
-          status={risk.predictedLateShipments === 0 ? 'good' : 'warning'}
-          styles={styles}
-        />
-      </div>
-
-      {/* Trend */}
-      <div
-        className="mt-4 pt-4 flex items-center justify-between"
-        style={{ borderTop: `1px solid ${styles.border}` }}
-      >
-        <span className="text-xs" style={{ color: styles.textMuted }}>Risk Trend</span>
-        <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: trend.color }}>
-          <TrendIcon size={14} />
-          {trend.label}
-        </span>
-      </div>
-    </MetricCard>
-  );
-};
-
-// =============================================================================
-// Inventory Exposure Card
-// =============================================================================
-
-interface InventoryExposureCardProps {
-  exposure: InventoryExposure;
-  styles: any;
-  onNavigate: (page: string) => void;
-  t: (key: string) => string;
-}
-
-const InventoryExposureCard: React.FC<InventoryExposureCardProps> = ({ exposure, styles, onNavigate, t }) => {
-  const getRiskColor = () => {
-    if (exposure.exposureRisk === 'low') return styles.success;
-    if (exposure.exposureRisk === 'moderate') return '#f59e0b';
-    return styles.error;
+  isRtl: boolean;
+}> = ({ alerts, styles, onNavigate, isRtl }) => {
+  const severityConfig = {
+    critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', icon: WarningCircle },
+    warning: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', icon: Warning },
+    info: { color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', icon: Bell },
   };
 
   return (
-    <MetricCard
-      icon={Cube}
-      title="Inventory Exposure"
-      subtitle="Capital tied up in stock"
-      styles={styles}
-      headerAction={
-        <button
-          onClick={() => onNavigate('inventory')}
-          className="text-xs font-medium flex items-center gap-1"
-          style={{ color: styles.info }}
-        >
-          View inventory <ArrowRight size={12} />
-        </button>
-      }
-    >
-      {/* Total Value */}
-      <div className="mb-6">
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
-            SAR {(exposure.totalInventoryValue / 1000).toFixed(1)}K
-          </span>
-          <span className="text-sm" style={{ color: styles.textMuted }}>total inventory value</span>
-        </div>
-        {/* Health Bar */}
-        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
+    <div className="mt-6 space-y-3">
+      {alerts.map((alert) => {
+        const config = severityConfig[alert.severity];
+        const Icon = config.icon;
+        const message = isRtl ? alert.messageAr : alert.message;
+        const cta = isRtl ? alert.ctaLabelAr : alert.ctaLabel;
+
+        return (
           <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${exposure.healthyStockPercentage}%`,
-              backgroundColor: styles.success,
-            }}
-          />
-        </div>
-        <div className="flex justify-between mt-1 text-xs" style={{ color: styles.textMuted }}>
-          <span>{exposure.healthyStockPercentage}% healthy stock</span>
-          <span>{100 - exposure.healthyStockPercentage}% at risk</span>
-        </div>
-      </div>
-
-      {/* Risk Breakdown */}
-      <div className="space-y-4">
-        <MetricRow
-          icon={Warning}
-          label="Overstock Value"
-          value={`SAR ${(exposure.overstockValue / 1000).toFixed(1)}K`}
-          subvalue={`${exposure.overstockItems} items`}
-          status="warning"
-          styles={styles}
-        />
-        <MetricRow
-          icon={Clock}
-          label="Low Turnover Items"
-          value={exposure.lowTurnoverItems.toString()}
-          subvalue="> 60 days to sell"
-          status={exposure.lowTurnoverItems > 10 ? 'warning' : 'good'}
-          styles={styles}
-        />
-        <MetricRow
-          icon={WarningCircle}
-          label="Dead Stock"
-          value={`SAR ${(exposure.deadStockValue / 1000).toFixed(1)}K`}
-          subvalue="No sales in 90 days"
-          status={exposure.deadStockValue > 10000 ? 'error' : 'warning'}
-          styles={styles}
-        />
-      </div>
-
-      {/* Exposure Risk */}
-      <div
-        className="mt-4 pt-4 flex items-center justify-between"
-        style={{ borderTop: `1px solid ${styles.border}` }}
-      >
-        <span className="text-xs" style={{ color: styles.textMuted }}>Exposure Risk Level</span>
-        <span
-          className="px-2 py-0.5 rounded text-xs font-medium capitalize"
-          style={{ backgroundColor: `${getRiskColor()}15`, color: getRiskColor() }}
-        >
-          {exposure.exposureRisk}
-        </span>
-      </div>
-    </MetricCard>
+            key={alert.id}
+            className="flex items-center justify-between px-4 py-3 rounded-xl"
+            style={{ backgroundColor: config.bg, border: `1px solid ${config.color}20` }}
+          >
+            <div className="flex items-center gap-3">
+              <Icon size={18} weight="bold" style={{ color: config.color }} />
+              <span className="text-sm" style={{ color: styles.textPrimary }}>
+                {message}
+              </span>
+              {alert.count && alert.count > 1 && (
+                <span
+                  className="px-1.5 py-0.5 rounded text-xs font-bold"
+                  style={{ backgroundColor: `${config.color}20`, color: config.color }}
+                >
+                  {alert.count}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => onNavigate(alert.ctaRoute)}
+              className="flex items-center gap-1 text-xs font-medium flex-shrink-0"
+              style={{ color: config.color }}
+            >
+              {cta}
+              <CaretRight size={12} style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
   );
 };
 
 // =============================================================================
-// Revenue Concentration Card
+// Focus Card
 // =============================================================================
 
-interface RevenueConcentrationCardProps {
-  concentration: RevenueConcentration;
+const FocusCard: React.FC<{
+  focus: SellerFocus;
   styles: any;
+  onNavigate: (page: string) => void;
+  isRtl: boolean;
   t: (key: string) => string;
-}
+}> = ({ focus, styles, onNavigate, isRtl, t }) => {
+  const title = isRtl ? focus.titleAr : focus.title;
+  const description = isRtl ? focus.descriptionAr : focus.description;
+  const hint = isRtl ? focus.hintAr : focus.hint;
+  const cta = isRtl ? focus.ctaLabelAr : focus.ctaLabel;
 
-const RevenueConcentrationCard: React.FC<RevenueConcentrationCardProps> = ({ concentration, styles, t }) => {
-  const getDiversificationColor = (score: number) => {
-    if (score >= 80) return styles.success;
-    if (score >= 60) return '#f59e0b';
-    return styles.error;
+  const priorityColors: Record<string, string> = {
+    urgent: '#ef4444',
+    high: '#f59e0b',
+    medium: '#3b82f6',
+    low: '#10b981',
   };
 
+  const color = priorityColors[focus.priority] || '#3b82f6';
+
   return (
-    <MetricCard
-      icon={CurrencyDollar}
-      title="Revenue Concentration"
-      subtitle="Dependency risk analysis"
-      styles={styles}
+    <div
+      className="rounded-xl p-5 lg:col-span-1"
+      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
     >
-      {/* Diversification Score */}
-      <div className="flex items-center gap-4 mb-6">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: `${getDiversificationColor(concentration.diversificationScore)}15` }}
-        >
-          <span
-            className="text-xl font-bold"
-            style={{ color: getDiversificationColor(concentration.diversificationScore) }}
-          >
-            {concentration.diversificationScore}
-          </span>
-        </div>
-        <div>
-          <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-            Diversification Score
-          </div>
-          <div className="text-xs" style={{ color: styles.textMuted }}>
-            {concentration.diversificationScore >= 80
-              ? 'Well diversified revenue base'
-              : concentration.diversificationScore >= 60
-              ? 'Moderate concentration risk'
-              : 'High dependency on few sources'}
-          </div>
-        </div>
+      <div className="flex items-center gap-2 mb-4">
+        <Lightning size={18} weight="fill" style={{ color }} />
+        <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+          {t('seller.dashboard.focus') || 'Your Focus'}
+        </h3>
       </div>
 
-      {/* Concentration Metrics */}
-      <div className="space-y-4">
-        <MetricRow
-          icon={Buildings}
-          label="Top Buyer Concentration"
-          value={`${concentration.topBuyerPercentage}%`}
-          subvalue={concentration.topBuyerName}
-          status={concentration.topBuyerPercentage > 25 ? 'warning' : 'good'}
-          styles={styles}
-        />
-        <MetricRow
-          icon={Users}
-          label="Top 5 Buyers"
-          value={`${concentration.top5BuyersPercentage}%`}
-          subvalue="of total revenue"
-          status={concentration.top5BuyersPercentage > 60 ? 'warning' : 'good'}
-          styles={styles}
-        />
-        <MetricRow
-          icon={Package}
-          label="Top Product"
-          value={`${concentration.singleProductPercentage}%`}
-          subvalue={concentration.topProductName}
-          status={concentration.singleProductPercentage > 30 ? 'warning' : 'good'}
-          styles={styles}
-        />
-      </div>
-
-      {/* Revenue at Risk */}
-      <div
-        className="mt-4 pt-4"
-        style={{ borderTop: `1px solid ${styles.border}` }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Warning size={14} style={{ color: '#f59e0b' }} />
-            <span className="text-xs" style={{ color: styles.textMuted }}>Revenue at Risk</span>
-          </div>
-          <span className="text-sm font-semibold" style={{ color: '#f59e0b' }}>
-            SAR {(concentration.revenueAtRisk / 1000).toFixed(1)}K
-          </span>
-        </div>
-        <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
-          If top buyer churns or reduces orders
+      <div className="mb-3">
+        <h4 className="text-base font-semibold mb-1" style={{ color: styles.textPrimary }}>
+          {title}
+        </h4>
+        <p className="text-sm leading-relaxed" style={{ color: styles.textSecondary }}>
+          {description}
         </p>
       </div>
-    </MetricCard>
+
+      {hint && (
+        <p className="text-xs mb-4" style={{ color: styles.textMuted }}>
+          {hint}
+        </p>
+      )}
+
+      <button
+        onClick={() => onNavigate(focus.ctaRoute)}
+        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        style={{ backgroundColor: color, color: '#fff' }}
+      >
+        {cta}
+        <ArrowRight size={14} style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }} />
+      </button>
+    </div>
   );
 };
 
 // =============================================================================
-// Buyer Behavior Card
+// Pulse Chart
 // =============================================================================
 
-interface BuyerBehaviorCardProps {
-  behavior: BuyerBehavior;
+const PulseChart: React.FC<{
+  pulse: BusinessPulseData;
   styles: any;
-  onNavigate: (page: string) => void;
   t: (key: string) => string;
-}
+}> = ({ pulse, styles, t }) => {
+  const hasData = pulse.revenue.some((v) => v > 0) || pulse.orders.some((v) => v > 0);
 
-const BuyerBehaviorCard: React.FC<BuyerBehaviorCardProps> = ({ behavior, styles, onNavigate, t }) => {
+  const chartOption = useMemo<EChartsOption>(() => {
+    if (!hasData) {
+      return {
+        title: {
+          text: t('seller.dashboard.noActivityYet') || 'No activity yet',
+          subtext: t('seller.dashboard.noActivityHint') || 'Revenue and orders will appear here',
+          left: 'center',
+          top: 'center',
+          textStyle: { color: styles.textMuted, fontSize: 14 },
+          subtextStyle: { color: styles.textMuted, fontSize: 12 },
+        },
+      };
+    }
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+      },
+      legend: {
+        data: ['Revenue', 'Orders'],
+        bottom: 0,
+        textStyle: { color: styles.textMuted, fontSize: 11 },
+      },
+      grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: pulse.labels,
+        axisLabel: { color: styles.textMuted, fontSize: 11 },
+        axisLine: { lineStyle: { color: styles.border } },
+        axisTick: { show: false },
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: 'Revenue',
+          axisLabel: {
+            color: styles.textMuted,
+            fontSize: 11,
+            formatter: (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toString()),
+          },
+          axisLine: { show: false },
+          splitLine: { lineStyle: { color: styles.border, type: 'dashed' } },
+        },
+        {
+          type: 'value',
+          name: 'Orders',
+          axisLabel: { color: styles.textMuted, fontSize: 11 },
+          axisLine: { show: false },
+          splitLine: { show: false },
+        },
+      ],
+      series: [
+        {
+          name: 'Revenue',
+          type: 'bar',
+          data: pulse.revenue,
+          itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
+          barWidth: '50%',
+        },
+        {
+          name: 'Orders',
+          type: 'line',
+          yAxisIndex: 1,
+          data: pulse.orders,
+          lineStyle: { color: '#10b981', width: 2 },
+          itemStyle: { color: '#10b981' },
+          symbol: 'circle',
+          symbolSize: 6,
+          smooth: true,
+        },
+      ],
+    };
+  }, [pulse, hasData, styles, t]);
+
   return (
-    <MetricCard
-      icon={Users}
-      title="Buyer Behavior Signals"
-      subtitle="Customer engagement & retention"
-      styles={styles}
-      headerAction={
-        <button
-          onClick={() => onNavigate('rfqs')}
-          className="text-xs font-medium flex items-center gap-1"
-          style={{ color: styles.info }}
-        >
-          View RFQs <ArrowRight size={12} />
-        </button>
-      }
+    <div
+      className="rounded-xl p-5 lg:col-span-2"
+      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
     >
-      {/* Key Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <BuyerStatBox
-          value={behavior.activeQuotes}
-          label="Active Quotes"
-          icon={FileText}
-          color={styles.info}
-          styles={styles}
-        />
-        <BuyerStatBox
-          value={`${behavior.quotesToOrderRate}%`}
-          label="Quote-to-Order"
-          icon={Target}
-          color={styles.success}
-          styles={styles}
-        />
-        <BuyerStatBox
-          value={`${behavior.repeatBuyerRate}%`}
-          label="Repeat Buyers"
-          icon={ArrowClockwise}
-          color="#8b5cf6"
-          styles={styles}
-        />
-        <BuyerStatBox
-          value={`SAR ${(behavior.avgOrderValue / 1000).toFixed(1)}K`}
-          label="Avg Order Value"
-          icon={ShoppingCart}
-          color="#ec4899"
-          styles={styles}
-        />
-      </div>
-
-      {/* Additional Metrics */}
-      <div className="space-y-4">
-        <MetricRow
-          icon={Users}
-          label="New Buyers This Month"
-          value={behavior.newBuyersThisMonth.toString()}
-          status="good"
-          styles={styles}
-        />
-        <MetricRow
-          icon={ArrowClockwise}
-          label="Returning Buyers"
-          value={behavior.returningBuyersThisMonth.toString()}
-          styles={styles}
-        />
-        <MetricRow
-          icon={Warning}
-          label="Churn Risk"
-          value={`${behavior.buyerChurnRisk}%`}
-          subvalue="buyers inactive > 60 days"
-          status={behavior.buyerChurnRisk > 15 ? 'warning' : 'good'}
-          styles={styles}
-        />
-      </div>
-
-      {/* Avg Time to Reorder */}
-      <div
-        className="mt-4 pt-4 flex items-center justify-between"
-        style={{ borderTop: `1px solid ${styles.border}` }}
-      >
-        <span className="text-xs" style={{ color: styles.textMuted }}>Avg. Time to Reorder</span>
-        <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-          {behavior.avgTimeToReorder} days
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Gauge size={18} style={{ color: styles.textSecondary }} />
+          <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+            {t('seller.dashboard.businessPulse') || 'Business Pulse'}
+          </h3>
+        </div>
+        <span className="text-xs" style={{ color: styles.textMuted }}>
+          {t('seller.dashboard.last7Days') || 'Last 7 days'}
         </span>
       </div>
-    </MetricCard>
+      <MemoizedChart option={chartOption} style={{ height: '220px', width: '100%' }} />
+    </div>
   );
 };
 
-const BuyerStatBox: React.FC<{
-  value: string | number;
-  label: string;
-  icon: React.ElementType;
-  color: string;
-  styles: any;
-}> = ({ value, label, icon: Icon, color, styles }) => (
-  <div
-    className="p-3 rounded-lg"
-    style={{ backgroundColor: `${color}10` }}
-  >
-    <div className="flex items-center gap-2 mb-1">
-      <Icon size={14} style={{ color }} />
-      <span className="text-xs" style={{ color: styles.textMuted }}>{label}</span>
-    </div>
-    <span className="text-lg font-bold" style={{ color: styles.textPrimary }}>{value}</span>
-  </div>
-);
-
 // =============================================================================
-// Shared Components
+// Onboarding Banner
 // =============================================================================
 
-interface MetricCardProps {
-  icon: React.ElementType;
-  title: string;
-  subtitle: string;
+const OnboardingBanner: React.FC<{
+  onboarding: OnboardingProgress;
   styles: any;
-  headerAction?: React.ReactNode;
-  children: React.ReactNode;
-}
-
-const MetricCard: React.FC<MetricCardProps> = ({ icon: Icon, title, subtitle, styles, headerAction, children }) => (
-  <div
-    className="rounded-xl p-6"
-    style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
-  >
-    <div className="flex items-start justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: styles.bgSecondary }}
-        >
-          <Icon size={20} style={{ color: styles.info }} />
-        </div>
-        <div>
-          <h3 className="font-semibold" style={{ color: styles.textPrimary }}>{title}</h3>
-          <p className="text-xs" style={{ color: styles.textMuted }}>{subtitle}</p>
-        </div>
-      </div>
-      {headerAction}
-    </div>
-    {children}
-  </div>
-);
-
-interface MetricRowProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  subvalue?: string;
-  status?: 'good' | 'warning' | 'error';
-  styles: any;
-}
-
-const MetricRow: React.FC<MetricRowProps> = ({ icon: Icon, label, value, subvalue, status, styles }) => {
-  const getStatusColor = () => {
-    if (status === 'good') return styles.success;
-    if (status === 'warning') return '#f59e0b';
-    if (status === 'error') return styles.error;
-    return styles.textPrimary;
-  };
+  onNavigate: (page: string) => void;
+  isRtl: boolean;
+  t: (key: string) => string;
+}> = ({ onboarding, styles, onNavigate, isRtl, t }) => {
+  const progress = Math.round((onboarding.completedSteps / onboarding.totalSteps) * 100);
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon size={14} style={{ color: styles.textMuted }} />
-        <span className="text-sm" style={{ color: styles.textSecondary }}>{label}</span>
+    <div
+      className="rounded-xl p-5 mb-6"
+      style={{ backgroundColor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <ListChecks size={20} weight="bold" style={{ color: '#3b82f6' }} />
+        <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+          {t('seller.onboarding.title') || 'Complete Your Setup'}
+        </h3>
+        <span className="text-xs font-medium ml-auto" style={{ color: '#3b82f6' }}>
+          {onboarding.completedSteps}/{onboarding.totalSteps}
+        </span>
       </div>
-      <div className="text-right">
-        <span className="text-sm font-semibold" style={{ color: getStatusColor() }}>{value}</span>
-        {subvalue && (
-          <span className="text-xs ml-1" style={{ color: styles.textMuted }}>{subvalue}</span>
-        )}
+
+      {/* Progress bar */}
+      <div className="h-2 rounded-full mb-4" style={{ backgroundColor: styles.bgSecondary }}>
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${progress}%`, backgroundColor: '#3b82f6' }}
+        />
+      </div>
+
+      {/* Steps */}
+      <div className="space-y-2">
+        {onboarding.steps.map((step) => {
+          const label = isRtl ? step.labelAr : step.label;
+          return (
+            <div key={step.id} className="flex items-center gap-2">
+              {step.completed ? (
+                <CheckCircle size={16} weight="fill" style={{ color: '#10b981' }} />
+              ) : (
+                <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: styles.border }} />
+              )}
+              <span
+                className="text-sm"
+                style={{
+                  color: step.completed ? styles.textMuted : styles.textPrimary,
+                  textDecoration: step.completed ? 'line-through' : 'none',
+                }}
+              >
+                {label}
+              </span>
+              {!step.completed && step.ctaRoute && (
+                <button
+                  onClick={() => onNavigate(step.ctaRoute!)}
+                  className="text-xs font-medium ml-auto"
+                  style={{ color: '#3b82f6' }}
+                >
+                  {t('common.start') || 'Start'}
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-interface RiskMetricProps {
-  value: number;
-  label: string;
-  color: string;
-  styles: any;
-}
+// =============================================================================
+// System Health Banner
+// =============================================================================
 
-const RiskMetric: React.FC<RiskMetricProps> = ({ value, label, color, styles }) => (
-  <div className="text-center">
+const SystemHealthBanner: React.FC<{
+  health: SystemHealth;
+  styles: any;
+  isRtl: boolean;
+}> = ({ health, styles, isRtl }) => {
+  const color = health.status === 'critical' ? '#ef4444' : '#f59e0b';
+  const message = isRtl ? health.messageAr : health.message;
+
+  return (
     <div
-      className="text-2xl font-bold mb-1"
-      style={{ color: value > 0 ? color : styles.success }}
+      className="mt-6 px-4 py-3 rounded-xl flex items-center gap-3"
+      style={{ backgroundColor: `${color}10`, border: `1px solid ${color}30` }}
     >
-      {value}
+      <Heartbeat size={18} weight="bold" style={{ color }} />
+      <span className="text-sm font-medium" style={{ color }}>
+        {message}
+      </span>
+      {health.issues.length > 0 && (
+        <span className="text-xs ml-auto" style={{ color: styles.textMuted }}>
+          {health.issues.length} issue{health.issues.length > 1 ? 's' : ''}
+        </span>
+      )}
     </div>
-    <div className="text-xs" style={{ color: styles.textMuted }}>{label}</div>
+  );
+};
+
+// =============================================================================
+// Dashboard Skeleton
+// =============================================================================
+
+const DashboardSkeleton: React.FC<{ styles: any }> = ({ styles }) => (
+  <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
+    <Container variant="full">
+      <div className="py-6">
+        <Skeleton width={200} height="1.75rem" className="mb-2" />
+        <Skeleton width={350} height="0.875rem" />
+      </div>
+
+      {/* KPI Skeletons */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="p-4 rounded-xl border"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <Skeleton width={80} height="0.75rem" />
+              <Skeleton width={32} height={32} rounded="lg" />
+            </div>
+            <Skeleton width={100} height="1.75rem" className="mb-2" />
+            <Skeleton width={60} height="0.75rem" />
+          </div>
+        ))}
+      </div>
+
+      {/* Focus + Chart Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div
+          className="rounded-xl p-5"
+          style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+        >
+          <Skeleton width={120} height="1rem" className="mb-4" />
+          <Skeleton width="100%" height="1.25rem" className="mb-2" />
+          <Skeleton width="80%" height="0.875rem" className="mb-4" />
+          <Skeleton width={120} height={36} rounded="lg" />
+        </div>
+        <div
+          className="rounded-xl p-5 lg:col-span-2"
+          style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+        >
+          <Skeleton width={140} height="1rem" className="mb-4" />
+          <Skeleton width="100%" height="220px" rounded="lg" />
+        </div>
+      </div>
+    </Container>
   </div>
 );
 

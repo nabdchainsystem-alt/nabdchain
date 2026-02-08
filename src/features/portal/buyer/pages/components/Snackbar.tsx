@@ -4,12 +4,7 @@
 // =============================================================================
 
 import React, { useEffect, useState } from 'react';
-import {
-  CheckCircle,
-  WarningCircle,
-  Info,
-  X,
-} from 'phosphor-react';
+import { CheckCircle, WarningCircle, Info, X } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 
 export type SnackbarType = 'success' | 'error' | 'info';
@@ -26,23 +21,22 @@ interface SnackbarProps {
   autoHideDuration?: number;
 }
 
-const typeConfig: Record<SnackbarType, {
-  icon: React.ElementType;
-  getColor: (styles: Record<string, string>) => string;
-}> = {
+const typeConfig: Record<
+  SnackbarType,
+  {
+    icon: React.ElementType;
+    getColor: (styles: Record<string, string>) => string;
+  }
+> = {
   success: { icon: CheckCircle, getColor: (styles) => styles.success },
   error: { icon: WarningCircle, getColor: (styles) => styles.error },
   info: { icon: Info, getColor: (styles) => styles.info },
 };
 
-export const Snackbar: React.FC<SnackbarProps> = ({
-  snackbar,
-  onClose,
-  autoHideDuration = 3000,
-}) => {
+export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, onClose, autoHideDuration = 3000 }) => {
   const { styles, direction } = usePortal();
   const [isVisible, setIsVisible] = useState(false);
-  const isRtl = direction === 'rtl';
+  const _isRtl = direction === 'rtl';
 
   useEffect(() => {
     if (snackbar?.show) {

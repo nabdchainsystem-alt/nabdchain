@@ -35,8 +35,8 @@ export const useMentions = (options: UseMentionsOptions = {}): UseMentionsReturn
       setIsSearching(true);
 
       try {
-        // TODO: Implement API call
-        hookLogger.debug('[useMentions] Search users - NOT IMPLEMENTED', { query, ...options });
+        // Future: call user search API instead of using mock suggestions
+        hookLogger.debug('[useMentions] Search users (mock)', { query, ...options });
 
         // Simulate delay
         await new Promise((resolve) => setTimeout(resolve, 300));
@@ -49,8 +49,7 @@ export const useMentions = (options: UseMentionsOptions = {}): UseMentionsReturn
           { id: 'team-2', name: 'Design Team', type: 'team' as const },
         ].filter(
           (s) =>
-            s.name.toLowerCase().includes(query.toLowerCase()) ||
-            s.email?.toLowerCase().includes(query.toLowerCase())
+            s.name.toLowerCase().includes(query.toLowerCase()) || s.email?.toLowerCase().includes(query.toLowerCase()),
         );
 
         setSuggestions(mockSuggestions);
@@ -59,28 +58,26 @@ export const useMentions = (options: UseMentionsOptions = {}): UseMentionsReturn
         setIsSearching(false);
       }
     },
-    [options]
+    [options],
   );
 
   const markAsRead = useCallback(async (notificationId: string): Promise<void> => {
-    // TODO: Implement API call
-    hookLogger.debug('[useMentions] Mark as read - NOT IMPLEMENTED', notificationId);
+    // Future: call notifications API to persist read status
+    hookLogger.debug('[useMentions] Mark as read (local only)', notificationId);
 
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)));
   }, []);
 
   const markAllAsRead = useCallback(async (): Promise<void> => {
-    // TODO: Implement API call
-    hookLogger.debug('[useMentions] Mark all as read - NOT IMPLEMENTED');
+    // Future: call notifications API to persist read-all status
+    hookLogger.debug('[useMentions] Mark all as read (local only)');
 
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
   const refreshNotifications = useCallback(async (): Promise<void> => {
-    // TODO: Implement API call
-    hookLogger.debug('[useMentions] Refresh notifications - NOT IMPLEMENTED', options);
+    // Future: fetch fresh notifications from API
+    hookLogger.debug('[useMentions] Refresh notifications (mock)', options);
 
     // Simulate fetching
     await new Promise((resolve) => setTimeout(resolve, 500));

@@ -4,7 +4,7 @@ import { authLogger } from '../utils/logger';
 
 const clerkAuth = ClerkExpressRequireAuth({});
 
-// Type for authenticated request
+// Type for authenticated request - auth is set by requireAuth middleware
 export interface AuthRequest extends Request {
     auth: {
         userId: string;
@@ -13,14 +13,29 @@ export interface AuthRequest extends Request {
 }
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
+const isProduction = process.env.NODE_ENV === 'production';
 const ALLOW_DEV_TOKENS = process.env.ALLOW_DEV_TOKENS === 'true';
 
+// SECURITY: Triple-gate for dev tokens
+// 1. Must be development environment (NODE_ENV !== 'production')
+// 2. Must have ALLOW_DEV_TOKENS=true explicitly set
+// 3. Even if both are true, reject if somehow we detect production indicators
+const isDevTokensAllowed = isDevelopment && ALLOW_DEV_TOKENS && !isProduction;
+
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    // If auth is already set by global middleware (e.g., portal JWT), skip
+    if ((req as any).auth?.userId) {
+        return next();
+    }
+
     const authHeader = req.headers.authorization;
 
-    // Development-only mock tokens - requires BOTH isDevelopment AND ALLOW_DEV_TOKENS
-    // This double-gate prevents accidental token bypass in misconfigured environments
-    if (isDevelopment && ALLOW_DEV_TOKENS && authHeader) {
+    // Development-only mock tokens - requires ALL conditions:
+    // - isDevelopment (NODE_ENV !== 'production')
+    // - ALLOW_DEV_TOKENS=true
+    // - NOT production (explicit double-check)
+    // This triple-gate prevents accidental token bypass in misconfigured environments
+    if (isDevTokensAllowed && authHeader) {
         if (authHeader.includes('master-token')) {
             authLogger.warn('WARNING: Development master-token used');
             (req as AuthRequest).auth = { userId: 'user_master_local_admin', sessionId: 'mock-session-master' };

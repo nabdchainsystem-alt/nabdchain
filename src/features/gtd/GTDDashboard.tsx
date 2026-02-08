@@ -16,7 +16,7 @@ interface DashboardProps {
   onBoardCreated: (board: Board) => void;
 }
 
-export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated }) => {
+export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, _onBoardCreated }) => {
   interface InboxItem {
     id: string;
     title: string;
@@ -64,10 +64,22 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
       reference,
       completed,
       activePhase,
-      selectedItemId
+      selectedItemId,
     };
     localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-  }, [inboxItems, projects, nextActions, waitingFor, scheduled, someday, reference, completed, activePhase, selectedItemId, storageKey]);
+  }, [
+    inboxItems,
+    projects,
+    nextActions,
+    waitingFor,
+    scheduled,
+    someday,
+    reference,
+    completed,
+    activePhase,
+    selectedItemId,
+    storageKey,
+  ]);
 
   const { t, language } = useAppContext();
   const isRTL = language === 'ar';
@@ -78,7 +90,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
     const newItem: InboxItem = {
       id: Date.now().toString(),
       title: inputText,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
     setInboxItems([newItem, ...inboxItems]);
     setInputText('');
@@ -89,37 +101,42 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
     setActivePhase('clarify');
   };
 
-  const handleProcess = (id: string, action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done', date?: number) => {
-    const itemToMove = inboxItems.find(item => item.id === id);
+  const handleProcess = (
+    id: string,
+    action: 'trash' | 'reference' | 'someday' | 'next' | 'project' | 'delegate' | 'scheduled' | 'done',
+    date?: number,
+  ) => {
+    const itemToMove = inboxItems.find((item) => item.id === id);
     if (!itemToMove) return;
 
     // Remove from Inbox
-    setInboxItems(prev => prev.filter(item => item.id !== id));
+    setInboxItems((prev) => prev.filter((item) => item.id !== id));
 
     // Add to Target List
     switch (action) {
       case 'project':
-        setProjects(prev => [itemToMove, ...prev]);
+        setProjects((prev) => [itemToMove, ...prev]);
         break;
       case 'next':
-        setNextActions(prev => [itemToMove, ...prev]);
+        setNextActions((prev) => [itemToMove, ...prev]);
         break;
       case 'delegate':
-        setWaitingFor(prev => [itemToMove, ...prev]);
+        setWaitingFor((prev) => [itemToMove, ...prev]);
         break;
       case 'someday':
-        setSomeday(prev => [itemToMove, ...prev]);
+        setSomeday((prev) => [itemToMove, ...prev]);
         break;
       case 'reference':
-        setReference(prev => [itemToMove, ...prev]);
+        setReference((prev) => [itemToMove, ...prev]);
         break;
       case 'scheduled':
+        // eslint-disable-next-line no-case-declarations
         const scheduledItem = date ? { ...itemToMove, scheduledAt: date } : itemToMove;
-        setScheduled(prev => [scheduledItem, ...prev]);
+        setScheduled((prev) => [scheduledItem, ...prev]);
         setActivePhase('organize');
         break;
       case 'done':
-        setCompleted(prev => [itemToMove, ...prev]);
+        setCompleted((prev) => [itemToMove, ...prev]);
         break;
       case 'trash':
         break;
@@ -133,10 +150,10 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
   };
 
   const handleComplete = (id: string) => {
-    const item = nextActions.find(i => i.id === id);
+    const item = nextActions.find((i) => i.id === id);
     if (item) {
-      setNextActions(prev => prev.filter(i => i.id !== id));
-      setCompleted(prev => [item, ...prev]);
+      setNextActions((prev) => prev.filter((i) => i.id !== id));
+      setCompleted((prev) => [item, ...prev]);
     }
   };
 
@@ -154,19 +171,19 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
       clearInterval(timer);
     };
   }, []);
-  const todayItems = inboxItems.filter(item => {
+  const todayItems = inboxItems.filter((item) => {
     const itemDate = new Date(item.createdAt);
     return itemDate.toDateString() === now.toDateString();
   });
 
-  const yesterdayItems = inboxItems.filter(item => {
+  const yesterdayItems = inboxItems.filter((item) => {
     const itemDate = new Date(item.createdAt);
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     return itemDate.toDateString() === yesterday.toDateString();
   });
 
-  const pendingItems = inboxItems.filter(item => {
+  const pendingItems = inboxItems.filter((item) => {
     const itemDate = new Date(item.createdAt);
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -179,20 +196,21 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
 
   const handleDelete = (id: string) => {
     // Remove from any/all lists where it might exist
-    setInboxItems(prev => prev.filter(i => i.id !== id));
-    setProjects(prev => prev.filter(i => i.id !== id));
-    setNextActions(prev => prev.filter(i => i.id !== id));
-    setWaitingFor(prev => prev.filter(i => i.id !== id));
-    setScheduled(prev => prev.filter(i => i.id !== id));
-    setSomeday(prev => prev.filter(i => i.id !== id));
-    setReference(prev => prev.filter(i => i.id !== id));
-    setCompleted(prev => prev.filter(i => i.id !== id));
+    setInboxItems((prev) => prev.filter((i) => i.id !== id));
+    setProjects((prev) => prev.filter((i) => i.id !== id));
+    setNextActions((prev) => prev.filter((i) => i.id !== id));
+    setWaitingFor((prev) => prev.filter((i) => i.id !== id));
+    setScheduled((prev) => prev.filter((i) => i.id !== id));
+    setSomeday((prev) => prev.filter((i) => i.id !== id));
+    setReference((prev) => prev.filter((i) => i.id !== id));
+    setCompleted((prev) => prev.filter((i) => i.id !== id));
   };
 
   return (
-    <div className={`flex-1 bg-white dark:bg-monday-dark-bg h-full overflow-hidden ${isRTL ? 'font-sans' : 'font-serif'} text-[#1A1A1A] dark:text-white transition-colors duration-300`}>
+    <div
+      className={`flex-1 bg-white dark:bg-monday-dark-bg h-full overflow-hidden ${isRTL ? 'font-sans' : 'font-serif'} text-[#1A1A1A] dark:text-white transition-colors duration-300`}
+    >
       <div className="max-w-5xl mx-auto h-full flex flex-col items-center pt-6">
-
         {/* 1. Header */}
         <div className="flex-none w-full relative flex items-center justify-center mb-8 px-8 opacity-60 hover:opacity-100 transition-opacity">
           {activePhase !== 'capture' && (
@@ -204,7 +222,9 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
             </button>
           )}
           <div className="flex items-center gap-2 cursor-help">
-            <h1 className={`text-xl ${isRTL ? 'font-sans font-bold' : 'font-serif italic tracking-wide'}`}>{t('getting_things_done')}</h1>
+            <h1 className={`text-xl ${isRTL ? 'font-sans font-bold' : 'font-serif italic tracking-wide'}`}>
+              {t('getting_things_done')}
+            </h1>
             <Info size={14} className="text-gray-400" />
           </div>
         </div>
@@ -225,7 +245,9 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                 exit={{ opacity: 0, y: -20 }}
                 className="w-full max-w-5xl flex flex-col items-center"
               >
-                <h2 className={`text-2xl font-black ${isRTL ? '' : 'tracking-widest'} uppercase mb-6`}>{t('capture')}</h2>
+                <h2 className={`text-2xl font-black ${isRTL ? '' : 'tracking-widest'} uppercase mb-6`}>
+                  {t('capture')}
+                </h2>
 
                 {/* Minimalist Input */}
                 <form onSubmit={handleCapture} className="relative w-full max-w-2xl mb-16 group">
@@ -255,13 +277,28 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                 {/* 3-Column Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full pb-8">
                   {/* YESTERDAY */}
-                  <GTDInboxColumn title={t('yesterday')} subtitle={t('review')} count={yesterdayItems.length} delay={0.1}>
+                  <GTDInboxColumn
+                    title={t('yesterday')}
+                    subtitle={t('review')}
+                    count={yesterdayItems.length}
+                    delay={0.1}
+                  >
                     {yesterdayItems.length > 0 && (
                       <div className="w-full space-y-4 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
-                        {yesterdayItems.map(item => (
-                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-start group cursor-pointer hover:opacity-80">
-                            <div className={`text-base ${isRTL ? 'font-sans' : 'font-serif italic'} text-gray-800 dark:text-gray-200`}>{item.title}</div>
-                            <div className={`text-[10px] text-gray-400 uppercase ${isRTL ? '' : 'tracking-wider'}`}>{formatTime(item.createdAt)}</div>
+                        {yesterdayItems.map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => handleItemClick(item.id)}
+                            className="text-start group cursor-pointer hover:opacity-80"
+                          >
+                            <div
+                              className={`text-base ${isRTL ? 'font-sans' : 'font-serif italic'} text-gray-800 dark:text-gray-200`}
+                            >
+                              {item.title}
+                            </div>
+                            <div className={`text-[10px] text-gray-400 uppercase ${isRTL ? '' : 'tracking-wider'}`}>
+                              {formatTime(item.createdAt)}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -272,10 +309,22 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                   <GTDInboxColumn title={t('today')} subtitle={t('inbox')} count={todayItems.length} delay={0.2}>
                     {todayItems.length > 0 && (
                       <div className="w-full space-y-6 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-6 py-2">
-                        {todayItems.map(item => (
-                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-start group cursor-pointer hover:opacity-80 transition-opacity">
-                            <div className={`text-base ${isRTL ? 'font-sans' : 'font-serif italic'} text-[#1A1A1A] dark:text-white mb-0.5`}>{item.title}</div>
-                            <div className={`text-[10px] font-bold text-gray-300 uppercase ${isRTL ? '' : 'tracking-widest'}`}>{formatTime(item.createdAt)}</div>
+                        {todayItems.map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => handleItemClick(item.id)}
+                            className="text-start group cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+                            <div
+                              className={`text-base ${isRTL ? 'font-sans' : 'font-serif italic'} text-[#1A1A1A] dark:text-white mb-0.5`}
+                            >
+                              {item.title}
+                            </div>
+                            <div
+                              className={`text-[10px] font-bold text-gray-300 uppercase ${isRTL ? '' : 'tracking-widest'}`}
+                            >
+                              {formatTime(item.createdAt)}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -286,17 +335,24 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                   <GTDInboxColumn title={t('pending')} subtitle={t('backlog')} count={pendingItems.length} delay={0.3}>
                     {pendingItems.length > 0 && (
                       <div className="w-full space-y-4 max-h-[250px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
-                        {pendingItems.map(item => (
-                          <div key={item.id} onClick={() => handleItemClick(item.id)} className="text-start group cursor-pointer hover:opacity-80">
-                            <div className={`text-base ${isRTL ? 'font-sans' : 'font-serif italic'} text-gray-500`}>{item.title}</div>
-                            <div className={`text-[10px] text-gray-600 uppercase ${isRTL ? '' : 'tracking-wider'}`}>{new Date(item.createdAt).toLocaleDateString()}</div>
+                        {pendingItems.map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => handleItemClick(item.id)}
+                            className="text-start group cursor-pointer hover:opacity-80"
+                          >
+                            <div className={`text-base ${isRTL ? 'font-sans' : 'font-serif italic'} text-gray-500`}>
+                              {item.title}
+                            </div>
+                            <div className={`text-[10px] text-gray-600 uppercase ${isRTL ? '' : 'tracking-wider'}`}>
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </GTDInboxColumn>
                 </div>
-
               </motion.div>
             )}
 
@@ -308,11 +364,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                 exit={{ opacity: 0, scale: 1.05 }}
                 className="w-full"
               >
-                <GTDClarifyView
-                  items={inboxItems}
-                  initialItemId={selectedItemId}
-                  onProcess={handleProcess}
-                />
+                <GTDClarifyView items={inboxItems} initialItemId={selectedItemId} onProcess={handleProcess} />
               </motion.div>
             )}
 
@@ -351,7 +403,7 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                     waitingFor: waitingFor,
                     projects: projects,
                     someday: someday,
-                    completed: completed
+                    completed: completed,
                   }}
                 />
               </motion.div>
@@ -365,27 +417,26 @@ export const GTDDashboard: React.FC<DashboardProps> = ({ boardId, onBoardCreated
                 exit={{ opacity: 0, y: -20 }}
                 className="w-full"
               >
-                <GTDEngageView
-                  nextActions={nextActions}
-                  onComplete={handleComplete}
-                  onDelete={handleDelete}
-                />
+                <GTDEngageView nextActions={nextActions} onComplete={handleComplete} onDelete={handleDelete} />
               </motion.div>
             )}
-            {activePhase !== 'capture' && activePhase !== 'clarify' && activePhase !== 'organize' && activePhase !== 'reflect' && activePhase !== 'engage' && (
-              <motion.div
-                key="other"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center justify-center h-64 text-gray-300 italics"
-              >
-                Phase content coming soon...
-              </motion.div>
-            )}
+            {activePhase !== 'capture' &&
+              activePhase !== 'clarify' &&
+              activePhase !== 'organize' &&
+              activePhase !== 'reflect' &&
+              activePhase !== 'engage' && (
+                <motion.div
+                  key="other"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center justify-center h-64 text-gray-300 italics"
+                >
+                  Phase content coming soon...
+                </motion.div>
+              )}
           </AnimatePresence>
         </div>
-
       </div>
     </div>
   );

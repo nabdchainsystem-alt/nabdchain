@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { Sprint, SprintTask, SprintSettings, SprintMetrics } from '../types';
+import type { Sprint, SprintTask, SprintMetrics } from '../types';
 import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
@@ -88,7 +88,7 @@ export const useSprints = (): UseSprintsReturn => {
       setSprints((prev) => [...prev, newSprint]);
       return newSprint;
     },
-    []
+    [],
   );
 
   const updateSprint = useCallback(async (id: string, updates: Partial<Sprint>): Promise<Sprint> => {
@@ -101,7 +101,7 @@ export const useSprints = (): UseSprintsReturn => {
           return updated;
         }
         return s;
-      })
+      }),
     );
     if (!updated) throw new Error('Sprint not found');
     return updated;
@@ -112,25 +112,31 @@ export const useSprints = (): UseSprintsReturn => {
     setSprints((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
-  const startSprint = useCallback(async (id: string): Promise<Sprint> => {
-    hookLogger.debug('[useSprints] Start sprint - NOT IMPLEMENTED', id);
-    return updateSprint(id, { status: 'active', startDate: new Date() });
-  }, [updateSprint]);
+  const startSprint = useCallback(
+    async (id: string): Promise<Sprint> => {
+      hookLogger.debug('[useSprints] Start sprint - NOT IMPLEMENTED', id);
+      return updateSprint(id, { status: 'active', startDate: new Date() });
+    },
+    [updateSprint],
+  );
 
-  const completeSprint = useCallback(async (id: string): Promise<Sprint> => {
-    hookLogger.debug('[useSprints] Complete sprint - NOT IMPLEMENTED', id);
-    const sprint = sprints.find((s) => s.id === id);
-    if (!sprint) throw new Error('Sprint not found');
+  const completeSprint = useCallback(
+    async (id: string): Promise<Sprint> => {
+      hookLogger.debug('[useSprints] Complete sprint - NOT IMPLEMENTED', id);
+      const sprint = sprints.find((s) => s.id === id);
+      if (!sprint) throw new Error('Sprint not found');
 
-    const completedPoints = sprint.tasks
-      .filter((t) => t.status === 'done')
-      .reduce((sum, t) => sum + t.storyPoints, 0);
+      const completedPoints = sprint.tasks
+        .filter((t) => t.status === 'done')
+        .reduce((sum, t) => sum + t.storyPoints, 0);
 
-    return updateSprint(id, {
-      status: 'completed',
-      velocity: completedPoints,
-    });
-  }, [sprints, updateSprint]);
+      return updateSprint(id, {
+        status: 'completed',
+        velocity: completedPoints,
+      });
+    },
+    [sprints, updateSprint],
+  );
 
   const addTaskToSprint = useCallback(
     async (sprintId: string, task: Omit<SprintTask, 'id' | 'sprintId'>): Promise<void> => {
@@ -146,10 +152,10 @@ export const useSprints = (): UseSprintsReturn => {
             return { ...s, tasks: [...s.tasks, newTask], updatedAt: new Date() };
           }
           return s;
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   const removeTaskFromSprint = useCallback(async (sprintId: string, taskId: string): Promise<void> => {
@@ -164,7 +170,7 @@ export const useSprints = (): UseSprintsReturn => {
           };
         }
         return s;
-      })
+      }),
     );
   }, []);
 
@@ -177,44 +183,45 @@ export const useSprints = (): UseSprintsReturn => {
             return {
               ...s,
               tasks: s.tasks.map((t) =>
-                t.taskId === taskId
-                  ? { ...t, status, completedAt: status === 'done' ? new Date() : undefined }
-                  : t
+                t.taskId === taskId ? { ...t, status, completedAt: status === 'done' ? new Date() : undefined } : t,
               ),
               updatedAt: new Date(),
             };
           }
           return s;
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
-  const getSprintMetrics = useCallback((sprintId: string): SprintMetrics | null => {
-    const sprint = sprints.find((s) => s.id === sprintId);
-    if (!sprint) return null;
+  const getSprintMetrics = useCallback(
+    (sprintId: string): SprintMetrics | null => {
+      const sprint = sprints.find((s) => s.id === sprintId);
+      if (!sprint) return null;
 
-    const totalPoints = sprint.tasks.reduce((sum, t) => sum + t.storyPoints, 0);
-    const completedPoints = sprint.tasks
-      .filter((t) => t.status === 'done')
-      .reduce((sum, t) => sum + t.storyPoints, 0);
-    const remainingPoints = totalPoints - completedPoints;
-    const daysRemaining = Math.max(
-      0,
-      Math.ceil((new Date(sprint.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    );
+      const totalPoints = sprint.tasks.reduce((sum, t) => sum + t.storyPoints, 0);
+      const completedPoints = sprint.tasks
+        .filter((t) => t.status === 'done')
+        .reduce((sum, t) => sum + t.storyPoints, 0);
+      const remainingPoints = totalPoints - completedPoints;
+      const daysRemaining = Math.max(
+        0,
+        Math.ceil((new Date(sprint.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+      );
 
-    return {
-      totalPoints,
-      completedPoints,
-      remainingPoints,
-      completionPercentage: totalPoints > 0 ? Math.round((completedPoints / totalPoints) * 100) : 0,
-      daysRemaining,
-      averageVelocity: sprint.velocity || 0,
-      predictedCompletion: daysRemaining > 0 ? new Date(sprint.endDate) : null,
-    };
-  }, [sprints]);
+      return {
+        totalPoints,
+        completedPoints,
+        remainingPoints,
+        completionPercentage: totalPoints > 0 ? Math.round((completedPoints / totalPoints) * 100) : 0,
+        daysRemaining,
+        averageVelocity: sprint.velocity || 0,
+        predictedCompletion: daysRemaining > 0 ? new Date(sprint.endDate) : null,
+      };
+    },
+    [sprints],
+  );
 
   const refresh = useCallback(async (): Promise<void> => {
     hookLogger.debug('[useSprints] Refresh - NOT IMPLEMENTED');

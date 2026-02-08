@@ -11,7 +11,6 @@ import {
 import {
   Receipt,
   Plus,
-  MagnifyingGlass,
   CaretDown,
   CaretUp,
   X,
@@ -67,10 +66,7 @@ const ExpenseTypeBadge: React.FC<{ type: ExpenseType }> = ({ type }) => {
 
   return (
     <div className="flex items-center gap-2">
-      <div
-        className="w-7 h-7 rounded-md flex items-center justify-center"
-        style={{ backgroundColor: `${color}15` }}
-      >
+      <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
         <Icon size={14} style={{ color }} />
       </div>
       <span className="text-sm" style={{ color: styles.textPrimary }}>
@@ -109,18 +105,18 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary, loading }) => {
     );
   }
 
-  const change = summary.totalLastMonth > 0
-    ? ((summary.totalThisMonth - summary.totalLastMonth) / summary.totalLastMonth) * 100
-    : summary.totalThisMonth > 0 ? 100 : 0;
+  const change =
+    summary.totalLastMonth > 0
+      ? ((summary.totalThisMonth - summary.totalLastMonth) / summary.totalLastMonth) * 100
+      : summary.totalThisMonth > 0
+        ? 100
+        : 0;
 
   const isUp = change > 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-      <div
-        className="p-5 rounded-lg border"
-        style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-      >
+      <div className="p-5 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
         <p className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: styles.textMuted }}>
           {t('seller.expenses.thisMonth')}
         </p>
@@ -133,21 +129,16 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary, loading }) => {
           ) : (
             <TrendDown size={14} style={{ color: '#22c55e' }} />
           )}
-          <span
-            className="text-xs"
-            style={{ color: isUp ? '#ef4444' : '#22c55e' }}
-          >
-            {isUp ? '+' : ''}{change.toFixed(0)}%
+          <span className="text-xs" style={{ color: isUp ? '#ef4444' : '#22c55e' }}>
+            {isUp ? '+' : ''}
+            {change.toFixed(0)}%
           </span>
           <span className="text-xs" style={{ color: styles.textMuted }}>
             vs last month
           </span>
         </div>
       </div>
-      <div
-        className="p-5 rounded-lg border"
-        style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-      >
+      <div className="p-5 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
         <p className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: styles.textMuted }}>
           {t('seller.expenses.lastMonth')}
         </p>
@@ -177,13 +168,16 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
 
-  const typeOptions = useMemo(() => [
-    { value: 'shipping', label: t('seller.expenses.shipping') },
-    { value: 'ads', label: t('seller.expenses.ads') },
-    { value: 'platform_fee', label: t('seller.expenses.platformFee') },
-    { value: 'supplies', label: t('seller.expenses.supplies') },
-    { value: 'other', label: t('seller.expenses.other') },
-  ], [t]);
+  const typeOptions = useMemo(
+    () => [
+      { value: 'shipping', label: t('seller.expenses.shipping') },
+      { value: 'ads', label: t('seller.expenses.ads') },
+      { value: 'platform_fee', label: t('seller.expenses.platformFee') },
+      { value: 'supplies', label: t('seller.expenses.supplies') },
+      { value: 'other', label: t('seller.expenses.other') },
+    ],
+    [t],
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,10 +204,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 z-40"
-        onClick={handleClose}
-      />
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={handleClose} />
 
       {/* Modal */}
       <div
@@ -222,14 +213,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
       >
         <form onSubmit={handleSubmit}>
           {/* Header */}
-          <div
-            className="flex items-center justify-between px-6 py-4 border-b"
-            style={{ borderColor: styles.border }}
-          >
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-            >
+          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: styles.border }}>
+            <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
               {t('seller.expenses.addExpense')}
             </h2>
             <button
@@ -249,11 +234,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
               <label className="block text-sm font-medium mb-2" style={{ color: styles.textSecondary }}>
                 {t('seller.expenses.type')}
               </label>
-              <Select
-                value={type}
-                onChange={(value) => setType(value as ExpenseType)}
-                options={typeOptions}
-              />
+              <Select value={type} onChange={(value) => setType(value as ExpenseType)} options={typeOptions} />
             </div>
 
             {/* Amount */}
@@ -262,10 +243,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
                 {t('seller.expenses.amount')}
               </label>
               <div className="relative">
-                <span
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
-                  style={{ color: styles.textMuted }}
-                >
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: styles.textMuted }}>
                   SAR
                 </span>
                 <input
@@ -291,11 +269,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAd
               <label className="block text-sm font-medium mb-2" style={{ color: styles.textSecondary }}>
                 {t('seller.expenses.date')}
               </label>
-              <PortalDatePicker
-                value={date}
-                onChange={setDate}
-                className="w-full"
-              />
+              <PortalDatePicker value={date} onChange={setDate} className="w-full" />
             </div>
 
             {/* Notes */}
@@ -440,97 +414,109 @@ export const SellerExpenses: React.FC = () => {
   }, [fetchExpenses, fetchSummary]);
 
   // Handle add expense
-  const handleAddExpense = useCallback(async (input: { type: ExpenseType; amount: number; date: string; notes?: string }) => {
-    setSaving(true);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
+  const handleAddExpense = useCallback(
+    async (input: { type: ExpenseType; amount: number; date: string; notes?: string }) => {
+      setSaving(true);
+      try {
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
 
-      const newExpense = await expenseService.createExpense(token, input);
-      setExpenses((prev) => [newExpense, ...prev]);
-      setShowAddModal(false);
-      fetchSummary();
-    } catch (err) {
-      console.error('Failed to add expense:', err);
-    } finally {
-      setSaving(false);
-    }
-  }, [getToken, fetchSummary]);
+        const newExpense = await expenseService.createExpense(token, input);
+        setExpenses((prev) => [newExpense, ...prev]);
+        setShowAddModal(false);
+        fetchSummary();
+      } catch (err) {
+        console.error('Failed to add expense:', err);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [getToken, fetchSummary],
+  );
 
   // Handle delete expense
-  const handleDeleteExpense = useCallback(async (expenseId: string) => {
-    if (!confirm(t('seller.expenses.confirmDelete'))) return;
+  const handleDeleteExpense = useCallback(
+    async (expenseId: string) => {
+      if (!confirm(t('seller.expenses.confirmDelete'))) return;
 
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
+      try {
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
 
-      await expenseService.deleteExpense(token, expenseId);
-      setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-      fetchSummary();
-    } catch (err) {
-      console.error('Failed to delete expense:', err);
-    }
-  }, [getToken, t, fetchSummary]);
+        await expenseService.deleteExpense(token, expenseId);
+        setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+        fetchSummary();
+      } catch (err) {
+        console.error('Failed to delete expense:', err);
+      }
+    },
+    [getToken, t, fetchSummary],
+  );
 
   // Type options
-  const typeOptions = useMemo(() => [
-    { value: 'all', label: t('seller.expenses.allTypes') },
-    { value: 'shipping', label: t('seller.expenses.shipping') },
-    { value: 'ads', label: t('seller.expenses.ads') },
-    { value: 'platform_fee', label: t('seller.expenses.platformFee') },
-    { value: 'supplies', label: t('seller.expenses.supplies') },
-    { value: 'other', label: t('seller.expenses.other') },
-  ], [t]);
+  const typeOptions = useMemo(
+    () => [
+      { value: 'all', label: t('seller.expenses.allTypes') },
+      { value: 'shipping', label: t('seller.expenses.shipping') },
+      { value: 'ads', label: t('seller.expenses.ads') },
+      { value: 'platform_fee', label: t('seller.expenses.platformFee') },
+      { value: 'supplies', label: t('seller.expenses.supplies') },
+      { value: 'other', label: t('seller.expenses.other') },
+    ],
+    [t],
+  );
 
   // Column helper
   const columnHelper = createColumnHelper<Expense>();
 
   // Columns
-  const columns = useMemo(() => [
-    columnHelper.accessor('type', {
-      header: t('seller.expenses.type'),
-      cell: (info) => <ExpenseTypeBadge type={info.getValue()} />,
-    }),
-    columnHelper.accessor('amount', {
-      header: t('seller.expenses.amount'),
-      cell: (info) => (
-        <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-          {formatCurrency(info.getValue(), info.row.original.currency)}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('date', {
-      header: t('seller.expenses.date'),
-      cell: (info) => (
-        <span className="text-sm" style={{ color: styles.textMuted }}>
-          {formatDate(info.getValue())}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('notes', {
-      header: t('seller.expenses.notes'),
-      cell: (info) => (
-        <span className="text-sm" style={{ color: styles.textSecondary }}>
-          {info.getValue() || '-'}
-        </span>
-      ),
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: t('seller.expenses.actions'),
-      cell: (info) => (
-        <button
-          onClick={() => handleDeleteExpense(info.row.original.id)}
-          className="p-1.5 rounded-md transition-colors"
-          style={{ color: '#ef4444' }}
-          title={t('seller.expenses.delete')}
-        >
-          <Trash size={16} />
-        </button>
-      ),
-    }),
-  ], [columnHelper, styles, t, handleDeleteExpense]);
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('type', {
+        header: t('seller.expenses.type'),
+        cell: (info) => <ExpenseTypeBadge type={info.getValue()} />,
+      }),
+      columnHelper.accessor('amount', {
+        header: t('seller.expenses.amount'),
+        cell: (info) => (
+          <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+            {formatCurrency(info.getValue(), info.row.original.currency)}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('date', {
+        header: t('seller.expenses.date'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textMuted }}>
+            {formatDate(info.getValue())}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('notes', {
+        header: t('seller.expenses.notes'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textSecondary }}>
+            {info.getValue() || '-'}
+          </span>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: t('seller.expenses.actions'),
+        cell: (info) => (
+          <button
+            onClick={() => handleDeleteExpense(info.row.original.id)}
+            className="p-1.5 rounded-md transition-colors"
+            style={{ color: '#ef4444' }}
+            title={t('seller.expenses.delete')}
+          >
+            <Trash size={16} />
+          </button>
+        ),
+      }),
+    ],
+    [columnHelper, styles, t, handleDeleteExpense],
+  );
 
   // Table instance
   const table = useReactTable({
@@ -574,11 +560,7 @@ export const SellerExpenses: React.FC = () => {
       >
         <div className="flex items-center gap-3">
           {/* Type Filter */}
-          <Select
-            value={typeFilter}
-            onChange={setTypeFilter}
-            options={typeOptions}
-          />
+          <Select value={typeFilter} onChange={setTypeFilter} options={typeOptions} />
         </div>
 
         {/* Add Button */}
@@ -625,10 +607,7 @@ export const SellerExpenses: React.FC = () => {
 
       {/* Table */}
       {!loading && expenses.length > 0 && (
-        <div
-          className="overflow-hidden rounded-lg border"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="overflow-hidden rounded-lg border" style={{ borderColor: styles.border }}>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead style={{ backgroundColor: styles.bgSecondary }}>

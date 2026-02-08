@@ -30,7 +30,7 @@ export const MobileNotes: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
   }, [notes]);
 
-  const activeNote = notes.find(n => n.id === activeNoteId);
+  const activeNote = notes.find((n) => n.id === activeNoteId);
 
   const createNote = () => {
     const newNote: Note = {
@@ -45,13 +45,11 @@ export const MobileNotes: React.FC = () => {
   };
 
   const updateNote = (id: string, updates: Partial<Note>) => {
-    setNotes(notes.map(n =>
-      n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n
-    ));
+    setNotes(notes.map((n) => (n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n)));
   };
 
   const deleteNote = (id: string) => {
-    setNotes(notes.filter(n => n.id !== id));
+    setNotes(notes.filter((n) => n.id !== id));
     if (activeNoteId === id) {
       setActiveNoteId(null);
     }
@@ -63,7 +61,7 @@ export const MobileNotes: React.FC = () => {
       await navigator.clipboard.writeText(textToCopy);
       setCopiedId(note.id);
       setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
+    } catch (_err) {
       // Fallback for older browsers
       const textarea = document.createElement('textarea');
       textarea.value = textToCopy;
@@ -76,9 +74,10 @@ export const MobileNotes: React.FC = () => {
     }
   };
 
-  const filteredNotes = notes.filter(n =>
-    n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    n.content.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredNotes = notes.filter(
+    (n) =>
+      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      n.content.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const formatDate = (timestamp: number) => {
@@ -119,9 +118,7 @@ export const MobileNotes: React.FC = () => {
           <button
             onClick={() => copyNote(activeNote)}
             className={`p-2 rounded-lg transition-colors ${
-              copiedId === activeNote.id
-                ? 'text-green-600 bg-green-50'
-                : 'text-gray-500 hover:bg-gray-100'
+              copiedId === activeNote.id ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
             {copiedId === activeNote.id ? <Check size={20} /> : <Copy size={20} />}
@@ -157,10 +154,7 @@ export const MobileNotes: React.FC = () => {
       {/* Search */}
       <div className="p-4 bg-white border-b border-gray-200">
         <div className="relative">
-          <MagnifyingGlass
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+          <MagnifyingGlass size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
@@ -175,9 +169,7 @@ export const MobileNotes: React.FC = () => {
       <div className="flex-1 overflow-auto">
         {filteredNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-            <p className="text-sm mb-4">
-              {searchQuery ? 'No notes found' : 'No notes yet'}
-            </p>
+            <p className="text-sm mb-4">{searchQuery ? 'No notes found' : 'No notes yet'}</p>
             {!searchQuery && (
               <button
                 onClick={createNote}
@@ -190,24 +182,15 @@ export const MobileNotes: React.FC = () => {
         ) : (
           <ul className="divide-y divide-gray-100">
             {filteredNotes.map((note) => (
-              <li
-                key={note.id}
-                className="bg-white hover:bg-gray-50 transition-colors"
-              >
+              <li key={note.id} className="bg-white hover:bg-gray-50 transition-colors">
                 <div
                   onClick={() => setActiveNoteId(note.id)}
                   className="flex items-start gap-3 px-4 py-3 cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-800 truncate">
-                      {note.title || 'Untitled'}
-                    </h3>
-                    <p className="text-sm text-gray-500 truncate mt-0.5">
-                      {note.content || 'No content'}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formatDate(note.updatedAt)}
-                    </p>
+                    <h3 className="font-medium text-gray-800 truncate">{note.title || 'Untitled'}</h3>
+                    <p className="text-sm text-gray-500 truncate mt-0.5">{note.content || 'No content'}</p>
+                    <p className="text-xs text-gray-400 mt-1">{formatDate(note.updatedAt)}</p>
                   </div>
 
                   {/* Quick Copy Button */}

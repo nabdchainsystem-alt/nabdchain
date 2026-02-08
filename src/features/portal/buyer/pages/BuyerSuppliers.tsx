@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { featureLogger } from '../../../../utils/logger';
 import {
   Buildings,
   MagnifyingGlass,
@@ -7,7 +8,6 @@ import {
   Scales,
   Rows,
   SquaresFour,
-  Funnel,
   X,
   CaretDown,
   SlidersHorizontal,
@@ -20,20 +20,12 @@ import {
   Package,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
-import { Container } from '../../components/Container';
-import { EmptyState } from '../../components/EmptyState';
+import { Container, PageHeader, Button, EmptyState } from '../../components';
 import { SupplierTable } from '../components/SupplierTable';
 import { SupplierDetailsPanel } from '../components/SupplierDetailsPanel';
 import { SupplierCompareModal } from '../components/SupplierCompareModal';
-import type {
-  Supplier,
-  SupplierSortField,
-  SupplierSortConfig,
-  SupplierTier,
-  SupplierStatus,
-  RiskLevel,
-} from '../../types/supplier.types';
-import { generateMockSuppliers } from '../../services/supplierService';
+import type { Supplier, SupplierSortField, SupplierSortConfig } from '../../types/supplier.types';
+// NOTE: Mock suppliers removed - see MOCK_REMOVAL_REPORT.md
 
 interface BuyerSuppliersProps {
   onNavigate: (page: string, data?: Record<string, unknown>) => void;
@@ -83,13 +75,16 @@ const FilterDropdown = React.memo<FilterDropdownProps>(({ label, options, select
   const [isOpen, setIsOpen] = useState(false);
   const { styles } = usePortal();
 
-  const toggleOption = useCallback((value: string) => {
-    if (selected.includes(value)) {
-      onChange(selected.filter(v => v !== value));
-    } else {
-      onChange([...selected, value]);
-    }
-  }, [selected, onChange]);
+  const toggleOption = useCallback(
+    (value: string) => {
+      if (selected.includes(value)) {
+        onChange(selected.filter((v) => v !== value));
+      } else {
+        onChange([...selected, value]);
+      }
+    },
+    [selected, onChange],
+  );
 
   return (
     <div className="relative">
@@ -124,7 +119,7 @@ const FilterDropdown = React.memo<FilterDropdownProps>(({ label, options, select
               border: `1px solid ${styles.border}`,
             }}
           >
-            {options.map(option => (
+            {options.map((option) => (
               <button
                 key={option.value}
                 onClick={() => toggleOption(option.value)}
@@ -133,8 +128,8 @@ const FilterDropdown = React.memo<FilterDropdownProps>(({ label, options, select
                   backgroundColor: 'transparent',
                   color: styles.textPrimary,
                 }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <div
                   className="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0"
@@ -172,7 +167,7 @@ const SortDropdown = React.memo<{
     { value: 'highest_reliability', label: 'Highest Reliability' },
   ];
 
-  const selectedLabel = options.find(o => o.value === value)?.label || 'Sort';
+  const selectedLabel = options.find((o) => o.value === value)?.label || 'Sort';
 
   return (
     <div className="relative">
@@ -200,17 +195,22 @@ const SortDropdown = React.memo<{
               border: `1px solid ${styles.border}`,
             }}
           >
-            {options.map(option => (
+            {options.map((option) => (
               <button
                 key={option.value}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${value === option.value ? 'bg-zinc-100 dark:bg-zinc-800' : ''}`}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors"
                 style={{
+                  backgroundColor: value === option.value ? styles.bgSecondary : 'transparent',
                   color: value === option.value ? styles.textPrimary : styles.textSecondary,
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = value === option.value ? styles.bgSecondary : 'transparent')
+                }
               >
                 {option.label}
               </button>
@@ -239,26 +239,29 @@ const SupplierCard = React.memo<{
   onViewRFQs?: () => void;
   onShortlist?: () => void;
 }>(({ supplier, isSelected, isActive, isShortlisted, onSelect, onClick, onViewOrders, onViewRFQs, onShortlist }) => {
-  // Risk configuration - calm enterprise colors
+  const { styles } = usePortal();
+
+  // Risk configuration - uses semantic colors
   const riskConfig: Record<string, { color: string; bgColor: string; label: string }> = {
-    low: { color: '#059669', bgColor: '#ecfdf5', label: 'Low Risk' },
-    medium: { color: '#d97706', bgColor: '#fffbeb', label: 'Medium' },
-    high: { color: '#dc2626', bgColor: '#fef2f2', label: 'High Risk' },
-    critical: { color: '#991b1b', bgColor: '#fef2f2', label: 'Critical' },
+    low: { color: '#059669', bgColor: styles.isDark ? 'rgba(5,150,105,0.15)' : '#ecfdf5', label: 'Low Risk' },
+    medium: { color: '#d97706', bgColor: styles.isDark ? 'rgba(217,119,6,0.15)' : '#fffbeb', label: 'Medium' },
+    high: { color: '#dc2626', bgColor: styles.isDark ? 'rgba(220,38,38,0.15)' : '#fef2f2', label: 'High Risk' },
+    critical: { color: '#991b1b', bgColor: styles.isDark ? 'rgba(153,27,27,0.15)' : '#fef2f2', label: 'Critical' },
   };
 
   const risk = riskConfig[supplier.riskLevel] || riskConfig.medium;
-  const onTimeRate = supplier.metrics.totalOrders > 0
-    ? Math.round((supplier.metrics.onTimeDeliveries / supplier.metrics.totalOrders) * 100)
-    : 0;
+  const onTimeRate =
+    supplier.metrics.totalOrders > 0
+      ? Math.round((supplier.metrics.onTimeDeliveries / supplier.metrics.totalOrders) * 100)
+      : 0;
   const avgDeviation = supplier.metrics.averageDeliveryDeviation;
 
   // Tier badge colors
   const tierColors: Record<string, { color: string; bg: string }> = {
-    strategic: { color: '#7c3aed', bg: '#f5f3ff' },
-    preferred: { color: '#2563eb', bg: '#eff6ff' },
-    approved: { color: '#059669', bg: '#ecfdf5' },
-    conditional: { color: '#d97706', bg: '#fffbeb' },
+    strategic: { color: '#7c3aed', bg: styles.isDark ? 'rgba(124,58,237,0.15)' : '#f5f3ff' },
+    preferred: { color: '#2563eb', bg: styles.isDark ? 'rgba(37,99,235,0.15)' : '#eff6ff' },
+    approved: { color: '#059669', bg: styles.isDark ? 'rgba(5,150,105,0.15)' : '#ecfdf5' },
+    conditional: { color: '#d97706', bg: styles.isDark ? 'rgba(217,119,6,0.15)' : '#fffbeb' },
   };
   const tierStyle = tierColors[supplier.tier] || tierColors.approved;
 
@@ -266,8 +269,8 @@ const SupplierCard = React.memo<{
     <div
       className="group rounded-xl cursor-pointer transition-all duration-200"
       style={{
-        backgroundColor: isActive ? '#fafafa' : '#fff',
-        border: isActive ? '1px solid #d1d5db' : '1px solid #e5e7eb',
+        backgroundColor: isActive ? styles.bgSecondary : styles.bgCard,
+        border: `1px solid ${isActive ? styles.textMuted : styles.border}`,
         boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
       }}
       onClick={onClick}
@@ -276,38 +279,30 @@ const SupplierCard = React.memo<{
       <div className="p-4 pb-3">
         <div className="flex items-start gap-3">
           {/* Checkbox */}
-          <label
-            className="flex items-center cursor-pointer flex-shrink-0 mt-1"
-            onClick={e => e.stopPropagation()}
-          >
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={onSelect}
-              className="sr-only"
-            />
+          <label className="flex items-center cursor-pointer flex-shrink-0 mt-1" onClick={(e) => e.stopPropagation()}>
+            <input type="checkbox" checked={isSelected} onChange={onSelect} className="sr-only" />
             <div
               className="w-4 h-4 rounded border-2 flex items-center justify-center transition-colors"
               style={{
-                borderColor: isSelected ? '#0f172a' : '#d1d5db',
-                backgroundColor: isSelected ? '#0f172a' : 'transparent',
+                borderColor: isSelected ? styles.textPrimary : styles.border,
+                backgroundColor: isSelected ? styles.textPrimary : 'transparent',
               }}
             >
-              {isSelected && <Check size={10} weight="bold" style={{ color: '#fff' }} />}
+              {isSelected && <Check size={10} weight="bold" style={{ color: styles.bgPrimary }} />}
             </div>
           </label>
 
           {/* Supplier Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-[15px] text-gray-900 truncate">
+              <h3 className="font-semibold text-[15px] truncate" style={{ color: styles.textPrimary }}>
                 {supplier.name}
               </h3>
               {supplier.status === 'active' && (
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: styles.success }} />
               )}
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs" style={{ color: styles.textSecondary }}>
               <span>{supplier.code}</span>
               <span>·</span>
               <span>{supplier.country}</span>
@@ -335,17 +330,27 @@ const SupplierCard = React.memo<{
         <div className="grid grid-cols-3 gap-3">
           {/* Reliability Group */}
           <div className="space-y-0.5">
-            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Reliability</p>
+            <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: styles.textMuted }}>
+              Reliability
+            </p>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-semibold text-gray-900">{supplier.reliabilityScore}</span>
-              <span className="text-[10px] text-gray-400">/100</span>
+              <span className="text-xl font-semibold" style={{ color: styles.textPrimary }}>
+                {supplier.reliabilityScore}
+              </span>
+              <span className="text-[10px]" style={{ color: styles.textMuted }}>
+                /100
+              </span>
             </div>
-            <p className="text-[11px] text-gray-500">{supplier.metrics.totalOrders} orders</p>
+            <p className="text-[11px]" style={{ color: styles.textSecondary }}>
+              {supplier.metrics.totalOrders} orders
+            </p>
           </div>
 
           {/* Delivery Group */}
           <div className="space-y-0.5">
-            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Delivery</p>
+            <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: styles.textMuted }}>
+              Delivery
+            </p>
             <div className="flex items-baseline gap-1">
               <span
                 className="text-xl font-semibold"
@@ -353,44 +358,64 @@ const SupplierCard = React.memo<{
               >
                 {onTimeRate}%
               </span>
-              <span className="text-[10px] text-gray-400">on-time</span>
+              <span className="text-[10px]" style={{ color: styles.textMuted }}>
+                on-time
+              </span>
             </div>
-            <p className="text-[11px] text-gray-500">
-              {avgDeviation === 0 ? 'On schedule' : avgDeviation > 0 ? `${avgDeviation.toFixed(1)}d late avg` : `${Math.abs(avgDeviation).toFixed(1)}d early avg`}
+            <p className="text-[11px]" style={{ color: styles.textSecondary }}>
+              {avgDeviation === 0
+                ? 'On schedule'
+                : avgDeviation > 0
+                  ? `${avgDeviation.toFixed(1)}d late avg`
+                  : `${Math.abs(avgDeviation).toFixed(1)}d early avg`}
             </p>
           </div>
 
           {/* Response Group */}
           <div className="space-y-0.5">
-            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Response</p>
+            <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: styles.textMuted }}>
+              Response
+            </p>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-semibold text-gray-900">{supplier.leadTimeDays}</span>
-              <span className="text-[10px] text-gray-400">days</span>
+              <span className="text-xl font-semibold" style={{ color: styles.textPrimary }}>
+                {supplier.leadTimeDays}
+              </span>
+              <span className="text-[10px]" style={{ color: styles.textMuted }}>
+                days
+              </span>
             </div>
-            <p className="text-[11px] text-gray-500">
+            <p className="text-[11px]" style={{ color: styles.textSecondary }}>
               {supplier.metrics.averageResponseTimeHours < 24
                 ? `${Math.round(supplier.metrics.averageResponseTimeHours)}h reply`
-                : `${Math.round(supplier.metrics.averageResponseTimeHours / 24)}d reply`
-              }
+                : `${Math.round(supplier.metrics.averageResponseTimeHours / 24)}d reply`}
             </p>
           </div>
         </div>
       </div>
 
       {/* Spend & Categories */}
-      <div className="px-4 py-2.5 border-t border-gray-100">
+      <div className="px-4 py-2.5" style={{ borderTop: `1px solid ${styles.border}` }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500">
-              <span className="font-medium text-gray-700">${(supplier.metrics.totalSpend / 1000).toFixed(0)}K</span> total spend
+            <span className="text-xs" style={{ color: styles.textSecondary }}>
+              <span className="font-medium" style={{ color: styles.textPrimary }}>
+                ${(supplier.metrics.totalSpend / 1000).toFixed(0)}K
+              </span>{' '}
+              total spend
             </span>
             {supplier.categories.slice(0, 2).map((cat) => (
-              <span key={cat} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+              <span
+                key={cat}
+                className="text-[10px] px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
+              >
                 {cat}
               </span>
             ))}
             {supplier.categories.length > 2 && (
-              <span className="text-[10px] text-gray-400">+{supplier.categories.length - 2}</span>
+              <span className="text-[10px]" style={{ color: styles.textMuted }}>
+                +{supplier.categories.length - 2}
+              </span>
             )}
           </div>
         </div>
@@ -398,31 +423,46 @@ const SupplierCard = React.memo<{
 
       {/* Quick Actions - Visible on Hover */}
       <div
-        className="px-4 py-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ backgroundColor: '#fafafa' }}
-        onClick={e => e.stopPropagation()}
+        className="px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ borderTop: `1px solid ${styles.border}`, backgroundColor: styles.bgSecondary }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2">
           <button
             onClick={onViewOrders}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors hover:opacity-80"
+            style={{
+              backgroundColor: styles.bgCard,
+              border: `1px solid ${styles.border}`,
+              color: styles.textSecondary,
+            }}
           >
             <Package size={12} />
             View Orders
           </button>
           <button
             onClick={onViewRFQs}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors hover:opacity-80"
+            style={{
+              backgroundColor: styles.bgCard,
+              border: `1px solid ${styles.border}`,
+              color: styles.textSecondary,
+            }}
           >
             <FileText size={12} />
             View RFQs
           </button>
           <button
             onClick={onShortlist}
-            className="p-1.5 rounded-md transition-colors bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+            className="p-1.5 rounded-md transition-colors hover:opacity-80"
+            style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, color: styles.textMuted }}
             title={isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
           >
-            <Star size={14} weight={isShortlisted ? 'fill' : 'regular'} style={{ color: isShortlisted ? '#d97706' : undefined }} />
+            <Star
+              size={14}
+              weight={isShortlisted ? 'fill' : 'regular'}
+              style={{ color: isShortlisted ? '#d97706' : undefined }}
+            />
           </button>
         </div>
       </div>
@@ -440,7 +480,7 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  const [density, setDensity] = useState<Density>('comfortable');
+  const [density, _setDensity] = useState<Density>('comfortable');
 
   // Selection state
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
@@ -487,11 +527,9 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
     const loadSuppliers = async () => {
       setLoading(true);
       try {
-        // TODO: Replace with actual API call when supplier API is ready
-        // const data = await supplierService.getSuppliers(token);
-        // setSuppliers(data);
-
-        // For now, show empty state - API endpoint needed
+        // Supplier API endpoint not yet available; returns empty state
+        // Future: const data = await supplierService.getSuppliers(token);
+        // Future: setSuppliers(data);
         setSuppliers([]);
       } catch (err) {
         console.error('Failed to load suppliers:', err);
@@ -524,14 +562,14 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
   // Get unique categories from suppliers
   const categories = useMemo(() => {
     const cats = new Set<string>();
-    suppliers.forEach(s => s.categories.forEach(c => cats.add(c)));
+    suppliers.forEach((s) => s.categories.forEach((c) => cats.add(c)));
     return Array.from(cats).sort();
   }, [suppliers]);
 
   // Get unique countries/regions from suppliers
   const regions = useMemo(() => {
     const regs = new Set<string>();
-    suppliers.forEach(s => regs.add(s.country));
+    suppliers.forEach((s) => regs.add(s.country));
     return Array.from(regs).sort();
   }, [suppliers]);
 
@@ -543,37 +581,37 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
-        s =>
+        (s) =>
           s.name.toLowerCase().includes(query) ||
           s.code.toLowerCase().includes(query) ||
           s.country.toLowerCase().includes(query) ||
-          s.categories.some(c => c.toLowerCase().includes(query))
+          s.categories.some((c) => c.toLowerCase().includes(query)),
       );
     }
 
     // Risk filter
     if (riskFilter.length > 0) {
-      result = result.filter(s => riskFilter.includes(s.riskLevel));
+      result = result.filter((s) => riskFilter.includes(s.riskLevel));
     }
 
     // Status filter
     if (statusFilter.length > 0) {
-      result = result.filter(s => statusFilter.includes(s.status));
+      result = result.filter((s) => statusFilter.includes(s.status));
     }
 
     // Tier filter
     if (tierFilter.length > 0) {
-      result = result.filter(s => tierFilter.includes(s.tier));
+      result = result.filter((s) => tierFilter.includes(s.tier));
     }
 
     // Category filter
     if (categoryFilter.length > 0) {
-      result = result.filter(s => s.categories.some(c => categoryFilter.includes(c)));
+      result = result.filter((s) => s.categories.some((c) => categoryFilter.includes(c)));
     }
 
     // Region filter
     if (regionFilter.length > 0) {
-      result = result.filter(s => regionFilter.includes(s.country));
+      result = result.filter((s) => regionFilter.includes(s.country));
     }
 
     // Sort
@@ -639,39 +677,39 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
 
   // Active filter chips
   const filterChips: Array<{ key: string; label: string; onRemove: () => void }> = [];
-  riskFilter.forEach(r => {
+  riskFilter.forEach((r) => {
     filterChips.push({
       key: `risk-${r}`,
       label: `Risk: ${r.charAt(0).toUpperCase() + r.slice(1)}`,
-      onRemove: () => setRiskFilter(riskFilter.filter(v => v !== r)),
+      onRemove: () => setRiskFilter(riskFilter.filter((v) => v !== r)),
     });
   });
-  statusFilter.forEach(s => {
+  statusFilter.forEach((s) => {
     filterChips.push({
       key: `status-${s}`,
       label: `Status: ${s === 'on_hold' ? 'On Hold' : s.charAt(0).toUpperCase() + s.slice(1)}`,
-      onRemove: () => setStatusFilter(statusFilter.filter(v => v !== s)),
+      onRemove: () => setStatusFilter(statusFilter.filter((v) => v !== s)),
     });
   });
-  tierFilter.forEach(t => {
+  tierFilter.forEach((t) => {
     filterChips.push({
       key: `tier-${t}`,
       label: `Tier: ${t.charAt(0).toUpperCase() + t.slice(1)}`,
-      onRemove: () => setTierFilter(tierFilter.filter(v => v !== t)),
+      onRemove: () => setTierFilter(tierFilter.filter((v) => v !== t)),
     });
   });
-  categoryFilter.forEach(c => {
+  categoryFilter.forEach((c) => {
     filterChips.push({
       key: `cat-${c}`,
       label: `Category: ${c}`,
-      onRemove: () => setCategoryFilter(categoryFilter.filter(v => v !== c)),
+      onRemove: () => setCategoryFilter(categoryFilter.filter((v) => v !== c)),
     });
   });
-  regionFilter.forEach(r => {
+  regionFilter.forEach((r) => {
     filterChips.push({
       key: `region-${r}`,
       label: `Region: ${r}`,
-      onRemove: () => setRegionFilter(regionFilter.filter(v => v !== r)),
+      onRemove: () => setRegionFilter(regionFilter.filter((v) => v !== r)),
     });
   });
 
@@ -685,108 +723,100 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
   };
 
   const handleSort = (field: SupplierSortField) => {
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       field,
       direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc',
     }));
   };
 
   const handleShortlist = (supplier: Supplier) => {
-    setShortlistedIds(prev =>
-      prev.includes(supplier.id) ? prev.filter(id => id !== supplier.id) : [...prev, supplier.id]
+    setShortlistedIds((prev) =>
+      prev.includes(supplier.id) ? prev.filter((id) => id !== supplier.id) : [...prev, supplier.id],
     );
   };
 
   // Get selected supplier objects for comparison
   const suppliersToCompare = useMemo(() => {
-    return suppliers.filter(s => selectedSuppliers.includes(s.id));
+    return suppliers.filter((s) => selectedSuppliers.includes(s.id));
   }, [suppliers, selectedSuppliers]);
 
   // Export handlers (placeholders)
   const handleExportPDF = () => {
-    console.log('Export PDF - to be implemented');
+    featureLogger.info('Export PDF - to be implemented');
     // Placeholder for PDF export
   };
 
   const handleExportExcel = () => {
-    console.log('Export Excel - to be implemented');
+    featureLogger.info('Export Excel - to be implemented');
     // Placeholder for Excel export
   };
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: '#fafafa' }}>
-      <Container variant="full" className="flex-1 flex flex-col py-6">
-        {/* Page Header - Clean, Enterprise Style */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1
-              className="text-2xl font-semibold text-gray-900 mb-1.5"
-              style={{ fontFamily: styles.fontHeading }}
-            >
-              Suppliers
-            </h1>
-            <p className="text-sm text-gray-500">
-              Evaluate performance, compare metrics, and manage your supplier network
-            </p>
-          </div>
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
+      <Container variant="full">
+        <PageHeader
+          title="Suppliers"
+          subtitle="Evaluate performance, compare metrics, and manage your supplier network"
+          actions={
+            <div className="flex items-center gap-3">
+              {/* View Toggle */}
+              <div
+                className="flex items-center rounded-lg p-1"
+                style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
+              >
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                  style={{
+                    backgroundColor: viewMode === 'cards' ? styles.bgSecondary : 'transparent',
+                    color: viewMode === 'cards' ? styles.textPrimary : styles.textMuted,
+                  }}
+                  title="Card view"
+                >
+                  <SquaresFour size={14} />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                  style={{
+                    backgroundColor: viewMode === 'table' ? styles.bgSecondary : 'transparent',
+                    color: viewMode === 'table' ? styles.textPrimary : styles.textMuted,
+                  }}
+                  title="Table view"
+                >
+                  <Rows size={14} />
+                </button>
+              </div>
 
-          {/* Primary Actions - Clean Layout */}
-          <div className="flex items-center gap-3">
-            {/* View Toggle */}
-            <div className="flex items-center rounded-lg p-1 bg-white border border-gray-200">
-              <button
-                onClick={() => setViewMode('cards')}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: viewMode === 'cards' ? '#f3f4f6' : 'transparent',
-                  color: viewMode === 'cards' ? '#111827' : '#6b7280',
-                }}
-                title="Card view"
+              <div className="w-px h-8" style={{ backgroundColor: styles.border }} />
+
+              <Button
+                variant="secondary"
+                onClick={() => setIsCompareOpen(true)}
+                disabled={selectedSuppliers.length < 2}
               >
-                <SquaresFour size={14} />
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: viewMode === 'table' ? '#f3f4f6' : 'transparent',
-                  color: viewMode === 'table' ? '#111827' : '#6b7280',
-                }}
-                title="Table view"
-              >
-                <Rows size={14} />
-              </button>
+                <Scales size={14} className="mr-1.5" />
+                Compare
+                {selectedSuppliers.length >= 2 && (
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold ml-1"
+                    style={{ backgroundColor: styles.textPrimary, color: styles.bgPrimary }}
+                  >
+                    {selectedSuppliers.length}
+                  </span>
+                )}
+              </Button>
+              <Button variant="secondary">
+                <UploadSimple size={14} className="mr-1.5" />
+                Import
+              </Button>
+              <Button variant="primary">
+                <Plus size={14} weight="bold" className="mr-1.5" />
+                Add Supplier
+              </Button>
             </div>
-
-            <div className="w-px h-8 bg-gray-200" />
-
-            <button
-              onClick={() => setIsCompareOpen(true)}
-              disabled={selectedSuppliers.length < 2}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-            >
-              <Scales size={14} />
-              Compare
-              {selectedSuppliers.length >= 2 && (
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold bg-gray-900 text-white ml-1">
-                  {selectedSuppliers.length}
-                </span>
-              )}
-            </button>
-            <button
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-            >
-              <UploadSimple size={14} />
-              Import
-            </button>
-            <button
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-900 text-white hover:bg-gray-800"
-            >
-              <Plus size={14} weight="bold" />
-              Add Supplier
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Clean Filter Bar - Simplified */}
         <div
@@ -801,27 +831,28 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
             <div
               className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg flex-1 max-w-sm"
               style={{
-                backgroundColor: '#f9fafb',
-                border: '1px solid #e5e7eb',
+                backgroundColor: styles.bgCard,
+                border: `1px solid ${styles.border}`,
               }}
             >
-              <MagnifyingGlass size={16} className="text-gray-400" />
+              <MagnifyingGlass size={16} style={{ color: styles.textMuted }} />
               <input
                 type="text"
                 placeholder="Search suppliers..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none outline-none flex-1 text-sm text-gray-900 placeholder:text-gray-400"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent border-none outline-none flex-1 text-sm"
+                style={{ color: styles.textPrimary }}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setSearchQuery('')} style={{ color: styles.textMuted }}>
                   <X size={14} />
                 </button>
               )}
             </div>
 
             {/* Divider */}
-            <div className="w-px h-6 bg-gray-200" />
+            <div className="w-px h-6" style={{ backgroundColor: styles.border }} />
 
             {/* Essential Filters - Clean Pills */}
             <div className="flex items-center gap-2">
@@ -862,17 +893,17 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
             {/* More Filters (collapsed) */}
             {(categories.length > 0 || regions.length > 0) && (
               <>
-                <div className="w-px h-6 bg-gray-200" />
+                <div className="w-px h-6" style={{ backgroundColor: styles.border }} />
                 <div className="flex items-center gap-2">
                   <FilterDropdown
                     label="Category"
-                    options={categories.map(c => ({ value: c, label: c }))}
+                    options={categories.map((c) => ({ value: c, label: c }))}
                     selected={categoryFilter}
                     onChange={setCategoryFilter}
                   />
                   <FilterDropdown
                     label="Region"
-                    options={regions.map(r => ({ value: r, label: r }))}
+                    options={regions.map((r) => ({ value: r, label: r }))}
                     selected={regionFilter}
                     onChange={setRegionFilter}
                   />
@@ -901,7 +932,7 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
           {/* Active Filter Chips - Minimal */}
           {filterChips.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap mt-2.5">
-              {filterChips.map(chip => (
+              {filterChips.map((chip) => (
                 <FilterChip key={chip.key} label={chip.label} onRemove={chip.onRemove} />
               ))}
             </div>
@@ -914,7 +945,10 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
           <div className="flex-1 overflow-auto">
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin" />
+                <div
+                  className="w-8 h-8 border-2 rounded-full animate-spin"
+                  style={{ borderColor: styles.border, borderTopColor: styles.textMuted }}
+                />
               </div>
             ) : filteredSuppliers.length === 0 ? (
               <EmptyState
@@ -927,13 +961,10 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
                 }
                 action={
                   activeFilterCount > 0 || searchQuery ? (
-                    <button
-                      onClick={resetFilters}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                    >
-                      <ArrowCounterClockwise size={14} />
+                    <Button variant="secondary" onClick={resetFilters}>
+                      <ArrowCounterClockwise size={14} className="mr-2" />
                       Clear filters
-                    </button>
+                    </Button>
                   ) : undefined
                 }
               />
@@ -947,14 +978,14 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
                 sortConfig={sortConfig}
                 onSort={handleSort}
                 density={density}
-                onRequestQuote={s => console.log('Request quote', s.id)}
-                onMessage={s => console.log('Message', s.id)}
+                onRequestQuote={() => {}}
+                onMessage={() => {}}
                 onShortlist={handleShortlist}
                 shortlistedIds={shortlistedIds}
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {paginatedSuppliers.map(supplier => (
+                {paginatedSuppliers.map((supplier) => (
                   <SupplierCard
                     key={supplier.id}
                     supplier={supplier}
@@ -962,10 +993,8 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
                     isActive={selectedSupplier?.id === supplier.id}
                     isShortlisted={shortlistedIds.includes(supplier.id)}
                     onSelect={() =>
-                      setSelectedSuppliers(prev =>
-                        prev.includes(supplier.id)
-                          ? prev.filter(id => id !== supplier.id)
-                          : [...prev, supplier.id]
+                      setSelectedSuppliers((prev) =>
+                        prev.includes(supplier.id) ? prev.filter((id) => id !== supplier.id) : [...prev, supplier.id],
                       )
                     }
                     onClick={() => setSelectedSupplier(supplier)}
@@ -977,19 +1006,37 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
               </div>
             )}
 
-            {/* Pagination - Clean Design */}
+            {/* Pagination */}
             {filteredSuppliers.length > 0 && (
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                <span className="text-sm text-gray-500">
-                  Showing <span className="font-medium text-gray-700">{(currentPage - 1) * pageSize + 1}</span> to{' '}
-                  <span className="font-medium text-gray-700">{Math.min(currentPage * pageSize, filteredSuppliers.length)}</span> of{' '}
-                  <span className="font-medium text-gray-700">{filteredSuppliers.length}</span> suppliers
+              <div
+                className="flex items-center justify-between mt-6 pt-4"
+                style={{ borderTop: `1px solid ${styles.border}` }}
+              >
+                <span className="text-sm" style={{ color: styles.textSecondary }}>
+                  Showing{' '}
+                  <span className="font-medium" style={{ color: styles.textPrimary }}>
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="font-medium" style={{ color: styles.textPrimary }}>
+                    {Math.min(currentPage * pageSize, filteredSuppliers.length)}
+                  </span>{' '}
+                  of{' '}
+                  <span className="font-medium" style={{ color: styles.textPrimary }}>
+                    {filteredSuppliers.length}
+                  </span>{' '}
+                  suppliers
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
+                    style={{
+                      backgroundColor: styles.bgCard,
+                      border: `1px solid ${styles.border}`,
+                      color: styles.textSecondary,
+                    }}
                   >
                     <CaretLeft size={14} />
                     Previous
@@ -1012,9 +1059,9 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
                           onClick={() => setCurrentPage(pageNum)}
                           className="w-8 h-8 rounded-md text-sm font-medium transition-colors"
                           style={{
-                            backgroundColor: currentPage === pageNum ? '#111827' : '#fff',
-                            color: currentPage === pageNum ? '#fff' : '#6b7280',
-                            border: currentPage === pageNum ? 'none' : '1px solid #e5e7eb',
+                            backgroundColor: currentPage === pageNum ? styles.textPrimary : styles.bgCard,
+                            color: currentPage === pageNum ? styles.bgPrimary : styles.textMuted,
+                            border: currentPage === pageNum ? 'none' : `1px solid ${styles.border}`,
                           }}
                         >
                           {pageNum}
@@ -1023,9 +1070,14 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
                     })}
                   </div>
                   <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
+                    style={{
+                      backgroundColor: styles.bgCard,
+                      border: `1px solid ${styles.border}`,
+                      color: styles.textSecondary,
+                    }}
                   >
                     Next
                     <CaretRight size={14} />
@@ -1041,10 +1093,10 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
               <SupplierDetailsPanel
                 supplier={selectedSupplier}
                 onClose={() => setSelectedSupplier(null)}
-                onRequestQuote={() => console.log('Request quote', selectedSupplier.id)}
-                onMessage={() => console.log('Message', selectedSupplier.id)}
+                onRequestQuote={() => {}}
+                onMessage={() => {}}
                 onShortlist={() => handleShortlist(selectedSupplier)}
-                onOpenProfile={() => console.log('Open profile', selectedSupplier.id)}
+                onOpenProfile={() => {}}
                 isShortlisted={shortlistedIds.includes(selectedSupplier.id)}
               />
             </div>
@@ -1055,29 +1107,25 @@ export const BuyerSuppliers: React.FC<BuyerSuppliersProps> = ({ onNavigate }) =>
         {selectedSupplier && isPanelDrawer && (
           <>
             {/* Transparent click-outside backdrop */}
-            <div
-              className="fixed inset-0 z-40"
-              style={{ top: '64px' }}
-              onClick={() => setSelectedSupplier(null)}
-            />
+            <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={() => setSelectedSupplier(null)} />
             <div
               className="fixed z-50 w-full max-w-md flex flex-col"
               style={{
                 top: '64px',
                 bottom: 0,
                 right: 0,
-                backgroundColor: '#fff',
-                borderLeft: '1px solid #e5e7eb',
+                backgroundColor: styles.bgCard,
+                borderLeft: `1px solid ${styles.border}`,
                 boxShadow: '-8px 0 30px rgba(0, 0, 0, 0.1)',
               }}
             >
               <SupplierDetailsPanel
                 supplier={selectedSupplier}
                 onClose={() => setSelectedSupplier(null)}
-                onRequestQuote={() => console.log('Request quote', selectedSupplier.id)}
-                onMessage={() => console.log('Message', selectedSupplier.id)}
+                onRequestQuote={() => {}}
+                onMessage={() => {}}
                 onShortlist={() => handleShortlist(selectedSupplier)}
-                onOpenProfile={() => console.log('Open profile', selectedSupplier.id)}
+                onOpenProfile={() => {}}
                 isShortlisted={shortlistedIds.includes(selectedSupplier.id)}
                 isDrawer
               />

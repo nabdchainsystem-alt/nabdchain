@@ -16,40 +16,41 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
   const completedSprints = sprints.filter((s) => s.status === 'completed');
 
   // Generate mock velocity data if no completed sprints
-  const velocityData: VelocityData[] = completedSprints.length > 0
-    ? completedSprints.map((sprint) => {
-        const planned = sprint.capacity;
-        const completed = sprint.tasks
-          .filter((t) => t.status === 'done')
-          .reduce((sum, t) => sum + t.storyPoints, 0);
-        return {
-          sprintId: sprint.id,
-          sprintName: sprint.name,
-          planned,
-          completed,
-          velocity: completed,
-        };
-      })
-    : [
-        { sprintId: '1', sprintName: 'Sprint 1', planned: 30, completed: 28, velocity: 28 },
-        { sprintId: '2', sprintName: 'Sprint 2', planned: 32, completed: 30, velocity: 30 },
-        { sprintId: '3', sprintName: 'Sprint 3', planned: 35, completed: 32, velocity: 32 },
-        { sprintId: '4', sprintName: 'Sprint 4', planned: 34, completed: 35, velocity: 35 },
-        { sprintId: '5', sprintName: 'Sprint 5', planned: 36, completed: 33, velocity: 33 },
-      ];
+  const velocityData: VelocityData[] =
+    completedSprints.length > 0
+      ? completedSprints.map((sprint) => {
+          const planned = sprint.capacity;
+          const completed = sprint.tasks.filter((t) => t.status === 'done').reduce((sum, t) => sum + t.storyPoints, 0);
+          return {
+            sprintId: sprint.id,
+            sprintName: sprint.name,
+            planned,
+            completed,
+            velocity: completed,
+          };
+        })
+      : [
+          { sprintId: '1', sprintName: 'Sprint 1', planned: 30, completed: 28, velocity: 28 },
+          { sprintId: '2', sprintName: 'Sprint 2', planned: 32, completed: 30, velocity: 30 },
+          { sprintId: '3', sprintName: 'Sprint 3', planned: 35, completed: 32, velocity: 32 },
+          { sprintId: '4', sprintName: 'Sprint 4', planned: 34, completed: 35, velocity: 35 },
+          { sprintId: '5', sprintName: 'Sprint 5', planned: 36, completed: 33, velocity: 33 },
+        ];
 
-  const averageVelocity = velocityData.length > 0
-    ? Math.round(velocityData.reduce((sum, d) => sum + d.velocity, 0) / velocityData.length)
-    : 0;
+  const averageVelocity =
+    velocityData.length > 0
+      ? Math.round(velocityData.reduce((sum, d) => sum + d.velocity, 0) / velocityData.length)
+      : 0;
 
   const maxPoints = Math.max(...velocityData.map((d) => Math.max(d.planned, d.completed)), 40);
-  const completionRate = velocityData.length > 0
-    ? Math.round(
-        (velocityData.reduce((sum, d) => sum + d.completed, 0) /
-          velocityData.reduce((sum, d) => sum + d.planned, 0)) *
-          100
-      )
-    : 0;
+  const completionRate =
+    velocityData.length > 0
+      ? Math.round(
+          (velocityData.reduce((sum, d) => sum + d.completed, 0) /
+            velocityData.reduce((sum, d) => sum + d.planned, 0)) *
+            100,
+        )
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -60,36 +61,28 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
             <Timer size={16} />
             <span>Average Velocity</span>
           </div>
-          <p className="text-2xl font-bold text-violet-600">
-            {averageVelocity} pts/sprint
-          </p>
+          <p className="text-2xl font-bold text-violet-600">{averageVelocity} pts/sprint</p>
         </div>
         <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
           <div className="flex items-center gap-2 text-sm text-stone-500 mb-1">
             <TrendUp size={16} />
             <span>Completion Rate</span>
           </div>
-          <p className="text-2xl font-bold text-green-600">
-            {completionRate}%
-          </p>
+          <p className="text-2xl font-bold text-green-600">{completionRate}%</p>
         </div>
         <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
           <div className="flex items-center gap-2 text-sm text-stone-500 mb-1">
             <ChartBar size={16} />
             <span>Sprints Analyzed</span>
           </div>
-          <p className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-            {velocityData.length}
-          </p>
+          <p className="text-2xl font-bold text-stone-800 dark:text-stone-200">{velocityData.length}</p>
         </div>
       </div>
 
       {/* Velocity Chart */}
       <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-            Sprint Velocity
-          </h3>
+          <h3 className="font-semibold text-stone-800 dark:text-stone-200">Sprint Velocity</h3>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-stone-300 rounded" />
@@ -130,7 +123,7 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
             </div>
 
             {/* Bars */}
-            {velocityData.map((data, index) => (
+            {velocityData.map((data, _index) => (
               <div key={data.sprintId} className="flex-1 flex flex-col items-center">
                 <div className="w-full flex gap-1 items-end h-48">
                   {/* Planned bar */}
@@ -146,9 +139,7 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
                     title={`Completed: ${data.completed}`}
                   />
                 </div>
-                <span className="text-xs text-stone-500 mt-2 truncate max-w-full">
-                  {data.sprintName}
-                </span>
+                <span className="text-xs text-stone-500 mt-2 truncate max-w-full">{data.sprintName}</span>
               </div>
             ))}
           </div>
@@ -160,13 +151,10 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
             <div className="flex items-start gap-2">
               <TrendUp size={18} className="text-green-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                  Velocity Trend
-                </p>
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Velocity Trend</p>
                 <p className="text-xs text-stone-500">
                   {velocityData.length > 1 &&
-                  velocityData[velocityData.length - 1].velocity >
-                    velocityData[velocityData.length - 2].velocity
+                  velocityData[velocityData.length - 1].velocity > velocityData[velocityData.length - 2].velocity
                     ? 'Improving! Last sprint was better than previous'
                     : 'Stable performance across recent sprints'}
                 </p>
@@ -177,9 +165,7 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
             <div className="flex items-start gap-2">
               <Info size={18} className="text-violet-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                  Recommended Capacity
-                </p>
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Recommended Capacity</p>
                 <p className="text-xs text-stone-500">
                   Based on velocity, plan {averageVelocity - 2} to {averageVelocity + 2} points for next sprint
                 </p>
@@ -191,9 +177,7 @@ export const VelocityChart: React.FC<VelocityChartProps> = ({ sprints }) => {
 
       {/* Placeholder Notice */}
       <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-center">
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Velocity Chart - Interactive chart coming soon
-        </p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">Velocity Chart - Interactive chart coming soon</p>
       </div>
     </div>
   );

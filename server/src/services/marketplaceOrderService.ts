@@ -7,11 +7,11 @@
 // Order is immutable once created - represents a binding agreement
 // =============================================================================
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { marketplaceInvoiceService } from './marketplaceInvoiceService';
 import { enrichOrderWithSLA, type SLAEvaluation } from './orderHealthService';
-
-const prisma = new PrismaClient();
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -70,23 +70,28 @@ export interface OrderFilters {
 
 // =============================================================================
 // Stage 5: Fulfillment Input Types
+// All seller action inputs support sellerIds array for flexible matching
+// (orders may be stored with either User.id or SellerProfile.id)
 // =============================================================================
 
 export interface RejectOrderInput {
   orderId: string;
   sellerId: string;
+  sellerIds?: string[]; // Optional array for flexible matching
   reason: string;
 }
 
 export interface StartProcessingInput {
   orderId: string;
   sellerId: string;
+  sellerIds?: string[]; // Optional array for flexible matching
   sellerNotes?: string;
 }
 
 export interface ShipOrderInput {
   orderId: string;
   sellerId: string;
+  sellerIds?: string[]; // Optional array for flexible matching
   carrier: string;
   trackingNumber?: string;
   estimatedDelivery?: string; // ISO date string
@@ -96,7 +101,7 @@ export interface ShipOrderInput {
 export interface MarkDeliveredInput {
   orderId: string;
   userId: string;
-  userRole: 'buyer' | 'system';
+  userRole: 'buyer' | 'seller' | 'system';
   buyerNotes?: string;
 }
 
@@ -379,9 +384,23 @@ export async function acceptQuote(input: AcceptQuoteInput): Promise<{
       }
     );
 
+    // DEV-only trace for debugging
+    if (process.env.NODE_ENV === 'development') {
+      apiLogger.info('[DEV TRACE] Order created:', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        rfqId: quote.rfqId,
+        quoteId: quote.id,
+        buyerId: input.buyerId,
+        sellerId: quote.sellerId,
+        totalPrice: order.totalPrice,
+        currency: order.currency,
+      });
+    }
+
     return { success: true, order };
   } catch (error) {
-    console.error('Error accepting quote:', error);
+    apiLogger.error('Error accepting quote:', error);
     return { success: false, error: 'Failed to accept quote and create order' };
   }
 }
@@ -473,7 +492,7 @@ export async function rejectQuote(input: RejectQuoteInput): Promise<{
 
     return { success: true };
   } catch (error) {
-    console.error('Error rejecting quote:', error);
+    apiLogger.error('Error rejecting quote:', error);
     return { success: false, error: 'Failed to reject quote' };
   }
 }
@@ -505,7 +524,7 @@ export async function getOrder(
 
     return { success: true, order };
   } catch (error) {
-    console.error('Error getting order:', error);
+    apiLogger.error('Error getting order:', error);
     return { success: false, error: 'Failed to get order' };
   }
 }
@@ -543,6 +562,11 @@ export async function getBuyerOrders(
       prisma.marketplaceOrder.count({ where }),
     ]);
 
+    // DEV-only trace
+    if (process.env.NODE_ENV === 'development') {
+      apiLogger.debug('[DEV TRACE] getBuyerOrders returned:', { buyerId, count: orders.length, total });
+    }
+
     return {
       success: true,
       orders,
@@ -554,16 +578,17 @@ export async function getBuyerOrders(
       },
     };
   } catch (error) {
-    console.error('Error getting buyer orders:', error);
+    apiLogger.error('Error getting buyer orders:', error);
     return { success: false, error: 'Failed to get orders' };
   }
 }
 
 /**
  * Get orders for seller
+ * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
  */
 export async function getSellerOrders(
-  sellerId: string,
+  sellerIds: string | string[],
   filters: OrderFilters = {}
 ): Promise<{
   success: boolean;
@@ -576,8 +601,11 @@ export async function getSellerOrders(
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
 
+    // Normalize sellerIds to array for flexible matching
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
+
     const where: Prisma.MarketplaceOrderWhereInput = {
-      sellerId,
+      sellerId: { in: sellerIdArray },
       ...(filters.status && { status: filters.status }),
       ...(filters.source && { source: filters.source }),
     };
@@ -595,6 +623,11 @@ export async function getSellerOrders(
     // Enrich orders with SLA evaluation for frontend display
     const ordersWithSLA = orders.map((order) => enrichOrderWithSLA(order));
 
+    // DEV-only trace
+    if (process.env.NODE_ENV === 'development') {
+      apiLogger.debug('[DEV TRACE] getSellerOrders returned:', { count: orders.length, total });
+    }
+
     return {
       success: true,
       orders: ordersWithSLA,
@@ -606,7 +639,7 @@ export async function getSellerOrders(
       },
     };
   } catch (error) {
-    console.error('Error getting seller orders:', error);
+    apiLogger.error('Error getting seller orders:', error);
     return { success: false, error: 'Failed to get orders' };
   }
 }
@@ -643,23 +676,25 @@ export async function getOrderHistory(
 
     return { success: true, events };
   } catch (error) {
-    console.error('Error getting order history:', error);
+    apiLogger.error('Error getting order history:', error);
     return { success: false, error: 'Failed to get order history' };
   }
 }
 
 /**
  * Seller confirms an order (moves from pending_confirmation to confirmed)
+ * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
  */
 export async function confirmOrder(
   orderId: string,
-  sellerId: string
+  sellerIds: string | string[]
 ): Promise<{
   success: boolean;
   order?: Prisma.MarketplaceOrderGetPayload<{}>;
   error?: string;
 }> {
   try {
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
     const order = await prisma.marketplaceOrder.findUnique({
       where: { id: orderId },
     });
@@ -668,7 +703,7 @@ export async function confirmOrder(
       return { success: false, error: 'Order not found' };
     }
 
-    if (order.sellerId !== sellerId) {
+    if (!sellerIdArray.includes(order.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this order' };
     }
 
@@ -690,19 +725,19 @@ export async function confirmOrder(
       },
     });
 
-    // Log audit
+    // Log audit (use actual sellerId from order)
     await logOrderAudit(
       orderId,
       'confirmed',
       'seller',
-      sellerId,
+      order.sellerId,
       'pending_confirmation',
       'confirmed'
     );
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error confirming order:', error);
+    apiLogger.error('Error confirming order:', error);
     return { success: false, error: 'Failed to confirm order' };
   }
 }
@@ -747,7 +782,7 @@ export async function getOrderStats(
       stats: { total, pending, confirmed, processing, shipped, delivered, closed, cancelled },
     };
   } catch (error) {
-    console.error('Error getting order stats:', error);
+    apiLogger.error('Error getting order stats:', error);
     return { success: false, error: 'Failed to get order statistics' };
   }
 }
@@ -781,7 +816,9 @@ export async function rejectOrder(input: RejectOrderInput): Promise<{
       return { success: false, error: 'Order not found' };
     }
 
-    if (order.sellerId !== input.sellerId) {
+    // Use sellerIds array if provided, otherwise fall back to single sellerId
+    const sellerIdArray = input.sellerIds?.length ? input.sellerIds : [input.sellerId];
+    if (!sellerIdArray.includes(order.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this order' };
     }
 
@@ -814,7 +851,7 @@ export async function rejectOrder(input: RejectOrderInput): Promise<{
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error rejecting order:', error);
+    apiLogger.error('Error rejecting order:', error);
     return { success: false, error: 'Failed to reject order' };
   }
 }
@@ -836,7 +873,9 @@ export async function startProcessing(input: StartProcessingInput): Promise<{
       return { success: false, error: 'Order not found' };
     }
 
-    if (order.sellerId !== input.sellerId) {
+    // Use sellerIds array if provided, otherwise fall back to single sellerId
+    const sellerIdArray = input.sellerIds?.length ? input.sellerIds : [input.sellerId];
+    if (!sellerIdArray.includes(order.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this order' };
     }
 
@@ -869,7 +908,7 @@ export async function startProcessing(input: StartProcessingInput): Promise<{
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error starting processing:', error);
+    apiLogger.error('Error starting processing:', error);
     return { success: false, error: 'Failed to start processing' };
   }
 }
@@ -891,7 +930,9 @@ export async function shipOrder(input: ShipOrderInput): Promise<{
       return { success: false, error: 'Order not found' };
     }
 
-    if (order.sellerId !== input.sellerId) {
+    // Use sellerIds array if provided, otherwise fall back to single sellerId
+    const sellerIdArray = input.sellerIds?.length ? input.sellerIds : [input.sellerId];
+    if (!sellerIdArray.includes(order.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this order' };
     }
 
@@ -941,7 +982,7 @@ export async function shipOrder(input: ShipOrderInput): Promise<{
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error shipping order:', error);
+    apiLogger.error('Error shipping order:', error);
     return { success: false, error: 'Failed to ship order' };
   }
 }
@@ -963,8 +1004,11 @@ export async function markDelivered(input: MarkDeliveredInput): Promise<{
       return { success: false, error: 'Order not found' };
     }
 
-    // Only buyer or system can mark as delivered
+    // Authorization: buyer must own the order, seller must be the seller
     if (input.userRole === 'buyer' && order.buyerId !== input.userId) {
+      return { success: false, error: 'Unauthorized: You do not have access to this order' };
+    }
+    if (input.userRole === 'seller' && order.sellerId !== input.userId) {
       return { success: false, error: 'Unauthorized: You do not have access to this order' };
     }
 
@@ -1004,18 +1048,18 @@ export async function markDelivered(input: MarkDeliveredInput): Promise<{
     try {
       const invoiceResult = await marketplaceInvoiceService.createFromDeliveredOrder(input.orderId);
       if (invoiceResult.success) {
-        console.log(`Invoice ${invoiceResult.invoice?.invoiceNumber} created for order ${input.orderId}`);
+        apiLogger.info(`Invoice ${invoiceResult.invoice?.invoiceNumber} created for order ${input.orderId}`);
       } else {
-        console.warn(`Failed to create invoice for order ${input.orderId}: ${invoiceResult.error}`);
+        apiLogger.warn(`Failed to create invoice for order ${input.orderId}: ${invoiceResult.error}`);
       }
     } catch (invoiceError) {
       // Don't fail the delivery if invoice creation fails
-      console.error('Invoice creation error:', invoiceError);
+      apiLogger.error('Invoice creation error:', invoiceError);
     }
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error marking delivered:', error);
+    apiLogger.error('Error marking delivered:', error);
     return { success: false, error: 'Failed to mark order as delivered' };
   }
 }
@@ -1065,7 +1109,7 @@ export async function closeOrder(input: CloseOrderInput): Promise<{
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error closing order:', error);
+    apiLogger.error('Error closing order:', error);
     return { success: false, error: 'Failed to close order' };
   }
 }
@@ -1075,7 +1119,7 @@ export async function closeOrder(input: CloseOrderInput): Promise<{
  */
 export async function cancelOrder(
   orderId: string,
-  sellerId: string,
+  sellerIds: string | string[],
   reason: string
 ): Promise<{
   success: boolean;
@@ -1083,6 +1127,7 @@ export async function cancelOrder(
   error?: string;
 }> {
   try {
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
     const order = await prisma.marketplaceOrder.findUnique({
       where: { id: orderId },
     });
@@ -1091,7 +1136,7 @@ export async function cancelOrder(
       return { success: false, error: 'Order not found' };
     }
 
-    if (order.sellerId !== sellerId) {
+    if (!sellerIdArray.includes(order.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this order' };
     }
 
@@ -1118,7 +1163,7 @@ export async function cancelOrder(
       orderId,
       'cancelled',
       'seller',
-      sellerId,
+      order.sellerId,
       order.status,
       'cancelled',
       { reason }
@@ -1126,7 +1171,7 @@ export async function cancelOrder(
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error cancelling order:', error);
+    apiLogger.error('Error cancelling order:', error);
     return { success: false, error: 'Failed to cancel order' };
   }
 }
@@ -1136,7 +1181,7 @@ export async function cancelOrder(
  */
 export async function updateTracking(
   orderId: string,
-  sellerId: string,
+  sellerIds: string | string[],
   trackingNumber: string,
   carrier?: string
 ): Promise<{
@@ -1145,6 +1190,7 @@ export async function updateTracking(
   error?: string;
 }> {
   try {
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
     const order = await prisma.marketplaceOrder.findUnique({
       where: { id: orderId },
     });
@@ -1153,7 +1199,7 @@ export async function updateTracking(
       return { success: false, error: 'Order not found' };
     }
 
-    if (order.sellerId !== sellerId) {
+    if (!sellerIdArray.includes(order.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this order' };
     }
 
@@ -1178,7 +1224,7 @@ export async function updateTracking(
       orderId,
       'tracking_added',
       'seller',
-      sellerId,
+      order.sellerId,
       order.trackingNumber || '',
       trackingNumber,
       { carrier: carrier || order.carrier }
@@ -1186,7 +1232,7 @@ export async function updateTracking(
 
     return { success: true, order: updatedOrder };
   } catch (error) {
-    console.error('Error updating tracking:', error);
+    apiLogger.error('Error updating tracking:', error);
     return { success: false, error: 'Failed to update tracking' };
   }
 }

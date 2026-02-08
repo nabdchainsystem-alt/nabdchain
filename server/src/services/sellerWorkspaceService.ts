@@ -414,7 +414,7 @@ export async function getInventoryWithStatus(sellerId: string) {
     stockStatus:
       item.stock === 0
         ? 'out_of_stock'
-        : item.stock <= (item.minOrderQty || 10)
+        : item.stock <= (item.minOrderQty ?? 10)
         ? 'low_stock'
         : 'in_stock',
   }));

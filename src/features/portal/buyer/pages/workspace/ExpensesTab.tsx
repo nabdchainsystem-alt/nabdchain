@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,8 +16,6 @@ import {
   MagnifyingGlass,
   CaretLeft,
   CaretRight,
-  CaretDown,
-  CaretUp,
   Plus,
   Funnel,
   X,
@@ -81,13 +80,15 @@ const HealthScoreIndicator: React.FC<{
   isRTL: boolean;
 }> = ({ score, styles, t, isRTL }) => {
   const color = score >= 70 ? styles.success : score >= 50 ? '#f59e0b' : styles.error;
-  const label = score >= 70 ? t('buyer.expenses.healthy') : score >= 50 ? t('buyer.expenses.needsAttention') : t('buyer.expenses.atRisk');
+  const label =
+    score >= 70
+      ? t('buyer.expenses.healthy')
+      : score >= 50
+        ? t('buyer.expenses.needsAttention')
+        : t('buyer.expenses.atRisk');
 
   return (
-    <div
-      className="p-4 rounded-lg border"
-      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-    >
+    <div className="p-4 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
       <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <Gauge size={18} style={{ color }} />
         <span className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
@@ -98,9 +99,13 @@ const HealthScoreIndicator: React.FC<{
         <p className="text-2xl font-bold" style={{ color }}>
           {score}
         </p>
-        <span className="text-sm pb-0.5" style={{ color: styles.textMuted }}>/100</span>
+        <span className="text-sm pb-0.5" style={{ color: styles.textMuted }}>
+          /100
+        </span>
       </div>
-      <p className="text-xs mt-1" style={{ color }}>{label}</p>
+      <p className="text-xs mt-1" style={{ color }}>
+        {label}
+      </p>
     </div>
   );
 };
@@ -120,7 +125,11 @@ const LeakageAlerts: React.FC<{
 
   const severityColors = {
     high: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: '#ef4444' },
-    medium: { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800', icon: '#f59e0b' },
+    medium: {
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      border: 'border-amber-200 dark:border-amber-800',
+      icon: '#f59e0b',
+    },
     low: { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', icon: '#3b82f6' },
   };
 
@@ -145,7 +154,10 @@ const LeakageAlerts: React.FC<{
               </div>
             </div>
             <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <span className="text-xs px-2 py-1 rounded-md" style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}>
+              <span
+                className="text-xs px-2 py-1 rounded-md"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}
+              >
                 {leak.recommendation}
               </span>
               <button
@@ -175,10 +187,7 @@ const PriceDriftInlineAlert: React.FC<{
   if (alerts.length === 0) return null;
 
   return (
-    <div
-      className="mb-4 p-3 rounded-lg border"
-      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-    >
+    <div className="mb-4 p-3 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
       <div className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <TrendUp size={16} style={{ color: styles.error }} />
         <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
@@ -222,7 +231,8 @@ const PriceDriftInlineAlert: React.FC<{
                     : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                 }`}
               >
-                {alert.driftDirection === 'up' ? '+' : ''}{alert.driftPercent}%
+                {alert.driftDirection === 'up' ? '+' : ''}
+                {alert.driftPercent}%
               </span>
             </div>
           </div>
@@ -261,8 +271,7 @@ const BudgetDrillDown: React.FC<{
         {budgetData.map((item) => {
           const Icon = CATEGORY_ICONS[item.category];
           const statusColor =
-            item.status === 'over' ? styles.error :
-            item.status === 'under' ? styles.success : '#f59e0b';
+            item.status === 'over' ? styles.error : item.status === 'under' ? styles.success : '#f59e0b';
           const progressPct = Math.min(100, (item.actualAmount / item.budgetAmount) * 100);
 
           return (
@@ -277,12 +286,8 @@ const BudgetDrillDown: React.FC<{
                   <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                     {t(`buyer.workspace.${item.category}`)}
                   </span>
-                  {item.trend === 'worsening' && (
-                    <TrendUp size={12} style={{ color: styles.error }} />
-                  )}
-                  {item.trend === 'improving' && (
-                    <TrendDown size={12} style={{ color: styles.success }} />
-                  )}
+                  {item.trend === 'worsening' && <TrendUp size={12} style={{ color: styles.error }} />}
+                  {item.trend === 'improving' && <TrendDown size={12} style={{ color: styles.success }} />}
                 </div>
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-sm" style={{ color: styles.textMuted }}>
@@ -293,11 +298,12 @@ const BudgetDrillDown: React.FC<{
                       item.status === 'over'
                         ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                         : item.status === 'under'
-                        ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
                     }`}
                   >
-                    {item.variancePercent > 0 ? '+' : ''}{item.variancePercent.toFixed(1)}%
+                    {item.variancePercent > 0 ? '+' : ''}
+                    {item.variancePercent.toFixed(1)}%
                   </span>
                 </div>
               </div>
@@ -356,10 +362,7 @@ const InefficiencyPanel: React.FC<{
               {t(`buyer.workspace.${selectedCategory}`)} {t('buyer.expenses.analysis')}
             </h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
             <X size={18} style={{ color: styles.textMuted }} />
           </button>
         </div>
@@ -375,20 +378,22 @@ const InefficiencyPanel: React.FC<{
             <span
               className="text-3xl font-bold"
               style={{
-                color: data.inefficiencyScore > 50 ? styles.error :
-                       data.inefficiencyScore > 25 ? '#f59e0b' : styles.success,
+                color:
+                  data.inefficiencyScore > 50 ? styles.error : data.inefficiencyScore > 25 ? '#f59e0b' : styles.success,
               }}
             >
               {data.inefficiencyScore}
             </span>
-            <span className="text-sm pb-1" style={{ color: styles.textMuted }}>/100</span>
+            <span className="text-sm pb-1" style={{ color: styles.textMuted }}>
+              /100
+            </span>
           </div>
           <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
             {data.inefficiencyScore > 50
               ? t('buyer.expenses.highInefficiency')
               : data.inefficiencyScore > 25
-              ? t('buyer.expenses.moderateInefficiency')
-              : t('buyer.expenses.lowInefficiency')}
+                ? t('buyer.expenses.moderateInefficiency')
+                : t('buyer.expenses.lowInefficiency')}
           </p>
         </div>
 
@@ -530,9 +535,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
     () => [
       columnHelper.accessor('category', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.category')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.category')}</span>
         ),
         cell: (info) => {
           const category = info.getValue() as ExpenseCategory;
@@ -540,10 +543,19 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
           const colors = CATEGORY_COLORS[category];
           return (
             <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div
-                className={`w-8 h-8 rounded-md flex items-center justify-center ${colors.bg}`}
-              >
-                <Icon size={16} style={{ color: colors.text.includes('blue') ? '#2563eb' : colors.text.includes('purple') ? '#9333ea' : colors.text.includes('amber') ? '#d97706' : '#6b7280' }} />
+              <div className={`w-8 h-8 rounded-md flex items-center justify-center ${colors.bg}`}>
+                <Icon
+                  size={16}
+                  style={{
+                    color: colors.text.includes('blue')
+                      ? '#2563eb'
+                      : colors.text.includes('purple')
+                        ? '#9333ea'
+                        : colors.text.includes('amber')
+                          ? '#d97706'
+                          : '#6b7280',
+                  }}
+                />
               </div>
               <span className="font-medium" style={{ color: styles.textPrimary }}>
                 {t(`buyer.workspace.${category}`)}
@@ -554,9 +566,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
       }),
       columnHelper.accessor('amount', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.amount')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.amount')}</span>
         ),
         cell: (info) => (
           <span className="font-medium" style={{ color: styles.textPrimary }}>
@@ -566,33 +576,24 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
       }),
       columnHelper.accessor('date', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.date')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.date')}</span>
         ),
         cell: (info) => (
-          <span style={{ color: styles.textSecondary }}>
-            {new Date(info.getValue()).toLocaleDateString()}
-          </span>
+          <span style={{ color: styles.textSecondary }}>{new Date(info.getValue()).toLocaleDateString()}</span>
         ),
       }),
       columnHelper.accessor('notes', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.notes')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.notes')}</span>
         ),
         cell: (info) => (
-          <span
-            className="text-sm truncate max-w-xs block"
-            style={{ color: styles.textMuted }}
-          >
+          <span className="text-sm truncate max-w-xs block" style={{ color: styles.textMuted }}>
             {info.getValue() || '-'}
           </span>
         ),
       }),
     ],
-    [t, styles, isRTL]
+    [t, styles, isRTL],
   );
 
   const table = useReactTable({
@@ -619,21 +620,12 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
   return (
     <div dir={direction}>
       {/* Spend Leakage Alerts */}
-      <LeakageAlerts
-        leakages={visibleLeakages}
-        onDismiss={handleDismissLeakage}
-        styles={styles}
-        t={t}
-        isRTL={isRTL}
-      />
+      <LeakageAlerts leakages={visibleLeakages} onDismiss={handleDismissLeakage} styles={styles} t={t} isRTL={isRTL} />
 
       {/* Financial Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {/* Monthly Total */}
-        <div
-          className="p-4 rounded-lg border"
-          style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-        >
+        <div className="p-4 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Cube size={18} style={{ color: styles.info }} />
             <span className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
@@ -649,10 +641,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
         </div>
 
         {/* Potential Savings */}
-        <div
-          className="p-4 rounded-lg border"
-          style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-        >
+        <div className="p-4 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Lightning size={18} style={{ color: styles.success }} />
             <span className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
@@ -692,27 +681,18 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
             {(summary?.priceDriftAlerts.length || 0) + visibleLeakages.length}
           </p>
           <p className="text-xs mt-1" style={{ color: styles.textSecondary }}>
-            {visibleLeakages.length} {t('buyer.expenses.leakages')}, {summary?.priceDriftAlerts.length || 0} {t('buyer.expenses.drifts')}
+            {visibleLeakages.length} {t('buyer.expenses.leakages')}, {summary?.priceDriftAlerts.length || 0}{' '}
+            {t('buyer.expenses.drifts')}
           </p>
         </div>
 
         {/* Health Score */}
-        <HealthScoreIndicator
-          score={summary?.healthScore || 0}
-          styles={styles}
-          t={t}
-          isRTL={isRTL}
-        />
+        <HealthScoreIndicator score={summary?.healthScore || 0} styles={styles} t={t} isRTL={isRTL} />
       </div>
 
       {/* Price Drift Alerts */}
       {summary?.priceDriftAlerts && summary.priceDriftAlerts.length > 0 && (
-        <PriceDriftInlineAlert
-          alerts={summary.priceDriftAlerts}
-          styles={styles}
-          t={t}
-          isRTL={isRTL}
-        />
+        <PriceDriftInlineAlert alerts={summary.priceDriftAlerts} styles={styles} t={t} isRTL={isRTL} />
       )}
 
       {/* Budget vs Actual */}
@@ -804,19 +784,14 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
           <table className="w-full">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr
-                  key={headerGroup.id}
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
+                <tr key={headerGroup.id} style={{ backgroundColor: styles.bgSecondary }}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                       style={{ color: styles.textMuted }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
                 </tr>
@@ -871,7 +846,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
               {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
+                table.getFilteredRowModel().rows.length,
               )}{' '}
               {t('common.of')} {table.getFilteredRowModel().rows.length}
             </span>
@@ -915,11 +890,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
       {/* Add Expense Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div
-            className="w-full max-w-md rounded-lg p-6"
-            style={{ backgroundColor: styles.bgCard }}
-            dir={direction}
-          >
+          <div className="w-full max-w-md rounded-lg p-6" style={{ backgroundColor: styles.bgCard }} dir={direction}>
             <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <h3
                 className="text-lg font-semibold"
@@ -938,17 +909,12 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
             <div className="space-y-4">
               {/* Category */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: styles.textSecondary }}
-                >
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textSecondary }}>
                   {t('buyer.workspace.category')}
                 </label>
                 <Select
                   value={newExpense.category}
-                  onChange={(value) =>
-                    setNewExpense({ ...newExpense, category: value as ExpenseCategory })
-                  }
+                  onChange={(value) => setNewExpense({ ...newExpense, category: value as ExpenseCategory })}
                   options={[
                     { value: 'shipping', label: t('buyer.workspace.shipping') || 'Shipping' },
                     { value: 'customs', label: t('buyer.workspace.customs') || 'Customs' },
@@ -961,18 +927,13 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
 
               {/* Amount */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: styles.textSecondary }}
-                >
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textSecondary }}>
                   {t('buyer.workspace.amount')}
                 </label>
                 <input
                   type="number"
                   value={newExpense.amount}
-                  onChange={(e) =>
-                    setNewExpense({ ...newExpense, amount: parseFloat(e.target.value) || 0 })
-                  }
+                  onChange={(e) => setNewExpense({ ...newExpense, amount: parseFloat(e.target.value) || 0 })}
                   className="w-full px-3 py-2 rounded-lg border text-sm"
                   style={{
                     borderColor: styles.border,
@@ -986,10 +947,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
 
               {/* Notes */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: styles.textSecondary }}
-                >
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textSecondary }}>
                   {t('buyer.workspace.notes')}
                 </label>
                 <textarea
@@ -1036,10 +994,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
       {/* Category Inefficiency Slide-Over Panel */}
       {selectedCategory && summary?.categoryInefficiencies && (
         <>
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setSelectedCategory(null)}
-          />
+          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setSelectedCategory(null)} />
           <InefficiencyPanel
             inefficiencies={summary.categoryInefficiencies}
             selectedCategory={selectedCategory}

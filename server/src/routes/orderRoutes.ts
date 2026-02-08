@@ -2,7 +2,7 @@
 // Order Routes - Marketplace Orders API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { idempotency } from '../middleware/idempotencyMiddleware';
@@ -10,6 +10,7 @@ import { orderService, OrderStatus, PaymentStatus, FulfillmentStatus, OrderSourc
 import orderHealthService, { OrderHealthStatus, ExceptionSeverity } from '../services/orderHealthService';
 import { portalNotificationService, PortalNotificationType } from '../services/portalNotificationService';
 import { apiLogger } from '../utils/logger';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
 
@@ -125,7 +126,7 @@ router.get('/seller/stats', requireAuth, async (req, res: Response) => {
 router.get('/seller/:id', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const order = await orderService.getSellerOrder(sellerId, orderId);
 
@@ -147,7 +148,7 @@ router.get('/seller/:id', requireAuth, async (req, res: Response) => {
 router.post('/seller/:id/confirm', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const order = await orderService.confirmOrder(sellerId, orderId);
     res.json(order);
@@ -173,7 +174,7 @@ router.post('/seller/:id/confirm', requireAuth, async (req, res: Response) => {
 router.post('/seller/:id/ship', requireAuth, idempotency({ entityType: 'order_ship' }), async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
     const data = shipOrderSchema.parse(req.body);
 
     const order = await orderService.shipOrder(sellerId, orderId, data);
@@ -203,7 +204,7 @@ router.post('/seller/:id/ship', requireAuth, idempotency({ entityType: 'order_sh
 router.post('/seller/:id/deliver', requireAuth, idempotency({ entityType: 'order_deliver' }), async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const order = await orderService.markDelivered(sellerId, orderId);
     res.json(order);
@@ -228,7 +229,7 @@ router.post('/seller/:id/deliver', requireAuth, idempotency({ entityType: 'order
 router.post('/seller/:id/cancel', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
     const { reason } = req.body;
 
     const order = await orderService.cancelOrder(sellerId, orderId, reason);
@@ -254,7 +255,7 @@ router.post('/seller/:id/cancel', requireAuth, async (req, res: Response) => {
 router.put('/seller/:id', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
     const data = updateOrderSchema.parse(req.body);
 
     const order = await orderService.updateOrder(sellerId, orderId, data);
@@ -283,7 +284,7 @@ router.put('/seller/:id', requireAuth, async (req, res: Response) => {
 router.post('/seller/:id/status', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
     const { status } = req.body;
 
     const parsedStatus = orderStatusEnum.parse(status);
@@ -392,7 +393,7 @@ router.get('/buyer/dashboard', requireAuth, async (req, res: Response) => {
 router.get('/buyer/:id', requireAuth, async (req, res: Response) => {
   try {
     const buyerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const order = await orderService.getBuyerOrder(buyerId, orderId);
 
@@ -413,8 +414,10 @@ router.get('/buyer/:id', requireAuth, async (req, res: Response) => {
  */
 router.post('/', requireAuth, async (req, res: Response) => {
   try {
-    const authReq = req as AuthRequest;
-    const buyerId = authReq.auth.userId;
+    const buyerId = (req as AuthRequest).auth?.userId;
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     const data = createOrderSchema.parse(req.body);
 
     // Default buyer info - would be fetched from user profile in production
@@ -445,7 +448,7 @@ router.post('/', requireAuth, async (req, res: Response) => {
 router.post('/buyer/:id/cancel', requireAuth, async (req, res: Response) => {
   try {
     const buyerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
     const { reason } = req.body;
 
     const order = await orderService.cancelOrderByBuyer(buyerId, orderId, reason);
@@ -461,6 +464,59 @@ router.post('/buyer/:id/cancel', requireAuth, async (req, res: Response) => {
     }
     apiLogger.error('Error cancelling order:', error);
     res.status(500).json({ error: 'Failed to cancel order' });
+  }
+});
+
+/**
+ * POST /api/orders/buyer/:id/confirm-delivery
+ * Buyer confirms delivery of a shipped order
+ */
+router.post('/buyer/:id/confirm-delivery', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = (req as AuthRequest).auth.userId;
+    const orderId = req.params.id as string;
+    const { rating, feedback } = req.body;
+
+    // Find the order
+    const order = await prisma.marketplaceOrder.findFirst({
+      where: { id: orderId, buyerId },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.status !== 'shipped') {
+      return res.status(400).json({
+        error: 'Only shipped orders can be confirmed as delivered',
+      });
+    }
+
+    // Update order status to delivered
+    const updated = await prisma.marketplaceOrder.update({
+      where: { id: orderId },
+      data: {
+        status: 'delivered',
+        deliveredAt: new Date(),
+        confirmedAt: new Date(),
+      },
+    });
+
+    // Log the delivery confirmation
+    await prisma.marketplaceOrderAudit.create({
+      data: {
+        orderId,
+        action: 'delivery_confirmed',
+        actor: 'buyer',
+        actorId: buyerId,
+        metadata: JSON.stringify({ rating, feedback }),
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    apiLogger.error('Error confirming delivery:', error);
+    res.status(500).json({ error: 'Failed to confirm delivery' });
   }
 });
 
@@ -535,7 +591,7 @@ router.get('/seller/with-health', requireAuth, async (req, res: Response) => {
 router.post('/seller/:id/calculate-health', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const result = await orderHealthService.calculateOrderHealth(orderId, sellerId);
 
@@ -560,7 +616,7 @@ const resolveExceptionSchema = z.object({
 router.post('/seller/:id/resolve-exception', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
     const data = resolveExceptionSchema.parse(req.body);
 
     const order = await orderHealthService.resolveException(orderId, sellerId, data.resolution);
@@ -607,7 +663,7 @@ router.post('/seller/update-health-batch', requireAuth, async (req, res: Respons
 router.get('/seller/:id/rfq-history', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const rfqHistory = await orderHealthService.getRFQNegotiationHistory(orderId, sellerId);
 

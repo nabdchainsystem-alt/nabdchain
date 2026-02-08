@@ -182,7 +182,7 @@ export interface MarketplaceFilters {
   origin?: string;
   sortBy?: 'price_asc' | 'price_desc' | 'newest' | 'popular';
   // Stock filtering
-  inStock?: boolean;           // Only show items with stock > 0
+  inStock?: boolean; // Only show items with stock > 0
   includeOutOfStock?: boolean; // Include out of stock items (RFQ allowed)
 }
 
@@ -201,7 +201,7 @@ export type RFQPriority = 'normal' | 'urgent' | 'critical';
 
 export interface ItemRFQ {
   id: string;
-  itemId: string | null;  // Nullable for profile-level RFQs
+  itemId: string | null; // Nullable for profile-level RFQs
   buyerId: string;
   sellerId: string;
   quantity: number;
@@ -231,20 +231,56 @@ export interface ItemRFQ {
 
   // Relations
   item?: Item;
+
+  // Quotes (populated by backend when fetching buyer RFQs)
+  // Uses inline type to avoid circular reference with Quote interface defined later
+  quotes?: Array<{
+    id: string;
+    quoteNumber?: string;
+    rfqId: string;
+    sellerId: string;
+    buyerId: string;
+    unitPrice: number;
+    quantity: number;
+    totalPrice: number;
+    currency: string;
+    discount?: number | null;
+    discountPercent?: number | null;
+    deliveryDays: number;
+    deliveryTerms?: string | null;
+    validUntil: string;
+    notes?: string | null;
+    internalNotes?: string | null;
+    status: string;
+    sentAt?: string | null;
+    version: number;
+    isLatest: boolean;
+    createdAt: string;
+    updatedAt: string;
+    expiredAt?: string | null;
+    acceptedAt?: string | null;
+    rejectedAt?: string | null;
+  }>;
+
+  // Seller info (populated for buyer views)
+  sellerCompanyName?: string;
+
+  // For backwards compat with old code that expects rfqNumber
+  rfqNumber?: string;
 }
 
 // Create RFQ request data (Stage 1)
 export interface CreateRFQData {
-  itemId?: string | null;       // Nullable for profile-level RFQs
-  sellerId: string;             // Required when itemId is null
+  itemId?: string | null; // Nullable for profile-level RFQs
+  sellerId?: string | null; // Nullable for broadcast RFQs (visible to all sellers)
   quantity: number;
-  deliveryLocation: string;     // Required
+  deliveryLocation: string; // Required
   deliveryCity?: string;
-  deliveryCountry?: string;     // Default: 'SA'
+  deliveryCountry?: string; // Default: 'SA'
   requiredDeliveryDate?: string; // ISO datetime string
   message?: string;
   priority?: RFQPriority;
-  source: RFQSource;
+  source?: RFQSource; // Optional, defaults to 'item'
 }
 
 // RFQ Form State for controlled form
@@ -277,8 +313,16 @@ export interface QuoteRFQData {
 // RFQ Types (Stage 2) - Seller Inbox
 // =============================================================================
 
-// Stage 2 status values - seller workflow
-export type Stage2RFQStatus = 'new' | 'viewed' | 'under_review' | 'ignored';
+// Stage 2 status values - seller workflow (includes Stage 3 statuses for marketplace RFQs)
+export type Stage2RFQStatus =
+  | 'new'
+  | 'viewed'
+  | 'under_review'
+  | 'ignored'
+  | 'quoted'
+  | 'accepted'
+  | 'rejected'
+  | 'expired';
 
 // Auto-calculated priority levels
 export type RFQPriorityLevel = 'high' | 'medium' | 'low';
@@ -357,6 +401,9 @@ export interface SellerInboxRFQ extends Omit<ItemRFQ, 'status'> {
   labels?: RFQLabelAssignment[];
   noteCount?: number;
   snooze?: RFQSnoozeInfo | null;
+
+  // RFQ Type - DIRECT (buyer contacted seller directly) or MARKETPLACE (open RFQ)
+  rfqType?: 'DIRECT' | 'MARKETPLACE';
 }
 
 /**
@@ -470,7 +517,7 @@ export function getStage2StatusConfig(status: Stage2RFQStatus): {
   color: 'error' | 'warning' | 'info' | 'success';
   bgColor: string;
   textColor: string;
-  icon: 'envelope' | 'eye' | 'magnifying-glass' | 'x-circle';
+  icon: 'envelope' | 'eye' | 'magnifying-glass' | 'x-circle' | 'check-circle' | 'paper-plane' | 'clock';
 } {
   const configs: Record<Stage2RFQStatus, ReturnType<typeof getStage2StatusConfig>> = {
     new: {
@@ -504,6 +551,38 @@ export function getStage2StatusConfig(status: Stage2RFQStatus): {
       bgColor: 'bg-gray-100 dark:bg-gray-900/30',
       textColor: 'text-gray-700 dark:text-gray-400',
       icon: 'x-circle',
+    },
+    quoted: {
+      label: 'Quoted',
+      labelKey: 'seller.inbox.statusQuoted',
+      color: 'info',
+      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+      textColor: 'text-purple-700 dark:text-purple-400',
+      icon: 'paper-plane',
+    },
+    accepted: {
+      label: 'Accepted',
+      labelKey: 'seller.inbox.statusAccepted',
+      color: 'success',
+      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      textColor: 'text-green-700 dark:text-green-400',
+      icon: 'check-circle',
+    },
+    rejected: {
+      label: 'Rejected',
+      labelKey: 'seller.inbox.statusRejected',
+      color: 'error',
+      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      textColor: 'text-red-700 dark:text-red-400',
+      icon: 'x-circle',
+    },
+    expired: {
+      label: 'Expired',
+      labelKey: 'seller.inbox.statusExpired',
+      color: 'warning',
+      bgColor: 'bg-gray-100 dark:bg-gray-900/30',
+      textColor: 'text-gray-500 dark:text-gray-400',
+      icon: 'clock',
     },
   };
   return configs[status];
@@ -764,7 +843,7 @@ export const ITEM_CATEGORIES = [
   { key: 'materials', labelKey: 'categories.materials' },
 ] as const;
 
-export type ItemCategory = typeof ITEM_CATEGORIES[number]['key'];
+export type ItemCategory = (typeof ITEM_CATEGORIES)[number]['key'];
 
 // =============================================================================
 // RFQ Scoring & Intelligence Types
@@ -779,11 +858,11 @@ export type RFQPriorityTier = 'critical' | 'high' | 'medium' | 'low';
  * Individual score components
  */
 export interface RFQScore {
-  total: number;      // 0-100 composite score
-  urgency: number;    // Based on deadline proximity
-  quantity: number;   // Based on order value
-  buyer: number;      // Based on buyer history
-  margin: number;     // Estimated margin potential
+  total: number; // 0-100 composite score
+  urgency: number; // Based on deadline proximity
+  quantity: number; // Based on order value
+  buyer: number; // Based on buyer history
+  margin: number; // Estimated margin potential
 }
 
 /**
@@ -791,7 +870,7 @@ export interface RFQScore {
  */
 export interface RFQPricingSuggestion {
   suggestedPrice: number;
-  confidence: number;   // 0-100
+  confidence: number; // 0-100
   reasoning: string;
   competitorRange?: {
     min: number;
@@ -868,7 +947,7 @@ export interface RFQTimelineData {
     totalReceived: number;
     totalResponded: number;
     avgResponseTime: number; // hours
-    conversionRate: number;  // percentage
+    conversionRate: number; // percentage
   };
 }
 
@@ -997,7 +1076,7 @@ export interface QuoteVersion {
  */
 export interface Quote {
   id: string;
-  quoteNumber?: string;  // Human-readable: QT-2024-0001
+  quoteNumber?: string; // Human-readable: QT-2024-0001
   rfqId: string;
   sellerId: string;
   buyerId: string;
@@ -1018,8 +1097,8 @@ export interface Quote {
   validUntil: string;
 
   // Notes
-  notes?: string;          // Terms and conditions (visible to buyer)
-  internalNotes?: string;  // Seller-only notes
+  notes?: string; // Terms and conditions (visible to buyer)
+  internalNotes?: string; // Seller-only notes
 
   // Versioning
   version: number;
@@ -1063,7 +1142,7 @@ export interface CreateQuoteData {
   discountPercent?: number;
   deliveryDays: number;
   deliveryTerms?: string;
-  validUntil: string;  // ISO datetime string
+  validUntil: string; // ISO datetime string
   notes?: string;
   internalNotes?: string;
 }
@@ -1201,11 +1280,7 @@ export function getQuoteStatusConfig(status: QuoteStatus): {
 /**
  * Calculate total price from unit price, quantity, and discount
  */
-export function calculateQuoteTotalPrice(
-  unitPrice: number,
-  quantity: number,
-  discount?: number
-): number {
+export function calculateQuoteTotalPrice(unitPrice: number, quantity: number, discount?: number): number {
   const subtotal = unitPrice * quantity;
   return discount ? subtotal - discount : subtotal;
 }
@@ -1213,11 +1288,7 @@ export function calculateQuoteTotalPrice(
 /**
  * Calculate discount amount from percentage
  */
-export function calculateDiscountAmount(
-  unitPrice: number,
-  quantity: number,
-  discountPercent: number
-): number {
+export function calculateDiscountAmount(unitPrice: number, quantity: number, discountPercent: number): number {
   const subtotal = unitPrice * quantity;
   return (subtotal * discountPercent) / 100;
 }
@@ -1225,11 +1296,7 @@ export function calculateDiscountAmount(
 /**
  * Calculate discount percentage from amount
  */
-export function calculateDiscountPercent(
-  unitPrice: number,
-  quantity: number,
-  discountAmount: number
-): number {
+export function calculateDiscountPercent(unitPrice: number, quantity: number, discountAmount: number): number {
   const subtotal = unitPrice * quantity;
   if (subtotal === 0) return 0;
   return (discountAmount / subtotal) * 100;
@@ -1319,10 +1386,10 @@ export function getQuoteValidityStatus(validUntil: string): {
 export type MarketplaceOrderStatus =
   | 'pending_confirmation'
   | 'confirmed'
-  | 'processing'     // Stage 5: Seller is processing/picking/packing
+  | 'processing' // Stage 5: Seller is processing/picking/packing
   | 'shipped'
   | 'delivered'
-  | 'closed'         // Stage 5: Order lifecycle complete
+  | 'closed' // Stage 5: Order lifecycle complete
   | 'cancelled'
   | 'failed'
   | 'refunded';
@@ -1353,11 +1420,11 @@ export type OrderHealthStatus = 'on_track' | 'at_risk' | 'delayed' | 'critical';
 export type OrderAuditAction =
   | 'created'
   | 'confirmed'
-  | 'rejected'           // Stage 5: Seller rejects order
+  | 'rejected' // Stage 5: Seller rejects order
   | 'processing_started' // Stage 5: Seller starts processing
   | 'shipped'
   | 'delivered'
-  | 'closed'             // Stage 5: Order closed
+  | 'closed' // Stage 5: Order closed
   | 'cancelled'
   | 'refunded'
   | 'status_changed'
@@ -1447,18 +1514,18 @@ export interface MarketplaceOrder {
   deliveryDeadline?: string;
 
   // Stage 5: Fulfillment tracking
-  rejectionReason?: string;   // If seller rejects order
-  shipmentDate?: string;      // When shipment was dispatched
+  rejectionReason?: string; // If seller rejects order
+  shipmentDate?: string; // When shipment was dispatched
   deliveryConfirmedBy?: 'buyer' | 'system';
 
   // Timestamps
   createdAt: string;
   updatedAt: string;
   confirmedAt?: string;
-  processingAt?: string;      // Stage 5: When seller started processing
+  processingAt?: string; // Stage 5: When seller started processing
   shippedAt?: string;
   deliveredAt?: string;
-  closedAt?: string;          // Stage 5: When order was closed
+  closedAt?: string; // Stage 5: When order was closed
   cancelledAt?: string;
 }
 
@@ -1507,10 +1574,10 @@ export interface OrderStats {
   total: number;
   pending: number;
   confirmed: number;
-  processing: number;   // Stage 5
+  processing: number; // Stage 5
   shipped: number;
   delivered: number;
-  closed: number;       // Stage 5
+  closed: number; // Stage 5
   cancelled: number;
 }
 
@@ -1639,7 +1706,7 @@ export function getOrderStatusConfig(status: MarketplaceOrderStatus): {
  */
 export function canSellerPerformAction(
   order: Pick<MarketplaceOrder, 'status'>,
-  action: 'confirm' | 'reject' | 'process' | 'ship' | 'cancel'
+  action: 'confirm' | 'reject' | 'process' | 'ship' | 'cancel',
 ): { allowed: boolean; reason?: string } {
   switch (action) {
     case 'confirm':
@@ -1675,9 +1742,10 @@ export function canSellerPerformAction(
 /**
  * Check if buyer can confirm delivery
  */
-export function canBuyerConfirmDelivery(
-  order: Pick<MarketplaceOrder, 'status'>
-): { allowed: boolean; reason?: string } {
+export function canBuyerConfirmDelivery(order: Pick<MarketplaceOrder, 'status'>): {
+  allowed: boolean;
+  reason?: string;
+} {
   if (order.status !== 'shipped') {
     return { allowed: false, reason: 'Order must be shipped first' };
   }
@@ -1757,11 +1825,7 @@ export type CounterOfferStatus = 'pending' | 'accepted' | 'rejected' | 'expired'
 /**
  * Counter-offer event types for audit trail
  */
-export type CounterOfferEventType =
-  | 'COUNTER_CREATED'
-  | 'COUNTER_ACCEPTED'
-  | 'COUNTER_REJECTED'
-  | 'COUNTER_EXPIRED';
+export type CounterOfferEventType = 'COUNTER_CREATED' | 'COUNTER_ACCEPTED' | 'COUNTER_REJECTED' | 'COUNTER_EXPIRED';
 
 /**
  * Counter-offer - buyer's negotiation response to a quote

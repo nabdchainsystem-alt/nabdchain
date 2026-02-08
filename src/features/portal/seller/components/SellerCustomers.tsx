@@ -137,10 +137,7 @@ const CustomerDrawer: React.FC<CustomerDrawerProps> = ({ customer, loading, onCl
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 z-40 transition-opacity"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/30 z-40 transition-opacity" onClick={onClose} />
 
       {/* Drawer */}
       <div
@@ -148,22 +145,16 @@ const CustomerDrawer: React.FC<CustomerDrawerProps> = ({ customer, loading, onCl
         style={{ backgroundColor: styles.bgPrimary }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
-          <h2
-            className="text-lg font-semibold"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-          >
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: styles.border }}>
+          <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
             {t('seller.customers.details')}
           </h2>
           <button
             onClick={onClose}
             className="p-2 rounded-md transition-colors"
             style={{ color: styles.textMuted }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgSecondary}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgSecondary)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <X size={20} />
           </button>
@@ -285,7 +276,10 @@ const CustomerDrawer: React.FC<CustomerDrawerProps> = ({ customer, loading, onCl
                           <p className="text-sm mb-1" style={{ color: styles.textPrimary }}>
                             {order.itemName}
                           </p>
-                          <div className="flex items-center justify-between text-xs" style={{ color: styles.textMuted }}>
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            style={{ color: styles.textMuted }}
+                          >
                             <span>Qty: {order.quantity}</span>
                             <span className="font-medium" style={{ color: styles.textPrimary }}>
                               SAR {order.totalPrice.toLocaleString()}
@@ -312,7 +306,7 @@ const CustomerDrawer: React.FC<CustomerDrawerProps> = ({ customer, loading, onCl
 // Main Component
 // =============================================================================
 
-export const SellerCustomers: React.FC<SellerCustomersProps> = ({ onViewOrder }) => {
+export const SellerCustomers: React.FC<SellerCustomersProps> = ({ _onViewOrder }) => {
   const { styles, t } = usePortal();
   const { getToken } = useAuth();
 
@@ -357,27 +351,33 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ onViewOrder })
   }, [fetchCustomers]);
 
   // Fetch customer details
-  const fetchCustomerDetails = useCallback(async (customerId: string) => {
-    try {
-      setDrawerLoading(true);
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
+  const fetchCustomerDetails = useCallback(
+    async (customerId: string) => {
+      try {
+        setDrawerLoading(true);
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
 
-      const details = await customerService.getCustomerDetails(token, customerId);
-      setCustomerDetails(details);
-    } catch (err) {
-      console.error('Failed to load customer details:', err);
-    } finally {
-      setDrawerLoading(false);
-    }
-  }, [getToken]);
+        const details = await customerService.getCustomerDetails(token, customerId);
+        setCustomerDetails(details);
+      } catch (err) {
+        console.error('Failed to load customer details:', err);
+      } finally {
+        setDrawerLoading(false);
+      }
+    },
+    [getToken],
+  );
 
   // Handle row click
-  const handleRowClick = useCallback((customer: Customer) => {
-    setSelectedCustomerId(customer.id);
-    setCustomerDetails(null);
-    fetchCustomerDetails(customer.id);
-  }, [fetchCustomerDetails]);
+  const handleRowClick = useCallback(
+    (customer: Customer) => {
+      setSelectedCustomerId(customer.id);
+      setCustomerDetails(null);
+      fetchCustomerDetails(customer.id);
+    },
+    [fetchCustomerDetails],
+  );
 
   // Close drawer
   const handleCloseDrawer = useCallback(() => {
@@ -389,55 +389,58 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ onViewOrder })
   const columnHelper = createColumnHelper<Customer>();
 
   // Columns
-  const columns = useMemo(() => [
-    columnHelper.accessor('name', {
-      header: t('seller.customers.name'),
-      cell: info => (
-        <div>
-          <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-            {info.getValue()}
-          </div>
-          {info.row.original.company && (
-            <div className="text-xs" style={{ color: styles.textMuted }}>
-              {info.row.original.company}
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('name', {
+        header: t('seller.customers.name'),
+        cell: (info) => (
+          <div>
+            <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {info.getValue()}
             </div>
-          )}
-        </div>
-      ),
-    }),
-    columnHelper.accessor('email', {
-      header: t('seller.customers.email'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textSecondary }}>
-          {info.getValue() || '-'}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('totalOrders', {
-      header: t('seller.customers.totalOrders'),
-      cell: info => (
-        <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('totalSpend', {
-      header: t('seller.customers.totalSpend'),
-      cell: info => (
-        <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-          {formatCurrency(info.getValue(), info.row.original.currency)}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('lastOrderDate', {
-      header: t('seller.customers.lastOrder'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textMuted }}>
-          {formatRelativeDate(info.getValue())}
-        </span>
-      ),
-    }),
-  ], [columnHelper, styles, t]);
+            {info.row.original.company && (
+              <div className="text-xs" style={{ color: styles.textMuted }}>
+                {info.row.original.company}
+              </div>
+            )}
+          </div>
+        ),
+      }),
+      columnHelper.accessor('email', {
+        header: t('seller.customers.email'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textSecondary }}>
+            {info.getValue() || '-'}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('totalOrders', {
+        header: t('seller.customers.totalOrders'),
+        cell: (info) => (
+          <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('totalSpend', {
+        header: t('seller.customers.totalSpend'),
+        cell: (info) => (
+          <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+            {formatCurrency(info.getValue(), info.row.original.currency)}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('lastOrderDate', {
+        header: t('seller.customers.lastOrder'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textMuted }}>
+            {formatRelativeDate(info.getValue())}
+          </span>
+        ),
+      }),
+    ],
+    [columnHelper, styles, t],
+  );
 
   // Table instance
   const table = useReactTable({
@@ -528,16 +531,13 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ onViewOrder })
 
       {/* Table */}
       {!loading && customers.length > 0 && (
-        <div
-          className="overflow-hidden rounded-lg border"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="overflow-hidden rounded-lg border" style={{ borderColor: styles.border }}>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead style={{ backgroundColor: styles.bgSecondary }}>
-                {table.getHeaderGroups().map(headerGroup => (
+                {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
-                    {headerGroup.headers.map(header => (
+                    {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
                         className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none"
@@ -563,10 +563,10 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ onViewOrder })
                       borderTop: rowIndex > 0 ? `1px solid ${styles.border}` : undefined,
                     }}
                     onClick={() => handleRowClick(row.original)}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    {row.getVisibleCells().map(cell => (
+                    {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -581,11 +581,7 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ onViewOrder })
 
       {/* Customer Details Drawer */}
       {selectedCustomerId && (
-        <CustomerDrawer
-          customer={customerDetails}
-          loading={drawerLoading}
-          onClose={handleCloseDrawer}
-        />
+        <CustomerDrawer customer={customerDetails} loading={drawerLoading} onClose={handleCloseDrawer} />
       )}
     </div>
   );

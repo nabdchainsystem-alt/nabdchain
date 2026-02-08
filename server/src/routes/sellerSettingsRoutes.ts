@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { sellerService } from '../services/sellerService';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/profile', requireAuth, async (req: Request, res: Response) => {
     const profile = await sellerService.getSellerProfile(userId);
     res.json(profile);
   } catch (error) {
-    console.error('Error getting seller profile:', error);
+    apiLogger.error('Error getting seller profile:', error);
     res.status(500).json({ error: 'Failed to get seller profile' });
   }
 });
@@ -40,7 +41,7 @@ router.post('/profile', requireAuth, async (req: Request, res: Response) => {
 
     res.json(profile);
   } catch (error: any) {
-    console.error('Error updating seller profile:', error);
+    apiLogger.error('Error updating seller profile:', error);
     if (error.message === 'Slug already in use') {
       return res.status(400).json({ error: 'This username is already taken' });
     }
@@ -70,7 +71,7 @@ router.put('/profile', requireAuth, async (req: Request, res: Response) => {
 
     res.json(profile);
   } catch (error: any) {
-    console.error('Error updating seller profile:', error);
+    apiLogger.error('Error updating seller profile:', error);
     if (error.message === 'Slug already in use') {
       return res.status(400).json({ error: 'This username is already taken' });
     }
@@ -101,7 +102,7 @@ router.post('/company', requireAuth, async (req: Request, res: Response) => {
 
     res.json(company);
   } catch (error) {
-    console.error('Error updating company info:', error);
+    apiLogger.error('Error updating company info:', error);
     res.status(500).json({ error: 'Failed to update company information' });
   }
 });
@@ -129,7 +130,7 @@ router.put('/company', requireAuth, async (req: Request, res: Response) => {
 
     res.json(company);
   } catch (error) {
-    console.error('Error updating company info:', error);
+    apiLogger.error('Error updating company info:', error);
     res.status(500).json({ error: 'Failed to update company information' });
   }
 });
@@ -158,7 +159,7 @@ router.post('/address', requireAuth, async (req: Request, res: Response) => {
 
     res.json(address);
   } catch (error) {
-    console.error('Error updating address:', error);
+    apiLogger.error('Error updating address:', error);
     res.status(500).json({ error: 'Failed to update address' });
   }
 });
@@ -187,7 +188,7 @@ router.put('/address', requireAuth, async (req: Request, res: Response) => {
 
     res.json(address);
   } catch (error) {
-    console.error('Error updating address:', error);
+    apiLogger.error('Error updating address:', error);
     res.status(500).json({ error: 'Failed to update address' });
   }
 });
@@ -219,7 +220,7 @@ router.post('/bank', requireAuth, async (req: Request, res: Response) => {
 
     res.json(bank);
   } catch (error) {
-    console.error('Error updating bank info:', error);
+    apiLogger.error('Error updating bank info:', error);
     res.status(500).json({ error: 'Failed to update bank information' });
   }
 });
@@ -246,7 +247,7 @@ router.put('/bank', requireAuth, async (req: Request, res: Response) => {
 
     res.json(bank);
   } catch (error) {
-    console.error('Error updating bank info:', error);
+    apiLogger.error('Error updating bank info:', error);
     res.status(500).json({ error: 'Failed to update bank information' });
   }
 });
@@ -272,7 +273,7 @@ router.post('/contact', requireAuth, async (req: Request, res: Response) => {
 
     res.json(contact);
   } catch (error) {
-    console.error('Error updating contact info:', error);
+    apiLogger.error('Error updating contact info:', error);
     res.status(500).json({ error: 'Failed to update contact information' });
   }
 });
@@ -298,7 +299,7 @@ router.put('/contact', requireAuth, async (req: Request, res: Response) => {
 
     res.json(contact);
   } catch (error) {
-    console.error('Error updating contact info:', error);
+    apiLogger.error('Error updating contact info:', error);
     res.status(500).json({ error: 'Failed to update contact information' });
   }
 });
@@ -326,7 +327,7 @@ router.post('/documents/upload', requireAuth, async (req: Request, res: Response
 
     res.json(document);
   } catch (error) {
-    console.error('Error uploading document:', error);
+    apiLogger.error('Error uploading document:', error);
     res.status(500).json({ error: 'Failed to upload document' });
   }
 });
@@ -340,7 +341,7 @@ router.get('/documents', requireAuth, async (req: Request, res: Response) => {
     const documents = await sellerService.getDocuments(userId);
     res.json(documents);
   } catch (error) {
-    console.error('Error getting documents:', error);
+    apiLogger.error('Error getting documents:', error);
     res.status(500).json({ error: 'Failed to get documents' });
   }
 });
@@ -354,7 +355,7 @@ router.get('/documents/status', requireAuth, async (req: Request, res: Response)
     const status = await sellerService.getVerificationStatus(userId);
     res.json(status);
   } catch (error) {
-    console.error('Error getting verification status:', error);
+    apiLogger.error('Error getting verification status:', error);
     res.status(500).json({ error: 'Failed to get verification status' });
   }
 });
@@ -368,7 +369,7 @@ router.get('/verification-status', requireAuth, async (req: Request, res: Respon
     const status = await sellerService.getVerificationStatus(userId);
     res.json(status);
   } catch (error) {
-    console.error('Error getting verification status:', error);
+    apiLogger.error('Error getting verification status:', error);
     res.status(500).json({ error: 'Failed to get verification status' });
   }
 });
@@ -379,11 +380,11 @@ router.get('/verification-status', requireAuth, async (req: Request, res: Respon
 router.get('/check-slug/:slug', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
     const result = await sellerService.checkSlugAvailability(slug, userId);
     res.json(result);
   } catch (error) {
-    console.error('Error checking slug:', error);
+    apiLogger.error('Error checking slug:', error);
     res.status(500).json({ error: 'Failed to check slug availability' });
   }
 });

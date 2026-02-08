@@ -14,13 +14,7 @@ interface TimerProps {
   boardId?: string;
 }
 
-export const Timer: React.FC<TimerProps> = ({
-  onStart,
-  onStop,
-  onPause,
-  taskId,
-  boardId,
-}) => {
+export const Timer: React.FC<TimerProps> = ({ onStart, onStop, onPause, _taskId, _boardId }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);

@@ -12,7 +12,6 @@ import {
   UpdateOrderData,
   ShipOrderData,
   OrderStatus,
-  FulfillmentStatus,
   BuyerDashboardSummary,
 } from '../types/order.types';
 
@@ -20,7 +19,7 @@ import {
 // Types
 // =============================================================================
 
-interface PaginatedResponse<T> {
+interface _PaginatedResponse<T> {
   orders: T[];
   pagination: {
     page: number;
@@ -121,11 +120,7 @@ export const orderService = {
   /**
    * Update order status (seller)
    */
-  async updateOrderStatus(
-    token: string,
-    orderId: string,
-    status: OrderStatus
-  ): Promise<Order> {
+  async updateOrderStatus(token: string, orderId: string, status: OrderStatus): Promise<Order> {
     const response = await fetch(`${API_URL}/orders/seller/${orderId}/status`, {
       method: 'POST',
       headers: {
@@ -146,11 +141,7 @@ export const orderService = {
   /**
    * Update order details (seller)
    */
-  async updateOrder(
-    token: string,
-    orderId: string,
-    data: UpdateOrderData
-  ): Promise<Order> {
+  async updateOrder(token: string, orderId: string, data: UpdateOrderData): Promise<Order> {
     const response = await fetch(`${API_URL}/orders/seller/${orderId}`, {
       method: 'PUT',
       headers: {

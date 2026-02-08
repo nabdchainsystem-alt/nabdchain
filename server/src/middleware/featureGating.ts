@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { featureGatingService, GatedAction, FeatureGatingError } from '../services/featureGatingService';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -13,7 +14,7 @@ import { featureGatingService, GatedAction, FeatureGatingError } from '../servic
 export interface GatedRequest extends Request {
   sellerContext?: {
     userId: string;
-    sellerId: string;
+    sellerId?: string;
     status: string;
     canPublish: boolean;
     profileComplete: boolean;
@@ -93,7 +94,7 @@ export function requireSellerAccess(action: GatedAction) {
       }
 
       // Unknown error
-      console.error('Feature gating middleware error:', error);
+      apiLogger.error('Feature gating middleware error:', error);
       return res.status(500).json({
         success: false,
         error: {
@@ -127,7 +128,7 @@ export function loadSellerContext() {
       next();
     } catch (error) {
       // Don't block on error, just continue without context
-      console.error('Failed to load seller context:', error);
+      apiLogger.error('Failed to load seller context:', error);
       next();
     }
   };

@@ -26,16 +26,13 @@ import {
   ArrowsClockwise,
   Spinner,
   ShieldWarning,
-  ArrowUp,
-  ChatCircle,
   User,
-  Scales,
   PaperPlaneTilt,
   Coins,
   XCircle,
 } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
-import { Button, EmptyState, Select, SkeletonTableRow } from '../../components';
+import { EmptyState, Select, SkeletonTableRow } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { disputeService } from '../../services/disputeService';
 import {
@@ -127,7 +124,7 @@ const DeadlineBadge: React.FC<{ deadline: string | undefined; status: string }> 
   );
 };
 
-export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
+export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
   const { styles, direction } = usePortal();
   const { getToken } = useAuth();
 
@@ -200,9 +197,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
 
       const updated = await disputeService.markAsUnderReview(token, dispute.id);
 
-      setDisputes(prev =>
-        prev.map(d => (d.id === dispute.id ? { ...d, ...updated } : d))
-      );
+      setDisputes((prev) => prev.map((d) => (d.id === dispute.id ? { ...d, ...updated } : d)));
       if (selectedDispute?.id === dispute.id) {
         setSelectedDispute({ ...selectedDispute, ...updated });
       }
@@ -238,12 +233,11 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
         responseType,
         response: responseText,
         proposedResolution: responseType === 'propose_resolution' ? proposedResolution : undefined,
-        proposedAmount: responseType === 'propose_resolution' && proposedAmount ? parseFloat(proposedAmount) : undefined,
+        proposedAmount:
+          responseType === 'propose_resolution' && proposedAmount ? parseFloat(proposedAmount) : undefined,
       });
 
-      setDisputes(prev =>
-        prev.map(d => (d.id === selectedDispute.id ? { ...d, ...updated } : d))
-      );
+      setDisputes((prev) => prev.map((d) => (d.id === selectedDispute.id ? { ...d, ...updated } : d)));
       setShowResponseModal(false);
       setShowDetailModal(false);
       setSelectedDispute(null);
@@ -257,7 +251,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return disputes.filter(dispute => {
+    return disputes.filter((dispute) => {
       if (statusFilter !== 'all' && dispute.status !== statusFilter) return false;
       return true;
     });
@@ -271,7 +265,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
     () => [
       columnHelper.accessor('disputeNumber', {
         header: 'Dispute #',
-        cell: info => (
+        cell: (info) => (
           <div>
             <span className="font-mono text-xs" style={{ color: styles.textPrimary }}>
               {info.getValue()}
@@ -284,7 +278,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
       }),
       columnHelper.accessor('buyerName', {
         header: 'Buyer',
-        cell: info => (
+        cell: (info) => (
           <div className="flex items-center gap-2">
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center"
@@ -300,7 +294,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
       }),
       columnHelper.accessor('itemName', {
         header: 'Item',
-        cell: info => {
+        cell: (info) => {
           const dispute = info.row.original;
           const reasonLabel = getDisputeReasonLabel(dispute.reason as DisputeReason);
           return (
@@ -317,7 +311,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
       }),
       columnHelper.accessor('totalPrice', {
         header: 'Value',
-        cell: info => (
+        cell: (info) => (
           <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
             {formatCurrency(info.getValue(), info.row.original.currency)}
           </span>
@@ -325,7 +319,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
       }),
       columnHelper.accessor('status', {
         header: 'Status',
-        cell: info => (
+        cell: (info) => (
           <div className="flex flex-col gap-1">
             <StatusBadge status={info.getValue() as DisputeStatus} />
             <PriorityBadge priority={info.row.original.priorityLevel as PriorityLevel} />
@@ -334,14 +328,12 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
       }),
       columnHelper.accessor('responseDeadline', {
         header: 'Response Due',
-        cell: info => (
-          <DeadlineBadge deadline={info.getValue()} status={info.row.original.status} />
-        ),
+        cell: (info) => <DeadlineBadge deadline={info.getValue()} status={info.row.original.status} />,
       }),
       columnHelper.display({
         id: 'actions',
         header: () => <span className="w-full text-center block">Actions</span>,
-        cell: info => {
+        cell: (info) => {
           const dispute = info.row.original;
           const canRespond = canSellerRespond(dispute.status as DisputeStatus);
           const isOpen = dispute.status === 'open';
@@ -350,7 +342,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-center gap-1">
               {isOpen && (
                 <button
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     handleMarkUnderReview(dispute);
                   }}
@@ -362,7 +354,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
               )}
               {canRespond && (
                 <button
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     openResponseModal(dispute);
                   }}
@@ -373,14 +365,14 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
                 </button>
               )}
               <button
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   openDetail(dispute);
                 }}
                 className="p-1.5 rounded-md transition-colors"
                 style={{ color: styles.textMuted }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 title="View Details"
               >
                 <Eye size={16} />
@@ -390,7 +382,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
         },
       }),
     ],
-    [columnHelper, styles, openDetail, openResponseModal, handleMarkUnderReview]
+    [columnHelper, styles, openDetail, openResponseModal, handleMarkUnderReview],
   );
 
   // Table instance
@@ -415,9 +407,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
   const hasActiveFilters = statusFilter !== 'all' || globalFilter;
 
   // Count of disputes needing response
-  const needsResponseCount = disputes.filter(d =>
-    ['open', 'under_review'].includes(d.status)
-  ).length;
+  const needsResponseCount = disputes.filter((d) => ['open', 'under_review'].includes(d.status)).length;
 
   return (
     <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
@@ -454,7 +444,10 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
                 <div key={i} className="flex items-center gap-2">
                   <div className="shimmer w-3 h-3 rounded" style={{ animationDelay: `${i * 40}ms` }} />
                   <div className="shimmer h-4 w-12 rounded" style={{ animationDelay: `${i * 40}ms` }} />
-                  <div className="shimmer h-5 w-6 rounded font-semibold" style={{ animationDelay: `${i * 40 + 20}ms` }} />
+                  <div
+                    className="shimmer h-5 w-6 rounded font-semibold"
+                    style={{ animationDelay: `${i * 40 + 20}ms` }}
+                  />
                 </div>
               ))}
             </div>
@@ -501,7 +494,9 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
           <>
             {/* Quick Stats */}
             {stats && (
-              <div className={`flex items-center gap-6 mb-6 flex-wrap ${direction === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
+              <div
+                className={`flex items-center gap-6 mb-6 flex-wrap ${direction === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}
+              >
                 <QuickStat label="New" value={stats.open} color="#f59e0b" styles={styles} warning={stats.open > 0} />
                 <QuickStat label="Under Review" value={stats.underReview} color={styles.info} styles={styles} />
                 <QuickStat label="Awaiting Buyer" value={stats.sellerResponded} color="#8b5cf6" styles={styles} />
@@ -524,7 +519,10 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
               style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
             >
               {/* Filter Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
+              <div
+                className="flex items-center justify-between px-4 py-3 border-b"
+                style={{ borderColor: styles.border }}
+              >
                 <button
                   onClick={() => setFiltersExpanded(!filtersExpanded)}
                   className="flex items-center gap-2 text-sm font-medium"
@@ -612,15 +610,12 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
               />
             ) : (
               <div>
-                <div
-                  className="overflow-hidden rounded-lg border"
-                  style={{ borderColor: styles.border }}
-                >
+                <div className="overflow-hidden rounded-lg border" style={{ borderColor: styles.border }}>
                   <table className="min-w-full">
                     <thead style={{ backgroundColor: styles.bgSecondary }}>
-                      {table.getHeaderGroups().map(headerGroup => (
+                      {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
-                          {headerGroup.headers.map(header => (
+                          {headerGroup.headers.map((header) => (
                             <th
                               key={header.id}
                               className="px-4 py-3 text-xs font-semibold cursor-pointer select-none"
@@ -653,14 +648,10 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
                             borderTop: idx > 0 ? `1px solid ${styles.border}` : undefined,
                           }}
                           onClick={() => openDetail(row.original)}
-                          onMouseEnter={e =>
-                            (e.currentTarget.style.backgroundColor = styles.bgHover)
-                          }
-                          onMouseLeave={e =>
-                            (e.currentTarget.style.backgroundColor = 'transparent')
-                          }
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          {row.getVisibleCells().map(cell => (
+                          {row.getVisibleCells().map((cell) => (
                             <td key={cell.id} className="px-4 py-3">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </td>
@@ -677,14 +668,10 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ onNavigate }) => {
                   style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
                 >
                   <div className="text-sm" style={{ color: styles.textMuted }}>
-                    Showing{' '}
-                    {table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
-                      1}
-                    -
+                    Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
                     {Math.min(
-                      (table.getState().pagination.pageIndex + 1) *
-                        table.getState().pagination.pageSize,
-                      filteredData.length
+                      (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                      filteredData.length,
                     )}{' '}
                     of {filteredData.length}
                   </div>
@@ -773,7 +760,7 @@ const SellerDisputeDetailModal: React.FC<{
   const [timeline, setTimeline] = useState<DisputeEvent[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
 
-  const statusConfig = getDisputeStatusConfig(dispute.status as DisputeStatus);
+  const _statusConfig = getDisputeStatusConfig(dispute.status as DisputeStatus);
   const reasonLabel = getDisputeReasonLabel(dispute.reason as DisputeReason);
   const canRespond = canSellerRespond(dispute.status as DisputeStatus);
   const isOpen = dispute.status === 'open';
@@ -812,10 +799,7 @@ const SellerDisputeDetailModal: React.FC<{
         style={{ backgroundColor: styles.bgCard }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: styles.border }}>
           <div>
             <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
               {dispute.disputeNumber}
@@ -830,8 +814,8 @@ const SellerDisputeDetailModal: React.FC<{
             onClick={onClose}
             className="p-2 rounded-lg transition-colors"
             style={{ color: styles.textMuted }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <X size={20} />
           </button>
@@ -839,7 +823,7 @@ const SellerDisputeDetailModal: React.FC<{
 
         {/* Tabs */}
         <div className="flex border-b" style={{ borderColor: styles.border }}>
-          {tabs.map(tab => {
+          {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -853,10 +837,7 @@ const SellerDisputeDetailModal: React.FC<{
                 <tab.icon size={16} />
                 {tab.label}
                 {isActive && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-0.5"
-                    style={{ backgroundColor: styles.info }}
-                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: styles.info }} />
                 )}
               </button>
             );
@@ -1006,12 +987,7 @@ const SellerDisputeDetailModal: React.FC<{
                           >
                             <FileText size={14} weight="fill" />
                           </div>
-                          {!isLast && (
-                            <div
-                              className="w-0.5 flex-1 mt-1"
-                              style={{ backgroundColor: styles.border }}
-                            />
-                          )}
+                          {!isLast && <div className="w-0.5 flex-1 mt-1" style={{ backgroundColor: styles.border }} />}
                         </div>
                         <div className="flex-1 pt-1">
                           <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
@@ -1119,7 +1095,7 @@ const ResponseModal: React.FC<{
     {
       id: 'accept_responsibility' as SellerResponseType,
       label: 'Accept Responsibility',
-      description: 'Accept the buyer\'s claim and offer resolution',
+      description: "Accept the buyer's claim and offer resolution",
       icon: CheckCircle,
       color: styles.success,
     },
@@ -1133,7 +1109,7 @@ const ResponseModal: React.FC<{
     {
       id: 'reject' as SellerResponseType,
       label: 'Reject Claim',
-      description: 'Dispute the buyer\'s claim with explanation',
+      description: "Dispute the buyer's claim with explanation",
       icon: XCircle,
       color: styles.error,
     },
@@ -1164,7 +1140,7 @@ const ResponseModal: React.FC<{
               Response Type
             </label>
             <div className="space-y-2">
-              {responseTypes.map(type => {
+              {responseTypes.map((type) => {
                 const isSelected = responseType === type.id;
                 return (
                   <button
@@ -1205,7 +1181,7 @@ const ResponseModal: React.FC<{
             </label>
             <textarea
               value={responseText}
-              onChange={e => onResponseTextChange(e.target.value)}
+              onChange={(e) => onResponseTextChange(e.target.value)}
               placeholder="Explain your response to the buyer's dispute..."
               rows={4}
               className="w-full px-3 py-2 rounded-lg border text-sm resize-none outline-none"
@@ -1227,7 +1203,7 @@ const ResponseModal: React.FC<{
                 <input
                   type="text"
                   value={proposedResolution}
-                  onChange={e => onProposedResolutionChange(e.target.value)}
+                  onChange={(e) => onProposedResolutionChange(e.target.value)}
                   placeholder="e.g., Partial refund, Replacement, Store credit..."
                   className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
                   style={{
@@ -1248,7 +1224,7 @@ const ResponseModal: React.FC<{
                   <input
                     type="number"
                     value={proposedAmount}
-                    onChange={e => onProposedAmountChange(e.target.value)}
+                    onChange={(e) => onProposedAmountChange(e.target.value)}
                     placeholder="0.00"
                     className="flex-1 px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{
@@ -1264,10 +1240,7 @@ const ResponseModal: React.FC<{
 
           {/* Error */}
           {error && (
-            <div
-              className="flex items-center gap-2 p-3 rounded-lg"
-              style={{ backgroundColor: `${styles.error}15` }}
-            >
+            <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: `${styles.error}15` }}>
               <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
               <span className="text-sm" style={{ color: styles.error }}>
                 {error}
@@ -1277,10 +1250,7 @@ const ResponseModal: React.FC<{
         </div>
 
         {/* Footer */}
-        <div
-          className="flex items-center justify-end gap-2 p-4 border-t"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center justify-end gap-2 p-4 border-t" style={{ borderColor: styles.border }}>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-medium"
@@ -1294,11 +1264,7 @@ const ResponseModal: React.FC<{
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             style={{ backgroundColor: styles.success, color: '#fff' }}
           >
-            {isSubmitting ? (
-              <Spinner size={16} className="animate-spin" />
-            ) : (
-              <PaperPlaneTilt size={16} />
-            )}
+            {isSubmitting ? <Spinner size={16} className="animate-spin" /> : <PaperPlaneTilt size={16} />}
             Submit Response
           </button>
         </div>
@@ -1316,7 +1282,9 @@ const QuickStat: React.FC<{
   warning?: boolean;
 }> = ({ label, value, color, styles, warning }) => (
   <div className="flex items-center gap-2">
-    <span className="text-sm" style={{ color: styles.textMuted }}>{label}:</span>
+    <span className="text-sm" style={{ color: styles.textMuted }}>
+      {label}:
+    </span>
     <span
       className={`text-sm font-semibold ${warning ? 'flex items-center gap-1' : ''}`}
       style={{ color: color || styles.textPrimary }}

@@ -4,6 +4,7 @@
 
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -69,311 +70,15 @@ export interface MarketplaceFilters {
   sortBy?: 'price_asc' | 'price_desc' | 'newest' | 'popular';
   page?: number;
   limit?: number;
+  inStockOnly?: boolean;
 }
 
 // =============================================================================
-// Mock Data
+// Empty State Constants (No mock data - production mode)
 // =============================================================================
 
-const MOCK_ITEMS = [
-  {
-    id: 'mock-item-1',
-    userId: 'seller-1',
-    name: 'Industrial Hydraulic Pump',
-    nameAr: 'مضخة هيدروليكية صناعية',
-    sku: 'HYD-PUMP-001',
-    partNumber: 'HP-2500-A',
-    description: 'High-performance hydraulic pump for industrial applications',
-    descriptionAr: 'مضخة هيدروليكية عالية الأداء للتطبيقات الصناعية',
-    itemType: 'part',
-    category: 'Hydraulics',
-    subcategory: 'Pumps',
-    visibility: 'public',
-    status: 'active',
-    price: 2500,
-    currency: 'SAR',
-    priceUnit: 'unit',
-    stock: 45,
-    minOrderQty: 1,
-    maxOrderQty: 100,
-    leadTimeDays: 3,
-    manufacturer: 'HydroTech',
-    brand: 'HydroTech Pro',
-    origin: 'Germany',
-    specifications: JSON.stringify({ power: '15KW', pressure: '350bar', flow: '100L/min' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/pump1.jpg']),
-    documents: null,
-    totalQuotes: 12,
-    successfulOrders: 8,
-    publishedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-2',
-    userId: 'seller-1',
-    name: 'Steel Bearings Set',
-    nameAr: 'طقم محامل فولاذية',
-    sku: 'BRG-STL-100',
-    partNumber: 'SB-6205-2RS',
-    description: 'Premium quality steel ball bearings, sealed',
-    descriptionAr: 'محامل كروية فولاذية عالية الجودة، مغلقة',
-    itemType: 'part',
-    category: 'Bearings',
-    subcategory: 'Ball Bearings',
-    visibility: 'public',
-    status: 'active',
-    price: 45,
-    currency: 'SAR',
-    priceUnit: 'set',
-    stock: 500,
-    minOrderQty: 10,
-    maxOrderQty: 1000,
-    leadTimeDays: 1,
-    manufacturer: 'SKF',
-    brand: 'SKF',
-    origin: 'Sweden',
-    specifications: JSON.stringify({ innerDiameter: '25mm', outerDiameter: '52mm', width: '15mm' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/bearing1.jpg']),
-    documents: null,
-    totalQuotes: 45,
-    successfulOrders: 32,
-    publishedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-3',
-    userId: 'seller-1',
-    name: 'Air Compressor Unit',
-    nameAr: 'وحدة ضاغط هواء',
-    sku: 'CMP-AIR-500',
-    partNumber: 'AC-500-3P',
-    description: 'Industrial 3-phase air compressor, 500L tank',
-    descriptionAr: 'ضاغط هواء صناعي ثلاثي الطور، خزان 500 لتر',
-    itemType: 'part',
-    category: 'Compressors',
-    subcategory: 'Air Compressors',
-    visibility: 'public',
-    status: 'active',
-    price: 8500,
-    currency: 'SAR',
-    priceUnit: 'unit',
-    stock: 12,
-    minOrderQty: 1,
-    maxOrderQty: 10,
-    leadTimeDays: 7,
-    manufacturer: 'Atlas Copco',
-    brand: 'Atlas Copco',
-    origin: 'Belgium',
-    specifications: JSON.stringify({ tankSize: '500L', pressure: '10bar', power: '7.5KW' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/compressor1.jpg']),
-    documents: null,
-    totalQuotes: 8,
-    successfulOrders: 5,
-    publishedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-4',
-    userId: 'seller-1',
-    name: 'Electric Motor 15KW',
-    nameAr: 'محرك كهربائي 15 كيلوواط',
-    sku: 'MTR-ELC-15K',
-    partNumber: 'EM-15K-4P',
-    description: '15KW 4-pole electric motor, IE3 efficiency',
-    descriptionAr: 'محرك كهربائي 15 كيلوواط، 4 أقطاب، كفاءة IE3',
-    itemType: 'part',
-    category: 'Motors',
-    subcategory: 'Electric Motors',
-    visibility: 'public',
-    status: 'active',
-    price: 3200,
-    currency: 'SAR',
-    priceUnit: 'unit',
-    stock: 25,
-    minOrderQty: 1,
-    maxOrderQty: 50,
-    leadTimeDays: 5,
-    manufacturer: 'Siemens',
-    brand: 'Siemens',
-    origin: 'Germany',
-    specifications: JSON.stringify({ power: '15KW', poles: 4, efficiency: 'IE3', voltage: '380V' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/motor1.jpg']),
-    documents: null,
-    totalQuotes: 15,
-    successfulOrders: 10,
-    publishedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-5',
-    userId: 'seller-1',
-    name: 'Valve Assembly Kit',
-    nameAr: 'طقم تجميع الصمامات',
-    sku: 'VLV-KIT-200',
-    partNumber: 'VAK-200-SS',
-    description: 'Complete valve assembly kit, stainless steel',
-    descriptionAr: 'طقم تجميع صمامات كامل، فولاذ مقاوم للصدأ',
-    itemType: 'part',
-    category: 'Valves',
-    subcategory: 'Assembly Kits',
-    visibility: 'public',
-    status: 'active',
-    price: 180,
-    currency: 'SAR',
-    priceUnit: 'kit',
-    stock: 150,
-    minOrderQty: 5,
-    maxOrderQty: 500,
-    leadTimeDays: 2,
-    manufacturer: 'FlowControl',
-    brand: 'FlowControl',
-    origin: 'Italy',
-    specifications: JSON.stringify({ material: 'SS316', size: '2 inch', pressure: '16bar' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/valve1.jpg']),
-    documents: null,
-    totalQuotes: 28,
-    successfulOrders: 20,
-    publishedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 70 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-6',
-    userId: 'seller-1',
-    name: 'Industrial Lubricant',
-    nameAr: 'زيت تشحيم صناعي',
-    sku: 'LUB-IND-20L',
-    partNumber: 'IL-20L-HD',
-    description: 'Heavy-duty industrial lubricant, 20L drum',
-    descriptionAr: 'زيت تشحيم صناعي للخدمة الشاقة، برميل 20 لتر',
-    itemType: 'consumable',
-    category: 'Lubricants',
-    subcategory: 'Industrial Oils',
-    visibility: 'public',
-    status: 'active',
-    price: 320,
-    currency: 'SAR',
-    priceUnit: 'drum',
-    stock: 80,
-    minOrderQty: 1,
-    maxOrderQty: 100,
-    leadTimeDays: 1,
-    manufacturer: 'Shell',
-    brand: 'Shell Tellus',
-    origin: 'Netherlands',
-    specifications: JSON.stringify({ viscosity: 'ISO 46', volume: '20L', type: 'Hydraulic Oil' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/lubricant1.jpg']),
-    documents: null,
-    totalQuotes: 35,
-    successfulOrders: 28,
-    publishedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 80 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-7',
-    userId: 'seller-1',
-    name: 'Conveyor Belt Section',
-    nameAr: 'قسم سير ناقل',
-    sku: 'CNV-BLT-5M',
-    partNumber: 'CB-5M-600W',
-    description: 'Heavy-duty conveyor belt, 5m length, 600mm width',
-    descriptionAr: 'سير ناقل للخدمة الشاقة، طول 5 متر، عرض 600 مم',
-    itemType: 'part',
-    category: 'Conveyors',
-    subcategory: 'Belts',
-    visibility: 'public',
-    status: 'low_stock',
-    price: 1200,
-    currency: 'SAR',
-    priceUnit: 'section',
-    stock: 8,
-    minOrderQty: 1,
-    maxOrderQty: 20,
-    leadTimeDays: 10,
-    manufacturer: 'Continental',
-    brand: 'ContiTech',
-    origin: 'Germany',
-    specifications: JSON.stringify({ length: '5m', width: '600mm', plies: 3, tensileStrength: '500N/mm' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/belt1.jpg']),
-    documents: null,
-    totalQuotes: 6,
-    successfulOrders: 4,
-    publishedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'mock-item-8',
-    userId: 'seller-1',
-    name: 'PLC Controller Module',
-    nameAr: 'وحدة تحكم PLC',
-    sku: 'PLC-CTR-S7',
-    partNumber: 'S7-1200-CPU',
-    description: 'Siemens S7-1200 PLC CPU module',
-    descriptionAr: 'وحدة معالج PLC من سيمنز S7-1200',
-    itemType: 'part',
-    category: 'Automation',
-    subcategory: 'PLCs',
-    visibility: 'rfq_only',
-    status: 'active',
-    price: 4500,
-    currency: 'SAR',
-    priceUnit: 'unit',
-    stock: 15,
-    minOrderQty: 1,
-    maxOrderQty: 10,
-    leadTimeDays: 14,
-    manufacturer: 'Siemens',
-    brand: 'Siemens',
-    origin: 'Germany',
-    specifications: JSON.stringify({ model: 'S7-1200', io: '14DI/10DO', memory: '100KB' }),
-    compatibility: null,
-    packaging: null,
-    images: JSON.stringify(['https://placeholder.com/plc1.jpg']),
-    documents: null,
-    totalQuotes: 10,
-    successfulOrders: 6,
-    publishedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    archivedAt: null,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const MOCK_SELLER_STATS = {
-  totalItems: 156,
-  activeItems: 142,
-  draftItems: 8,
-  outOfStockItems: 6,
-  totalQuotes: 248,
-  successfulOrders: 187,
-};
+// NOTE: Mock data removed - see MOCK_REMOVAL_REPORT.md
+// All data must come from database. Frontend handles empty states gracefully.
 
 // =============================================================================
 // Business Logic Helpers
@@ -451,7 +156,7 @@ export const itemService = {
       if (filters.status) where.status = filters.status;
       if (filters.visibility) where.visibility = filters.visibility;
       if (filters.itemType) where.itemType = filters.itemType;
-      if (filters.category) where.category = filters.category;
+      if (filters.category) where.category = { equals: filters.category, mode: 'insensitive' };
       if (filters.inStock) where.stock = { gt: 0 };
 
       if (filters.search) {
@@ -478,7 +183,7 @@ export const itemService = {
       // Return actual data (empty array if no items - production mode)
       return items;
     } catch (error) {
-      console.error('Error fetching seller items:', error);
+      apiLogger.error('Error fetching seller items:', error);
       return []; // Return empty array on error - frontend handles empty state
     }
   },
@@ -496,7 +201,8 @@ export const itemService = {
    * Create new item
    */
   async createItem(userId: string, data: CreateItemInput) {
-    const status = determineStatus(data.status, data.stock || 0);
+    const stock = data.stock ?? 0;
+    const status = determineStatus(data.status, stock);
 
     return prisma.item.create({
       data: {
@@ -507,16 +213,16 @@ export const itemService = {
         partNumber: data.partNumber,
         description: data.description,
         descriptionAr: data.descriptionAr,
-        itemType: data.itemType || 'part',
+        itemType: data.itemType ?? 'part',
         category: data.category,
         subcategory: data.subcategory,
-        visibility: data.visibility || 'public',
+        visibility: data.visibility ?? 'public',
         status,
         price: data.price,
-        currency: data.currency || 'SAR',
+        currency: data.currency ?? 'SAR',
         priceUnit: data.priceUnit,
-        stock: data.stock || 0,
-        minOrderQty: data.minOrderQty || 1,
+        stock,
+        minOrderQty: data.minOrderQty ?? 1,
         maxOrderQty: data.maxOrderQty,
         leadTimeDays: data.leadTimeDays,
         manufacturer: data.manufacturer,
@@ -543,8 +249,20 @@ export const itemService = {
     if (!existing) return null;
 
     const newStock = data.stock !== undefined ? data.stock : existing.stock;
+
+    // Auto-activate when making a draft item public
+    let requestedStatus = data.status as ItemStatus | undefined;
+    if (
+      data.visibility === 'public' &&
+      existing.visibility === 'hidden' &&
+      existing.status === 'draft' &&
+      !requestedStatus
+    ) {
+      requestedStatus = 'active';
+    }
+
     const status = determineStatus(
-      data.status as ItemStatus | undefined,
+      requestedStatus,
       newStock,
       existing.status as ItemStatus
     );
@@ -654,6 +372,28 @@ export const itemService = {
    * Bulk update item visibility
    */
   async bulkUpdateVisibility(userId: string, itemIds: string[], visibility: ItemVisibility) {
+    if (visibility === 'public') {
+      // Auto-activate draft items when making them public
+      await prisma.item.updateMany({
+        where: {
+          id: { in: itemIds },
+          userId,
+          status: 'draft',
+          visibility: 'hidden',
+        },
+        data: { visibility, status: 'active', publishedAt: new Date() },
+      });
+      // Update remaining items (non-draft) visibility only
+      return prisma.item.updateMany({
+        where: {
+          id: { in: itemIds },
+          userId,
+          status: { not: 'draft' },
+        },
+        data: { visibility },
+      });
+    }
+
     return prisma.item.updateMany({
       where: {
         id: { in: itemIds },
@@ -673,16 +413,22 @@ export const itemService = {
    */
   async getMarketplaceItems(filters: MarketplaceFilters = {}) {
     try {
-      const { page = 1, limit = 20, sortBy = 'newest' } = filters;
+      const { page = 1, limit = 20, sortBy = 'newest', inStockOnly } = filters;
       const skip = (page - 1) * limit;
 
       const where: Prisma.ItemWhereInput = {
-        status: 'active',
+        // Show active and out_of_stock items (not draft or archived)
+        status: { in: ['active', 'out_of_stock'] },
         visibility: { not: 'hidden' },
       };
 
-      if (filters.category) where.category = filters.category;
-      if (filters.subcategory) where.subcategory = filters.subcategory;
+      // If inStockOnly filter is true, only show items with stock > 0
+      if (inStockOnly) {
+        where.stock = { gt: 0 };
+      }
+
+      if (filters.category) where.category = { equals: filters.category, mode: 'insensitive' };
+      if (filters.subcategory) where.subcategory = { equals: filters.subcategory, mode: 'insensitive' };
       if (filters.itemType) where.itemType = filters.itemType;
       if (filters.manufacturer) where.manufacturer = filters.manufacturer;
       if (filters.brand) where.brand = filters.brand;
@@ -741,24 +487,7 @@ export const itemService = {
         prisma.item.count({ where }),
       ]);
 
-      // Return mock data if database is empty (demo mode)
-      if (items.length === 0) {
-        console.log('Database empty, using mock data for marketplace items');
-        const activeItems = MOCK_ITEMS.filter(i => i.status === 'active' && i.visibility !== 'hidden');
-        return {
-          items: activeItems.map(item => ({
-            ...item,
-            user: { id: item.userId, name: 'Demo Seller', avatarUrl: null },
-          })),
-          pagination: {
-            page,
-            limit,
-            total: activeItems.length,
-            totalPages: Math.ceil(activeItems.length / limit),
-          },
-        };
-      }
-
+      // Return actual data - frontend handles empty states gracefully
       return {
         items,
         pagination: {
@@ -769,19 +498,16 @@ export const itemService = {
         },
       };
     } catch (error) {
-      console.log('Using mock data for marketplace items:', error);
+      apiLogger.error('[ItemService] Error fetching marketplace items:', error);
+      // Return empty results on error - frontend handles empty states
       const { page = 1, limit = 20 } = filters;
-      const activeItems = MOCK_ITEMS.filter(i => i.status === 'active' && i.visibility !== 'hidden');
       return {
-        items: activeItems.map(item => ({
-          ...item,
-          user: { id: item.userId, name: 'Demo Seller', avatarUrl: null },
-        })),
+        items: [],
         pagination: {
           page,
           limit,
-          total: activeItems.length,
-          totalPages: Math.ceil(activeItems.length / limit),
+          total: 0,
+          totalPages: 0,
         },
       };
     }
@@ -825,39 +551,82 @@ export const itemService = {
    */
   async createRFQ(
     buyerId: string,
-    itemId: string,
-    data: { quantity: number; message?: string }
-  ) {
-    const item = await prisma.item.findFirst({
-      where: {
-        id: itemId,
-        status: 'active',
-        visibility: { not: 'hidden' },
-      },
-    });
-
-    if (!item) {
-      throw new Error('Item not found or not available');
+    data: {
+      itemId?: string | null;
+      sellerId?: string | null;
+      quantity: number;
+      deliveryLocation?: string;
+      deliveryCity?: string;
+      deliveryCountry?: string;
+      requiredDeliveryDate?: Date;
+      message?: string;
+      priority?: string;
+      source?: string;
     }
+  ) {
+    let sellerId = data.sellerId;
+    let itemId = data.itemId;
+
+    // If itemId provided, get item info and seller
+    if (itemId) {
+      const item = await prisma.item.findFirst({
+        where: {
+          id: itemId,
+          status: 'active',
+          visibility: { not: 'hidden' },
+        },
+      });
+
+      if (!item) {
+        throw new Error('Item not found or not available');
+      }
+      sellerId = item.userId;
+    }
+
+    // Determine RFQ type based on whether a specific seller is targeted
+    // DIRECT: sellerId is set - appears in that seller's inbox only
+    // MARKETPLACE: sellerId is null - appears in RFQ Marketplace for all sellers
+    const rfqType = sellerId ? 'DIRECT' : 'MARKETPLACE';
+
+    // Generate RFQ number
+    const count = await prisma.itemRFQ.count();
+    const rfqNumber = `RFQ-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
 
     return prisma.itemRFQ.create({
       data: {
-        itemId,
+        rfqNumber,
+        itemId: itemId || null,
         buyerId,
-        sellerId: item.userId,
+        sellerId: sellerId || null,
+        rfqType, // DIRECT or MARKETPLACE
         quantity: data.quantity,
+        deliveryLocation: data.deliveryLocation || '',
+        deliveryCity: data.deliveryCity,
+        deliveryCountry: data.deliveryCountry || 'SA',
+        requiredDeliveryDate: data.requiredDeliveryDate,
         message: data.message,
-        status: 'pending',
+        priority: data.priority || 'normal',
+        source: data.source || 'item',
+        status: 'new',
+      },
+      include: {
+        item: true,
       },
     });
   },
 
   /**
-   * Get RFQs for seller
+   * Get RFQs for seller inbox - ONLY DIRECT RFQs targeted to this specific seller
+   * MARKETPLACE RFQs are handled separately by rfqMarketplaceRoutes
    */
   async getSellerRFQs(sellerId: string, status?: RFQStatus) {
-    const where: Prisma.ItemRFQWhereInput = { sellerId };
-    if (status) where.status = status;
+    // Only return DIRECT RFQs where this seller is specifically targeted
+    // MARKETPLACE RFQs should NOT appear in seller inbox - they go to RFQ Marketplace
+    const where: Prisma.ItemRFQWhereInput = {
+      sellerId,
+      rfqType: 'DIRECT',
+      ...(status ? { status } : {}),
+    };
 
     return prisma.itemRFQ.findMany({
       where,
@@ -870,22 +639,56 @@ export const itemService = {
 
   /**
    * Get RFQs for buyer
+   * Includes quotes (visible to buyer) so buyer can see quoted prices
    */
   async getBuyerRFQs(buyerId: string, status?: RFQStatus) {
     const where: Prisma.ItemRFQWhereInput = { buyerId };
     if (status) where.status = status;
 
-    return prisma.itemRFQ.findMany({
+    // Get RFQs with quotes
+    const rfqs = await prisma.itemRFQ.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
         item: true,
+        // Include quotes for this RFQ (buyer needs to see them)
+        quotes: {
+          where: {
+            // Only include sent, accepted, or rejected quotes (not drafts)
+            status: { in: ['sent', 'revised', 'accepted', 'rejected'] },
+            isLatest: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
+
+    // Get seller profile info for quotes (separate lookup since no direct relation)
+    // Note: sellerId in Quote is the User's Clerk ID, not SellerProfile.id
+    const sellerUserIds = [...new Set(rfqs.flatMap(rfq => rfq.quotes.map(q => q.sellerId)))];
+    const sellerProfiles = sellerUserIds.length > 0
+      ? await prisma.sellerProfile.findMany({
+          where: { userId: { in: sellerUserIds } },
+          select: { userId: true, displayName: true },
+        })
+      : [];
+
+    // Map by userId, return companyName for frontend compatibility
+    const sellerMap = new Map(sellerProfiles.map(s => [s.userId, { companyName: s.displayName }]));
+
+    // Attach seller info to quotes
+    return rfqs.map(rfq => ({
+      ...rfq,
+      quotes: rfq.quotes.map(quote => ({
+        ...quote,
+        seller: sellerMap.get(quote.sellerId) || null,
+      })),
+    }));
   },
 
   /**
    * Respond to RFQ (seller)
+   * Supports both targeted RFQs (sellerId matches) and broadcast RFQs (sellerId is null)
    */
   async respondToRFQ(
     sellerId: string,
@@ -897,21 +700,30 @@ export const itemService = {
       expiresAt?: Date;
     }
   ) {
+    // Find RFQ that's either targeted to this seller OR is a broadcast RFQ
     const rfq = await prisma.itemRFQ.findFirst({
-      where: { id: rfqId, sellerId },
+      where: {
+        id: rfqId,
+        OR: [
+          { sellerId },
+          { sellerId: { equals: null as any } }, // Broadcast RFQs can be claimed by any seller
+        ],
+      },
     });
 
     if (!rfq) {
       throw new Error('RFQ not found');
     }
 
-    // Update item RFQ stats
-    await prisma.item.update({
-      where: { id: rfq.itemId },
-      data: {
-        totalQuotes: { increment: 1 },
-      },
-    });
+    // Update item RFQ stats (only if item exists)
+    if (rfq.itemId) {
+      await prisma.item.update({
+        where: { id: rfq.itemId },
+        data: {
+          totalQuotes: { increment: 1 },
+        },
+      });
+    }
 
     return prisma.itemRFQ.update({
       where: { id: rfqId },
@@ -938,8 +750,8 @@ export const itemService = {
       throw new Error('RFQ not found');
     }
 
-    // If accepted, update item successful orders count
-    if (status === 'accepted') {
+    // If accepted, update item successful orders count (only if item exists)
+    if (status === 'accepted' && rfq.itemId) {
       await prisma.item.update({
         where: { id: rfq.itemId },
         data: {
@@ -988,7 +800,7 @@ export const itemService = {
         successfulOrders: successfulOrders._sum.successfulOrders || 0,
       };
     } catch (error) {
-      console.error('Error fetching seller stats:', error);
+      apiLogger.error('Error fetching seller stats:', error);
       // Return empty stats on error - frontend handles empty state
       return {
         totalItems: 0,

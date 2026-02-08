@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Plugs, SlackLogo, GithubLogo, MicrosoftTeamsLogo,
-  GoogleLogo, Globe, Lightning, MagnifyingGlass
+  Plugs,
+  SlackLogo,
+  GithubLogo,
+  MicrosoftTeamsLogo,
+  GoogleLogo,
+  Globe,
+  Lightning,
+  MagnifyingGlass,
 } from 'phosphor-react';
 import type { Integration, IntegrationType } from './types';
 import { featureLogger } from '@/utils/logger';
@@ -90,15 +96,15 @@ export const IntegrationsPage: React.FC = () => {
   const filteredIntegrations = integrations.filter(
     (i) =>
       i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.description.toLowerCase().includes(searchQuery.toLowerCase())
+      i.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const connectedIntegrations = filteredIntegrations.filter((i) => i.connected);
   const availableIntegrations = filteredIntegrations.filter((i) => !i.connected);
 
   const handleConnect = (integration: Integration) => {
-    // TODO: Implement OAuth flow or connection modal
-    featureLogger.debug('[Integrations] Connect - NOT IMPLEMENTED', integration);
+    // Future: open OAuth flow or connection modal for the selected integration
+    featureLogger.debug('[Integrations] Connect', integration);
     alert(`${integration.name} integration coming soon!`);
   };
 
@@ -112,12 +118,8 @@ export const IntegrationsPage: React.FC = () => {
               <Plugs size={24} className="text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
-                Integrations
-              </h1>
-              <p className="text-sm text-stone-500">
-                Connect your favorite tools
-              </p>
+              <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-200">Integrations</h1>
+              <p className="text-sm text-stone-500">Connect your favorite tools</p>
             </div>
           </div>
           <span className="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full">
@@ -145,9 +147,7 @@ export const IntegrationsPage: React.FC = () => {
         {/* Connected */}
         {connectedIntegrations.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
-              Connected
-            </h2>
+            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">Connected</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {connectedIntegrations.map((integration) => {
                 const Icon = getIcon(integration.type);
@@ -161,14 +161,10 @@ export const IntegrationsPage: React.FC = () => {
                         <Icon size={24} className="text-stone-600 dark:text-stone-400" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-stone-800 dark:text-stone-200">
-                          {integration.name}
-                        </h3>
+                        <h3 className="font-medium text-stone-800 dark:text-stone-200">{integration.name}</h3>
                         <p className="text-xs text-green-500 mt-0.5">Connected</p>
                       </div>
-                      <button className="text-xs text-stone-500 hover:text-red-500">
-                        Disconnect
-                      </button>
+                      <button className="text-xs text-stone-500 hover:text-red-500">Disconnect</button>
                     </div>
                   </div>
                 );
@@ -179,9 +175,7 @@ export const IntegrationsPage: React.FC = () => {
 
         {/* Available */}
         <div>
-          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
-            Available Integrations
-          </h2>
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">Available Integrations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {availableIntegrations.map((integration) => {
               const Icon = getIcon(integration.type);
@@ -195,12 +189,8 @@ export const IntegrationsPage: React.FC = () => {
                       <Icon size={24} className="text-stone-600 dark:text-stone-400" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-stone-800 dark:text-stone-200">
-                        {integration.name}
-                      </h3>
-                      <p className="text-xs text-stone-500 mt-1">
-                        {integration.description}
-                      </p>
+                      <h3 className="font-medium text-stone-800 dark:text-stone-200">{integration.name}</h3>
+                      <p className="text-xs text-stone-500 mt-1">{integration.description}</p>
                     </div>
                   </div>
                   <button
@@ -217,9 +207,7 @@ export const IntegrationsPage: React.FC = () => {
 
         {/* Webhooks Section */}
         <div className="mt-8">
-          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
-            Custom Webhooks
-          </h2>
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">Custom Webhooks</h2>
           <div className="p-6 bg-stone-50 dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 text-center">
             <Globe size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
             <p className="text-stone-600 dark:text-stone-400 mb-4">

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { apiLogger } from './logger';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const DEV_KEY = 'dev_only_key_not_for_production!!';
@@ -15,7 +16,7 @@ const RAW_KEY = process.env.ENCRYPTION_KEY || DEV_KEY;
 
 // Warn once in development if using default key
 if (!isProduction && !process.env.ENCRYPTION_KEY) {
-    console.warn('[Encryption] Using development key. Set ENCRYPTION_KEY in production.');
+    apiLogger.warn('[Encryption] Using development key. Set ENCRYPTION_KEY in production.');
 }
 
 // Ensure key is exactly 32 bytes by hashing it
@@ -38,7 +39,7 @@ export function decrypt(text: string): string {
     try {
         const textParts = text.split(':');
         if (textParts.length < 2) {
-            console.error('[Encryption] Invalid encrypted text format');
+            apiLogger.error('[Encryption] Invalid encrypted text format');
             return '';
         }
 
@@ -49,7 +50,7 @@ export function decrypt(text: string): string {
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString('utf8');
     } catch (error) {
-        console.error('[Encryption] Decryption failed:', error);
+        apiLogger.error('[Encryption] Decryption failed:', error);
         return '';
     }
 }

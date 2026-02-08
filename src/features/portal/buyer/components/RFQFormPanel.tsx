@@ -4,6 +4,7 @@
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { portalApiLogger } from '../../../../utils/logger';
 import {
   X,
   PaperPlaneTilt,
@@ -43,10 +44,10 @@ interface RFQFormPanelProps {
   onSuccess?: (rfq: ItemRFQ) => void;
 
   // Context data
-  item?: Item | null;           // For item-level RFQs
-  sellerId: string;             // Required
-  sellerName?: string;          // For display
-  source: RFQSource;            // 'item' | 'profile' | 'listing'
+  item?: Item | null; // For item-level RFQs
+  sellerId: string; // Required
+  sellerName?: string; // For display
+  source: RFQSource; // 'item' | 'profile' | 'listing'
 
   // Pre-filled values
   defaultQuantity?: number;
@@ -86,6 +87,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
   source,
   defaultQuantity,
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, direction, t } = usePortal();
   const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
@@ -115,13 +117,16 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
   }, [isOpen, defaultQuantity, item?.minOrderQty]);
 
   // Handle input changes
-  const handleChange = useCallback((field: keyof RFQFormState, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field as keyof RFQFormErrors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  }, [errors]);
+  const handleChange = useCallback(
+    (field: keyof RFQFormState, value: string | number) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      // Clear error when user starts typing
+      if (errors[field as keyof RFQFormErrors]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
+      }
+    },
+    [errors],
+  );
 
   // Validate form
   const validateForm = useCallback((): boolean => {
@@ -178,6 +183,13 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
         throw new Error('Authentication required');
       }
 
+      // Convert date from YYYY-MM-DD to ISO datetime format if provided
+      let isoDeliveryDate: string | undefined;
+      if (formData.requiredDeliveryDate) {
+        // Add time component to make it a valid ISO datetime
+        isoDeliveryDate = new Date(formData.requiredDeliveryDate + 'T00:00:00.000Z').toISOString();
+      }
+
       const rfqData: CreateRFQData = {
         itemId: item?.id || null,
         sellerId,
@@ -185,11 +197,13 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
         deliveryLocation: formData.deliveryLocation.trim(),
         deliveryCity: formData.deliveryCity.trim() || undefined,
         deliveryCountry: formData.deliveryCountry || 'SA',
-        requiredDeliveryDate: formData.requiredDeliveryDate || undefined,
+        requiredDeliveryDate: isoDeliveryDate,
         message: formData.message.trim() || undefined,
         priority: formData.priority,
         source,
       };
+
+      portalApiLogger.debug('Creating RFQ with data:', JSON.stringify(rfqData, null, 2));
 
       const rfq = await itemService.createRFQ(token, rfqData);
 
@@ -201,13 +215,10 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
         onSuccess?.(rfq);
         onClose();
       }, 1500);
-
     } catch (error) {
       console.error('Failed to create RFQ:', error);
       setSubmitStatus('error');
-      setSubmitMessage(
-        error instanceof Error ? error.message : 'Failed to send RFQ. Please try again.'
-      );
+      setSubmitMessage(error instanceof Error ? error.message : 'Failed to send RFQ. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -247,11 +258,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
   return (
     <>
       {/* Backdrop - transparent, just for click-outside */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ top: '64px' }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={onClose} />
 
       {/* Panel */}
       <div
@@ -263,16 +270,10 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
           backgroundColor: styles.bgPrimary,
           borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
           borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
-          boxShadow: styles.isDark
-            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
-            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          boxShadow: styles.isDark ? '-12px 0 40px rgba(0, 0, 0, 0.6)' : '-8px 0 30px rgba(0, 0, 0, 0.1)',
           right: isRtl ? 'auto' : 0,
           left: isRtl ? 0 : 'auto',
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-            ? 'translateX(-100%)'
-            : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
@@ -282,10 +283,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
           style={{ borderColor: styles.borderLight }}
         >
           <div className="flex items-center gap-3">
-            <div
-              className="p-2 rounded-lg"
-              style={{ backgroundColor: `${styles.info}15` }}
-            >
+            <div className="p-2 rounded-lg" style={{ backgroundColor: `${styles.info}15` }}>
               <PaperPlaneTilt size={20} weight="fill" style={{ color: styles.info }} />
             </div>
             <div>
@@ -293,8 +291,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
                 Request Quote
               </h2>
               <p className="text-xs" style={{ color: styles.textMuted }}>
-                {source === 'profile' ? `To ${sellerName || 'Seller'}` :
-                 item ? `For ${item.name}` : 'General inquiry'}
+                {source === 'profile' ? `To ${sellerName || 'Seller'}` : item ? `For ${item.name}` : 'General inquiry'}
               </p>
             </div>
           </div>
@@ -314,16 +311,9 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Item Preview (if item-level RFQ) */}
             {item && (
-              <div
-                className="flex items-center gap-3 p-3 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                 {item.images?.[0] ? (
-                  <img
-                    src={item.images[0]}
-                    alt={item.name}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
+                  <img src={item.images[0]} alt={item.name} className="w-12 h-12 rounded-lg object-cover" />
                 ) : (
                   <div
                     className="w-12 h-12 rounded-lg flex items-center justify-center"
@@ -345,10 +335,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
 
             {/* Seller Info (for profile-level RFQ) */}
             {source === 'profile' && sellerName && (
-              <div
-                className="flex items-center gap-3 p-3 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: styles.bgCard }}
@@ -484,13 +471,9 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
                   }}
                 >
                   <span className="flex items-center gap-2">
-                    {formData.priority === 'urgent' && (
-                      <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                    )}
-                    {formData.priority === 'critical' && (
-                      <span className="w-2 h-2 rounded-full bg-red-500" />
-                    )}
-                    {PRIORITY_OPTIONS.find(p => p.value === formData.priority)?.label}
+                    {formData.priority === 'urgent' && <span className="w-2 h-2 rounded-full bg-yellow-500" />}
+                    {formData.priority === 'critical' && <span className="w-2 h-2 rounded-full bg-red-500" />}
+                    {PRIORITY_OPTIONS.find((p) => p.value === formData.priority)?.label}
                   </span>
                   <CaretDown
                     size={16}
@@ -532,12 +515,8 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
                       >
                         <div>
                           <span className="flex items-center gap-2">
-                            {option.value === 'urgent' && (
-                              <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                            )}
-                            {option.value === 'critical' && (
-                              <span className="w-2 h-2 rounded-full bg-red-500" />
-                            )}
+                            {option.value === 'urgent' && <span className="w-2 h-2 rounded-full bg-yellow-500" />}
+                            {option.value === 'critical' && <span className="w-2 h-2 rounded-full bg-red-500" />}
                             {option.label}
                           </span>
                           <p className="text-xs mt-0.5" style={{ color: styles.textMuted }}>
@@ -592,14 +571,15 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
 
             {/* Typical Response Time Hint */}
             {item?.avgResponseTime && (
-              <div
-                className="flex items-center gap-2 p-3 rounded-lg"
-                style={{ backgroundColor: `${styles.info}10` }}
-              >
+              <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: `${styles.info}10` }}>
                 <Clock size={16} style={{ color: styles.info }} />
                 <p className="text-xs" style={{ color: styles.textSecondary }}>
                   This seller typically responds within{' '}
-                  <strong>{item.avgResponseTime < 24 ? `${item.avgResponseTime} hours` : `${Math.round(item.avgResponseTime / 24)} days`}</strong>
+                  <strong>
+                    {item.avgResponseTime < 24
+                      ? `${item.avgResponseTime} hours`
+                      : `${Math.round(item.avgResponseTime / 24)} days`}
+                  </strong>
                 </p>
               </div>
             )}
@@ -626,10 +606,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
               ) : (
                 <WarningCircle size={18} weight="fill" className="text-red-500" />
               )}
-              <p
-                className="text-sm"
-                style={{ color: submitStatus === 'success' ? '#22c55e' : styles.error }}
-              >
+              <p className="text-sm" style={{ color: submitStatus === 'success' ? '#22c55e' : styles.error }}>
                 {submitMessage}
               </p>
             </div>

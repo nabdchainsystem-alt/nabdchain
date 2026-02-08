@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const router = express.Router();
 // =============================================================================
 router.get('/seller/:slug', async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
 
     let seller = null;
     try {
@@ -29,7 +30,7 @@ router.get('/seller/:slug', async (req: Request, res: Response) => {
       });
     } catch (dbError: any) {
       // Table may not exist - return 404
-      console.error('Database error (SellerProfile may not exist):', dbError.message);
+      apiLogger.error('Database error (SellerProfile may not exist):', dbError.message);
       return res.status(404).json({ error: 'Seller not found' });
     }
 
@@ -71,7 +72,7 @@ router.get('/seller/:slug', async (req: Request, res: Response) => {
     // Get product count for this seller
     try {
       const productCount = await prisma.item.count({
-        where: { sellerId: seller.userId },
+        where: { userId: seller.userId },
       });
       publicProfile.statistics.totalProducts = productCount;
     } catch {
@@ -80,7 +81,7 @@ router.get('/seller/:slug', async (req: Request, res: Response) => {
 
     // Get order count for this seller
     try {
-      const orderCount = await prisma.order.count({
+      const orderCount = await prisma.marketplaceOrder.count({
         where: { sellerId: seller.userId },
       });
       publicProfile.statistics.totalOrders = orderCount;
@@ -90,7 +91,7 @@ router.get('/seller/:slug', async (req: Request, res: Response) => {
 
     res.json(publicProfile);
   } catch (error) {
-    console.error('Error getting public seller profile:', error);
+    apiLogger.error('Error getting public seller profile:', error);
     res.status(500).json({ error: 'Failed to get seller profile' });
   }
 });
@@ -100,7 +101,7 @@ router.get('/seller/:slug', async (req: Request, res: Response) => {
 // =============================================================================
 router.get('/seller/:slug/products', async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
     const { page = '1', limit = '12', category, sort = 'newest' } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -114,7 +115,7 @@ router.get('/seller/:slug/products', async (req: Request, res: Response) => {
         where: { slug },
       });
     } catch (dbError: any) {
-      console.error('Database error:', dbError.message);
+      apiLogger.error('Database error:', dbError.message);
       return res.status(404).json({ error: 'Seller not found' });
     }
 
@@ -171,7 +172,7 @@ router.get('/seller/:slug/products', async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    console.error('Error getting seller products:', error);
+    apiLogger.error('Error getting seller products:', error);
     res.status(500).json({ error: 'Failed to get seller products' });
   }
 });
@@ -181,7 +182,7 @@ router.get('/seller/:slug/products', async (req: Request, res: Response) => {
 // =============================================================================
 router.get('/seller/:slug/reviews', async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
     const { page = '1', limit = '10' } = req.query;
 
     // Verify seller exists (production mode)
@@ -193,7 +194,7 @@ router.get('/seller/:slug/reviews', async (req: Request, res: Response) => {
         return res.status(404).json({ error: 'Seller not found' });
       }
     } catch (dbError: any) {
-      console.error('Database error:', dbError.message);
+      apiLogger.error('Database error:', dbError.message);
       return res.status(404).json({ error: 'Seller not found' });
     }
 
@@ -219,7 +220,7 @@ router.get('/seller/:slug/reviews', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error getting seller reviews:', error);
+    apiLogger.error('Error getting seller reviews:', error);
     res.status(500).json({ error: 'Failed to get seller reviews' });
   }
 });

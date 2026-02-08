@@ -6,9 +6,8 @@
 // All significant actions are logged with actor, entity, and change details.
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -115,7 +114,7 @@ export const auditService = {
       return auditLog.id;
     } catch (error) {
       // Log to console but don't throw - audit logging should not break main flow
-      console.error('Failed to write audit log:', error);
+      apiLogger.error('Failed to write audit log:', error);
       return '';
     }
   },

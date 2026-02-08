@@ -5,7 +5,6 @@
 import { API_URL } from '../../../config/api';
 import {
   AutomationRule,
-  AutomationExecution,
   RuleTemplate,
   CreateRuleInput,
   UpdateRuleInput,
@@ -215,7 +214,7 @@ export const automationService = {
   async createFromTemplate(
     token: string,
     templateId: string,
-    overrides?: Partial<CreateRuleInput>
+    overrides?: Partial<CreateRuleInput>,
   ): Promise<AutomationRule> {
     const response = await fetch(`${API_URL}/automation/templates/create`, {
       method: 'POST',

@@ -6,25 +6,17 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  Timer,
-  Warning,
-  CheckCircle,
-  TrendDown,
-  Lightning,
-  CaretDown,
-  CaretUp,
-  Info,
-} from 'phosphor-react';
+import { Timer, Warning, Lightning, CaretDown, CaretUp, Info } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
-import { SLATrackerProps, TrackingStage } from './tracking.types';
+import { SLATrackerProps } from './tracking.types';
 import { RiskLevel, getRiskLevelConfig } from '../../types/timeline.types';
+import { ThemeStyles } from '../../../../theme/portalColors';
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
-const getSLAStatusColor = (status: string | undefined, styles: any) => {
+const getSLAStatusColor = (status: string | undefined, styles: ThemeStyles) => {
   switch (status) {
     case 'on_track':
       return styles.success;
@@ -37,7 +29,7 @@ const getSLAStatusColor = (status: string | undefined, styles: any) => {
   }
 };
 
-const getSLAStatusBg = (status: string | undefined, styles: any) => {
+const getSLAStatusBg = (status: string | undefined, styles: ThemeStyles) => {
   switch (status) {
     case 'on_track':
       return `${styles.success}10`;
@@ -50,7 +42,7 @@ const getSLAStatusBg = (status: string | undefined, styles: any) => {
   }
 };
 
-const getRiskColor = (level: RiskLevel, styles: any) => {
+const getRiskColor = (level: RiskLevel, styles: ThemeStyles) => {
   switch (level) {
     case 'low':
       return styles.success;
@@ -69,11 +61,7 @@ const getRiskColor = (level: RiskLevel, styles: any) => {
 // Main Component
 // =============================================================================
 
-export const SLATracker: React.FC<SLATrackerProps> = ({
-  currentStage,
-  riskAssessment,
-  automationSignals,
-}) => {
+export const SLATracker: React.FC<SLATrackerProps> = ({ currentStage, riskAssessment, automationSignals }) => {
   const { styles, direction, t } = usePortal();
   const isRtl = direction === 'rtl';
   const [showRiskDetails, setShowRiskDetails] = React.useState(false);
@@ -99,10 +87,7 @@ export const SLATracker: React.FC<SLATrackerProps> = ({
         <div className={`flex items-center justify-between mb-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
             <Timer size={18} style={{ color: slaColor }} />
-            <span
-              className="text-sm font-medium"
-              style={{ color: styles.textPrimary }}
-            >
+            <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
               {t('tracking.sla.status') || 'SLA Status'}
             </span>
           </div>
@@ -118,8 +103,8 @@ export const SLATracker: React.FC<SLATrackerProps> = ({
             {currentStage.slaStatus === 'on_track'
               ? t('tracking.sla.onTrack') || 'On Track'
               : currentStage.slaStatus === 'at_risk'
-              ? t('tracking.sla.atRisk') || 'At Risk'
-              : t('tracking.sla.breached') || 'Breached'}
+                ? t('tracking.sla.atRisk') || 'At Risk'
+                : t('tracking.sla.breached') || 'Breached'}
           </div>
         </div>
 
@@ -129,10 +114,7 @@ export const SLATracker: React.FC<SLATrackerProps> = ({
             <p className="text-xs" style={{ color: styles.textMuted }}>
               {t('tracking.sla.currentStep') || 'Current Step'}
             </p>
-            <p
-              className="text-sm font-medium mt-0.5"
-              style={{ color: styles.textPrimary }}
-            >
+            <p className="text-sm font-medium mt-0.5" style={{ color: styles.textPrimary }}>
               {currentStage.label}
             </p>
           </div>
@@ -142,10 +124,7 @@ export const SLATracker: React.FC<SLATrackerProps> = ({
               <p className="text-xs" style={{ color: styles.textMuted }}>
                 {t('tracking.sla.timeRemaining') || 'Time Remaining'}
               </p>
-              <p
-                className="text-lg font-semibold mt-0.5"
-                style={{ color: slaColor, fontFamily: styles.fontHeading }}
-              >
+              <p className="text-lg font-semibold mt-0.5" style={{ color: slaColor, fontFamily: styles.fontHeading }}>
                 {currentStage.slaTimeRemaining}
               </p>
             </div>
@@ -156,17 +135,12 @@ export const SLATracker: React.FC<SLATrackerProps> = ({
         {currentStage.slaPercentUsed !== undefined && (
           <div className="mt-4">
             <div className={`flex items-center justify-between text-xs mb-1.5 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <span style={{ color: styles.textMuted }}>
-                {t('tracking.sla.progress') || 'Progress'}
-              </span>
+              <span style={{ color: styles.textMuted }}>{t('tracking.sla.progress') || 'Progress'}</span>
               <span style={{ color: slaColor }}>
                 {currentStage.slaPercentUsed}% {t('tracking.sla.used') || 'used'}
               </span>
             </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -216,11 +190,7 @@ export const SLATracker: React.FC<SLATrackerProps> = ({
           {showRiskDetails && (
             <div className="px-3 pb-3 space-y-2">
               {riskAssessment.factors.slice(0, 3).map((factor) => (
-                <div
-                  key={factor.id}
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: styles.bgCard }}
-                >
+                <div key={factor.id} className="p-2 rounded-lg" style={{ backgroundColor: styles.bgCard }}>
                   <div className={`flex items-start gap-2 ${isRtl ? 'flex-row-reverse text-right' : ''}`}>
                     <Info size={14} style={{ color: riskColor }} className="mt-0.5 flex-shrink-0" />
                     <div className="flex-1">

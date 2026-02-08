@@ -56,6 +56,7 @@ import automationRoutes from '../automationRoutes';
 import trustRoutes from '../trustRoutes';
 import featureGatingRoutes from '../featureGatingRoutes';
 import analyticsRoutes from '../analyticsRoutes';
+import rfqMarketplaceRoutes from '../rfqMarketplaceRoutes';
 
 const router = Router();
 
@@ -122,5 +123,8 @@ router.use('/automation', automationRoutes);
 router.use('/trust', trustRoutes);
 router.use('/gating', featureGatingRoutes);
 router.use('/analytics', analyticsRoutes);
+
+// RFQ Marketplace routes
+router.use('/rfq-marketplace', rfqMarketplaceRoutes);
 
 export default router;

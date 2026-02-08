@@ -1,11 +1,21 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  PencilSimple as PenSquare, Sparkle as Sparkles, Tray as Inbox, Archive, FileText, PaperPlaneTilt as Send, Trash as Trash2,
-  ClockCounterClockwise as History, Prohibit as Ban, Folder, CaretRight as ChevronRight, CaretDown as ChevronDown, Trash,
-  EnvelopeOpen as MailOpen, ArrowBendUpLeft as Reply, ArrowBendDoubleUpLeft as ReplyAll, ArrowBendUpRight as Forward, ArrowsOutCardinal as Move, Copy, Tag, PushPin as Pin,
-  Clock, Flag, ArrowsClockwise as RefreshCw, WarningOctagon as AlertOctagon, Printer, DotsThree as MoreHorizontal,
-  MagnifyingGlass as Search, Paperclip, CheckSquare, Globe, User, Plus,
-  Envelope as Mail, Star, Warning as AlertTriangle, CheckSquare as TaskIcon
+  PencilSimple as PenSquare,
+  Sparkle as Sparkles,
+  Tray as Inbox,
+  Archive,
+  FileText,
+  PaperPlaneTilt as Send,
+  Trash as Trash2,
+  Trash,
+  EnvelopeOpen as MailOpen,
+  ArrowBendUpLeft as Reply,
+  Clock,
+  ArrowsClockwise as RefreshCw,
+  CheckSquare,
+  Envelope as Mail,
+  Star,
+  Warning as AlertTriangle,
 } from 'phosphor-react';
 import { v4 as uuidv4 } from 'uuid'; // Ensure uuid is imported if available, else use custom gen
 import { useAppContext } from '../../contexts/AppContext';
@@ -52,7 +62,7 @@ interface MailItem {
   hasAttachment?: boolean;
 }
 
-const MOCK_MAILS: MailItem[] = [
+const _MOCK_MAILS: MailItem[] = [
   {
     id: '1',
     sender: 'Alice Finance',
@@ -63,7 +73,7 @@ const MOCK_MAILS: MailItem[] = [
     color: 'bg-purple-500',
     isUnread: true,
     hasAttachment: true,
-    provider: 'google'
+    provider: 'google',
   },
   {
     id: '2',
@@ -74,7 +84,7 @@ const MOCK_MAILS: MailItem[] = [
     initial: 'M',
     color: 'bg-pink-500',
     isUnread: false,
-    provider: 'google'
+    provider: 'google',
   },
   {
     id: '3',
@@ -86,12 +96,18 @@ const MOCK_MAILS: MailItem[] = [
     color: 'bg-blue-500',
     isUnread: false,
     hasAttachment: true,
-    provider: 'outlook'
-  }
+    provider: 'outlook',
+  },
 ];
 
 interface InboxViewProps {
-  logActivity?: (type: string, content: string, metadata?: any, workspaceId?: string, boardId?: string) => Promise<void>;
+  logActivity?: (
+    type: string,
+    content: string,
+    metadata?: Record<string, unknown>,
+    workspaceId?: string,
+    boardId?: string,
+  ) => Promise<void>;
   onNavigate?: (view: string, boardId?: string) => void;
 }
 
@@ -99,8 +115,8 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
   const [mails, setMails] = useState<MailItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccount, setHasAccount] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [folders, setFolders] = useState<any[]>([]); // Folder list
+  const [accounts, setAccounts] = useState<{ id: string; provider: string; email: string }[]>([]);
+  const [folders, setFolders] = useState<{ id: string; name: string; messageCount?: number }[]>([]); // Folder list
   const [activeFolder, setActiveFolder] = useState<string>('INBOX'); // Currently selected folder
 
   const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
@@ -121,19 +137,25 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => { },
+    onConfirm: () => {},
   });
 
   // Memoize selected mail - must be before early returns to follow hooks rules
-  const selectedMail = useMemo(() => mails.find(m => m.id === selectedMailId), [mails, selectedMailId]);
+  const selectedMail = useMemo(() => mails.find((m) => m.id === selectedMailId), [mails, selectedMailId]);
 
   // Memoize unread count to avoid recalculation on every render
-  const unreadCount = useMemo(() => mails.filter(m => m.isUnread).length, [mails]);
+  const unreadCount = useMemo(() => mails.filter((m) => m.isUnread).length, [mails]);
 
   // Memoize filtered folders to avoid recalculation on every render
-  const customFolders = useMemo(() =>
-    folders.filter(f => !['INBOX', 'SENT', 'TRASH', 'DRAFT', 'IMPORTANT', 'STARRED', 'deleteditems', 'junk', 'sentitems'].includes(f.id.toLowerCase())),
-    [folders]
+  const customFolders = useMemo(
+    () =>
+      folders.filter(
+        (f) =>
+          !['INBOX', 'SENT', 'TRASH', 'DRAFT', 'IMPORTANT', 'STARRED', 'deleteditems', 'junk', 'sentitems'].includes(
+            f.id.toLowerCase(),
+          ),
+      ),
+    [folders],
   );
 
   useEffect(() => {
@@ -142,8 +164,8 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
 
   useEffect(() => {
     if (hasAccount) {
-      fetchEmails();     // Refresh emails
-      fetchFolders();    // Fetch current folders
+      fetchEmails(); // Refresh emails
+      fetchFolders(); // Fetch current folders
     }
   }, [hasAccount, activeFolder]);
 
@@ -159,7 +181,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
         setHasAccount(false);
       }
     } catch (e) {
-      appLogger.error("Failed to check connection", e);
+      appLogger.error('Failed to check connection', e);
       setHasAccount(false);
     } finally {
       if (!hasAccount) setLoading(false);
@@ -173,7 +195,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
       const data = await emailService.getFolders(token);
       setFolders(data);
     } catch (e) {
-      appLogger.error("Failed to fetch folders", e);
+      appLogger.error('Failed to fetch folders', e);
     }
   }, [getToken]);
 
@@ -183,13 +205,13 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
       const token = await getToken();
       if (!token) return;
       // Pass activeFolder to filtering
-      let folderId = activeFolder === 'INBOX' ? undefined : activeFolder;
+      const folderId = activeFolder === 'INBOX' ? undefined : activeFolder;
       const data = await emailService.getEmails(token, folderId);
       setMails(data);
       if (data.length > 0) setSelectedMailId(data[0].id);
       else setSelectedMailId(null);
     } catch (error) {
-      appLogger.error("Failed to fetch emails", error);
+      appLogger.error('Failed to fetch emails', error);
     } finally {
       setLoading(false);
     }
@@ -202,76 +224,91 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
     setLoading(false);
   }, [checkConnection, fetchEmails]);
 
-  const [replyData, setReplyData] = useState<{ to: string, subject: string, body: string } | undefined>(undefined);
+  const [replyData, setReplyData] = useState<{ to: string; subject: string; body: string } | undefined>(undefined);
 
-  const handleDelete = useCallback(async (id: string, provider: string) => {
-    setConfirmModal({
-      isOpen: true,
-      title: t('move_to_trash'),
-      message: t('move_to_trash_confirm'),
-      confirmText: t('move_to_trash'),
-      type: 'danger',
-      onConfirm: async () => {
-        try {
-          const token = await getToken();
-          if (!token) return;
-          await emailService.trash(token, id, provider);
-          setMails(prev => prev.filter(m => m.id !== id));
-          setSelectedMailId(null);
-          if (logActivity) {
-            logActivity('EMAIL_DELETED', `Moved email to trash: ${mails.find(m => m.id === id)?.subject || 'email'}`, { emailId: id });
+  const handleDelete = useCallback(
+    async (id: string, provider: string) => {
+      setConfirmModal({
+        isOpen: true,
+        title: t('move_to_trash'),
+        message: t('move_to_trash_confirm'),
+        confirmText: t('move_to_trash'),
+        type: 'danger',
+        onConfirm: async () => {
+          try {
+            const token = await getToken();
+            if (!token) return;
+            await emailService.trash(token, id, provider);
+            setMails((prev) => prev.filter((m) => m.id !== id));
+            setSelectedMailId(null);
+            if (logActivity) {
+              logActivity(
+                'EMAIL_DELETED',
+                `Moved email to trash: ${mails.find((m) => m.id === id)?.subject || 'email'}`,
+                { emailId: id },
+              );
+            }
+          } catch (e) {
+            appLogger.error('Failed to delete email', e);
+            alert('Failed to delete');
           }
-        } catch (e) {
-          appLogger.error("Failed to delete email", e);
-          alert("Failed to delete");
+        },
+      });
+    },
+    [getToken, logActivity, mails],
+  );
+
+  const handleArchive = useCallback(
+    async (id: string, provider: string) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        await emailService.archive(token, id, provider);
+        setMails((prev) => prev.filter((m) => m.id !== id));
+        setSelectedMailId(null);
+        if (logActivity) {
+          logActivity('EMAIL_ARCHIVED', `Archived email: ${mails.find((m) => m.id === id)?.subject || 'email'}`, {
+            emailId: id,
+          });
         }
+      } catch (e) {
+        appLogger.error('Failed to archive email', e);
+        alert('Failed to archive');
       }
-    });
-  }, [getToken, logActivity, mails]);
+    },
+    [getToken, logActivity, mails],
+  );
 
-  const handleArchive = useCallback(async (id: string, provider: string) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      await emailService.archive(token, id, provider);
-      setMails(prev => prev.filter(m => m.id !== id));
-      setSelectedMailId(null);
-      if (logActivity) {
-        logActivity('EMAIL_ARCHIVED', `Archived email: ${mails.find(m => m.id === id)?.subject || 'email'}`, { emailId: id });
+  const handleMarkRead = useCallback(
+    async (id: string, provider: string, isRead: boolean) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        // Optimistic update
+        setMails((prev) => prev.map((m) => (m.id === id ? { ...m, isUnread: !isRead } : m)));
+
+        if (isRead) {
+          await emailService.markRead(token, id, provider);
+        } else {
+          // Mark-unread is not yet supported by the email backend
+          appLogger.info('Mark unread not fully implemented yet');
+        }
+      } catch (e) {
+        appLogger.error('Failed to mark read/unread', e);
       }
-    } catch (e) {
-      appLogger.error("Failed to archive email", e);
-      alert("Failed to archive");
-    }
-  }, [getToken, logActivity, mails]);
-
-  const handleMarkRead = useCallback(async (id: string, provider: string, isRead: boolean) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      // Optimistic update
-      setMails(prev => prev.map(m => m.id === id ? { ...m, isUnread: !isRead } : m));
-
-      if (isRead) {
-        await emailService.markRead(token, id, provider);
-      } else {
-        // TODO: Implement mark unread in service/backend
-        appLogger.info("Mark unread not fully implemented yet");
-      }
-    } catch (e) {
-      appLogger.error("Failed to mark read/unread", e);
-    }
-  }, [getToken]);
+    },
+    [getToken],
+  );
 
   const handleStar = useCallback((id: string) => {
     // Optimistic update
-    appLogger.info("Star clicked", id);
+    appLogger.info('Star clicked', id);
     // setMails(prev => prev.map(m => m.id === id ? { ...m, isStarred: !m.isStarred } : m));
   }, []);
 
   const handleSpam = useCallback((id: string) => {
-    appLogger.info("Spam clicked", id);
-    alert("Marked as spam (simulation)");
+    appLogger.info('Spam clicked', id);
+    alert('Marked as spam (simulation)');
   }, []);
 
   const handleCreateTask = useCallback(() => {
@@ -293,7 +330,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
       }
 
       if (!boardData || !boardData.groups || boardData.groups.length === 0) {
-        alert("Could not find Main Board to add task.");
+        alert('Could not find Main Board to add task.');
         return;
       }
 
@@ -306,61 +343,69 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
         personId: null,
         dueDate: '',
         textValues: {},
-        selected: false
+        selected: false,
       };
 
       boardData.groups[0].tasks.push(newTask);
       localStorage.setItem(targetKey, JSON.stringify(boardData));
 
       if (logActivity) {
-        logActivity('TASK_CREATED', `Created task from email: ${selectedMail.subject}`, { emailId: selectedMail.id, taskId: newTask.id });
+        logActivity('TASK_CREATED', `Created task from email: ${selectedMail.subject}`, {
+          emailId: selectedMail.id,
+          taskId: newTask.id,
+        });
       }
 
-      alert("Task created in Main Board!");
+      alert('Task created in Main Board!');
     } catch (e) {
-      appLogger.error("Failed to create task", e);
-      alert("Failed to create task");
+      appLogger.error('Failed to create task', e);
+      alert('Failed to create task');
     }
   }, [selectedMail, logActivity]);
 
   const handleSnooze = useCallback(() => {
-    alert("Snoozed for 1 hour (Simulation)");
+    alert('Snoozed for 1 hour (Simulation)');
   }, []);
 
   const handleAIAnalysis = useCallback(() => {
-    alert("AI Analysis: \n- Sentiment: Positive\n- Action Items: Review contract\n- Priority: High");
+    alert('AI Analysis: \n- Sentiment: Positive\n- Action Items: Review contract\n- Priority: High');
   }, []);
 
   const handleReply = useCallback((mail: MailItem) => {
-    let quote = `\n\n\nOn ${new Date(mail.time).toLocaleString()}, <${mail.sender}> wrote:\n> ${mail.preview}`;
+    const quote = `\n\n\nOn ${new Date(mail.time).toLocaleString()}, <${mail.sender}> wrote:\n> ${mail.preview}`;
     const emailMatch = mail.sender.match(/<(.+)>/);
     const to = emailMatch ? emailMatch[1] : mail.sender;
 
     setReplyData({
       to: to,
       subject: mail.subject.startsWith('Re:') ? mail.subject : `Re: ${mail.subject}`,
-      body: quote
+      body: quote,
     });
     setRightPanelMode('compose');
   }, []);
 
-  const handleDisconnect = useCallback((id: string) => {
-    setConfirmModal({
-      isOpen: true,
-      title: t('disconnect_account'),
-      message: t('disconnect_confirm'),
-      confirmText: t('disconnect'),
-      type: 'danger',
-      onConfirm: async () => {
-        try {
-          const token = await getToken();
-          if (!token) return;
-          await emailService.disconnectAccount(id, token);
-          checkConnection();
-        } catch (e) { alert('Failed to disconnect'); }
-      }
-    });
-  }, [getToken, checkConnection]);
+  const handleDisconnect = useCallback(
+    (id: string) => {
+      setConfirmModal({
+        isOpen: true,
+        title: t('disconnect_account'),
+        message: t('disconnect_confirm'),
+        confirmText: t('disconnect'),
+        type: 'danger',
+        onConfirm: async () => {
+          try {
+            const token = await getToken();
+            if (!token) return;
+            await emailService.disconnectAccount(id, token);
+            checkConnection();
+          } catch (_e) {
+            alert('Failed to disconnect');
+          }
+        },
+      });
+    },
+    [getToken, checkConnection],
+  );
 
   if (loading && !hasAccount) {
     return <div className="flex items-center justify-center h-full">{t('loading')}</div>;
@@ -372,7 +417,6 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
 
   return (
     <div className="flex h-full w-full bg-white dark:bg-monday-dark-bg overflow-hidden font-sans text-gray-800 dark:text-monday-dark-text relative">
-
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* 1. Inner Sidebar (Folders) */}
         <div className="w-64 bg-gray-50 dark:bg-monday-dark-surface border-r border-gray-200 dark:border-monday-dark-border flex flex-col flex-shrink-0 p-4">
@@ -393,10 +437,17 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
 
           {/* Connected Accounts List */}
           <div className="px-3 pb-2 space-y-1">
-            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('connected')}</div>
-            {accounts.map(acc => (
-              <div key={acc.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover group">
-                <span className="truncate max-w-[140px]" title={acc.email}>{acc.email}</span>
+            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+              {t('connected')}
+            </div>
+            {accounts.map((acc) => (
+              <div
+                key={acc.id}
+                className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-monday-dark-hover group"
+              >
+                <span className="truncate max-w-[140px]" title={acc.email}>
+                  {acc.email}
+                </span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -439,7 +490,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
                 </div>
 
                 <div className="space-y-1">
-                  {customFolders.map(folder => (
+                  {customFolders.map((folder) => (
                     <FolderItem
                       key={folder.id}
                       label={folder.name}
@@ -455,7 +506,6 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
 
         {/* 2. Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
-
           {/* Top Action Toolbar */}
           <div className="h-12 border-b border-gray-200 dark:border-monday-dark-border flex items-center px-2 bg-white dark:bg-monday-dark-surface flex-shrink-0 overflow-x-auto space-x-0.5 rtl:space-x-reverse [&::-webkit-scrollbar]:hidden">
             <ToolbarAction icon={<RefreshCw size={16} />} label={t('sync')} onClick={handleSync} />
@@ -564,7 +614,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
                 ) : mails.length === 0 ? (
                   <div className="p-4 text-center text-gray-400 text-sm">{t('no_emails_found')}</div>
                 ) : (
-                  mails.map(mail => (
+                  mails.map((mail) => (
                     <div
                       key={mail.id}
                       onClick={() => setSelectedMailId(mail.id)}
@@ -574,15 +624,21 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
                         <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-monday-blue"></div>
                       )}
                       <div className="flex justify-between items-baseline mb-0.5">
-                        <span className={`text-sm truncate pe-2 leading-tight ${mail.isUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                        <span
+                          className={`text-sm truncate pe-2 leading-tight ${mail.isUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}
+                        >
                           {mail.sender}
                         </span>
-                        <span className={`text-xs flex-shrink-0 ${mail.isUnread ? 'text-monday-blue font-semibold' : 'text-gray-400 dark:text-gray-500'}`}>
+                        <span
+                          className={`text-xs flex-shrink-0 ${mail.isUnread ? 'text-monday-blue font-semibold' : 'text-gray-400 dark:text-gray-500'}`}
+                        >
                           {/* Parse simple time if possible, or just string */}
                           {new Date(mail.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <div className={`text-sm mb-0.5 truncate leading-tight ${mail.isUnread ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-600 dark:text-gray-400'}`}>
+                      <div
+                        className={`text-sm mb-0.5 truncate leading-tight ${mail.isUnread ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-600 dark:text-gray-400'}`}
+                      >
                         {mail.subject}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-500 line-clamp-2 leading-snug">
@@ -597,18 +653,26 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
             {/* 2b. Reading Pane */}
             {rightPanelMode === 'compose' ? (
               <div className="flex-1 bg-white dark:bg-monday-dark-bg overflow-y-auto relative">
-                <ComposeView onDiscard={() => setRightPanelMode('view')} accounts={accounts} logActivity={logActivity} />
+                <ComposeView
+                  onDiscard={() => setRightPanelMode('view')}
+                  accounts={accounts}
+                  logActivity={logActivity}
+                />
               </div>
             ) : selectedMail ? (
               <div className="flex-1 flex flex-col relative min-w-0 bg-white dark:bg-monday-dark-bg">
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-6">
                   <div className="flex items-start gap-3 mb-6">
-                    <div className={`w-10 h-10 rounded-full ${selectedMail.color} text-white flex items-center justify-center text-lg font-medium shadow-sm`}>
+                    <div
+                      className={`w-10 h-10 rounded-full ${selectedMail.color} text-white flex items-center justify-center text-lg font-medium shadow-sm`}
+                    >
                       {selectedMail.initial}
                     </div>
                     <div className="flex-1">
-                      <h1 className="text-xl font-semibold text-[#323338] dark:text-monday-dark-text mb-0.5 leading-tight">{selectedMail.subject}</h1>
+                      <h1 className="text-xl font-semibold text-[#323338] dark:text-monday-dark-text mb-0.5 leading-tight">
+                        {selectedMail.subject}
+                      </h1>
                       <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         <span className="font-medium text-gray-900 dark:text-gray-300">{selectedMail.sender}</span>
                         <span>•</span>
@@ -616,9 +680,27 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => handleReply(selectedMail)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400" title="Reply"><Reply size={16} /></button>
-                      <button onClick={() => handleDelete(selectedMail.id, selectedMail.provider)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400" title="Delete"><Trash2 size={16} /></button>
-                      <button onClick={() => handleArchive(selectedMail.id, selectedMail.provider)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400" title="Archive"><Archive size={16} /></button>
+                      <button
+                        onClick={() => handleReply(selectedMail)}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400"
+                        title="Reply"
+                      >
+                        <Reply size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(selectedMail.id, selectedMail.provider)}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleArchive(selectedMail.id, selectedMail.provider)}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-monday-dark-hover rounded text-gray-500 dark:text-gray-400"
+                        title="Archive"
+                      >
+                        <Archive size={16} />
+                      </button>
                     </div>
                   </div>
 
@@ -638,7 +720,9 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
                         <FileText size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Attachment.pdf</div>
+                        <div className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                          Attachment.pdf
+                        </div>
                       </div>
                     </div>
                   )}
@@ -646,7 +730,8 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
                   <div className="mt-8 pt-6 border-t border-gray-100 dark:border-monday-dark-border">
                     <button
                       onClick={() => handleReply(selectedMail)}
-                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-300 text-xs font-medium transition-colors">
+                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-monday-dark-hover text-gray-600 dark:text-gray-300 text-xs font-medium transition-colors"
+                    >
                       <Reply size={14} /> {t('reply')}
                     </button>
                   </div>
@@ -686,12 +771,10 @@ export const InboxView: React.FC<InboxViewProps> = ({ logActivity, onNavigate })
         </div>
       </div>
 
-
-
       {/* Modal Portal - Rendered at end */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
         onConfirm={confirmModal.onConfirm}
         title={confirmModal.title}
         message={confirmModal.message}

@@ -2,7 +2,7 @@
 // Dispute Routes - Marketplace Dispute API (Stage 7)
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { idempotency } from '../middleware/idempotencyMiddleware';
@@ -75,9 +75,9 @@ const addEvidenceSchema = z.object({
  * Create a new dispute on an order
  * Protected by idempotency to prevent duplicate disputes
  */
-router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'dispute' }), async (req: AuthRequest, res: Response) => {
+router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'dispute' }), async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -107,9 +107,9 @@ router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'di
  * GET /api/disputes/buyer
  * List disputes for the authenticated buyer
  */
-router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -131,9 +131,9 @@ router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/disputes/buyer/stats
  * Get dispute statistics for the buyer
  */
-router.get('/buyer/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -150,9 +150,9 @@ router.get('/buyer/stats', requireAuth, async (req: AuthRequest, res: Response) 
  * GET /api/disputes/buyer/:id
  * Get a single dispute for the buyer
  */
-router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -174,9 +174,9 @@ router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) =>
  * POST /api/disputes/buyer/:id/accept
  * Buyer accepts seller's proposed resolution
  */
-router.post('/buyer/:id/accept', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/buyer/:id/accept', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -198,9 +198,9 @@ router.post('/buyer/:id/accept', requireAuth, async (req: AuthRequest, res: Resp
  * POST /api/disputes/buyer/:id/reject
  * Buyer rejects seller's response
  */
-router.post('/buyer/:id/reject', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/buyer/:id/reject', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -231,9 +231,9 @@ router.post('/buyer/:id/reject', requireAuth, async (req: AuthRequest, res: Resp
  * POST /api/disputes/buyer/:id/escalate
  * Buyer escalates dispute to platform
  */
-router.post('/buyer/:id/escalate', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/buyer/:id/escalate', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -264,9 +264,9 @@ router.post('/buyer/:id/escalate', requireAuth, async (req: AuthRequest, res: Re
  * POST /api/disputes/buyer/:id/evidence
  * Buyer adds evidence to dispute
  */
-router.post('/buyer/:id/evidence', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/buyer/:id/evidence', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -297,9 +297,9 @@ router.post('/buyer/:id/evidence', requireAuth, async (req: AuthRequest, res: Re
  * POST /api/disputes/buyer/:id/close
  * Buyer closes dispute
  */
-router.post('/buyer/:id/close', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/buyer/:id/close', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -325,9 +325,9 @@ router.post('/buyer/:id/close', requireAuth, async (req: AuthRequest, res: Respo
  * GET /api/disputes/seller
  * List disputes for the authenticated seller
  */
-router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -349,9 +349,9 @@ router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/disputes/seller/stats
  * Get dispute statistics for the seller
  */
-router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -368,9 +368,9 @@ router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response)
  * GET /api/disputes/seller/:id
  * Get a single dispute for the seller
  */
-router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -392,9 +392,9 @@ router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) =
  * POST /api/disputes/seller/:id/review
  * Seller marks dispute as under review
  */
-router.post('/seller/:id/review', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/review', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -416,9 +416,9 @@ router.post('/seller/:id/review', requireAuth, async (req: AuthRequest, res: Res
  * POST /api/disputes/seller/:id/respond
  * Seller responds to dispute
  */
-router.post('/seller/:id/respond', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/respond', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -449,9 +449,9 @@ router.post('/seller/:id/respond', requireAuth, async (req: AuthRequest, res: Re
  * POST /api/disputes/seller/:id/escalate
  * Seller escalates dispute to platform
  */
-router.post('/seller/:id/escalate', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/escalate', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -486,9 +486,9 @@ router.post('/seller/:id/escalate', requireAuth, async (req: AuthRequest, res: R
  * GET /api/disputes/:id/history
  * Get dispute timeline/history
  */
-router.get('/:id/history', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/:id/history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -506,9 +506,9 @@ router.get('/:id/history', requireAuth, async (req: AuthRequest, res: Response) 
  * GET /api/disputes/order/:orderId
  * Get dispute for a specific order
  */
-router.get('/order/:orderId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/order/:orderId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

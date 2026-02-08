@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import { featureLogger } from '../../utils/logger';
 import { PortalProvider } from './context/PortalContext';
 import { SellerPublicProfile } from './seller/pages/SellerPublicProfile';
 
@@ -29,7 +30,7 @@ export const SellerProfilePage: React.FC = () => {
         }}
         onRequestRFQ={(sellerId) => {
           // Navigate to RFQ page or open modal
-          console.log('Request RFQ for seller:', sellerId);
+          featureLogger.info('Request RFQ for seller:', sellerId);
         }}
       />
     </PortalProvider>

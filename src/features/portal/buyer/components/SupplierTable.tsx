@@ -24,20 +24,20 @@ import {
 // Country flag emoji mapping
 const COUNTRY_FLAGS: Record<string, string> = {
   'United States': '🇺🇸',
-  'Germany': '🇩🇪',
-  'China': '🇨🇳',
-  'Japan': '🇯🇵',
+  Germany: '🇩🇪',
+  China: '🇨🇳',
+  Japan: '🇯🇵',
   'United Kingdom': '🇬🇧',
-  'India': '🇮🇳',
+  India: '🇮🇳',
   'South Korea': '🇰🇷',
-  'Italy': '🇮🇹',
-  'France': '🇫🇷',
-  'Canada': '🇨🇦',
-  'Brazil': '🇧🇷',
-  'Mexico': '🇲🇽',
-  'Spain': '🇪🇸',
-  'Australia': '🇦🇺',
-  'Netherlands': '🇳🇱',
+  Italy: '🇮🇹',
+  France: '🇫🇷',
+  Canada: '🇨🇦',
+  Brazil: '🇧🇷',
+  Mexico: '🇲🇽',
+  Spain: '🇪🇸',
+  Australia: '🇦🇺',
+  Netherlands: '🇳🇱',
 };
 
 interface SupplierTableProps {
@@ -78,7 +78,7 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      onSelectionChange(suppliers.map(s => s.id));
+      onSelectionChange(suppliers.map((s) => s.id));
     } else {
       onSelectionChange([]);
     }
@@ -88,7 +88,7 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
     if (checked) {
       onSelectionChange([...selectedSuppliers, id]);
     } else {
-      onSelectionChange(selectedSuppliers.filter(sid => sid !== id));
+      onSelectionChange(selectedSuppliers.filter((sid) => sid !== id));
     }
   };
 
@@ -97,7 +97,11 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
 
   const SortIcon = ({ field }: { field: SupplierSortField }) => {
     if (sortConfig.field !== field) {
-      return <span className="opacity-0 group-hover:opacity-30"><CaretDown size={12} /></span>;
+      return (
+        <span className="opacity-0 group-hover:opacity-30">
+          <CaretDown size={12} />
+        </span>
+      );
     }
     return sortConfig.direction === 'desc' ? (
       <CaretDown size={12} weight="bold" />
@@ -134,6 +138,7 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
 
   // Risk chip colors
   const getRiskChipStyle = (level: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const config = getRiskLevelConfig(level as any);
     const colorMap = {
       success: { bg: `${styles.success}15`, color: styles.success },
@@ -146,6 +151,7 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
 
   // Status chip colors
   const getStatusChipStyle = (status: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const config = getSupplierStatusConfig(status as any);
     if (config.canOrder) {
       return { bg: `${styles.success}15`, color: styles.success };
@@ -167,10 +173,10 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  ref={input => {
+                  ref={(input) => {
                     if (input) input.indeterminate = someSelected;
                   }}
-                  onChange={e => handleSelectAll(e.target.checked)}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
                   className="sr-only"
                 />
                 <div
@@ -188,14 +194,30 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
             </th>
 
             <HeaderCell field="name">Supplier</HeaderCell>
-            <HeaderCell field="reliabilityScore" className="w-20">Score</HeaderCell>
-            <HeaderCell sortable={false} className="w-24">Risk</HeaderCell>
-            <HeaderCell field="dependencyPercentage" className="w-28">Dependency</HeaderCell>
-            <HeaderCell field="averageDeliveryDeviation" className="w-24">Delivery</HeaderCell>
-            <HeaderCell field="communicationScore" className="w-24">Response</HeaderCell>
-            <HeaderCell field="totalSpend" className="w-24">Spend</HeaderCell>
-            <HeaderCell sortable={false} className="w-24">Status</HeaderCell>
-            <HeaderCell sortable={false} className="w-16">Actions</HeaderCell>
+            <HeaderCell field="reliabilityScore" className="w-20">
+              Score
+            </HeaderCell>
+            <HeaderCell sortable={false} className="w-24">
+              Risk
+            </HeaderCell>
+            <HeaderCell field="dependencyPercentage" className="w-28">
+              Dependency
+            </HeaderCell>
+            <HeaderCell field="averageDeliveryDeviation" className="w-24">
+              Delivery
+            </HeaderCell>
+            <HeaderCell field="communicationScore" className="w-24">
+              Response
+            </HeaderCell>
+            <HeaderCell field="totalSpend" className="w-24">
+              Spend
+            </HeaderCell>
+            <HeaderCell sortable={false} className="w-24">
+              Status
+            </HeaderCell>
+            <HeaderCell sortable={false} className="w-16">
+              Actions
+            </HeaderCell>
           </tr>
         </thead>
         <tbody>
@@ -219,32 +241,28 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                 key={supplier.id}
                 className="transition-colors cursor-pointer group"
                 style={{
-                  backgroundColor: isActive
-                    ? styles.bgHover
-                    : isSelected
-                    ? `${styles.textPrimary}08`
-                    : 'transparent',
+                  backgroundColor: isActive ? styles.bgHover : isSelected ? `${styles.textPrimary}08` : 'transparent',
                   borderBottom: idx < suppliers.length - 1 ? `1px solid ${styles.border}` : 'none',
                 }}
                 onClick={() => onSupplierClick(supplier)}
-                onMouseEnter={e => {
+                onMouseEnter={(e) => {
                   if (!isActive && !isSelected) {
                     e.currentTarget.style.backgroundColor = styles.bgHover;
                   }
                 }}
-                onMouseLeave={e => {
+                onMouseLeave={(e) => {
                   if (!isActive && !isSelected) {
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
               >
                 {/* Checkbox */}
-                <td className={`${cellPadding} ${rowPadding}`} onClick={e => e.stopPropagation()}>
+                <td className={`${cellPadding} ${rowPadding}`} onClick={(e) => e.stopPropagation()}>
                   <label className="flex items-center justify-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={e => handleSelectOne(supplier.id, e.target.checked)}
+                      onChange={(e) => handleSelectOne(supplier.id, e.target.checked)}
                       className="sr-only"
                     />
                     <div
@@ -270,15 +288,10 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span
-                          className="font-medium text-sm truncate"
-                          style={{ color: styles.textPrimary }}
-                        >
+                        <span className="font-medium text-sm truncate" style={{ color: styles.textPrimary }}>
                           {supplier.name}
                         </span>
-                        {isShortlisted && (
-                          <Star size={12} weight="fill" style={{ color: styles.warning }} />
-                        )}
+                        {isShortlisted && <Star size={12} weight="fill" style={{ color: styles.warning }} />}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs" style={{ color: styles.textMuted }}>
                         <span>{supplier.code}</span>
@@ -300,14 +313,14 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                           supplier.reliabilityScore >= 75
                             ? `${styles.success}15`
                             : supplier.reliabilityScore >= 50
-                            ? `${styles.warning}15`
-                            : `${styles.error}15`,
+                              ? `${styles.warning}15`
+                              : `${styles.error}15`,
                         color:
                           supplier.reliabilityScore >= 75
                             ? styles.success
                             : supplier.reliabilityScore >= 50
-                            ? styles.warning
-                            : styles.error,
+                              ? styles.warning
+                              : styles.error,
                       }}
                     >
                       {supplier.reliabilityScore}
@@ -348,8 +361,8 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                             supplier.metrics.dependencyPercentage > 60
                               ? styles.error
                               : supplier.metrics.dependencyPercentage > 30
-                              ? styles.warning
-                              : styles.success,
+                                ? styles.warning
+                                : styles.success,
                         }}
                       />
                     </div>
@@ -399,7 +412,7 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                 </td>
 
                 {/* Actions */}
-                <td className={`${cellPadding} ${rowPadding}`} onClick={e => e.stopPropagation()}>
+                <td className={`${cellPadding} ${rowPadding}`} onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => onSupplierClick(supplier)}
@@ -419,10 +432,7 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                       </button>
                       {menuOpen === supplier.id && (
                         <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setMenuOpen(null)}
-                          />
+                          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
                           <div
                             className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg shadow-lg border py-1"
                             style={{
@@ -437,11 +447,11 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors"
                               style={{ color: styles.textSecondary }}
-                              onMouseEnter={e => {
+                              onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = styles.bgHover;
                                 e.currentTarget.style.color = styles.textPrimary;
                               }}
-                              onMouseLeave={e => {
+                              onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
                                 e.currentTarget.style.color = styles.textSecondary;
                               }}
@@ -456,11 +466,11 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors"
                               style={{ color: styles.textSecondary }}
-                              onMouseEnter={e => {
+                              onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = styles.bgHover;
                                 e.currentTarget.style.color = styles.textPrimary;
                               }}
-                              onMouseLeave={e => {
+                              onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
                                 e.currentTarget.style.color = styles.textSecondary;
                               }}
@@ -475,10 +485,10 @@ export const SupplierTable: React.FC<SupplierTableProps> = ({
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors"
                               style={{ color: isShortlisted ? styles.warning : styles.textSecondary }}
-                              onMouseEnter={e => {
+                              onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = styles.bgHover;
                               }}
-                              onMouseLeave={e => {
+                              onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
                               }}
                             >

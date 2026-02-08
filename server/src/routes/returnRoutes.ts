@@ -2,7 +2,7 @@
 // Return Routes - Marketplace Return API (Stage 7)
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { returnService } from '../services/returnService';
@@ -76,9 +76,9 @@ const processRefundSchema = z.object({
  * GET /api/returns/buyer
  * List returns for the authenticated buyer
  */
-router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -100,14 +100,14 @@ router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/returns/buyer/:id
  * Get a single return for the buyer
  */
-router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const returnRequest = await returnService.getReturn(String(req.params.id), userId);
+    const returnRequest = await returnService.getReturn(String(req.params.id as string), userId);
 
     if (!returnRequest) {
       return res.status(404).json({ error: 'Return not found' });
@@ -124,9 +124,9 @@ router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) =>
  * POST /api/returns/buyer/:id/ship
  * Buyer marks return as shipped
  */
-router.post('/buyer/:id/ship', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/buyer/:id/ship', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -134,7 +134,7 @@ router.post('/buyer/:id/ship', requireAuth, async (req: AuthRequest, res: Respon
     const body = shipReturnSchema.parse(req.body);
 
     const result = await returnService.markReturnShipped({
-      returnId: String(req.params.id),
+      returnId: String(req.params.id as string),
       buyerId: userId,
       trackingNumber: body.trackingNumber,
       carrier: body.carrier,
@@ -158,14 +158,14 @@ router.post('/buyer/:id/ship', requireAuth, async (req: AuthRequest, res: Respon
  * GET /api/returns/buyer/:id/history
  * Get return history for buyer
  */
-router.get('/buyer/:id/history', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/:id/history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const history = await returnService.getReturnHistory(String(req.params.id), userId);
+    const history = await returnService.getReturnHistory(String(req.params.id as string), userId);
 
     return res.json(history);
   } catch (error) {
@@ -182,9 +182,9 @@ router.get('/buyer/:id/history', requireAuth, async (req: AuthRequest, res: Resp
  * GET /api/returns/seller
  * List returns for the authenticated seller
  */
-router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -206,9 +206,9 @@ router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/returns/seller/stats
  * Get return statistics for the seller
  */
-router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -225,14 +225,14 @@ router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response)
  * GET /api/returns/seller/:id
  * Get a single return for the seller
  */
-router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const returnRequest = await returnService.getReturn(String(req.params.id), userId);
+    const returnRequest = await returnService.getReturn(String(req.params.id as string), userId);
 
     if (!returnRequest) {
       return res.status(404).json({ error: 'Return not found' });
@@ -249,9 +249,9 @@ router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) =
  * POST /api/returns/seller/:id/approve
  * Seller approves a return request
  */
-router.post('/seller/:id/approve', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/approve', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -259,7 +259,7 @@ router.post('/seller/:id/approve', requireAuth, async (req: AuthRequest, res: Re
     const body = approveReturnSchema.parse(req.body);
 
     const result = await returnService.approveReturn({
-      returnId: String(req.params.id),
+      returnId: String(req.params.id as string),
       sellerId: userId,
       returnAddress: body.returnAddress,
       approvalNotes: body.approvalNotes,
@@ -283,9 +283,9 @@ router.post('/seller/:id/approve', requireAuth, async (req: AuthRequest, res: Re
  * POST /api/returns/seller/:id/reject
  * Seller rejects a return request
  */
-router.post('/seller/:id/reject', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/reject', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -293,7 +293,7 @@ router.post('/seller/:id/reject', requireAuth, async (req: AuthRequest, res: Res
     const body = rejectReturnSchema.parse(req.body);
 
     const result = await returnService.rejectReturn(
-      String(req.params.id),
+      String(req.params.id as string),
       userId,
       body.reason
     );
@@ -316,9 +316,9 @@ router.post('/seller/:id/reject', requireAuth, async (req: AuthRequest, res: Res
  * POST /api/returns/seller/:id/receive
  * Seller confirms return received
  */
-router.post('/seller/:id/receive', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/receive', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -326,7 +326,7 @@ router.post('/seller/:id/receive', requireAuth, async (req: AuthRequest, res: Re
     const body = receiveReturnSchema.parse(req.body);
 
     const result = await returnService.confirmReturnReceived({
-      returnId: String(req.params.id),
+      returnId: String(req.params.id as string),
       sellerId: userId,
       condition: body.condition,
       notes: body.notes,
@@ -350,9 +350,9 @@ router.post('/seller/:id/receive', requireAuth, async (req: AuthRequest, res: Re
  * POST /api/returns/seller/:id/refund
  * Seller processes refund
  */
-router.post('/seller/:id/refund', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/refund', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -360,7 +360,7 @@ router.post('/seller/:id/refund', requireAuth, async (req: AuthRequest, res: Res
     const body = processRefundSchema.parse(req.body);
 
     const result = await returnService.processRefund(
-      String(req.params.id),
+      String(req.params.id as string),
       userId,
       body.amount
     );
@@ -383,14 +383,14 @@ router.post('/seller/:id/refund', requireAuth, async (req: AuthRequest, res: Res
  * POST /api/returns/seller/:id/close
  * Seller closes a return
  */
-router.post('/seller/:id/close', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/close', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const result = await returnService.closeReturn(String(req.params.id), userId);
+    const result = await returnService.closeReturn(String(req.params.id as string), userId);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -407,14 +407,14 @@ router.post('/seller/:id/close', requireAuth, async (req: AuthRequest, res: Resp
  * GET /api/returns/seller/:id/history
  * Get return history for seller
  */
-router.get('/seller/:id/history', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id/history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const history = await returnService.getReturnHistory(String(req.params.id), userId);
+    const history = await returnService.getReturnHistory(String(req.params.id as string), userId);
 
     return res.json(history);
   } catch (error) {
@@ -431,9 +431,9 @@ router.get('/seller/:id/history', requireAuth, async (req: AuthRequest, res: Res
  * POST /api/returns
  * Create a return request (internal, typically called from dispute resolution)
  */
-router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -460,9 +460,9 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/returns/dispute/:disputeId
  * Get return for a specific dispute
  */
-router.get('/dispute/:disputeId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/dispute/:disputeId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

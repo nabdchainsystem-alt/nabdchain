@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   User,
@@ -19,8 +20,6 @@ import {
   CloudArrowUp,
   CheckCircle,
   XCircle,
-  Info,
-  Trash,
   FilePdf,
   FileImage,
 } from 'phosphor-react';
@@ -93,7 +92,7 @@ export const SellerSettings: React.FC = () => {
   const [verification, setVerification] = useState<VerificationStatus | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  const [_expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     profile: true,
     company: true,
     address: true,
@@ -314,8 +313,8 @@ export const SellerSettings: React.FC = () => {
   }, [hasChanges, saving, profileForm, companyForm, addressForm, bankForm, contactForm, getToken]);
 
   // Toggle section expansion
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  const _toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   // Save all changes
@@ -377,20 +376,14 @@ export const SellerSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: styles.bgPrimary }}
-      >
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: styles.bgPrimary }}>
         <Spinner size={32} className="animate-spin" style={{ color: styles.info }} />
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen transition-colors"
-      style={{ backgroundColor: styles.bgPrimary }}
-    >
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
         <PageHeader
           title={t('seller.settings.title') || 'Seller Settings'}
@@ -417,11 +410,7 @@ export const SellerSettings: React.FC = () => {
                   className="px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: styles.info, color: '#fff' }}
                 >
-                  {saving ? (
-                    <Spinner size={16} className="animate-spin" />
-                  ) : (
-                    <FloppyDisk size={16} />
-                  )}
+                  {saving ? <Spinner size={16} className="animate-spin" /> : <FloppyDisk size={16} />}
                   {t('seller.settings.saveChanges') || 'Save Changes'}
                 </button>
               )}
@@ -448,15 +437,19 @@ export const SellerSettings: React.FC = () => {
               {completionProgress}%
             </span>
           </div>
-          <div
-            className="h-2 rounded-full overflow-hidden"
-            style={{ backgroundColor: styles.bgSecondary }}
-          >
+          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${completionProgress}%`,
-                backgroundColor: completionProgress === 100 ? styles.success : completionProgress >= 70 ? styles.info : completionProgress >= 40 ? '#f59e0b' : styles.error,
+                backgroundColor:
+                  completionProgress === 100
+                    ? styles.success
+                    : completionProgress >= 70
+                      ? styles.info
+                      : completionProgress >= 40
+                        ? '#f59e0b'
+                        : styles.error,
               }}
             />
           </div>
@@ -756,11 +749,7 @@ export const SellerSettings: React.FC = () => {
                 />
               </FormField>
 
-              <FormField
-                label={t('seller.settings.company.type') || 'Company Type'}
-                styles={styles}
-                isRTL={isRTL}
-              >
+              <FormField label={t('seller.settings.company.type') || 'Company Type'} styles={styles} isRTL={isRTL}>
                 <Select
                   value={companyForm.companyType}
                   onChange={(value) => {
@@ -899,12 +888,7 @@ export const SellerSettings: React.FC = () => {
                 />
               </FormField>
 
-              <FormField
-                label={t('seller.settings.address.city') || 'City'}
-                required
-                styles={styles}
-                isRTL={isRTL}
-              >
+              <FormField label={t('seller.settings.address.city') || 'City'} required styles={styles} isRTL={isRTL}>
                 <input
                   type="text"
                   value={addressForm.city}
@@ -922,11 +906,7 @@ export const SellerSettings: React.FC = () => {
                 />
               </FormField>
 
-              <FormField
-                label={t('seller.settings.address.district') || 'District'}
-                styles={styles}
-                isRTL={isRTL}
-              >
+              <FormField label={t('seller.settings.address.district') || 'District'} styles={styles} isRTL={isRTL}>
                 <input
                   type="text"
                   value={addressForm.district}
@@ -944,11 +924,7 @@ export const SellerSettings: React.FC = () => {
                 />
               </FormField>
 
-              <FormField
-                label={t('seller.settings.address.street') || 'Street'}
-                styles={styles}
-                isRTL={isRTL}
-              >
+              <FormField label={t('seller.settings.address.street') || 'Street'} styles={styles} isRTL={isRTL}>
                 <input
                   type="text"
                   value={addressForm.street}
@@ -989,11 +965,7 @@ export const SellerSettings: React.FC = () => {
                 />
               </FormField>
 
-              <FormField
-                label={t('seller.settings.address.postalCode') || 'Postal Code'}
-                styles={styles}
-                isRTL={isRTL}
-              >
+              <FormField label={t('seller.settings.address.postalCode') || 'Postal Code'} styles={styles} isRTL={isRTL}>
                 <input
                   type="text"
                   value={addressForm.postalCode}
@@ -1114,11 +1086,7 @@ export const SellerSettings: React.FC = () => {
                 />
               </FormField>
 
-              <FormField
-                label={t('seller.settings.bank.currency') || 'Currency'}
-                styles={styles}
-                isRTL={isRTL}
-              >
+              <FormField label={t('seller.settings.bank.currency') || 'Currency'} styles={styles} isRTL={isRTL}>
                 <Select
                   value={bankForm.currency}
                   onChange={(value) => {
@@ -1299,32 +1267,44 @@ export const SellerSettings: React.FC = () => {
                 <DocumentUploadRow
                   label={t('seller.settings.documents.crDocument') || 'Commercial Registration'}
                   documentType="cr_document"
-                  status={profile?.documents?.find(d => d.documentType === 'cr_document')?.verificationStatus || 'not_uploaded'}
-                  fileName={profile?.documents?.find(d => d.documentType === 'cr_document')?.fileName}
+                  status={
+                    profile?.documents?.find((d) => d.documentType === 'cr_document')?.verificationStatus ||
+                    'not_uploaded'
+                  }
+                  fileName={profile?.documents?.find((d) => d.documentType === 'cr_document')?.fileName}
                   styles={styles}
                   t={t}
                 />
                 <DocumentUploadRow
                   label={t('seller.settings.documents.vatDocument') || 'VAT Certificate'}
                   documentType="vat_document"
-                  status={profile?.documents?.find(d => d.documentType === 'vat_document')?.verificationStatus || 'not_uploaded'}
-                  fileName={profile?.documents?.find(d => d.documentType === 'vat_document')?.fileName}
+                  status={
+                    profile?.documents?.find((d) => d.documentType === 'vat_document')?.verificationStatus ||
+                    'not_uploaded'
+                  }
+                  fileName={profile?.documents?.find((d) => d.documentType === 'vat_document')?.fileName}
                   styles={styles}
                   t={t}
                 />
                 <DocumentUploadRow
                   label={t('seller.settings.documents.nationalAddress') || 'National Address Proof'}
                   documentType="national_address"
-                  status={profile?.documents?.find(d => d.documentType === 'national_address')?.verificationStatus || 'not_uploaded'}
-                  fileName={profile?.documents?.find(d => d.documentType === 'national_address')?.fileName}
+                  status={
+                    profile?.documents?.find((d) => d.documentType === 'national_address')?.verificationStatus ||
+                    'not_uploaded'
+                  }
+                  fileName={profile?.documents?.find((d) => d.documentType === 'national_address')?.fileName}
                   styles={styles}
                   t={t}
                 />
                 <DocumentUploadRow
                   label={t('seller.settings.documents.bankLetter') || 'Bank Account Letter'}
                   documentType="bank_letter"
-                  status={profile?.documents?.find(d => d.documentType === 'bank_letter')?.verificationStatus || 'not_uploaded'}
-                  fileName={profile?.documents?.find(d => d.documentType === 'bank_letter')?.fileName}
+                  status={
+                    profile?.documents?.find((d) => d.documentType === 'bank_letter')?.verificationStatus ||
+                    'not_uploaded'
+                  }
+                  fileName={profile?.documents?.find((d) => d.documentType === 'bank_letter')?.fileName}
                   styles={styles}
                   t={t}
                 />
@@ -1333,7 +1313,6 @@ export const SellerSettings: React.FC = () => {
           </SettingsSection>
         </div>
       </Container>
-
     </div>
   );
 };
@@ -1350,17 +1329,8 @@ interface SettingsSectionProps {
   children: React.ReactNode;
 }
 
-const SettingsSection: React.FC<SettingsSectionProps> = ({
-  icon: Icon,
-  title,
-  subtitle,
-  styles,
-  children,
-}) => (
-  <div
-    className="rounded-lg border p-6"
-    style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-  >
+const SettingsSection: React.FC<SettingsSectionProps> = ({ icon: Icon, title, subtitle, styles, children }) => (
+  <div className="rounded-lg border p-6" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
     <div className="flex items-start gap-4 mb-6">
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -1391,15 +1361,7 @@ interface FormFieldProps {
   children: React.ReactNode;
 }
 
-const FormField: React.FC<FormFieldProps> = ({
-  label,
-  required,
-  hint,
-  className,
-  styles,
-  isRTL,
-  children,
-}) => (
+const FormField: React.FC<FormFieldProps> = ({ label, required, hint, className, styles, isRTL, children }) => (
   <div className={className}>
     <label
       className="block text-sm font-medium mb-1.5"
@@ -1462,10 +1424,7 @@ const VerificationCard: React.FC<VerificationCardProps> = ({ title, status, styl
   const Icon = config.icon;
 
   return (
-    <div
-      className="rounded-lg p-4"
-      style={{ backgroundColor: config.bgColor }}
-    >
+    <div className="rounded-lg p-4" style={{ backgroundColor: config.bgColor }}>
       <div className="flex items-center gap-3">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -1496,14 +1455,7 @@ interface DocumentUploadRowProps {
   t: (key: string) => string;
 }
 
-const DocumentUploadRow: React.FC<DocumentUploadRowProps> = ({
-  label,
-  documentType,
-  status,
-  fileName,
-  styles,
-  t,
-}) => {
+const DocumentUploadRow: React.FC<DocumentUploadRowProps> = ({ label, _documentType, status, fileName, styles, t }) => {
   const getStatusConfig = () => {
     switch (status) {
       case 'approved':

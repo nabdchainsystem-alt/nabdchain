@@ -2,11 +2,12 @@
 // Buyer Purchases Routes - Purchase Intelligence API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import * as buyerPurchaseService from '../services/buyerPurchaseService';
 import { apiLogger } from '../utils/logger';
+import { resolveBuyerId } from '../utils/resolveBuyerId';
 
 const router = Router();
 
@@ -39,7 +40,10 @@ const purchaseFiltersSchema = z.object({
  */
 router.get('/buyer', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const filters = purchaseFiltersSchema.parse(req.query);
 
     const purchases = await buyerPurchaseService.getBuyerPurchases(buyerId, {
@@ -56,7 +60,7 @@ router.get('/buyer', requireAuth, async (req, res: Response) => {
     res.json(purchases);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Invalid query parameters', details: error.errors });
+      res.status(400).json({ error: 'Invalid query parameters', details: error.issues });
       return;
     }
     apiLogger.error('Error fetching buyer purchases:', error);
@@ -70,7 +74,10 @@ router.get('/buyer', requireAuth, async (req, res: Response) => {
  */
 router.get('/buyer/stats', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const stats = await buyerPurchaseService.getBuyerPurchaseStats(buyerId);
     res.json(stats);
   } catch (error) {
@@ -85,8 +92,11 @@ router.get('/buyer/stats', requireAuth, async (req, res: Response) => {
  */
 router.get('/buyer/:id', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { id } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
 
     const purchase = await buyerPurchaseService.getBuyerPurchase(buyerId, id);
 
@@ -108,8 +118,11 @@ router.get('/buyer/:id', requireAuth, async (req, res: Response) => {
  */
 router.get('/buyer/:id/timeline', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { id } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
 
     const timeline = await buyerPurchaseService.getPurchaseTimeline(buyerId, id);
 
@@ -131,8 +144,11 @@ router.get('/buyer/:id/timeline', requireAuth, async (req, res: Response) => {
  */
 router.get('/buyer/price-history/:sku', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { sku } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const sku = req.params.sku as string;
 
     const history = await buyerPurchaseService.getPriceHistory(buyerId, sku);
     res.json(history);
@@ -148,8 +164,11 @@ router.get('/buyer/price-history/:sku', requireAuth, async (req, res: Response) 
  */
 router.get('/buyer/price-comparison/:sku', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { sku } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const sku = req.params.sku as string;
     const { currentPrice } = req.query;
 
     if (!currentPrice) {
@@ -181,8 +200,11 @@ router.get('/buyer/price-comparison/:sku', requireAuth, async (req, res: Respons
  */
 router.get('/buyer/supplier/:sellerId', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { sellerId } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const sellerId = req.params.sellerId as string;
 
     const metrics = await buyerPurchaseService.getSupplierMetrics(buyerId, sellerId);
 
@@ -204,8 +226,11 @@ router.get('/buyer/supplier/:sellerId', requireAuth, async (req, res: Response) 
  */
 router.post('/buyer/:id/refresh-intelligence', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { id } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
 
     // Get the purchase
     const purchase = await buyerPurchaseService.getBuyerPurchase(buyerId, id);

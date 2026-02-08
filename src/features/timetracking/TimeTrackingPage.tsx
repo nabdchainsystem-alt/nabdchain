@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Clock, Play, Pause, Plus, Calendar, ChartBar, Table,
-  FunnelSimple, Export, Gear
-} from 'phosphor-react';
+import { Clock, Play, Pause, Plus, Calendar, ChartBar, Table, FunnelSimple, Export } from 'phosphor-react';
 
 // =============================================================================
 // TIME TRACKING PAGE - PLACEHOLDER COMPONENT
@@ -14,7 +11,7 @@ type TabType = 'timer' | 'timesheet' | 'reports';
 export const TimeTrackingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('timer');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [elapsedTime, _setElapsedTime] = useState(0);
 
   // Format elapsed time
   const formatTime = (seconds: number): string => {
@@ -34,12 +31,8 @@ export const TimeTrackingPage: React.FC = () => {
               <Clock size={24} className="text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
-                Time Tracking
-              </h1>
-              <p className="text-sm text-stone-500">
-                Track time spent on tasks and projects
-              </p>
+              <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-200">Time Tracking</h1>
+              <p className="text-sm text-stone-500">Track time spent on tasks and projects</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -118,15 +111,11 @@ export const TimeTrackingPage: React.FC = () => {
 
             {/* Today's Entries */}
             <div>
-              <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
-                Today's Time Entries
-              </h3>
+              <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">Today's Time Entries</h3>
               <div className="bg-stone-50 dark:bg-stone-900 rounded-xl p-8 text-center">
                 <Clock size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
                 <p className="text-stone-500">No time entries yet today</p>
-                <p className="text-sm text-stone-400 mt-1">
-                  Start the timer or add a manual entry
-                </p>
+                <p className="text-sm text-stone-400 mt-1">Start the timer or add a manual entry</p>
               </div>
             </div>
           </div>
@@ -140,9 +129,7 @@ export const TimeTrackingPage: React.FC = () => {
                   ← Previous Week
                 </button>
                 <span className="px-4 py-1.5 font-medium">This Week</span>
-                <button className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm">
-                  Next Week →
-                </button>
+                <button className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm">Next Week →</button>
               </div>
               <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
                 <Export size={16} />
@@ -153,9 +140,7 @@ export const TimeTrackingPage: React.FC = () => {
             <div className="bg-stone-50 dark:bg-stone-900 rounded-xl p-8 text-center">
               <Table size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
               <p className="text-stone-500">Timesheet view coming soon</p>
-              <p className="text-sm text-stone-400 mt-1">
-                View and edit your weekly time entries
-              </p>
+              <p className="text-sm text-stone-400 mt-1">View and edit your weekly time entries</p>
             </div>
           </div>
         )}
@@ -188,9 +173,7 @@ export const TimeTrackingPage: React.FC = () => {
               ].map((stat) => (
                 <div key={stat.label} className="bg-stone-50 dark:bg-stone-900 rounded-xl p-4">
                   <div className="text-sm text-stone-500 mb-1">{stat.label}</div>
-                  <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-                    {stat.value}
-                  </div>
+                  <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">{stat.value}</div>
                 </div>
               ))}
             </div>
@@ -198,9 +181,7 @@ export const TimeTrackingPage: React.FC = () => {
             <div className="bg-stone-50 dark:bg-stone-900 rounded-xl p-8 text-center">
               <ChartBar size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
               <p className="text-stone-500">Time reports coming soon</p>
-              <p className="text-sm text-stone-400 mt-1">
-                View charts and analytics for tracked time
-              </p>
+              <p className="text-sm text-stone-400 mt-1">View charts and analytics for tracked time</p>
             </div>
           </div>
         )}

@@ -6,18 +6,10 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  CheckCircle,
-  Gear,
-  Truck,
-  MapTrifold,
-  Package,
-  Timer,
-  Warning,
-  ArrowRight,
-} from 'phosphor-react';
+import { CheckCircle, Gear, Truck, MapTrifold, Package, Timer, Warning, ArrowRight } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { CleanTimelineProps, TrackingStage, SLAStatus } from './tracking.types';
+import { ThemeStyles } from '../../../../theme/portalColors';
 
 // =============================================================================
 // Icon Mapping
@@ -56,7 +48,7 @@ const formatDateTime = (dateStr?: string): string => {
   });
 };
 
-const getSLAColor = (status?: SLAStatus, styles: any = {}): string => {
+const getSLAColor = (status?: SLAStatus, styles: Partial<ThemeStyles> = {}): string => {
   switch (status) {
     case 'on_track':
       return styles.success || '#059669';
@@ -77,19 +69,12 @@ interface StageNodeProps {
   stage: TrackingStage;
   role: 'buyer' | 'seller';
   isLast: boolean;
-  styles: any;
+  styles: ThemeStyles;
   isRtl: boolean;
   onAction?: (stageKey: string, action: string) => void;
 }
 
-const StageNode: React.FC<StageNodeProps> = ({
-  stage,
-  role,
-  isLast,
-  styles,
-  isRtl,
-  onAction,
-}) => {
+const StageNode: React.FC<StageNodeProps> = ({ stage, role, isLast, styles, isRtl, onAction }) => {
   const Icon = STAGE_ICONS[stage.icon] || Package;
   const isCompleted = stage.status === 'completed';
   const isCurrent = stage.status === 'current';
@@ -154,11 +139,7 @@ const StageNode: React.FC<StageNodeProps> = ({
           ) : isCompleted ? (
             <CheckCircle size={20} weight="fill" style={{ color: colors.icon }} />
           ) : (
-            <Icon
-              size={20}
-              weight={isCurrent ? 'bold' : 'regular'}
-              style={{ color: colors.icon }}
-            />
+            <Icon size={20} weight={isCurrent ? 'bold' : 'regular'} style={{ color: colors.icon }} />
           )}
         </div>
 
@@ -213,10 +194,7 @@ const StageNode: React.FC<StageNodeProps> = ({
 
         {/* Short note */}
         {stage.note && (
-          <p
-            className="text-sm mt-1"
-            style={{ color: styles.textMuted }}
-          >
+          <p className="text-sm mt-1" style={{ color: styles.textMuted }}>
             {stage.note}
           </p>
         )}
@@ -244,8 +222,8 @@ const StageNode: React.FC<StageNodeProps> = ({
                   stage.slaStatus === 'on_track'
                     ? `${styles.success}10`
                     : stage.slaStatus === 'at_risk'
-                    ? `${styles.warning}10`
-                    : `${styles.error}10`,
+                      ? `${styles.warning}10`
+                      : `${styles.error}10`,
               }}
             >
               <Timer
@@ -254,10 +232,7 @@ const StageNode: React.FC<StageNodeProps> = ({
                 style={{ color: getSLAColor(stage.slaStatus, styles) }}
                 className={stage.slaStatus === 'at_risk' || stage.slaStatus === 'breached' ? 'animate-pulse' : ''}
               />
-              <span
-                className="text-sm font-medium"
-                style={{ color: getSLAColor(stage.slaStatus, styles) }}
-              >
+              <span className="text-sm font-medium" style={{ color: getSLAColor(stage.slaStatus, styles) }}>
                 {stage.slaTimeRemaining}
               </span>
             </div>
@@ -300,25 +275,15 @@ const StageNode: React.FC<StageNodeProps> = ({
 // Main Component
 // =============================================================================
 
-export const CleanTimeline: React.FC<CleanTimelineProps> = ({
-  stages,
-  role,
-  currentStageKey,
-  onStageAction,
-}) => {
+export const CleanTimeline: React.FC<CleanTimelineProps> = ({ stages, role, _currentStageKey, onStageAction }) => {
   const { styles, direction, t } = usePortal();
   const isRtl = direction === 'rtl';
 
   if (!stages || stages.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center py-12"
-        style={{ color: styles.textMuted }}
-      >
+      <div className="flex flex-col items-center justify-center py-12" style={{ color: styles.textMuted }}>
         <Package size={40} className="mb-3" />
-        <p className="text-sm">
-          {t('tracking.noTimeline') || 'Tracking will begin once the order is confirmed.'}
-        </p>
+        <p className="text-sm">{t('tracking.noTimeline') || 'Tracking will begin once the order is confirmed.'}</p>
       </div>
     );
   }

@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { apiLogger } from '../utils/logger';
 import {
   exportService,
   ExportDocumentType,
@@ -71,7 +72,7 @@ const QuoteComparisonExportSchema = BaseExportRequestSchema.extend({
       quantity: z.number(),
       unit: z.string(),
       targetPrice: z.number().optional(),
-      specifications: z.record(z.string()).optional(),
+      specifications: z.record(z.string(), z.string()).optional(),
     })),
     deliveryLocation: z.object({
       line1: z.string(),
@@ -190,7 +191,7 @@ router.post('/quote-comparison', async (req: Request, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: parsed.error.errors,
+        details: parsed.error.issues,
       });
     }
 
@@ -242,7 +243,7 @@ router.post('/quote-comparison', async (req: Request, res: Response) => {
 
     return res.send(result.buffer);
   } catch (error) {
-    console.error('Export error:', error);
+    apiLogger.error('Export error:', error);
     return res.status(500).json({
       error: 'Export failed',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -282,7 +283,7 @@ router.post('/rfq', async (req: Request, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: parsed.error.errors,
+        details: parsed.error.issues,
       });
     }
 
@@ -309,7 +310,7 @@ router.post('/rfq', async (req: Request, res: Response) => {
 
     return res.send(result.buffer);
   } catch (error) {
-    console.error('Export error:', error);
+    apiLogger.error('Export error:', error);
     return res.status(500).json({
       error: 'Export failed',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -364,7 +365,7 @@ router.post('/order', async (req: Request, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: parsed.error.errors,
+        details: parsed.error.issues,
       });
     }
 
@@ -379,7 +380,7 @@ router.post('/order', async (req: Request, res: Response) => {
       deliveredAt: data.deliveredAt ? new Date(data.deliveredAt) : undefined,
       cancelledAt: data.cancelledAt ? new Date(data.cancelledAt) : undefined,
       paidAt: data.paidAt ? new Date(data.paidAt) : undefined,
-      auditTrail: data.auditTrail?.map((e: { timestamp: string }) => ({
+      auditTrail: data.auditTrail?.map((e: any) => ({
         ...e,
         timestamp: new Date(e.timestamp),
       })),
@@ -399,7 +400,7 @@ router.post('/order', async (req: Request, res: Response) => {
 
     return res.send(result.buffer);
   } catch (error) {
-    console.error('Export error:', error);
+    apiLogger.error('Export error:', error);
     return res.status(500).json({
       error: 'Export failed',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -452,7 +453,7 @@ router.post('/invoice', async (req: Request, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: parsed.error.errors,
+        details: parsed.error.issues,
       });
     }
 
@@ -479,7 +480,7 @@ router.post('/invoice', async (req: Request, res: Response) => {
 
     return res.send(result.buffer);
   } catch (error) {
-    console.error('Export error:', error);
+    apiLogger.error('Export error:', error);
     return res.status(500).json({
       error: 'Export failed',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -525,7 +526,7 @@ router.post('/payout', async (req: Request, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: parsed.error.errors,
+        details: parsed.error.issues,
       });
     }
 
@@ -538,7 +539,7 @@ router.post('/payout', async (req: Request, res: Response) => {
       scheduledAt: new Date(data.scheduledAt),
       processedAt: data.processedAt ? new Date(data.processedAt) : undefined,
       settledAt: data.settledAt ? new Date(data.settledAt) : undefined,
-      lineItems: data.lineItems.map((item: { paidAt: string }) => ({
+      lineItems: data.lineItems.map((item: any) => ({
         ...item,
         paidAt: new Date(item.paidAt),
       })),
@@ -558,7 +559,7 @@ router.post('/payout', async (req: Request, res: Response) => {
 
     return res.send(result.buffer);
   } catch (error) {
-    console.error('Export error:', error);
+    apiLogger.error('Export error:', error);
     return res.status(500).json({
       error: 'Export failed',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -598,7 +599,7 @@ router.get('/jobs', (req: Request, res: Response) => {
  * Get specific job status
  */
 router.get('/jobs/:jobId', (req: Request, res: Response) => {
-  const { jobId } = req.params;
+  const jobId = req.params.jobId as string;
   const job = exportService.getJob(jobId);
 
   if (!job) {
@@ -624,7 +625,7 @@ router.get('/jobs/:jobId', (req: Request, res: Response) => {
  * Download completed export file
  */
 router.get('/jobs/:jobId/download', async (req: Request, res: Response) => {
-  const { jobId } = req.params;
+  const jobId = req.params.jobId as string;
   const job = exportService.getJob(jobId);
 
   if (!job) {
@@ -660,7 +661,7 @@ router.get('/jobs/:jobId/download', async (req: Request, res: Response) => {
  * Delete an export job
  */
 router.delete('/jobs/:jobId', async (req: Request, res: Response) => {
-  const { jobId } = req.params;
+  const jobId = req.params.jobId as string;
   const deleted = await exportService.deleteJob(jobId);
 
   if (!deleted) {

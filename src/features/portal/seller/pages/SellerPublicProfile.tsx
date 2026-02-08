@@ -133,7 +133,9 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
             {t('seller.public.notFound') || 'Seller Not Found'}
           </h2>
           <p style={{ color: styles.textMuted }}>
-            {error || t('seller.public.notFoundDesc') || 'The seller you are looking for does not exist or is no longer available.'}
+            {error ||
+              t('seller.public.notFoundDesc') ||
+              'The seller you are looking for does not exist or is no longer available.'}
           </p>
         </div>
       </div>
@@ -143,37 +145,18 @@ export const SellerPublicProfile: React.FC<SellerPublicProfileProps> = ({
   return (
     <div className="min-h-screen overflow-y-auto" style={{ backgroundColor: styles.bgPrimary }} dir={direction}>
       {/* Seller Header - Clean, Centered */}
-      <SellerHeader
-        seller={seller}
-        styles={styles}
-        isRtl={isRtl}
-        t={t}
-      />
+      <SellerHeader seller={seller} styles={styles} isRtl={isRtl} t={t} />
 
       {/* Trust Signals Row */}
-      <TrustSignalsRow
-        seller={seller}
-        styles={styles}
-        t={t}
-      />
+      <TrustSignalsRow seller={seller} styles={styles} t={t} />
 
       {/* Main Content - Max Width Centered */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Seller Overview */}
-        <SellerOverview
-          seller={seller}
-          yearsActive={getYearsActive()}
-          styles={styles}
-          t={t}
-          isRtl={isRtl}
-        />
+        <SellerOverview seller={seller} yearsActive={getYearsActive()} styles={styles} t={t} isRtl={isRtl} />
 
         {/* Performance Snapshot */}
-        <PerformanceSnapshot
-          seller={seller}
-          styles={styles}
-          t={t}
-        />
+        <PerformanceSnapshot seller={seller} styles={styles} t={t} />
 
         {/* Listings Preview */}
         <ListingsPreview
@@ -241,7 +224,7 @@ interface SellerHeaderProps {
   t: (key: string) => string;
 }
 
-const SellerHeader: React.FC<SellerHeaderProps> = ({ seller, styles, isRtl, t }) => {
+const SellerHeader: React.FC<SellerHeaderProps> = ({ seller, styles, _isRtl, t }) => {
   const badges = [];
 
   if (seller.verified) {
@@ -289,11 +272,7 @@ const SellerHeader: React.FC<SellerHeaderProps> = ({ seller, styles, isRtl, t })
           }}
         >
           {seller.logoUrl ? (
-            <img
-              src={seller.logoUrl}
-              alt={seller.displayName}
-              className="w-full h-full object-cover"
-            />
+            <img src={seller.logoUrl} alt={seller.displayName} className="w-full h-full object-cover" />
           ) : (
             <div
               className="w-full h-full flex items-center justify-center"
@@ -336,10 +315,7 @@ const SellerHeader: React.FC<SellerHeaderProps> = ({ seller, styles, isRtl, t })
 
         {/* Tagline */}
         {(seller.tagline || seller.shortDescription) && (
-          <p
-            className="text-base max-w-xl mx-auto line-clamp-1"
-            style={{ color: styles.textSecondary as string }}
-          >
+          <p className="text-base max-w-xl mx-auto line-clamp-1" style={{ color: styles.textSecondary as string }}>
             {seller.tagline || seller.shortDescription}
           </p>
         )}
@@ -438,7 +414,7 @@ interface SellerOverviewProps {
 }
 
 const SellerOverview: React.FC<SellerOverviewProps> = ({ seller, yearsActive, styles, t, isRtl }) => {
-  const formatDate = (dateStr: string) => {
+  const _formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString(isRtl ? 'ar-SA' : 'en-US', {
       year: 'numeric',
@@ -465,10 +441,7 @@ const SellerOverview: React.FC<SellerOverviewProps> = ({ seller, yearsActive, st
       </h2>
 
       {/* About paragraph */}
-      <p
-        className="text-sm leading-relaxed mb-6"
-        style={{ color: styles.textSecondary as string }}
-      >
+      <p className="text-sm leading-relaxed mb-6" style={{ color: styles.textSecondary as string }}>
         {seller.shortDescription || t('seller.public.noDescription') || 'No description provided.'}
       </p>
 
@@ -487,7 +460,9 @@ const SellerOverview: React.FC<SellerOverviewProps> = ({ seller, yearsActive, st
               {t('seller.public.yearsActive') || 'Years Active'}
             </div>
             <div className="font-medium" style={{ color: styles.textPrimary as string }}>
-              {yearsActive > 0 ? `${yearsActive} ${t('common.years') || 'years'}` : t('seller.public.newSeller') || 'New Seller'}
+              {yearsActive > 0
+                ? `${yearsActive} ${t('common.years') || 'years'}`
+                : t('seller.public.newSeller') || 'New Seller'}
             </div>
           </div>
         </div>
@@ -617,7 +592,9 @@ const PerformanceSnapshot: React.FC<PerformanceSnapshotProps> = ({ seller, style
         {t('seller.public.performance') || 'Performance Snapshot'}
       </h2>
 
-      <div className={`grid gap-4 ${seller.rating && seller.rating.count > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+      <div
+        className={`grid gap-4 ${seller.rating && seller.rating.count > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}
+      >
         {metrics.map((metric, index) => {
           const Icon = metric.icon;
           return (
@@ -632,10 +609,7 @@ const PerformanceSnapshot: React.FC<PerformanceSnapshotProps> = ({ seller, style
               >
                 <Icon size={24} weight="fill" style={{ color: metric.color }} />
               </div>
-              <div
-                className="text-xl font-bold mb-1"
-                style={{ color: styles.textPrimary as string }}
-              >
+              <div className="text-xl font-bold mb-1" style={{ color: styles.textPrimary as string }}>
                 {metric.value}
               </div>
               <div className="text-xs" style={{ color: styles.textMuted as string }}>
@@ -742,10 +716,7 @@ const ListingsPreview: React.FC<ListingsPreviewProps> = ({
             </div>
             {/* Product Info */}
             <div className="p-3">
-              <h3
-                className="font-medium text-sm line-clamp-2 mb-2"
-                style={{ color: styles.textPrimary as string }}
-              >
+              <h3 className="font-medium text-sm line-clamp-2 mb-2" style={{ color: styles.textPrimary as string }}>
                 {isRtl && product.nameAr ? product.nameAr : product.name}
               </h3>
               <div className="flex items-center justify-between">
@@ -778,7 +749,7 @@ interface BuyerActionsProps {
 }
 
 const BuyerActions: React.FC<BuyerActionsProps> = ({
-  seller,
+  _seller,
   isSaved,
   onRequestRFQ,
   onContactSeller,
@@ -834,13 +805,13 @@ const BuyerActions: React.FC<BuyerActionsProps> = ({
           onClick={onSaveSeller}
           className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all"
           style={{
-            backgroundColor: isSaved ? '#ef444415' : styles.bgSecondary as string,
-            color: isSaved ? '#ef4444' : styles.textPrimary as string,
+            backgroundColor: isSaved ? '#ef444415' : (styles.bgSecondary as string),
+            color: isSaved ? '#ef4444' : (styles.textPrimary as string),
             border: `1px solid ${isSaved ? '#ef444440' : styles.border}`,
           }}
         >
           <Heart size={20} weight={isSaved ? 'fill' : 'regular'} />
-          <span>{isSaved ? (t('seller.public.saved') || 'Saved') : (t('seller.public.saveSeller') || 'Save Seller')}</span>
+          <span>{isSaved ? t('seller.public.saved') || 'Saved' : t('seller.public.saveSeller') || 'Save Seller'}</span>
         </button>
       </div>
     </div>
@@ -858,13 +829,7 @@ interface ContactSellerModalProps {
   isRtl: boolean;
 }
 
-const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
-  seller,
-  onClose,
-  styles,
-  t,
-  isRtl,
-}) => {
+const ContactSellerModal: React.FC<ContactSellerModalProps> = ({ seller, onClose, styles, t, _isRtl }) => {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -887,10 +852,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full max-w-md rounded-xl shadow-xl"
@@ -929,10 +891,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
             >
               <CheckCircle size={32} weight="fill" style={{ color: '#22c55e' }} />
             </div>
-            <h4
-              className="font-semibold mb-2"
-              style={{ color: styles.textPrimary as string }}
-            >
+            <h4 className="font-semibold mb-2" style={{ color: styles.textPrimary as string }}>
               {t('seller.public.messageSent') || 'Message Sent!'}
             </h4>
             <p className="text-sm" style={{ color: styles.textSecondary as string }}>
@@ -942,10 +901,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
         ) : (
           <form onSubmit={handleSubmit} className="p-4">
             <div className="mb-4">
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textSecondary as string }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textSecondary as string }}>
                 {t('seller.public.yourMessage') || 'Your Message'}
               </label>
               <textarea
@@ -981,11 +937,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
                 style={{ backgroundColor: styles.info as string, color: '#fff' }}
               >
-                {sending ? (
-                  <SpinnerGap size={18} className="animate-spin" />
-                ) : (
-                  <EnvelopeSimple size={18} />
-                )}
+                {sending ? <SpinnerGap size={18} className="animate-spin" /> : <EnvelopeSimple size={18} />}
                 <span>{t('seller.public.sendMessage') || 'Send Message'}</span>
               </button>
             </div>

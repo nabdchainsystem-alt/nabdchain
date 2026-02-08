@@ -1,10 +1,11 @@
 // =============================================================================
 // Seller Home Service - Aggregated Dashboard Data
 // =============================================================================
-// Note: This service returns mock data as some Prisma models are not yet created.
-// The frontend gracefully falls back to mock data when backend fails.
+// Returns real data from database. Frontend handles empty states gracefully.
+// NOTE: Mock data removed - see MOCK_REMOVAL_REPORT.md
 
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -100,10 +101,13 @@ export interface SellerHomeSummary {
 }
 
 // =============================================================================
-// Mock Data Generators
+// Empty State Helpers (No mock data - production mode)
 // =============================================================================
 
-function generateMockPulse(days: number): BusinessPulseData {
+/**
+ * Generate empty pulse data with real date labels but zero values
+ */
+function getEmptyPulse(days: number): BusinessPulseData {
   const now = new Date();
   const labels: string[] = [];
   const revenue: number[] = [];
@@ -113,62 +117,17 @@ function generateMockPulse(days: number): BusinessPulseData {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
     labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-    revenue.push(Math.floor(Math.random() * 5000) + 1000);
-    orders.push(Math.floor(Math.random() * 10) + 1);
+    revenue.push(0); // Zero, not random
+    orders.push(0);  // Zero, not random
   }
 
   return { labels, revenue, orders };
 }
 
-function generateMockAlerts(): SellerAlert[] {
-  const now = new Date();
-  return [
-    {
-      id: 'rfq-waiting',
-      type: 'rfq',
-      severity: 'warning',
-      message: 'You have 2 RFQs waiting for response',
-      messageAr: 'لديك 2 طلبات بانتظار الرد',
-      ctaLabel: 'View RFQs',
-      ctaLabelAr: 'عرض الطلبات',
-      ctaRoute: 'rfqs',
-      count: 2,
-      createdAt: now.toISOString(),
-    },
-    {
-      id: 'orders-at-risk',
-      type: 'order',
-      severity: 'critical',
-      message: '1 order is at risk of delay',
-      messageAr: '1 طلب معرض للتأخير',
-      ctaLabel: 'Review order',
-      ctaLabelAr: 'مراجعة الطلب',
-      ctaRoute: 'orders',
-      count: 1,
-      createdAt: now.toISOString(),
-    },
-  ];
-}
-
-function generateMockFocus(): SellerFocus {
-  return {
-    id: 'respond-rfqs',
-    priority: 'high',
-    title: 'Respond to 4 RFQs to increase win rate',
-    titleAr: 'رد على 4 طلبات لزيادة نسبة الفوز',
-    description: 'Quick responses improve your conversion rate and seller ranking',
-    descriptionAr: 'الردود السريعة تحسن نسبة التحويل وترتيبك كبائع',
-    hint: 'Sellers who respond within 2 hours have 40% higher win rates',
-    hintAr: 'البائعون الذين يردون خلال ساعتين لديهم نسبة فوز أعلى بـ 40%',
-    ctaLabel: 'Review RFQs',
-    ctaLabelAr: 'مراجعة الطلبات',
-    ctaRoute: 'rfqs',
-    ctaFilter: 'unread',
-    isEmpty: false,
-  };
-}
-
-function generateEmptyFocus(): SellerFocus {
+/**
+ * Empty focus state when seller has no listings
+ */
+function getEmptyFocus(): SellerFocus {
   return {
     id: 'add-listings',
     priority: 'high',
@@ -183,6 +142,55 @@ function generateEmptyFocus(): SellerFocus {
   };
 }
 
+/**
+ * Active seller focus - based on real data
+ */
+function getActiveFocus(pendingRfqCount: number): SellerFocus {
+  if (pendingRfqCount > 0) {
+    return {
+      id: 'respond-rfqs',
+      priority: 'high',
+      title: `Respond to ${pendingRfqCount} pending RFQ${pendingRfqCount > 1 ? 's' : ''}`,
+      titleAr: `رد على ${pendingRfqCount} طلب${pendingRfqCount > 1 ? 'ات' : ''} معلق`,
+      description: 'Quick responses improve your conversion rate and seller ranking',
+      descriptionAr: 'الردود السريعة تحسن نسبة التحويل وترتيبك كبائع',
+      hint: 'Sellers who respond within 2 hours have higher win rates',
+      hintAr: 'البائعون الذين يردون خلال ساعتين لديهم نسبة فوز أعلى',
+      ctaLabel: 'Review RFQs',
+      ctaLabelAr: 'مراجعة الطلبات',
+      ctaRoute: 'rfqs',
+      ctaFilter: 'pending',
+      isEmpty: false,
+    };
+  }
+
+  // Default: maintain listings
+  return {
+    id: 'maintain-listings',
+    priority: 'low',
+    title: 'Keep your listings up to date',
+    titleAr: 'حافظ على تحديث منتجاتك',
+    description: 'Accurate listings attract more buyers',
+    descriptionAr: 'القوائم الدقيقة تجذب المزيد من المشترين',
+    ctaLabel: 'View Listings',
+    ctaLabelAr: 'عرض المنتجات',
+    ctaRoute: 'listings',
+    isEmpty: false,
+  };
+}
+
+// Empty KPI state
+const EMPTY_KPIS: SellerHomeKPIs = {
+  revenue: 0,
+  revenueChange: 0,
+  activeOrders: 0,
+  ordersNeedingAction: 0,
+  rfqInbox: 0,
+  newRfqs: 0,
+  pendingPayout: 0,
+  currency: 'SAR',
+};
+
 // =============================================================================
 // Service Implementation
 // =============================================================================
@@ -190,14 +198,88 @@ function generateEmptyFocus(): SellerFocus {
 const sellerHomeService = {
   /**
    * Get alerts for the seller dashboard
+   * Returns real alerts based on database state
    */
   async getAlerts(sellerId: string): Promise<SellerAlert[]> {
-    // Return mock data - real implementation requires additional Prisma models
-    return generateMockAlerts();
+    try {
+      const alerts: SellerAlert[] = [];
+      const now = new Date();
+
+      // Check for actionable RFQs (direct + marketplace where seller quoted)
+      const actionableRfqs = await prisma.itemRFQ.count({
+        where: {
+          OR: [
+            { sellerId, status: { in: ['new', 'viewed', 'under_review'] } },
+            { quotes: { some: { sellerId } }, status: { in: ['new', 'viewed', 'under_review'] } },
+          ],
+        },
+      });
+
+      if (actionableRfqs > 0) {
+        alerts.push({
+          id: 'rfq-waiting',
+          type: 'rfq',
+          severity: actionableRfqs > 5 ? 'critical' : 'warning',
+          message: `You have ${actionableRfqs} RFQ${actionableRfqs > 1 ? 's' : ''} waiting for response`,
+          messageAr: `لديك ${actionableRfqs} طلب${actionableRfqs > 1 ? 'ات' : ''} بانتظار الرد`,
+          ctaLabel: 'View RFQs',
+          ctaLabelAr: 'عرض الطلبات',
+          ctaRoute: 'rfqs',
+          count: actionableRfqs,
+          createdAt: now.toISOString(),
+        });
+      }
+
+      // Check for orders needing attention (pending confirmation)
+      const ordersNeedingAction = await prisma.marketplaceOrder.count({
+        where: { sellerId, status: 'pending_confirmation' },
+      });
+
+      if (ordersNeedingAction > 0) {
+        alerts.push({
+          id: 'orders-need-action',
+          type: 'order',
+          severity: ordersNeedingAction > 3 ? 'critical' : 'warning',
+          message: `${ordersNeedingAction} order${ordersNeedingAction > 1 ? 's need' : ' needs'} confirmation`,
+          messageAr: `${ordersNeedingAction} طلب${ordersNeedingAction > 1 ? 'ات تحتاج' : ' يحتاج'} للتأكيد`,
+          ctaLabel: 'Review orders',
+          ctaLabelAr: 'مراجعة الطلبات',
+          ctaRoute: 'orders',
+          count: ordersNeedingAction,
+          createdAt: now.toISOString(),
+        });
+      }
+
+      // Check for low stock items
+      const lowStockItems = await prisma.item.count({
+        where: { userId: sellerId, status: 'out_of_stock' },
+      });
+
+      if (lowStockItems > 0) {
+        alerts.push({
+          id: 'low-stock',
+          type: 'order',
+          severity: 'info',
+          message: `${lowStockItems} item${lowStockItems > 1 ? 's are' : ' is'} out of stock`,
+          messageAr: `${lowStockItems} منتج${lowStockItems > 1 ? 'ات نفدت' : ' نفد'} من المخزون`,
+          ctaLabel: 'Update inventory',
+          ctaLabelAr: 'تحديث المخزون',
+          ctaRoute: 'listings',
+          count: lowStockItems,
+          createdAt: now.toISOString(),
+        });
+      }
+
+      return alerts;
+    } catch (error) {
+      apiLogger.error('[SellerHomeService] Error getting alerts:', error);
+      return []; // Return empty array, not mock data
+    }
   },
 
   /**
    * Get the primary focus item for the seller
+   * Based on real database state
    */
   async getFocus(sellerId: string): Promise<SellerFocus> {
     try {
@@ -207,12 +289,23 @@ const sellerHomeService = {
       });
 
       if (itemCount === 0) {
-        return generateEmptyFocus();
+        return getEmptyFocus();
       }
 
-      return generateMockFocus();
-    } catch {
-      return generateMockFocus();
+      // Check for actionable RFQs to guide focus
+      const actionableRfqs = await prisma.itemRFQ.count({
+        where: {
+          OR: [
+            { sellerId, status: { in: ['new', 'viewed', 'under_review'] } },
+            { quotes: { some: { sellerId } }, status: { in: ['new', 'viewed', 'under_review'] } },
+          ],
+        },
+      });
+
+      return getActiveFocus(actionableRfqs);
+    } catch (error) {
+      apiLogger.error('[SellerHomeService] Error getting focus:', error);
+      return getEmptyFocus();
     }
   },
 
@@ -260,10 +353,58 @@ const sellerHomeService = {
   },
 
   /**
-   * Get business pulse data
+   * Get business pulse data from real orders
    */
   async getBusinessPulse(sellerId: string, days: number = 7): Promise<BusinessPulseData> {
-    return generateMockPulse(days);
+    try {
+      const now = new Date();
+      const startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - days + 1);
+      startDate.setHours(0, 0, 0, 0);
+
+      // Fetch orders for the period
+      const orders = await prisma.marketplaceOrder.findMany({
+        where: {
+          sellerId,
+          createdAt: { gte: startDate },
+          status: { notIn: ['cancelled'] },
+        },
+        select: {
+          totalPrice: true,
+          createdAt: true,
+        },
+      });
+
+      // Initialize arrays with zeros
+      const labels: string[] = [];
+      const revenue: number[] = [];
+      const orderCounts: number[] = [];
+
+      // Build day-by-day data
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+
+        // Calculate totals for this day
+        const dayOrders = orders.filter(
+          (o) => o.createdAt >= dayStart && o.createdAt <= dayEnd
+        );
+
+        revenue.push(dayOrders.reduce((sum, o) => sum + o.totalPrice, 0));
+        orderCounts.push(dayOrders.length);
+      }
+
+      return { labels, revenue, orders: orderCounts };
+    } catch (error) {
+      apiLogger.error('[SellerHomeService] Error getting business pulse:', error);
+      return getEmptyPulse(days);
+    }
   },
 
   /**
@@ -303,20 +444,119 @@ const sellerHomeService = {
   },
 
   /**
-   * Get KPI data
+   * Get KPI data from real database
    */
   async getKPIs(sellerId: string): Promise<SellerHomeKPIs> {
-    // Mock KPIs - real implementation requires MarketplaceOrder, Payout, RfqResponse models
-    return {
-      revenue: 24500,
-      revenueChange: 12,
-      activeOrders: 8,
-      ordersNeedingAction: 2,
-      rfqInbox: 15,
-      newRfqs: 4,
-      pendingPayout: 8750,
-      currency: 'SAR',
-    };
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const sixtyDaysAgo = new Date(now);
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const twentyFourHoursAgo = new Date(now);
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      const [
+        currentRevenue,
+        previousRevenue,
+        activeOrders,
+        ordersNeedingAction,
+        totalRfqs,
+        newRfqs,
+        deliveredOrders,
+      ] = await Promise.all([
+        // Current period revenue (last 30 days)
+        prisma.marketplaceOrder.aggregate({
+          where: {
+            sellerId,
+            createdAt: { gte: thirtyDaysAgo },
+            status: { notIn: ['cancelled'] },
+          },
+          _sum: { totalPrice: true },
+        }),
+        // Previous period revenue (30-60 days ago)
+        prisma.marketplaceOrder.aggregate({
+          where: {
+            sellerId,
+            createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
+            status: { notIn: ['cancelled'] },
+          },
+          _sum: { totalPrice: true },
+        }),
+        // Active orders (not cancelled, not delivered)
+        prisma.marketplaceOrder.count({
+          where: {
+            sellerId,
+            status: { notIn: ['cancelled', 'delivered'] },
+          },
+        }),
+        // Orders needing action (pending confirmation)
+        prisma.marketplaceOrder.count({
+          where: {
+            sellerId,
+            status: 'pending_confirmation',
+          },
+        }),
+        // Total RFQs in inbox (all non-terminal statuses, direct + marketplace)
+        prisma.itemRFQ.count({
+          where: {
+            OR: [
+              { sellerId },
+              { quotes: { some: { sellerId } } },
+            ],
+            status: { in: ['new', 'viewed', 'under_review', 'ignored', 'quoted', 'accepted', 'rejected'] },
+            isArchived: false,
+          },
+        }),
+        // New/unread RFQs needing response
+        prisma.itemRFQ.count({
+          where: {
+            OR: [
+              { sellerId },
+              { quotes: { some: { sellerId } } },
+            ],
+            status: { in: ['new'] },
+            isArchived: false,
+          },
+        }),
+        // Delivered orders (for pending payout calculation)
+        prisma.marketplaceOrder.aggregate({
+          where: {
+            sellerId,
+            status: 'delivered',
+            // Simplified: assume delivered orders without payout record are pending
+          },
+          _sum: { totalPrice: true },
+        }),
+      ]);
+
+      const currentRevenueValue = currentRevenue._sum.totalPrice || 0;
+      const previousRevenueValue = previousRevenue._sum.totalPrice || 0;
+
+      // Calculate revenue change percentage
+      let revenueChange = 0;
+      if (previousRevenueValue > 0) {
+        revenueChange = Math.round(
+          ((currentRevenueValue - previousRevenueValue) / previousRevenueValue) * 100
+        );
+      } else if (currentRevenueValue > 0) {
+        revenueChange = 100; // New revenue from zero
+      }
+
+      return {
+        revenue: currentRevenueValue,
+        revenueChange,
+        activeOrders,
+        ordersNeedingAction,
+        rfqInbox: totalRfqs,
+        newRfqs,
+        pendingPayout: deliveredOrders._sum.totalPrice || 0,
+        currency: 'SAR',
+      };
+    } catch (error) {
+      apiLogger.error('[SellerHomeService] Error getting KPIs:', error);
+      return EMPTY_KPIS;
+    }
   },
 };
 

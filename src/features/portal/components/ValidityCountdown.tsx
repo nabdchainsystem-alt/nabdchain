@@ -147,9 +147,7 @@ export const ValidityCountdown: React.FC<ValidityCountdownProps> = ({
   updateInterval = 60000,
 }) => {
   const { styles } = usePortal();
-  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
-    calculateTimeRemaining(validUntil)
-  );
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() => calculateTimeRemaining(validUntil));
 
   // Update countdown periodically
   useEffect(() => {
@@ -209,15 +207,18 @@ export const ValidityCountdown: React.FC<ValidityCountdownProps> = ({
   }, [timeRemaining, styles.isDark]);
 
   const Icon = colors.icon;
-  const displayText = formatTimeRemaining(timeRemaining, variant);
+  const displayText = formatTimeRemaining(timeRemaining, variant as CountdownVariant);
 
   // Size configurations
-  const sizeConfig: Record<CountdownSize, {
-    padding: string;
-    text: string;
-    icon: number;
-    gap: string;
-  }> = {
+  const sizeConfig: Record<
+    CountdownSize,
+    {
+      padding: string;
+      text: string;
+      icon: number;
+      gap: string;
+    }
+  > = {
     xs: { padding: 'px-1.5 py-0.5', text: 'text-[10px]', icon: 10, gap: 'gap-0.5' },
     sm: { padding: 'px-2 py-0.5', text: 'text-xs', icon: 12, gap: 'gap-1' },
     md: { padding: 'px-2.5 py-1', text: 'text-sm', icon: 14, gap: 'gap-1.5' },
@@ -283,21 +284,12 @@ export const ValidityCountdown: React.FC<ValidityCountdownProps> = ({
       title={`Valid until: ${new Date(validUntil).toLocaleString()}`}
     >
       <div className={`flex items-center ${sizeStyle.gap}`}>
-        {showIcon && (
-          <Icon
-            size={sizeStyle.icon + 4}
-            weight="bold"
-            style={{ color: colors.text }}
-          />
-        )}
+        {showIcon && <Icon size={sizeStyle.icon + 4} weight="bold" style={{ color: colors.text }} />}
         <div className="flex-1">
           <div className={`${sizeStyle.text} font-medium`} style={{ color: colors.text }}>
             {labelPrefix || (timeRemaining.isExpired ? 'Expired' : 'Valid for')}
           </div>
-          <div
-            className={`${size === 'lg' ? 'text-lg' : 'text-sm'} font-bold`}
-            style={{ color: colors.text }}
-          >
+          <div className={`${size === 'lg' ? 'text-lg' : 'text-sm'} font-bold`} style={{ color: colors.text }}>
             {displayText}
           </div>
         </div>
@@ -317,10 +309,7 @@ export const ValidityCountdown: React.FC<ValidityCountdownProps> = ({
               }}
             />
           </div>
-          <div
-            className="text-[10px] mt-1 text-right"
-            style={{ color: styles.textMuted }}
-          >
+          <div className="text-[10px] mt-1 text-right" style={{ color: styles.textMuted }}>
             {new Date(validUntil).toLocaleDateString()}
           </div>
         </div>
@@ -344,10 +333,7 @@ interface ValidityIndicatorProps {
  * A compact validity indicator for use in tables and lists.
  * Shows a colored dot + text based on urgency.
  */
-export const ValidityIndicator: React.FC<ValidityIndicatorProps> = ({
-  validUntil,
-  className = '',
-}) => {
+export const ValidityIndicator: React.FC<ValidityIndicatorProps> = ({ validUntil, className = '' }) => {
   const time = calculateTimeRemaining(validUntil);
 
   const getConfig = () => {

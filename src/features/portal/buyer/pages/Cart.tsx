@@ -1,474 +1,347 @@
 // =============================================================================
-// Cart Page - Dual Purchase Flow (Buy Now + Request Quote)
-// =============================================================================
-// Supports both instant purchase and RFQ-based negotiation
-// Clear separation between "Confirmed Price" (Buy Now) and "Estimated Price" (RFQ)
-// Items grouped by seller with visual flow indicators
+// Cart Page - Professional Two-Column Layout with VAT
 // =============================================================================
 
-import React, { useState, useMemo, useCallback } from 'react';
-import {
-  ShoppingCart,
-  ArrowLeft,
-  SpinnerGap,
-  Package,
-  Storefront,
-  Lightning,
-  PaperPlaneTilt,
-  Trash,
-  ArrowRight,
-  Clock,
-  Info,
-  CheckCircle,
-} from 'phosphor-react';
+import React, { useState, useMemo } from 'react';
+import { SpinnerGap, Package, Trash, Plus, Minus, Tag, Truck, CalendarBlank } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { useCart } from '../../context/CartContext';
 import { CartEmptyState } from '../components/CartEmptyState';
-import { CartSellerGroup } from '../components/CartSellerGroup';
-import { BuyNowConfirmModal } from '../components/BuyNowConfirmModal';
-import { Container, PageHeader, Button } from '../../components';
-import {
-  Cart as CartType,
-  CartSellerGroup as CartSellerGroupType,
-  CartItem,
-  CartItemEligibility,
-  PurchaseMethod,
-} from '../../types/cart.types';
+import { Container, PageHeader } from '../../components';
+import { CartItem } from '../../types/cart.types';
+
+// VAT Rate (15% for Saudi Arabia)
+const VAT_RATE = 0.15;
 
 interface CartPageProps {
   onNavigate?: (page: string) => void;
 }
 
 // =============================================================================
-// Helper: Check Buy Now eligibility for an item
+// Cart Item Row Component
 // =============================================================================
-function getItemEligibility(item: CartItem): CartItemEligibility {
-  const stock = item.item?.stock ?? 0;
-  const status = item.item?.status;
-  const allowDirectPurchase = item.item?.allowDirectPurchase ?? true;
-  const isFixedPrice = item.item?.isFixedPrice ?? true;
-
-  if (status !== 'active') {
-    return {
-      buyNow: { eligible: false, reason: 'Item not available' },
-      recommendedMethod: 'request_quote',
-    };
-  }
-
-  if (stock === 0) {
-    return {
-      buyNow: { eligible: false, reason: 'Out of stock' },
-      recommendedMethod: 'request_quote',
-    };
-  }
-
-  if (stock < item.quantity) {
-    return {
-      buyNow: { eligible: false, reason: `Only ${stock} in stock` },
-      recommendedMethod: 'request_quote',
-    };
-  }
-
-  if (!allowDirectPurchase) {
-    return {
-      buyNow: { eligible: false, reason: 'Quote only item' },
-      recommendedMethod: 'request_quote',
-    };
-  }
-
-  if (!isFixedPrice) {
-    return {
-      buyNow: { eligible: false, reason: 'Price requires quote' },
-      recommendedMethod: 'request_quote',
-    };
-  }
-
-  return {
-    buyNow: { eligible: true },
-    recommendedMethod: 'buy_now',
-  };
+interface CartItemRowProps {
+  item: CartItem;
+  onQuantityChange: (quantity: number) => void;
+  onRemove: () => void;
+  isUpdating?: boolean;
 }
 
-// =============================================================================
-// Price Type Badge Component - Confirmed vs Estimated
-// =============================================================================
-const PriceTypeBadge: React.FC<{
-  type: 'confirmed' | 'estimated';
-  size?: 'sm' | 'md';
-}> = ({ type, size = 'sm' }) => {
+const CartItemRow: React.FC<CartItemRowProps> = ({ item, onQuantityChange, onRemove, isUpdating = false }) => {
   const { styles, direction } = usePortal();
   const isRtl = direction === 'rtl';
 
-  const isConfirmed = type === 'confirmed';
-  const color = isConfirmed ? styles.success : '#f59e0b';
-  const Icon = isConfirmed ? CheckCircle : Clock;
-  const label = isConfirmed ? 'Confirmed Price' : 'Estimated Price';
+  const name = item.item?.name || item.itemName || 'Unknown Item';
+  const sku = item.item?.sku || '';
+  const price = item.item?.price ?? item.priceAtAdd ?? 0;
+  const currency = item.item?.currency || 'SAR';
+  const minOrderQty = item.item?.minOrderQty ?? 1;
+  const maxOrderQty = item.item?.maxOrderQty;
+  const stock = item.item?.stock ?? 999;
+  const images = item.item?.images ? JSON.parse(item.item.images) : [];
+  const imageUrl = images[0] || null;
+  const sellerName = item.seller?.companyName || item.seller?.name || 'Seller';
+  const category = item.item?.category || '';
+
+  const subtotal = price * item.quantity;
+  const canDecrement = item.quantity > minOrderQty;
+  const canIncrement = !maxOrderQty || item.quantity < Math.min(maxOrderQty, stock);
 
   return (
     <div
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium ${isRtl ? 'flex-row-reverse' : ''} ${
-        size === 'sm' ? 'text-[10px]' : 'text-xs'
-      }`}
-      style={{
-        backgroundColor: `${color}15`,
-        color,
-      }}
-      title={isConfirmed ? 'Fixed price - ready for immediate purchase' : 'Price may be negotiated after quote request'}
+      className={`flex gap-4 py-6 border-b transition-opacity ${isUpdating ? 'opacity-50' : ''}`}
+      style={{ borderColor: styles.border }}
     >
-      <Icon size={size === 'sm' ? 10 : 12} weight="fill" />
-      <span>{label}</span>
-    </div>
-  );
-};
-
-// =============================================================================
-// Summary Card Component
-// =============================================================================
-const SummaryCard: React.FC<{
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  color: string;
-  subtitle?: string;
-  priceType?: 'confirmed' | 'estimated';
-  highlight?: boolean;
-}> = ({ icon: Icon, label, value, color, subtitle, priceType, highlight = false }) => {
-  const { styles, direction } = usePortal();
-  const isRtl = direction === 'rtl';
-
-  return (
-    <div
-      className={`p-4 rounded-xl border transition-all ${highlight ? 'ring-2 ring-offset-1' : ''}`}
-      style={{
-        backgroundColor: highlight ? `${color}08` : styles.bgCard,
-        borderColor: highlight ? `${color}40` : styles.border,
-        ringColor: highlight ? `${color}40` : 'transparent',
-      }}
-    >
-      <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `${color}15` }}
-        >
-          <Icon size={20} style={{ color }} weight="duotone" />
-        </div>
-        <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : ''}`}>
-          <div className="text-xs" style={{ color: styles.textMuted }}>
-            {label}
-          </div>
-          <div className="text-lg font-bold" style={{ color: styles.textPrimary }}>
-            {value}
-          </div>
-          {subtitle && (
-            <div className="text-xs" style={{ color: styles.textMuted }}>
-              {subtitle}
-            </div>
-          )}
-          {priceType && (
-            <div className="mt-1">
-              <PriceTypeBadge type={priceType} size="sm" />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// Flow Info Banner Component - Shows price type and flow explanation
-// =============================================================================
-const FlowInfoBanner: React.FC<{
-  type: 'buy_now' | 'rfq';
-}> = ({ type }) => {
-  const { styles, direction } = usePortal();
-  const isRtl = direction === 'rtl';
-
-  const isBuyNow = type === 'buy_now';
-  const color = isBuyNow ? styles.success : '#f59e0b';
-  const Icon = isBuyNow ? CheckCircle : Info;
-
-  return (
-    <div
-      className={`flex items-center gap-2 p-2 rounded-lg text-xs ${isRtl ? 'flex-row-reverse text-right' : ''}`}
-      style={{
-        backgroundColor: `${color}10`,
-        color: styles.textSecondary,
-      }}
-    >
-      <Icon size={14} weight="fill" style={{ color }} />
-      <span>
-        {isBuyNow
-          ? 'These items have confirmed prices and are ready for immediate purchase. No negotiation needed.'
-          : 'Prices shown are estimates. Submit a quote request to get final pricing and terms from sellers.'}
-      </span>
-    </div>
-  );
-};
-
-// =============================================================================
-// Action Panel Component - Enhanced with price type labels
-// =============================================================================
-const ActionPanel: React.FC<{
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  color: string;
-  buttonLabel: string;
-  itemCount: number;
-  total: number;
-  currency: string;
-  onAction: () => void;
-  isProcessing: boolean;
-  disabled?: boolean;
-  priceType: 'confirmed' | 'estimated';
-  flowType: 'buy_now' | 'rfq';
-}> = ({
-  title,
-  description,
-  icon: Icon,
-  color,
-  buttonLabel,
-  itemCount,
-  total,
-  currency,
-  onAction,
-  isProcessing,
-  disabled,
-  priceType,
-  flowType,
-}) => {
-  const { styles, direction } = usePortal();
-  const isRtl = direction === 'rtl';
-
-  const hasItems = itemCount > 0;
-
-  return (
-    <div
-      className={`rounded-xl border overflow-hidden transition-all ${hasItems ? 'ring-1' : 'opacity-60'}`}
-      style={{
-        backgroundColor: `${color}05`,
-        borderColor: `${color}30`,
-        ringColor: hasItems ? `${color}20` : 'transparent',
-      }}
-    >
-      {/* Header with price type badge */}
+      {/* Product Image */}
       <div
-        className={`flex items-center justify-between p-4 ${isRtl ? 'flex-row-reverse' : ''}`}
-        style={{ borderBottom: `1px solid ${color}20` }}
+        className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0"
+        style={{ backgroundColor: styles.bgSecondary }}
       >
-        <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: `${color}20` }}
-          >
-            <Icon size={22} style={{ color }} weight="fill" />
+        {imageUrl ? (
+          <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Package size={32} style={{ color: styles.textMuted }} />
           </div>
-          <div className={isRtl ? 'text-right' : ''}>
-            <h3
-              className="text-base font-semibold"
-              style={{ color: styles.textPrimary }}
-            >
-              {title}
-            </h3>
-            <p className="text-xs" style={{ color: styles.textMuted }}>
-              {description}
-            </p>
-          </div>
-        </div>
-        <PriceTypeBadge type={priceType} size="md" />
+        )}
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {/* Stats row */}
-        <div className={`flex items-center justify-between mb-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
-            <Package size={16} style={{ color: styles.textMuted }} />
-            <span className="text-sm" style={{ color: styles.textSecondary }}>
-              {itemCount} {itemCount === 1 ? 'item' : 'items'}
-            </span>
-          </div>
-          <div className={isRtl ? 'text-left' : 'text-right'}>
-            <div className="text-xs" style={{ color: styles.textMuted }}>
-              {priceType === 'confirmed' ? 'Total' : 'Est. Total'}
-            </div>
-            <div className="text-xl font-bold" style={{ color }}>
-              {currency} {total.toLocaleString()}
-            </div>
-          </div>
-        </div>
-
-        {/* Info banner */}
-        <div className="mb-4">
-          <FlowInfoBanner type={flowType} />
-        </div>
-
-        {/* Action button */}
-        <button
-          onClick={onAction}
-          disabled={disabled || isProcessing || itemCount === 0}
-          className={`w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed ${
-            isRtl ? 'flex-row-reverse' : ''
-          }`}
-          style={{
-            backgroundColor: hasItems ? color : styles.bgSecondary,
-            color: hasItems ? '#fff' : styles.textMuted,
-          }}
-        >
-          {isProcessing ? (
-            <SpinnerGap size={18} className="animate-spin" />
-          ) : (
-            <Icon size={18} weight="bold" />
+      {/* Product Details */}
+      <div className={`flex-1 min-w-0 ${isRtl ? 'text-right' : ''}`}>
+        <h3 className="font-semibold text-base mb-1 line-clamp-2" style={{ color: styles.textPrimary }}>
+          {name}
+        </h3>
+        <div className="space-y-1 text-sm" style={{ color: styles.textMuted }}>
+          {category && (
+            <p>
+              <span className="font-medium">Category:</span> {category}
+            </p>
           )}
-          <span>{buttonLabel}</span>
-          {hasItems && <ArrowRight size={16} className={isRtl ? 'rotate-180' : ''} />}
+          {sku && (
+            <p>
+              <span className="font-medium">SKU:</span> {sku}
+            </p>
+          )}
+          <p>
+            <span className="font-medium">Seller:</span> {sellerName}
+          </p>
+        </div>
+        <p className="mt-2 text-lg font-bold" style={{ color: styles.textPrimary }}>
+          {currency} {price.toLocaleString()}
+        </p>
+      </div>
+
+      {/* Quantity Control */}
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center border rounded-lg" style={{ borderColor: styles.border }}>
+          <button
+            onClick={() => onQuantityChange(item.quantity - 1)}
+            disabled={!canDecrement || isUpdating}
+            className="w-10 h-10 flex items-center justify-center transition-colors hover:bg-black/5 disabled:opacity-30"
+            style={{ color: styles.textSecondary }}
+          >
+            <Minus size={16} weight="bold" />
+          </button>
+          <span className="w-12 text-center text-base font-semibold tabular-nums" style={{ color: styles.textPrimary }}>
+            {item.quantity}
+          </span>
+          <button
+            onClick={() => onQuantityChange(item.quantity + 1)}
+            disabled={!canIncrement || isUpdating}
+            className="w-10 h-10 flex items-center justify-center transition-colors hover:bg-black/5 disabled:opacity-30"
+            style={{ color: styles.textSecondary }}
+          >
+            <Plus size={16} weight="bold" />
+          </button>
+        </div>
+      </div>
+
+      {/* Subtotal & Remove */}
+      <div className={`flex flex-col items-end justify-between w-28 ${isRtl ? 'items-start' : 'items-end'}`}>
+        <p className="text-lg font-bold" style={{ color: styles.textPrimary }}>
+          {currency} {subtotal.toLocaleString()}
+        </p>
+        <button
+          onClick={onRemove}
+          disabled={isUpdating}
+          className="p-2 rounded-lg transition-colors text-red-500 hover:bg-red-50"
+          title="Remove item"
+        >
+          <Trash size={20} />
         </button>
       </div>
     </div>
   );
 };
 
+// =============================================================================
+// Order Summary Component
+// =============================================================================
+interface OrderSummaryProps {
+  subtotal: number;
+  currency: string;
+  itemCount: number;
+  onCheckout: () => void;
+  isCheckingOut: boolean;
+}
+
+const OrderSummary: React.FC<OrderSummaryProps> = ({ subtotal, currency, itemCount, onCheckout, isCheckingOut }) => {
+  const { styles, t, direction } = usePortal();
+  const isRtl = direction === 'rtl';
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+
+  // Calculate VAT and totals
+  const vatAmount = subtotal * VAT_RATE;
+  const shippingCost = subtotal > 500 ? 0 : 25; // Free shipping over 500 SAR
+  const totalBeforeDiscount = subtotal + vatAmount + shippingCost;
+  const finalTotal = totalBeforeDiscount - couponDiscount;
+
+  // Estimated delivery (3-5 business days)
+  const deliveryDate = new Date();
+  deliveryDate.setDate(deliveryDate.getDate() + 5);
+  const formattedDelivery = deliveryDate.toLocaleDateString('en-US', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const handleApplyCoupon = () => {
+    if (couponCode.toLowerCase() === 'save10') {
+      setCouponDiscount(subtotal * 0.1);
+      setCouponApplied(true);
+    } else if (couponCode.toLowerCase() === 'save20') {
+      setCouponDiscount(subtotal * 0.2);
+      setCouponApplied(true);
+    } else {
+      setCouponDiscount(0);
+      setCouponApplied(false);
+    }
+  };
+
+  return (
+    <div
+      className="rounded-xl border p-6 sticky top-6"
+      style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+    >
+      <h2 className="text-xl font-bold mb-6" style={{ color: styles.textPrimary }}>
+        {t('cart.orderSummary') || 'Order Summary'}
+      </h2>
+
+      {/* Summary Lines */}
+      <div className="space-y-4 mb-6">
+        {/* Subtotal */}
+        <div className={`flex justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+          <span style={{ color: styles.textSecondary }}>
+            {t('cart.subtotal') || 'Subtotal'} ({itemCount} {itemCount === 1 ? 'item' : 'items'})
+          </span>
+          <span className="font-medium" style={{ color: styles.textPrimary }}>
+            {currency} {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        {/* VAT */}
+        <div className={`flex justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+          <span style={{ color: styles.textSecondary }}>{t('cart.vat') || 'VAT'} (15%)</span>
+          <span className="font-medium" style={{ color: styles.textPrimary }}>
+            {currency} {vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        {/* Shipping */}
+        <div className={`flex justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+          <span className="flex items-center gap-2" style={{ color: styles.textSecondary }}>
+            <Truck size={16} />
+            {t('cart.shipping') || 'Shipping'}
+          </span>
+          <span className="font-medium" style={{ color: shippingCost === 0 ? styles.success : styles.textPrimary }}>
+            {shippingCost === 0
+              ? t('cart.free') || 'Free'
+              : `${currency} ${shippingCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          </span>
+        </div>
+
+        {/* Coupon Discount */}
+        {couponApplied && couponDiscount > 0 && (
+          <div className={`flex justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <span className="flex items-center gap-2" style={{ color: styles.success }}>
+              <Tag size={16} />
+              {t('cart.couponApplied') || 'Coupon Applied'}
+            </span>
+            <span className="font-medium" style={{ color: styles.success }}>
+              -{currency} {couponDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div className="border-t pt-4" style={{ borderColor: styles.border }}>
+          {/* Total */}
+          <div className={`flex justify-between items-center ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <span className="text-lg font-bold" style={{ color: styles.textPrimary }}>
+              {t('cart.total') || 'TOTAL'}
+            </span>
+            <span className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
+              {currency} {finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
+            {t('cart.vatIncluded') || 'VAT included'}
+          </p>
+        </div>
+
+        {/* Estimated Delivery */}
+        <div
+          className={`flex items-center gap-2 text-sm ${isRtl ? 'flex-row-reverse' : ''}`}
+          style={{ color: styles.textSecondary }}
+        >
+          <CalendarBlank size={16} />
+          <span>{t('cart.estimatedDelivery') || 'Estimated Delivery:'}</span>
+          <span className="font-medium" style={{ color: styles.textPrimary }}>
+            {formattedDelivery}
+          </span>
+        </div>
+      </div>
+
+      {/* Coupon Code Input */}
+      <div className="mb-6">
+        <div className="flex items-center border rounded-lg overflow-hidden" style={{ borderColor: styles.border }}>
+          <input
+            type="text"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
+            placeholder={t('cart.couponPlaceholder') || 'Enter coupon code'}
+            className="flex-1 px-4 py-3 text-sm bg-transparent outline-none"
+            style={{ color: styles.textPrimary }}
+          />
+          <button
+            onClick={handleApplyCoupon}
+            className="px-4 py-3 transition-colors hover:bg-black/5"
+            style={{ color: styles.textSecondary }}
+          >
+            <Tag size={20} />
+          </button>
+        </div>
+        {couponApplied && (
+          <p className="text-xs mt-2" style={{ color: styles.success }}>
+            Coupon "{couponCode}" applied successfully!
+          </p>
+        )}
+      </div>
+
+      {/* Checkout Button */}
+      <button
+        onClick={onCheckout}
+        disabled={isCheckingOut}
+        className="w-full py-4 rounded-lg text-base font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+        style={{
+          backgroundColor: styles.isDark ? '#fff' : '#000',
+          color: styles.isDark ? '#000' : '#fff',
+        }}
+      >
+        {isCheckingOut ? (
+          <SpinnerGap size={20} className="animate-spin mx-auto" />
+        ) : (
+          t('cart.proceedToCheckout') || 'Proceed to Checkout'
+        )}
+      </button>
+
+      {/* Free Shipping Notice */}
+      {subtotal < 500 && (
+        <p className="text-xs text-center mt-4" style={{ color: styles.textMuted }}>
+          Add {currency} {(500 - subtotal).toLocaleString()} more for free shipping!
+        </p>
+      )}
+    </div>
+  );
+};
+
+// =============================================================================
+// Main Cart Component
+// =============================================================================
 export const Cart: React.FC<CartPageProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
-  const {
-    cart,
-    isLoading,
-    error,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-    createRFQForSeller,
-    createRFQForAll,
-    setItemPurchaseMethod,
-    buyNowForSeller,
-    buyNowAll,
-    pendingOperations,
-  } = useCart();
+  const { cart, isLoading, error, updateQuantity, removeFromCart, clearCart, pendingOperations } = useCart();
   const isRtl = direction === 'rtl';
 
-  // Processing state
-  const [processingRFQSellerIds, setProcessingRFQSellerIds] = useState<Set<string>>(new Set());
-  const [processingBuyNowSellerIds, setProcessingBuyNowSellerIds] = useState<Set<string>>(new Set());
-  const [isProcessingAllRFQ, setIsProcessingAllRFQ] = useState(false);
-  const [isProcessingAllBuyNow, setIsProcessingAllBuyNow] = useState(false);
-
-  // Buy Now confirmation modal state
-  const [showBuyNowConfirm, setShowBuyNowConfirm] = useState(false);
-  const [buyNowConfirmData, setBuyNowConfirmData] = useState<{
-    items: CartItem[];
-    totalAmount: number;
-    itemCount: number;
-    sellerCount: number;
-    sellerId?: string;
-    sellerName?: string;
-  } | null>(null);
-
-  // Local state for purchase method selections
-  const [localMethodSelections, setLocalMethodSelections] = useState<Map<string, PurchaseMethod>>(new Map());
-
-  // Get eligibility for an item
-  const getEligibilityForItem = useCallback((itemId: string): CartItemEligibility | undefined => {
-    const item = cart?.items.find(i => i.itemId === itemId);
-    if (!item) return undefined;
-    return getItemEligibility(item);
-  }, [cart]);
-
-  // Get effective purchase method
-  const getEffectiveMethod = useCallback((item: CartItem): PurchaseMethod => {
-    if (localMethodSelections.has(item.itemId)) {
-      return localMethodSelections.get(item.itemId)!;
-    }
-    if (item.selectedMethod) {
-      return item.selectedMethod;
-    }
-    const eligibility = getItemEligibility(item);
-    return eligibility.recommendedMethod;
-  }, [localMethodSelections]);
-
-  // Handle purchase method change
-  const handleItemPurchaseMethodChange = useCallback((itemId: string, method: PurchaseMethod) => {
-    setLocalMethodSelections(prev => {
-      const next = new Map(prev);
-      next.set(itemId, method);
-      return next;
-    });
-    if (setItemPurchaseMethod) {
-      setItemPurchaseMethod(itemId, method);
-    }
-  }, [setItemPurchaseMethod]);
-
-  // Group items by seller
-  const sellerGroups = useMemo((): CartSellerGroupType[] => {
-    if (!cart || cart.items.length === 0) return [];
-
-    const groups: Map<string, CartSellerGroupType> = new Map();
-
-    for (const item of cart.items) {
-      const sellerId = item.sellerId;
-      const sellerName = item.seller?.companyName || item.seller?.name || 'Unknown Seller';
-
-      if (!groups.has(sellerId)) {
-        groups.set(sellerId, {
-          sellerId,
-          sellerName,
-          items: [],
-          subtotal: 0,
-          itemCount: 0,
-          buyNowItems: [],
-          rfqItems: [],
-          buyNowSubtotal: 0,
-          rfqSubtotal: 0,
-          hasBuyNowEligible: false,
-          allBuyNowEligible: true,
-        });
-      }
-
-      const group = groups.get(sellerId)!;
-      const price = item.item?.price ?? item.priceAtAdd ?? 0;
-      const itemSubtotal = price * item.quantity;
-      const eligibility = getItemEligibility(item);
-      const effectiveMethod = getEffectiveMethod(item);
-
-      const itemWithMethod = { ...item, selectedMethod: effectiveMethod };
-      group.items.push(itemWithMethod);
-      group.itemCount += item.quantity;
-      group.subtotal += itemSubtotal;
-
-      if (eligibility.buyNow.eligible) {
-        group.hasBuyNowEligible = true;
-      } else {
-        group.allBuyNowEligible = false;
-      }
-
-      if (effectiveMethod === 'buy_now' && eligibility.buyNow.eligible) {
-        group.buyNowItems.push(itemWithMethod);
-        group.buyNowSubtotal += itemSubtotal;
-      } else {
-        group.rfqItems.push(itemWithMethod);
-        group.rfqSubtotal += itemSubtotal;
-      }
-    }
-
-    return Array.from(groups.values());
-  }, [cart, getEffectiveMethod]);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   // Calculate totals
-  const { buyNowTotal, rfqTotal, buyNowItemCount, rfqItemCount } = useMemo(() => {
-    let buyNowTotal = 0;
-    let rfqTotal = 0;
-    let buyNowItemCount = 0;
-    let rfqItemCount = 0;
+  const { subtotal, allItems } = useMemo(() => {
+    if (!cart || cart.items.length === 0) return { subtotal: 0, allItems: [] };
 
-    for (const group of sellerGroups) {
-      buyNowTotal += group.buyNowSubtotal;
-      rfqTotal += group.rfqSubtotal;
-      buyNowItemCount += group.buyNowItems.reduce((sum, item) => sum + item.quantity, 0);
-      rfqItemCount += group.rfqItems.reduce((sum, item) => sum + item.quantity, 0);
+    let total = 0;
+    const items: CartItem[] = [];
+
+    for (const item of cart.items) {
+      const price = item.item?.price ?? item.priceAtAdd ?? 0;
+      total += price * item.quantity;
+      items.push(item);
     }
 
-    return { buyNowTotal, rfqTotal, buyNowItemCount, rfqItemCount };
-  }, [sellerGroups]);
+    return { subtotal: total, allItems: items };
+  }, [cart]);
 
   // Get updating item IDs
   const updatingItems = useMemo(() => {
@@ -483,165 +356,31 @@ export const Cart: React.FC<CartPageProps> = ({ onNavigate }) => {
 
   // Handlers
   const handleQuantityChange = async (itemId: string, quantity: number) => {
-    try {
+    if (quantity < 1) {
+      await removeFromCart(itemId);
+    } else {
       await updateQuantity(itemId, quantity);
-    } catch {
-      // Error handled by context
     }
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    try {
-      await removeFromCart(itemId);
-      setLocalMethodSelections(prev => {
-        const next = new Map(prev);
-        next.delete(itemId);
-        return next;
-      });
-    } catch {
-      // Error handled by context
-    }
+    await removeFromCart(itemId);
   };
 
   const handleClearCart = async () => {
-    try {
-      await clearCart();
-      setLocalMethodSelections(new Map());
-    } catch {
-      // Error handled by context
-    }
+    await clearCart();
   };
 
-  const handleRequestRFQForSeller = async (sellerId: string) => {
-    setProcessingRFQSellerIds((prev) => new Set(prev).add(sellerId));
-    try {
-      await createRFQForSeller(sellerId);
-    } catch {
-      // Error handled by context
-    } finally {
-      setProcessingRFQSellerIds((prev) => {
-        const next = new Set(prev);
-        next.delete(sellerId);
-        return next;
-      });
-    }
+  const handleCheckout = async () => {
+    setIsCheckingOut(true);
+    setTimeout(() => {
+      setIsCheckingOut(false);
+      if (onNavigate) onNavigate('checkout');
+    }, 500);
   };
 
-  const handleBuyNowForSeller = (sellerId: string) => {
-    if (!buyNowForSeller) return;
-
-    // Find the seller group to get items and totals
-    const group = sellerGroups.find((g) => g.sellerId === sellerId);
-    if (!group) return;
-
-    // Get only Buy Now eligible items from this seller
-    const buyNowItems = group.items.filter((item) => {
-      const eligibility = getItemEligibility(item);
-      return eligibility.buyNow.eligible && (item.selectedMethod === 'buy_now' || eligibility.recommendedMethod === 'buy_now');
-    });
-
-    if (buyNowItems.length === 0) return;
-
-    // Calculate totals for Buy Now items
-    let totalAmount = 0;
-    for (const item of buyNowItems) {
-      const price = item.item?.price ?? item.priceAtAdd ?? 0;
-      totalAmount += price * item.quantity;
-    }
-
-    // Show confirmation modal
-    setBuyNowConfirmData({
-      items: buyNowItems,
-      totalAmount,
-      itemCount: buyNowItems.reduce((sum, item) => sum + item.quantity, 0),
-      sellerCount: 1,
-      sellerId,
-      sellerName: group.sellerName,
-    });
-    setShowBuyNowConfirm(true);
-  };
-
-  const confirmBuyNowForSeller = async () => {
-    if (!buyNowForSeller || !buyNowConfirmData?.sellerId) return;
-
-    const sellerId = buyNowConfirmData.sellerId;
-    setProcessingBuyNowSellerIds((prev) => new Set(prev).add(sellerId));
-    try {
-      await buyNowForSeller(sellerId);
-      setShowBuyNowConfirm(false);
-      setBuyNowConfirmData(null);
-    } catch {
-      // Error handled by context
-    } finally {
-      setProcessingBuyNowSellerIds((prev) => {
-        const next = new Set(prev);
-        next.delete(sellerId);
-        return next;
-      });
-    }
-  };
-
-  const handleRequestRFQForAll = async () => {
-    setIsProcessingAllRFQ(true);
-    try {
-      await createRFQForAll();
-    } catch {
-      // Error handled by context
-    } finally {
-      setIsProcessingAllRFQ(false);
-    }
-  };
-
-  const handleBuyNowAll = () => {
-    if (!buyNowAll) return;
-
-    // Collect all Buy Now eligible items across all sellers
-    const allBuyNowItems: CartItem[] = [];
-    const sellerIds = new Set<string>();
-
-    for (const group of sellerGroups) {
-      const buyNowItems = group.items.filter((item) => {
-        const eligibility = getItemEligibility(item);
-        return eligibility.buyNow.eligible && (item.selectedMethod === 'buy_now' || eligibility.recommendedMethod === 'buy_now');
-      });
-
-      for (const item of buyNowItems) {
-        allBuyNowItems.push(item);
-        sellerIds.add(item.sellerId);
-      }
-    }
-
-    if (allBuyNowItems.length === 0) return;
-
-    // Show confirmation modal
-    setBuyNowConfirmData({
-      items: allBuyNowItems,
-      totalAmount: buyNowTotal,
-      itemCount: buyNowItemCount,
-      sellerCount: sellerIds.size,
-    });
-    setShowBuyNowConfirm(true);
-  };
-
-  const confirmBuyNowAll = async () => {
-    if (!buyNowAll) return;
-
-    setIsProcessingAllBuyNow(true);
-    try {
-      await buyNowAll();
-      setShowBuyNowConfirm(false);
-      setBuyNowConfirmData(null);
-    } catch {
-      // Error handled by context
-    } finally {
-      setIsProcessingAllBuyNow(false);
-    }
-  };
-
-  const handleNavigateToMarketplace = () => {
-    if (onNavigate) {
-      onNavigate('marketplace');
-    }
+  const handleContinueShopping = () => {
+    if (onNavigate) onNavigate('marketplace');
   };
 
   // Loading state
@@ -674,241 +413,79 @@ export const Cart: React.FC<CartPageProps> = ({ onNavigate }) => {
   // Empty cart
   if (!cart || cart.items.length === 0) {
     return (
-      <div style={{ minHeight: '100%' }}>
+      <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
         <Container variant="full">
           <PageHeader
             title={t('cart.title') || 'Shopping Cart'}
             subtitle={t('cart.emptySubtitle') || 'Your cart is empty'}
-            actions={
-              <Button onClick={handleNavigateToMarketplace} variant="primary">
-                <ShoppingCart size={16} className={isRtl ? 'ml-2' : 'mr-2'} />
-                {t('cart.browseMarketplace') || 'Browse Marketplace'}
-              </Button>
-            }
           />
-          <div className="py-8">
-            <CartEmptyState onBrowse={handleNavigateToMarketplace} />
-          </div>
+          <CartEmptyState onBrowse={handleContinueShopping} />
         </Container>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100%' }}>
+    <div className="min-h-screen" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
-        {/* Page Header */}
         <PageHeader
           title={t('cart.title') || 'Shopping Cart'}
-          subtitle={`${cart.itemCount} ${cart.itemCount === 1 ? 'item' : 'items'} from ${cart.sellerCount} ${cart.sellerCount === 1 ? 'seller' : 'sellers'}`}
-          actions={
-            <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              <Button onClick={handleClearCart} variant="ghost" size="sm">
-                <Trash size={16} className={isRtl ? 'ml-2' : 'mr-2'} />
-                {t('cart.clear') || 'Clear Cart'}
-              </Button>
-              <Button onClick={handleNavigateToMarketplace} variant="secondary" size="sm">
-                <ArrowLeft size={16} className={`${isRtl ? 'ml-2 rotate-180' : 'mr-2'}`} />
-                {t('cart.continueBrowsing') || 'Continue Shopping'}
-              </Button>
-            </div>
-          }
+          subtitle={`${cart.itemCount} ${cart.itemCount === 1 ? 'item' : 'items'}`}
         />
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <SummaryCard
-            icon={Package}
-            label={t('cart.totalItems') || 'Total Items'}
-            value={cart.itemCount}
-            color={styles.info}
-          />
-          <SummaryCard
-            icon={Storefront}
-            label={t('cart.sellers') || 'Sellers'}
-            value={cart.sellerCount}
-            color={styles.info}
-          />
-          <SummaryCard
-            icon={Lightning}
-            label={t('cart.buyNowItems') || 'Buy Now'}
-            value={buyNowItemCount}
-            color={styles.success}
-            subtitle={buyNowItemCount > 0 ? `${cart.currency} ${buyNowTotal.toLocaleString()}` : undefined}
-            priceType={buyNowItemCount > 0 ? 'confirmed' : undefined}
-            highlight={buyNowItemCount > 0}
-          />
-          <SummaryCard
-            icon={PaperPlaneTilt}
-            label={t('cart.rfqItems') || 'Request Quote'}
-            value={rfqItemCount}
-            color="#f59e0b"
-            subtitle={rfqItemCount > 0 ? `${cart.currency} ${rfqTotal.toLocaleString()}` : undefined}
-            priceType={rfqItemCount > 0 ? 'estimated' : undefined}
-            highlight={rfqItemCount > 0}
-          />
-        </div>
+        {/* Two Column Layout */}
+        <div className={`flex gap-8 ${isRtl ? 'flex-row-reverse' : ''}`}>
+          {/* Left Column - Cart Items */}
+          <div className="flex-1 min-w-0">
+            {/* Clear Cart Link */}
+            <div className={`flex justify-end mb-4 ${isRtl ? 'justify-start' : 'justify-end'}`}>
+              <button
+                onClick={handleClearCart}
+                className="text-sm flex items-center gap-1 transition-colors hover:text-red-600"
+                style={{ color: styles.textMuted }}
+              >
+                <Trash size={14} />
+                {t('cart.clearAll') || 'Clear all items'}
+              </button>
+            </div>
 
-        {/* Action Panels - Purchase Methods */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-          {/* Buy Now Panel - Confirmed Prices */}
-          <ActionPanel
-            title={t('cart.buyNow.title') || 'Buy Now'}
-            description={t('cart.buyNow.description') || 'Ready for immediate checkout'}
-            icon={Lightning}
-            color={styles.success}
-            buttonLabel={t('cart.buyNow.button') || 'Checkout Now'}
-            itemCount={buyNowItemCount}
-            total={buyNowTotal}
-            currency={cart.currency}
-            onAction={handleBuyNowAll}
-            isProcessing={isProcessingAllBuyNow}
-            disabled={buyNowItemCount === 0}
-            priceType="confirmed"
-            flowType="buy_now"
-          />
+            {/* Items List */}
+            <div className="rounded-xl border" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
+              <div className="px-6">
+                {allItems.map((item) => (
+                  <CartItemRow
+                    key={item.id}
+                    item={item}
+                    onQuantityChange={(qty) => handleQuantityChange(item.itemId, qty)}
+                    onRemove={() => handleRemoveItem(item.itemId)}
+                    isUpdating={updatingItems.has(item.itemId)}
+                  />
+                ))}
+              </div>
+            </div>
 
-          {/* Request Quote Panel - Estimated Prices */}
-          <ActionPanel
-            title={t('cart.rfq.title') || 'Request Quote'}
-            description={t('cart.rfq.description') || 'Get negotiated pricing'}
-            icon={PaperPlaneTilt}
-            color="#f59e0b"
-            buttonLabel={t('cart.rfq.button') || 'Request All Quotes'}
-            itemCount={rfqItemCount}
-            total={rfqTotal}
-            currency={cart.currency}
-            onAction={handleRequestRFQForAll}
-            isProcessing={isProcessingAllRFQ}
-            disabled={rfqItemCount === 0}
-            priceType="estimated"
-            flowType="rfq"
-          />
-        </div>
-
-        {/* Seller Groups */}
-        <div className="mb-6">
-          <h2
-            className="text-lg font-semibold mb-4"
-            style={{ color: styles.textPrimary }}
-          >
-            {t('cart.itemsBySeller') || 'Items by Seller'}
-          </h2>
-          <div className="space-y-4">
-            {sellerGroups.map((group) => (
-              <CartSellerGroup
-                key={group.sellerId}
-                group={group}
-                onQuantityChange={handleQuantityChange}
-                onRemoveItem={handleRemoveItem}
-                onRequestRFQ={() => handleRequestRFQForSeller(group.sellerId)}
-                onBuyNow={group.hasBuyNowEligible ? () => handleBuyNowForSeller(group.sellerId) : undefined}
-                onItemPurchaseMethodChange={handleItemPurchaseMethodChange}
-                getItemEligibility={getEligibilityForItem}
-                isProcessingRFQ={processingRFQSellerIds.has(group.sellerId)}
-                isProcessingBuyNow={processingBuyNowSellerIds.has(group.sellerId)}
-                updatingItems={updatingItems}
-              />
-            ))}
+            {/* Continue Shopping Link */}
+            <button
+              onClick={handleContinueShopping}
+              className="mt-4 text-sm font-medium underline"
+              style={{ color: styles.textSecondary }}
+            >
+              {t('cart.continueShopping') || 'Continue Shopping'}
+            </button>
           </div>
-        </div>
 
-        {/* Bottom Total Bar - Enhanced with price breakdown */}
-        <div
-          className="sticky bottom-0 -mx-6 px-6 py-4 border-t shadow-lg"
-          style={{
-            backgroundColor: styles.bgCard,
-            borderColor: styles.border,
-          }}
-        >
-          <div className={`flex items-center justify-between ${isRtl ? 'flex-row-reverse' : ''}`}>
-            {/* Total Section with breakdown */}
-            <div className={isRtl ? 'text-right' : ''}>
-              <div className="text-sm" style={{ color: styles.textMuted }}>
-                {t('cart.estimatedTotal') || 'Cart Total'}
-              </div>
-              <div className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
-                {cart.currency} {cart.estimatedTotal.toLocaleString()}
-              </div>
-              {/* Price type breakdown */}
-              {(buyNowItemCount > 0 || rfqItemCount > 0) && (
-                <div className={`flex items-center gap-4 mt-1 text-xs ${isRtl ? 'flex-row-reverse' : ''}`}>
-                  {buyNowItemCount > 0 && (
-                    <div className={`flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                      <CheckCircle size={12} weight="fill" style={{ color: styles.success }} />
-                      <span style={{ color: styles.textMuted }}>Confirmed:</span>
-                      <span style={{ color: styles.success }}>{cart.currency} {buyNowTotal.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {rfqItemCount > 0 && (
-                    <div className={`flex items-center gap-1 ${isRtl ? 'flex-row-reverse' : ''}`}>
-                      <Clock size={12} weight="fill" style={{ color: '#f59e0b' }} />
-                      <span style={{ color: styles.textMuted }}>Estimated:</span>
-                      <span style={{ color: '#f59e0b' }}>{cart.currency} {rfqTotal.toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className={`flex items-center gap-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
-              {rfqItemCount > 0 && (
-                <Button
-                  onClick={handleRequestRFQForAll}
-                  variant="secondary"
-                  size="lg"
-                  disabled={isProcessingAllRFQ}
-                >
-                  {isProcessingAllRFQ ? (
-                    <SpinnerGap size={18} className="animate-spin" />
-                  ) : (
-                    <PaperPlaneTilt size={18} className={isRtl ? 'ml-2' : 'mr-2'} />
-                  )}
-                  {t('cart.requestQuotes') || 'Request Quotes'} ({rfqItemCount})
-                </Button>
-              )}
-              {buyNowItemCount > 0 && (
-                <Button
-                  onClick={handleBuyNowAll}
-                  variant="primary"
-                  size="lg"
-                  disabled={isProcessingAllBuyNow}
-                >
-                  {isProcessingAllBuyNow ? (
-                    <SpinnerGap size={18} className="animate-spin" />
-                  ) : (
-                    <Lightning size={18} weight="fill" className={isRtl ? 'ml-2' : 'mr-2'} />
-                  )}
-                  {t('cart.checkout') || 'Checkout'} ({buyNowItemCount})
-                </Button>
-              )}
-            </div>
+          {/* Right Column - Order Summary */}
+          <div className="w-96 flex-shrink-0">
+            <OrderSummary
+              subtotal={subtotal}
+              currency={cart.currency}
+              itemCount={cart.itemCount}
+              onCheckout={handleCheckout}
+              isCheckingOut={isCheckingOut}
+            />
           </div>
         </div>
       </Container>
-
-      {/* Buy Now Confirmation Modal */}
-      {buyNowConfirmData && (
-        <BuyNowConfirmModal
-          isOpen={showBuyNowConfirm}
-          onClose={() => {
-            setShowBuyNowConfirm(false);
-            setBuyNowConfirmData(null);
-          }}
-          onConfirm={buyNowConfirmData.sellerId ? confirmBuyNowForSeller : confirmBuyNowAll}
-          isProcessing={buyNowConfirmData.sellerId
-            ? processingBuyNowSellerIds.has(buyNowConfirmData.sellerId)
-            : isProcessingAllBuyNow
-          }
-          items={buyNowConfirmData.items}
-          totalAmount={buyNowConfirmData.totalAmount}
-          itemCount={buyNowConfirmData.itemCount}
-          sellerCount={buyNowConfirmData.sellerCount}
-          currency={cart.currency}
-          sellerName={buyNowConfirmData.sellerName}
-        />
-      )}
     </div>
   );
 };

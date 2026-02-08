@@ -1,3 +1,7 @@
+// Portal API Client (unified HTTP client for all portal services)
+export { portalApiClient } from './portalApiClient';
+export type { SessionEventType, RequestOptions, ApiError, ApiResponse } from './portalApiClient';
+
 // Portal Services
 export { itemService } from './itemService';
 export { orderService } from './orderService';
@@ -9,7 +13,7 @@ export { sellerRfqInboxService } from './sellerRfqInboxService';
 export { quoteService } from './quoteService';
 export { marketplaceOrderService } from './marketplaceOrderService';
 export { notificationService } from './notificationService';
-export { orderTimelineApiService, generateMockTimeline } from './orderTimelineService';
+export { orderTimelineApiService } from './orderTimelineService';
 export type { DashboardSummary } from './dashboardService';
 export type { Customer, CustomerDetails, CustomerOrder, CustomerFilters } from './customerService';
 export type { InventoryItem, InventoryFilters, InventorySummary, StockAdjustment } from './inventoryService';

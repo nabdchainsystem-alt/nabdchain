@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarCheck, Plus, Target, Users, Clock } from 'phosphor-react';
+import { CalendarCheck, Plus } from 'phosphor-react';
 import type { Sprint } from '../types';
 import { SprintCard } from './SprintCard';
 
@@ -14,11 +14,7 @@ interface SprintPlanningProps {
   onEditSprint?: (sprintId: string) => void;
 }
 
-export const SprintPlanning: React.FC<SprintPlanningProps> = ({
-  sprints,
-  onCreateSprint,
-  onEditSprint,
-}) => {
+export const SprintPlanning: React.FC<SprintPlanningProps> = ({ sprints, onCreateSprint, onEditSprint }) => {
   const [showBacklog, setShowBacklog] = useState(true);
 
   const upcomingSprints = sprints.filter((s) => s.status === 'planning');
@@ -30,12 +26,8 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
       {/* Planning Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-            Sprint Planning
-          </h2>
-          <p className="text-sm text-stone-500">
-            Plan and manage your sprint cycles
-          </p>
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">Sprint Planning</h2>
+          <p className="text-sm text-stone-500">Plan and manage your sprint cycles</p>
         </div>
         <button
           onClick={onCreateSprint}
@@ -52,9 +44,7 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
           <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
             <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-700">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-stone-700 dark:text-stone-300">
-                  Product Backlog
-                </h3>
+                <h3 className="font-semibold text-stone-700 dark:text-stone-300">Product Backlog</h3>
                 <button
                   onClick={() => setShowBacklog(!showBacklog)}
                   className="text-sm text-violet-600 hover:text-violet-700"
@@ -73,22 +63,16 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
                       key={i}
                       className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 cursor-grab hover:border-violet-300"
                     >
-                      <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                        Backlog Item {i}
-                      </p>
+                      <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Backlog Item {i}</p>
                       <div className="flex items-center gap-2 mt-2 text-xs text-stone-500">
-                        <span className="px-2 py-0.5 bg-stone-200 dark:bg-stone-700 rounded">
-                          {i * 2} pts
-                        </span>
+                        <span className="px-2 py-0.5 bg-stone-200 dark:bg-stone-700 rounded">{i * 2} pts</span>
                         <span>Feature</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <p className="text-xs text-stone-400 text-center mt-4">
-                  Drag items to a sprint to add them
-                </p>
+                <p className="text-xs text-stone-400 text-center mt-4">Drag items to a sprint to add them</p>
               </div>
             )}
           </div>
@@ -99,16 +83,10 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
           {/* Active Sprint */}
           {activeSprints.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-stone-500 uppercase mb-3">
-                Active Sprint
-              </h4>
+              <h4 className="text-sm font-medium text-stone-500 uppercase mb-3">Active Sprint</h4>
               <div className="space-y-3">
                 {activeSprints.map((sprint) => (
-                  <SprintCard
-                    key={sprint.id}
-                    sprint={sprint}
-                    onEdit={() => onEditSprint?.(sprint.id)}
-                  />
+                  <SprintCard key={sprint.id} sprint={sprint} onEdit={() => onEditSprint?.(sprint.id)} />
                 ))}
               </div>
             </div>
@@ -123,21 +101,14 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
               <div className="p-6 bg-white dark:bg-stone-900 rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-700 text-center">
                 <CalendarCheck size={32} className="mx-auto text-stone-300 dark:text-stone-600 mb-2" />
                 <p className="text-stone-500">No sprints planned</p>
-                <button
-                  onClick={onCreateSprint}
-                  className="mt-2 text-sm text-violet-600 hover:text-violet-700"
-                >
+                <button onClick={onCreateSprint} className="mt-2 text-sm text-violet-600 hover:text-violet-700">
                   Plan your first sprint
                 </button>
               </div>
             ) : (
               <div className="space-y-3">
                 {upcomingSprints.map((sprint) => (
-                  <SprintCard
-                    key={sprint.id}
-                    sprint={sprint}
-                    onEdit={() => onEditSprint?.(sprint.id)}
-                  />
+                  <SprintCard key={sprint.id} sprint={sprint} onEdit={() => onEditSprint?.(sprint.id)} />
                 ))}
               </div>
             )}
@@ -151,12 +122,7 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
               </h4>
               <div className="space-y-3">
                 {completedSprints.slice(0, 3).map((sprint) => (
-                  <SprintCard
-                    key={sprint.id}
-                    sprint={sprint}
-                    onEdit={() => onEditSprint?.(sprint.id)}
-                    compact
-                  />
+                  <SprintCard key={sprint.id} sprint={sprint} onEdit={() => onEditSprint?.(sprint.id)} compact />
                 ))}
               </div>
             </div>
@@ -166,9 +132,7 @@ export const SprintPlanning: React.FC<SprintPlanningProps> = ({
 
       {/* Placeholder Notice */}
       <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-center">
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Sprint Planning - Full functionality coming soon
-        </p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">Sprint Planning - Full functionality coming soon</p>
       </div>
     </div>
   );

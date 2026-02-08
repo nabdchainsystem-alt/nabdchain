@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { Guest, GuestInvite, ShareLink, GuestSettings } from '../types';
+import type { Guest, GuestInvite, ShareLink } from '../types';
 import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
@@ -102,51 +102,45 @@ export const useGuests = (): UseGuestsReturn => {
     loadData();
   }, []);
 
-  const inviteGuest = useCallback(
-    async (email: string, options: Partial<GuestInvite>): Promise<GuestInvite> => {
-      hookLogger.debug('[useGuests] Invite guest - NOT IMPLEMENTED', { email, options });
-      const newInvite: GuestInvite = {
-        id: `invite-${Date.now()}`,
-        workspaceId: 'workspace-1',
-        email,
-        accessLevel: options.accessLevel || 'view',
-        message: options.message,
-        boards: options.boards || [],
-        folders: options.folders || [],
-        inviteCode: Math.random().toString(36).substring(2, 10),
-        createdBy: 'current-user',
-        createdAt: new Date(),
-        expiresAt: options.expiresAt,
-      };
-      setInvites((prev) => [...prev, newInvite]);
-      return newInvite;
-    },
-    []
-  );
+  const inviteGuest = useCallback(async (email: string, options: Partial<GuestInvite>): Promise<GuestInvite> => {
+    hookLogger.debug('[useGuests] Invite guest - NOT IMPLEMENTED', { email, options });
+    const newInvite: GuestInvite = {
+      id: `invite-${Date.now()}`,
+      workspaceId: 'workspace-1',
+      email,
+      accessLevel: options.accessLevel || 'view',
+      message: options.message,
+      boards: options.boards || [],
+      folders: options.folders || [],
+      inviteCode: Math.random().toString(36).substring(2, 10),
+      createdBy: 'current-user',
+      createdAt: new Date(),
+      expiresAt: options.expiresAt,
+    };
+    setInvites((prev) => [...prev, newInvite]);
+    return newInvite;
+  }, []);
 
   const removeGuest = useCallback(async (guestId: string): Promise<void> => {
     hookLogger.debug('[useGuests] Remove guest - NOT IMPLEMENTED', guestId);
     setGuests((prev) => prev.filter((g) => g.id !== guestId));
   }, []);
 
-  const updateGuestAccess = useCallback(
-    async (guestId: string, accessLevel: Guest['accessLevel']): Promise<Guest> => {
-      hookLogger.debug('[useGuests] Update guest access - NOT IMPLEMENTED', { guestId, accessLevel });
-      let updated: Guest | undefined;
-      setGuests((prev) =>
-        prev.map((g) => {
-          if (g.id === guestId) {
-            updated = { ...g, accessLevel };
-            return updated;
-          }
-          return g;
-        })
-      );
-      if (!updated) throw new Error('Guest not found');
-      return updated;
-    },
-    []
-  );
+  const updateGuestAccess = useCallback(async (guestId: string, accessLevel: Guest['accessLevel']): Promise<Guest> => {
+    hookLogger.debug('[useGuests] Update guest access - NOT IMPLEMENTED', { guestId, accessLevel });
+    let updated: Guest | undefined;
+    setGuests((prev) =>
+      prev.map((g) => {
+        if (g.id === guestId) {
+          updated = { ...g, accessLevel };
+          return updated;
+        }
+        return g;
+      }),
+    );
+    if (!updated) throw new Error('Guest not found');
+    return updated;
+  }, []);
 
   const resendInvite = useCallback(async (inviteId: string): Promise<void> => {
     hookLogger.debug('[useGuests] Resend invite - NOT IMPLEMENTED', inviteId);
@@ -175,7 +169,7 @@ export const useGuests = (): UseGuestsReturn => {
       setShareLinks((prev) => [...prev, newLink]);
       return newLink;
     },
-    []
+    [],
   );
 
   const deleteShareLink = useCallback(async (linkId: string): Promise<void> => {
@@ -193,7 +187,7 @@ export const useGuests = (): UseGuestsReturn => {
           return updated;
         }
         return l;
-      })
+      }),
     );
     if (!updated) throw new Error('Share link not found');
     return updated;

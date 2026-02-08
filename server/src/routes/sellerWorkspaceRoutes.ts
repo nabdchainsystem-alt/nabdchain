@@ -2,7 +2,7 @@
 // Seller Workspace Routes - Execution Layer API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import sellerWorkspaceService, {
@@ -61,7 +61,19 @@ const createInvoiceSchema = z.object({
   termsAndConditions: z.string().max(5000).optional(),
 });
 
-const updateInvoiceSchema = createInvoiceSchema.partial().extend({
+// For updates: strip defaults so undefined fields don't overwrite existing values
+const updateInvoiceSchema = z.object({
+  customerName: z.string().min(1).max(200),
+  customerEmail: z.string().email().optional(),
+  customerPhone: z.string().max(50).optional(),
+  customerCompany: z.string().max(200).optional(),
+  lineItems: z.array(lineItemSchema).min(1),
+  vatRate: z.number().min(0).max(100),
+  currency: z.string(),
+  dueDate: z.string().datetime().optional(),
+  notes: z.string().max(2000).optional(),
+  termsAndConditions: z.string().max(5000).optional(),
+}).partial().extend({
   status: invoiceStatusEnum.optional(),
 });
 

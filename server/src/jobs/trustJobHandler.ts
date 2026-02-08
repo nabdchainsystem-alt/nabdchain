@@ -4,9 +4,8 @@
 
 import { crossIntelligenceService } from '../services/crossIntelligenceService';
 import { scaleSafetyService } from '../services/scaleSafetyService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { jobLog } from '../services/observability/structuredLogger';
 
 export const trustJobHandler = {
   /**
@@ -14,7 +13,7 @@ export const trustJobHandler = {
    * Runs hourly
    */
   async updateStaleScores(): Promise<void> {
-    console.log('[TrustJob] Updating stale trust scores...');
+    jobLog.info('Updating stale trust scores...');
 
     try {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -28,19 +27,19 @@ export const trustJobHandler = {
         take: 100, // Process in batches
       });
 
-      console.log(`[TrustJob] Found ${staleScores.length} stale trust scores to update`);
+      jobLog.info(`Found ${staleScores.length} stale trust scores to update`, { count: staleScores.length });
 
       for (const score of staleScores) {
         try {
           await crossIntelligenceService.recomputeSellerTrustScore(score.userId);
         } catch (error) {
-          console.error(`[TrustJob] Failed to update trust score for ${score.userId}:`, error);
+          jobLog.error(`Failed to update trust score for ${score.userId}`, error, { userId: score.userId });
         }
       }
 
-      console.log('[TrustJob] Trust score update complete');
+      jobLog.info('Trust score update complete');
     } catch (error) {
-      console.error('[TrustJob] Failed to update stale scores:', error);
+      jobLog.error('Failed to update stale scores', error);
     }
   },
 
@@ -49,7 +48,7 @@ export const trustJobHandler = {
    * Runs every 30 minutes
    */
   async updateHealthScores(): Promise<void> {
-    console.log('[TrustJob] Updating health scores...');
+    jobLog.info('Updating health scores...');
 
     try {
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
@@ -81,19 +80,19 @@ export const trustJobHandler = {
         ...sellersWithoutScores.map(s => s.sellerId),
       ];
 
-      console.log(`[TrustJob] Updating health scores for ${sellersToUpdate.length} sellers`);
+      jobLog.info(`Updating health scores for ${sellersToUpdate.length} sellers`, { count: sellersToUpdate.length });
 
       for (const sellerId of sellersToUpdate) {
         try {
           await scaleSafetyService.evaluateSellerHealth(sellerId);
         } catch (error) {
-          console.error(`[TrustJob] Failed to update health score for ${sellerId}:`, error);
+          jobLog.error(`Failed to update health score for ${sellerId}`, error, { sellerId });
         }
       }
 
-      console.log('[TrustJob] Health score update complete');
+      jobLog.info('Health score update complete');
     } catch (error) {
-      console.error('[TrustJob] Failed to update health scores:', error);
+      jobLog.error('Failed to update health scores', error);
     }
   },
 
@@ -102,7 +101,7 @@ export const trustJobHandler = {
    * Runs daily
    */
   async checkTrustScoreDrops(): Promise<void> {
-    console.log('[TrustJob] Checking for trust score drops...');
+    jobLog.info('Checking for trust score drops...');
 
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -161,9 +160,9 @@ export const trustJobHandler = {
         }
       }
 
-      console.log('[TrustJob] Trust score drop check complete');
+      jobLog.info('Trust score drop check complete');
     } catch (error) {
-      console.error('[TrustJob] Failed to check trust score drops:', error);
+      jobLog.error('Failed to check trust score drops', error);
     }
   },
 
@@ -172,7 +171,7 @@ export const trustJobHandler = {
    * This aggregates events and updates scores accordingly
    */
   async processPendingTrustEvents(): Promise<void> {
-    console.log('[TrustJob] Processing pending trust events...');
+    jobLog.info('Processing pending trust events...');
 
     try {
       // Get users with recent trust events that might need score updates
@@ -187,19 +186,19 @@ export const trustJobHandler = {
       });
 
       const userIds = recentEvents.map(e => e.userId);
-      console.log(`[TrustJob] Found ${userIds.length} users with recent trust events`);
+      jobLog.info(`Found ${userIds.length} users with recent trust events`, { count: userIds.length });
 
       for (const userId of userIds) {
         try {
           await crossIntelligenceService.recomputeSellerTrustScore(userId);
         } catch (error) {
-          console.error(`[TrustJob] Failed to process trust events for ${userId}:`, error);
+          jobLog.error(`Failed to process trust events for ${userId}`, error, { userId });
         }
       }
 
-      console.log('[TrustJob] Trust event processing complete');
+      jobLog.info('Trust event processing complete');
     } catch (error) {
-      console.error('[TrustJob] Failed to process trust events:', error);
+      jobLog.error('Failed to process trust events', error);
     }
   },
 
@@ -208,7 +207,7 @@ export const trustJobHandler = {
    * Updates seller rankings based on trust scores
    */
   async updateSellerRankings(): Promise<void> {
-    console.log('[TrustJob] Updating seller rankings...');
+    jobLog.info('Updating seller rankings...');
 
     try {
       // Get all seller trust scores ordered by score
@@ -234,9 +233,9 @@ export const trustJobHandler = {
         });
       }
 
-      console.log(`[TrustJob] Updated rankings for ${rankings.length} sellers`);
+      jobLog.info(`Updated rankings for ${rankings.length} sellers`, { count: rankings.length });
     } catch (error) {
-      console.error('[TrustJob] Failed to update seller rankings:', error);
+      jobLog.error('Failed to update seller rankings', error);
     }
   },
 };

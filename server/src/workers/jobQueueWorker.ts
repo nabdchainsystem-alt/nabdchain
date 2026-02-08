@@ -9,6 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma';
 import { serverLogger } from '../utils/logger';
 import { JobType } from '../services/jobQueueService';
+import { dbCircuitBreaker, isDbConnectionError } from '../lib/circuitBreaker';
+import { getWorkerBackoffConfig } from '../config/runtimeFlags';
 
 // Import job handlers
 import { payoutJobHandler } from '../jobs/payoutJobHandler';
@@ -16,13 +18,16 @@ import { automationJobHandler } from '../jobs/automationJobHandler';
 import { trustJobHandler } from '../jobs/trustJobHandler';
 import { scaleSafetyJobHandler } from '../jobs/scaleSafetyJobHandler';
 
-// Configuration
+// Configuration (static values)
 const BATCH_SIZE = 10;
 const POLL_INTERVAL_MS = 1000; // 1 second
 const LOCK_TIMEOUT_MS = 300000; // 5 minutes
 const INITIAL_RETRY_DELAY_MS = 5000; // 5 seconds
 const MAX_RETRY_DELAY_MS = 3600000; // 1 hour
 const BACKOFF_MULTIPLIER = 2;
+
+// Configurable backoff (from environment)
+const getMaxPollInterval = () => getWorkerBackoffConfig().maxMs;
 
 type JobHandler = (payload: any) => Promise<any>;
 
@@ -48,7 +53,7 @@ const JOB_HANDLERS: Partial<Record<JobType | string, JobHandler>> = {
   [JobType.RUN_ANOMALY_DETECTION]: async (payload) => scaleSafetyJobHandler.runAnomalyDetection(),
   [JobType.RESET_DAILY_RATE_LIMITS]: async (payload) => scaleSafetyJobHandler.resetDailyRateLimits(),
 
-  // Notification jobs - TODO: implement handlers
+  // Notification jobs - stubs until delivery handlers are wired up
   [JobType.SEND_EMAIL_NOTIFICATION]: async (payload) => {
     serverLogger.info('[JobQueueWorker] Email notification stub', payload);
     return { sent: true };
@@ -126,23 +131,47 @@ export class JobQueueWorker {
   }
 
   /**
-   * Main polling loop
+   * Main polling loop with circuit breaker
    */
   private async poll(): Promise<void> {
     if (!this.isRunning) return;
 
-    try {
-      // Release stale locks first
-      await this.releaseStaleLocks();
+    let nextPollInterval = POLL_INTERVAL_MS;
+    const maxPollInterval = getMaxPollInterval();
 
-      // Process jobs
-      await this.processJobs();
-    } catch (error) {
-      serverLogger.error(`[JobQueueWorker ${this.workerId}] Poll error:`, error);
+    // Check circuit breaker before attempting DB operations
+    if (!dbCircuitBreaker.canExecute()) {
+      const backoff = dbCircuitBreaker.getBackoffMs();
+      nextPollInterval = Math.min(backoff || maxPollInterval, maxPollInterval);
+      // Only log occasionally to avoid spam (every 60 seconds)
+      const status = dbCircuitBreaker.getStatus();
+      if (status.consecutiveFailures % 60 === 1) {
+        serverLogger.warn(
+          `[JobQueueWorker ${this.workerId}] Circuit breaker OPEN, skipping poll. Will retry in ${Math.round(nextPollInterval / 1000)}s`
+        );
+      }
+    } else {
+      try {
+        // Release stale locks first
+        await this.releaseStaleLocks();
+
+        // Process jobs
+        await this.processJobs();
+        dbCircuitBreaker.recordSuccess();
+      } catch (error) {
+        // Record DB connection errors in circuit breaker
+        if (isDbConnectionError(error)) {
+          dbCircuitBreaker.recordFailure(error as Error);
+          nextPollInterval = Math.min(dbCircuitBreaker.getBackoffMs(), maxPollInterval);
+          serverLogger.error(`[JobQueueWorker ${this.workerId}] Database connection error, backing off:`, error);
+        } else {
+          serverLogger.error(`[JobQueueWorker ${this.workerId}] Poll error:`, error);
+        }
+      }
     }
 
     // Schedule next poll
-    this.pollTimer = setTimeout(() => this.poll(), POLL_INTERVAL_MS);
+    this.pollTimer = setTimeout(() => this.poll(), nextPollInterval);
   }
 
   /**

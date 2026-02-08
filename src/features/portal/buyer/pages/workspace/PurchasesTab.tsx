@@ -9,18 +9,7 @@ import {
   createColumnHelper,
   SortingState,
 } from '@tanstack/react-table';
-import {
-  MagnifyingGlass,
-  CaretLeft,
-  CaretRight,
-  Eye,
-  Check,
-  X,
-  Plus,
-  Funnel,
-  CaretDown,
-  NoteBlank,
-} from 'phosphor-react';
+import { MagnifyingGlass, CaretLeft, CaretRight, Eye, Check, X, Plus, Funnel, NoteBlank } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import { useAuth } from '../../../../../auth-adapter';
 import { PortalDatePicker, Select } from '../../../components';
@@ -108,7 +97,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
       if (!token) return;
 
       // Calculate total from items
-      const total = newPO.items?.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) || newPO.totalAmount;
+      const total = newPO.items?.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) || newPO.totalAmount;
 
       await buyerWorkspaceService.createPurchase(token, {
         ...newPO,
@@ -155,9 +144,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
     () => [
       columnHelper.accessor('poNumber', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.poNumber')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.poNumber')}</span>
         ),
         cell: (info) => (
           <span className="font-medium" style={{ color: styles.textPrimary }}>
@@ -167,39 +154,25 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
       }),
       columnHelper.accessor('supplierName', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.supplier')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.supplier')}</span>
         ),
-        cell: (info) => (
-          <span style={{ color: styles.textSecondary }}>{info.getValue()}</span>
-        ),
+        cell: (info) => <span style={{ color: styles.textSecondary }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor('totalAmount', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.totalAmount')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.totalAmount')}</span>
         ),
-        cell: (info) => (
-          <span style={{ color: styles.textPrimary }}>
-            SAR {info.getValue().toLocaleString()}
-          </span>
-        ),
+        cell: (info) => <span style={{ color: styles.textPrimary }}>SAR {info.getValue().toLocaleString()}</span>,
       }),
       columnHelper.accessor('status', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.status')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.status')}</span>
         ),
         cell: (info) => {
           const status = info.getValue() as PurchaseOrderStatus;
           const colors = STATUS_COLORS[status];
           return (
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}
-            >
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}>
               {t(`buyer.workspace.${status}`)}
             </span>
           );
@@ -207,36 +180,26 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
       }),
       columnHelper.accessor('orderDate', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.orderDate')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.orderDate')}</span>
         ),
         cell: (info) => (
-          <span style={{ color: styles.textSecondary }}>
-            {new Date(info.getValue()).toLocaleDateString()}
-          </span>
+          <span style={{ color: styles.textSecondary }}>{new Date(info.getValue()).toLocaleDateString()}</span>
         ),
       }),
       columnHelper.accessor('expectedDelivery', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.expectedDelivery')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.expectedDelivery')}</span>
         ),
         cell: (info) => {
           const value = info.getValue();
           return (
-            <span style={{ color: styles.textSecondary }}>
-              {value ? new Date(value).toLocaleDateString() : '-'}
-            </span>
+            <span style={{ color: styles.textSecondary }}>{value ? new Date(value).toLocaleDateString() : '-'}</span>
           );
         },
       }),
       columnHelper.display({
         id: 'actions',
-        header: () => (
-          <span className="w-full text-center block">{t('common.actions')}</span>
-        ),
+        header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
         cell: (info) => {
           const row = info.row.original;
           const status = row.status as PurchaseOrderStatus;
@@ -274,7 +237,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
         },
       }),
     ],
-    [t, styles, isRTL, handleStatusChange]
+    [t, styles, isRTL, handleStatusChange],
   );
 
   const table = useReactTable({
@@ -376,19 +339,14 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
           <table className="w-full">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr
-                  key={headerGroup.id}
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
+                <tr key={headerGroup.id} style={{ backgroundColor: styles.bgSecondary }}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                       style={{ color: styles.textMuted }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
                 </tr>
@@ -443,7 +401,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
               {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
+                table.getFilteredRowModel().rows.length,
               )}{' '}
               {t('common.of')} {table.getFilteredRowModel().rows.length}
             </span>
@@ -504,10 +462,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
             <div className="p-6 space-y-4">
               {/* Supplier Name */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: styles.textSecondary }}
-                >
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textSecondary }}>
                   {t('buyer.workspace.supplierName')} *
                 </label>
                 <input
@@ -526,10 +481,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
 
               {/* Expected Delivery */}
               <div>
-                <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: styles.textSecondary }}
-                >
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textSecondary }}>
                   {t('buyer.workspace.expectedDelivery')}
                 </label>
                 <PortalDatePicker
@@ -542,10 +494,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
               {/* Items */}
               <div>
                 <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: styles.textSecondary }}
-                  >
+                  <label className="text-sm font-medium" style={{ color: styles.textSecondary }}>
                     {t('buyer.workspace.items')}
                   </label>
                   <button
@@ -655,17 +604,16 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
               </div>
 
               {/* Total Preview */}
-              <div
-                className="p-3 rounded-lg"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                 <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-sm" style={{ color: styles.textSecondary }}>
                     {t('buyer.workspace.estimatedTotal')}
                   </span>
                   <span className="text-lg font-bold" style={{ color: styles.textPrimary }}>
                     {newPO.currency}{' '}
-                    {(newPO.items?.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) || 0).toLocaleString()}
+                    {(
+                      newPO.items?.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) || 0
+                    ).toLocaleString()}
                   </span>
                 </div>
               </div>

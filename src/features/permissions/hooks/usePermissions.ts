@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { Role, Permission, MemberRole, ColumnRestriction, PermissionAuditLog } from '../types';
+import type { Role, MemberRole, ColumnRestriction } from '../types';
 import { hookLogger } from '@/utils/logger';
 
 // =============================================================================
@@ -118,7 +118,7 @@ export const usePermissions = (): UsePermissionsReturn => {
       setRoles((prev) => [...prev, newRole]);
       return newRole;
     },
-    []
+    [],
   );
 
   const updateRole = useCallback(async (id: string, updates: Partial<Role>): Promise<Role> => {
@@ -131,7 +131,7 @@ export const usePermissions = (): UsePermissionsReturn => {
           return updated;
         }
         return r;
-      })
+      }),
     );
     if (!updated) throw new Error('Role not found');
     return updated;
@@ -156,37 +156,29 @@ export const usePermissions = (): UsePermissionsReturn => {
 
   const removeRole = useCallback(async (userId: string, roleId: string): Promise<void> => {
     hookLogger.debug('[usePermissions] Remove role - NOT IMPLEMENTED', { userId, roleId });
-    setMemberRoles((prev) =>
-      prev.filter((mr) => !(mr.userId === userId && mr.roleId === roleId))
-    );
+    setMemberRoles((prev) => prev.filter((mr) => !(mr.userId === userId && mr.roleId === roleId)));
   }, []);
 
-  const addRestriction = useCallback(
-    async (restriction: Omit<ColumnRestriction, 'id'>): Promise<ColumnRestriction> => {
-      hookLogger.debug('[usePermissions] Add restriction - NOT IMPLEMENTED', restriction);
-      const newRestriction: ColumnRestriction = {
-        ...restriction,
-        id: `restriction-${Date.now()}`,
-      };
-      setRestrictions((prev) => [...prev, newRestriction]);
-      return newRestriction;
-    },
-    []
-  );
+  const addRestriction = useCallback(async (restriction: Omit<ColumnRestriction, 'id'>): Promise<ColumnRestriction> => {
+    hookLogger.debug('[usePermissions] Add restriction - NOT IMPLEMENTED', restriction);
+    const newRestriction: ColumnRestriction = {
+      ...restriction,
+      id: `restriction-${Date.now()}`,
+    };
+    setRestrictions((prev) => [...prev, newRestriction]);
+    return newRestriction;
+  }, []);
 
   const removeRestriction = useCallback(async (id: string): Promise<void> => {
     hookLogger.debug('[usePermissions] Remove restriction - NOT IMPLEMENTED', id);
     setRestrictions((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
-  const checkPermission = useCallback(
-    (userId: string, resource: string, action: string): boolean => {
-      hookLogger.debug('[usePermissions] Check permission - NOT IMPLEMENTED', { userId, resource, action });
-      // Mock: always return true for now
-      return true;
-    },
-    []
-  );
+  const checkPermission = useCallback((userId: string, resource: string, action: string): boolean => {
+    hookLogger.debug('[usePermissions] Check permission - NOT IMPLEMENTED', { userId, resource, action });
+    // Mock: always return true for now
+    return true;
+  }, []);
 
   const refresh = useCallback(async (): Promise<void> => {
     hookLogger.debug('[usePermissions] Refresh - NOT IMPLEMENTED');

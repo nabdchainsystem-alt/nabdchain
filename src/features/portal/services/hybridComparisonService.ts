@@ -14,7 +14,7 @@ import {
   createCustomRow,
   countDataPoints,
 } from '../types/comparison.types';
-import { SupplierQuote } from '../types/item.types';
+import { SupplierQuote } from '../types/comparison.types';
 
 // =============================================================================
 // Initialization
@@ -26,7 +26,7 @@ import { SupplierQuote } from '../types/item.types';
 export function initializeFromQuotes(
   quotes: SupplierQuote[],
   currency: string,
-  rfqInfo?: { rfqId: string; rfqNumber?: string; itemName?: string }
+  rfqInfo?: { rfqId: string; rfqNumber?: string; itemName?: string },
 ): HybridComparisonData {
   return quotesToHybridData(quotes, currency, rfqInfo);
 }
@@ -71,10 +71,7 @@ export function addManualColumn(data: HybridComparisonData): HybridComparisonDat
 /**
  * Remove a column (only manual columns can be removed)
  */
-export function removeColumn(
-  data: HybridComparisonData,
-  columnId: string
-): HybridComparisonData {
+export function removeColumn(data: HybridComparisonData, columnId: string): HybridComparisonData {
   const column = data.columns.find((c) => c.id === columnId);
 
   // Cannot remove live columns
@@ -96,10 +93,9 @@ export function removeColumn(
   });
 
   // Check if there's still manual data
-  const hasManualData = newColumns.some((c) => c.source === 'manual') ||
-    newRows.some((r) =>
-      Object.values(r.values).some((v) => v.source === 'manual' && v.value?.trim())
-    );
+  const hasManualData =
+    newColumns.some((c) => c.source === 'manual') ||
+    newRows.some((r) => Object.values(r.values).some((v) => v.source === 'manual' && v.value?.trim()));
 
   return {
     ...data,
@@ -112,16 +108,10 @@ export function removeColumn(
 /**
  * Update column name
  */
-export function updateColumnName(
-  data: HybridComparisonData,
-  columnId: string,
-  name: string
-): HybridComparisonData {
+export function updateColumnName(data: HybridComparisonData, columnId: string, name: string): HybridComparisonData {
   return {
     ...data,
-    columns: data.columns.map((c) =>
-      c.id === columnId ? { ...c, name } : c
-    ),
+    columns: data.columns.map((c) => (c.id === columnId ? { ...c, name } : c)),
   };
 }
 
@@ -145,10 +135,7 @@ export function addCustomRow(data: HybridComparisonData): HybridComparisonData {
 /**
  * Remove a row (only custom rows can be removed)
  */
-export function removeRow(
-  data: HybridComparisonData,
-  rowId: string
-): HybridComparisonData {
+export function removeRow(data: HybridComparisonData, rowId: string): HybridComparisonData {
   const row = data.rows.find((r) => r.id === rowId);
 
   // Cannot remove system rows
@@ -164,10 +151,9 @@ export function removeRow(
   const newRows = data.rows.filter((r) => r.id !== rowId);
 
   // Check if there's still manual data
-  const hasManualData = data.columns.some((c) => c.source === 'manual') ||
-    newRows.some((r) =>
-      Object.values(r.values).some((v) => v.source === 'manual' && v.value?.trim())
-    );
+  const hasManualData =
+    data.columns.some((c) => c.source === 'manual') ||
+    newRows.some((r) => Object.values(r.values).some((v) => v.source === 'manual' && v.value?.trim()));
 
   return {
     ...data,
@@ -179,32 +165,21 @@ export function removeRow(
 /**
  * Update row metric name
  */
-export function updateRowMetric(
-  data: HybridComparisonData,
-  rowId: string,
-  metric: string
-): HybridComparisonData {
+export function updateRowMetric(data: HybridComparisonData, rowId: string, metric: string): HybridComparisonData {
   return {
     ...data,
-    rows: data.rows.map((r) =>
-      r.id === rowId ? { ...r, metric } : r
-    ),
+    rows: data.rows.map((r) => (r.id === rowId ? { ...r, metric } : r)),
   };
 }
 
 /**
  * Toggle isLowerBetter for a custom row
  */
-export function toggleRowScoring(
-  data: HybridComparisonData,
-  rowId: string
-): HybridComparisonData {
+export function toggleRowScoring(data: HybridComparisonData, rowId: string): HybridComparisonData {
   return {
     ...data,
     rows: data.rows.map((r) =>
-      r.id === rowId && r.rowType === 'custom'
-        ? { ...r, isLowerBetter: !r.isLowerBetter }
-        : r
+      r.id === rowId && r.rowType === 'custom' ? { ...r, isLowerBetter: !r.isLowerBetter } : r,
     ),
   };
 }
@@ -220,7 +195,7 @@ export function updateCellValue(
   data: HybridComparisonData,
   rowId: string,
   columnId: string,
-  value: string
+  value: string,
 ): HybridComparisonData {
   const row = data.rows.find((r) => r.id === rowId);
   const column = data.columns.find((c) => c.id === columnId);
@@ -257,10 +232,9 @@ export function updateCellValue(
   });
 
   // Check if there's manual data
-  const hasManualData = data.columns.some((c) => c.source === 'manual') ||
-    newRows.some((r) =>
-      Object.values(r.values).some((v) => v.source === 'manual' && v.value?.trim())
-    );
+  const hasManualData =
+    data.columns.some((c) => c.source === 'manual') ||
+    newRows.some((r) => Object.values(r.values).some((v) => v.source === 'manual' && v.value?.trim()));
 
   return {
     ...data,
@@ -278,10 +252,13 @@ export function updateCellValue(
  */
 export function importCSVToHybrid(
   data: HybridComparisonData,
-  csvText: string
+  csvText: string,
 ): { data: HybridComparisonData; errors: string[] } {
   const errors: string[] = [];
-  const lines = csvText.trim().split('\n').filter((line) => line.trim());
+  const lines = csvText
+    .trim()
+    .split('\n')
+    .filter((line) => line.trim());
 
   if (lines.length < 2) {
     errors.push('CSV must have at least a header row and one data row');
@@ -326,7 +303,8 @@ export function importCSVToHybrid(
       id: `row-import-${Date.now()}-${i}`,
       metric,
       rowType: 'custom',
-      isLowerBetter: metric.toLowerCase().includes('price') ||
+      isLowerBetter:
+        metric.toLowerCase().includes('price') ||
         metric.toLowerCase().includes('cost') ||
         metric.toLowerCase().includes('time') ||
         metric.toLowerCase().includes('lead'),

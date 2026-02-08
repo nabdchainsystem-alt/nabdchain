@@ -7,6 +7,7 @@ import { payoutJobHandler } from './payoutJobHandler';
 import { automationJobHandler } from './automationJobHandler';
 import { trustJobHandler } from './trustJobHandler';
 import { scaleSafetyJobHandler } from './scaleSafetyJobHandler';
+import { jobLog } from '../services/observability/structuredLogger';
 
 // =============================================================================
 // Types
@@ -133,56 +134,56 @@ let isInitialized = false;
 
 export function initializeScheduler(): void {
   if (isInitialized) {
-    console.log('[Scheduler] Already initialized, skipping');
+    jobLog.info('Already initialized, skipping');
     return;
   }
 
-  console.log('[Scheduler] Initializing job scheduler...');
+  jobLog.info('Initializing job scheduler...');
 
   for (const job of jobs) {
     if (!job.enabled) {
-      console.log(`[Scheduler] Skipping disabled job: ${job.name}`);
+      jobLog.debug(`Skipping disabled job: ${job.name}`, { jobName: job.name });
       continue;
     }
 
     if (!cron.validate(job.schedule)) {
-      console.error(`[Scheduler] Invalid cron schedule for job ${job.name}: ${job.schedule}`);
+      jobLog.error(`Invalid cron schedule for job ${job.name}: ${job.schedule}`, undefined, { jobName: job.name, schedule: job.schedule });
       continue;
     }
 
     job.task = cron.schedule(job.schedule, async () => {
       const startTime = Date.now();
-      console.log(`[Scheduler] Starting job: ${job.name}`);
+      jobLog.info(`Starting job: ${job.name}`, { jobName: job.name });
 
       try {
         await job.handler();
         const duration = Date.now() - startTime;
-        console.log(`[Scheduler] Completed job: ${job.name} (${duration}ms)`);
+        jobLog.info(`Completed job: ${job.name}`, { jobName: job.name, duration });
       } catch (error) {
         const duration = Date.now() - startTime;
-        console.error(`[Scheduler] Failed job: ${job.name} (${duration}ms)`, error);
+        jobLog.error(`Failed job: ${job.name}`, error, { jobName: job.name, duration });
       }
     });
 
-    console.log(`[Scheduler] Scheduled job: ${job.name} (${job.schedule})`);
+    jobLog.debug(`Scheduled job: ${job.name} (${job.schedule})`, { jobName: job.name, schedule: job.schedule });
   }
 
   isInitialized = true;
-  console.log(`[Scheduler] Initialized ${jobs.filter(j => j.enabled).length} jobs`);
+  jobLog.info(`Initialized ${jobs.filter(j => j.enabled).length} jobs`);
 }
 
 export function stopScheduler(): void {
-  console.log('[Scheduler] Stopping all scheduled jobs...');
+  jobLog.info('Stopping all scheduled jobs...');
 
   for (const job of jobs) {
     if (job.task) {
       job.task.stop();
-      console.log(`[Scheduler] Stopped job: ${job.name}`);
+      jobLog.debug(`Stopped job: ${job.name}`, { jobName: job.name });
     }
   }
 
   isInitialized = false;
-  console.log('[Scheduler] All jobs stopped');
+  jobLog.info('All jobs stopped');
 }
 
 export function getSchedulerStatus(): {
@@ -207,7 +208,7 @@ export function runJobManually(jobName: string): Promise<void> {
     return Promise.reject(new Error(`Job not found: ${jobName}`));
   }
 
-  console.log(`[Scheduler] Running job manually: ${jobName}`);
+  jobLog.info(`Running job manually: ${jobName}`, { jobName });
   return job.handler();
 }
 
@@ -224,7 +225,7 @@ export function enableJob(jobName: string): boolean {
     job.task = cron.schedule(job.schedule, job.handler);
   }
 
-  console.log(`[Scheduler] Enabled job: ${jobName}`);
+  jobLog.info(`Enabled job: ${jobName}`, { jobName });
   return true;
 }
 
@@ -242,7 +243,7 @@ export function disableJob(jobName: string): boolean {
     job.task = undefined;
   }
 
-  console.log(`[Scheduler] Disabled job: ${jobName}`);
+  jobLog.info(`Disabled job: ${jobName}`, { jobName });
   return true;
 }
 

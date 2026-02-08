@@ -3,9 +3,7 @@
 // Replaces mock data with actual database aggregations
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // =============================================================================
 // Types
@@ -183,7 +181,7 @@ export const buyerAnalyticsService = {
           buyerId,
           createdAt: { gte: dates.startDate, lte: dates.endDate },
         },
-        _sum: { totalAmount: true },
+        _sum: { totalPrice: true },
         _count: true,
       }),
       prisma.marketplaceOrder.aggregate({
@@ -191,7 +189,7 @@ export const buyerAnalyticsService = {
           buyerId,
           createdAt: { gte: dates.prevStartDate, lte: dates.prevEndDate },
         },
-        _sum: { totalAmount: true },
+        _sum: { totalPrice: true },
         _count: true,
       }),
       prisma.itemRFQ.count({
@@ -209,7 +207,7 @@ export const buyerAnalyticsService = {
     ]);
 
     // Calculate average response time from quotes
-    const quotes = await prisma.marketplaceQuote.findMany({
+    const quotes = await prisma.quote.findMany({
       where: {
         rfq: { buyerId },
         createdAt: { gte: dates.startDate, lte: dates.endDate },
@@ -229,8 +227,8 @@ export const buyerAnalyticsService = {
       avgResponseTime = Math.round((totalHours / quotes.length) * 10) / 10;
     }
 
-    const totalSpend = currentOrders._sum.totalAmount || 0;
-    const prevTotalSpend = prevOrders._sum.totalAmount || 0;
+    const totalSpend = currentOrders._sum.totalPrice || 0;
+    const prevTotalSpend = prevOrders._sum.totalPrice || 0;
 
     return {
       totalSpend,
@@ -256,26 +254,25 @@ export const buyerAnalyticsService = {
         buyerId,
         createdAt: { gte: dates.startDate, lte: dates.endDate },
       },
-      include: {
-        items: {
-          include: {
-            item: { select: { category: true } },
-          },
-        },
-      },
     });
+
+    // Get item categories for all orders
+    const itemIds = [...new Set(orders.map(o => o.itemId))];
+    const items = await prisma.item.findMany({
+      where: { id: { in: itemIds } },
+      select: { id: true, category: true },
+    });
+    const itemCategoryMap = Object.fromEntries(items.map(i => [i.id, i.category]));
 
     // Aggregate by category
     const categorySpend: Record<string, number> = {};
     let totalSpend = 0;
 
     for (const order of orders) {
-      for (const orderItem of order.items) {
-        const category = orderItem.item?.category || 'Other';
-        const amount = orderItem.quantity * orderItem.unitPrice;
-        categorySpend[category] = (categorySpend[category] || 0) + amount;
-        totalSpend += amount;
-      }
+      const category = itemCategoryMap[order.itemId] || 'Other';
+      const amount = order.quantity * order.unitPrice;
+      categorySpend[category] = (categorySpend[category] || 0) + amount;
+      totalSpend += amount;
     }
 
     // Convert to array with percentages
@@ -301,10 +298,15 @@ export const buyerAnalyticsService = {
         buyerId,
         createdAt: { gte: dates.startDate, lte: dates.endDate },
       },
-      include: {
-        seller: { select: { displayName: true, country: true } },
-      },
     });
+
+    // Get seller profiles for display names
+    const sellerIds = [...new Set(orders.map(o => o.sellerId))];
+    const sellerProfiles = await prisma.sellerProfile.findMany({
+      where: { userId: { in: sellerIds } },
+      select: { userId: true, displayName: true },
+    });
+    const sellerMap = Object.fromEntries(sellerProfiles.map(s => [s.userId, s]));
 
     // Aggregate by seller
     const sellerStats: Record<string, {
@@ -318,9 +320,10 @@ export const buyerAnalyticsService = {
     for (const order of orders) {
       const sellerId = order.sellerId;
       if (!sellerStats[sellerId]) {
+        const sellerProfile = sellerMap[sellerId];
         sellerStats[sellerId] = {
-          name: order.seller?.displayName || 'Unknown Seller',
-          country: order.seller?.country || undefined,
+          name: sellerProfile?.displayName || 'Unknown Seller',
+          country: undefined,
           totalOrders: 0,
           totalSpend: 0,
           onTimeCount: 0,
@@ -328,7 +331,7 @@ export const buyerAnalyticsService = {
       }
 
       sellerStats[sellerId].totalOrders++;
-      sellerStats[sellerId].totalSpend += order.totalAmount;
+      sellerStats[sellerId].totalSpend += order.totalPrice;
 
       if (order.healthStatus === 'on_track' || order.status === 'delivered') {
         sellerStats[sellerId].onTimeCount++;
@@ -367,7 +370,7 @@ export const buyerAnalyticsService = {
           createdAt: { gte: dates.startDate, lte: dates.endDate },
         },
       }),
-      prisma.marketplaceQuote.count({
+      prisma.quote.count({
         where: {
           rfq: { buyerId },
           createdAt: { gte: dates.startDate, lte: dates.endDate },
@@ -408,7 +411,7 @@ export const buyerAnalyticsService = {
       },
       select: {
         createdAt: true,
-        totalAmount: true,
+        totalPrice: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -428,7 +431,7 @@ export const buyerAnalyticsService = {
     for (const order of orders) {
       const date = order.createdAt.toISOString().split('T')[0];
       if (!dailyData[date]) dailyData[date] = { spend: 0, orders: 0, rfqs: 0 };
-      dailyData[date].spend += order.totalAmount;
+      dailyData[date].spend += order.totalPrice;
       dailyData[date].orders++;
     }
 
@@ -488,7 +491,7 @@ export const sellerAnalyticsService = {
           sellerId,
           createdAt: { gte: dates.startDate, lte: dates.endDate },
         },
-        _sum: { totalAmount: true },
+        _sum: { totalPrice: true },
         _count: true,
       }),
       prisma.marketplaceOrder.aggregate({
@@ -496,7 +499,7 @@ export const sellerAnalyticsService = {
           sellerId,
           createdAt: { gte: dates.prevStartDate, lte: dates.prevEndDate },
         },
-        _sum: { totalAmount: true },
+        _sum: { totalPrice: true },
         _count: true,
       }),
       prisma.marketplaceOrder.groupBy({
@@ -519,7 +522,7 @@ export const sellerAnalyticsService = {
           createdAt: { gte: dates.startDate, lte: dates.endDate },
         },
       }),
-      prisma.marketplaceQuote.count({
+      prisma.quote.count({
         where: {
           sellerId,
           status: 'accepted',
@@ -528,8 +531,8 @@ export const sellerAnalyticsService = {
       }),
     ]);
 
-    const revenue = currentOrders._sum.totalAmount || 0;
-    const prevRevenue = prevOrders._sum.totalAmount || 0;
+    const revenue = currentOrders._sum.totalPrice || 0;
+    const prevRevenue = prevOrders._sum.totalPrice || 0;
     const orders = currentOrders._count;
     const prevOrderCount = prevOrders._count;
     const newBuyers = currentBuyers.length;
@@ -560,25 +563,24 @@ export const sellerAnalyticsService = {
         sellerId,
         createdAt: { gte: dates.startDate, lte: dates.endDate },
       },
-      include: {
-        items: {
-          include: {
-            item: { select: { category: true } },
-          },
-        },
-      },
     });
+
+    // Get item categories
+    const itemIds = [...new Set(orders.map(o => o.itemId))];
+    const items = await prisma.item.findMany({
+      where: { id: { in: itemIds } },
+      select: { id: true, category: true },
+    });
+    const itemCategoryMap = Object.fromEntries(items.map(i => [i.id, i.category]));
 
     const categoryRevenue: Record<string, number> = {};
     let totalRevenue = 0;
 
     for (const order of orders) {
-      for (const orderItem of order.items) {
-        const category = orderItem.item?.category || 'Other';
-        const amount = orderItem.quantity * orderItem.unitPrice;
-        categoryRevenue[category] = (categoryRevenue[category] || 0) + amount;
-        totalRevenue += amount;
-      }
+      const category = itemCategoryMap[order.itemId] || 'Other';
+      const amount = order.quantity * order.unitPrice;
+      categoryRevenue[category] = (categoryRevenue[category] || 0) + amount;
+      totalRevenue += amount;
     }
 
     return Object.entries(categoryRevenue)
@@ -595,31 +597,28 @@ export const sellerAnalyticsService = {
    * Get top performing products
    */
   async getTopProducts(sellerId: string, dates: AnalyticsPeriod): Promise<TopProduct[]> {
-    const orderItems = await prisma.marketplaceOrderItem.findMany({
+    // MarketplaceOrder is denormalized - item info is directly on the order
+    const orders = await prisma.marketplaceOrder.findMany({
       where: {
-        order: {
-          sellerId,
-          createdAt: { gte: dates.startDate, lte: dates.endDate },
-        },
+        sellerId,
+        createdAt: { gte: dates.startDate, lte: dates.endDate },
       },
-      include: {
-        item: { select: { id: true, name: true, sku: true } },
-      },
+      select: { itemId: true, itemName: true, itemSku: true, quantity: true, unitPrice: true },
     });
 
     const productStats: Record<string, { name: string; sku: string; revenue: number; orders: number }> = {};
 
-    for (const orderItem of orderItems) {
-      const itemId = orderItem.itemId;
+    for (const order of orders) {
+      const itemId = order.itemId;
       if (!productStats[itemId]) {
         productStats[itemId] = {
-          name: orderItem.item?.name || 'Unknown Product',
-          sku: orderItem.item?.sku || 'N/A',
+          name: order.itemName || 'Unknown Product',
+          sku: order.itemSku || 'N/A',
           revenue: 0,
           orders: 0,
         };
       }
-      productStats[itemId].revenue += orderItem.quantity * orderItem.unitPrice;
+      productStats[itemId].revenue += order.quantity * order.unitPrice;
       productStats[itemId].orders++;
     }
 
@@ -646,7 +645,7 @@ export const sellerAnalyticsService = {
           createdAt: { gte: dates.startDate, lte: dates.endDate },
         },
       }),
-      prisma.marketplaceQuote.count({
+      prisma.quote.count({
         where: {
           sellerId,
           createdAt: { gte: dates.startDate, lte: dates.endDate },
@@ -677,14 +676,21 @@ export const sellerAnalyticsService = {
         sellerId,
         createdAt: { gte: dates.startDate, lte: dates.endDate },
       },
-      select: { shippingCity: true },
+      select: { shippingAddress: true },
     });
 
     const regionCounts: Record<string, number> = {};
     let totalOrders = orders.length;
 
     for (const order of orders) {
-      const region = order.shippingCity || 'Unknown';
+      let city = 'Unknown';
+      if (order.shippingAddress) {
+        try {
+          const addr = JSON.parse(order.shippingAddress);
+          city = addr.city || 'Unknown';
+        } catch { /* ignore parse errors */ }
+      }
+      const region = city;
       regionCounts[region] = (regionCounts[region] || 0) + 1;
     }
 

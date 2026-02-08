@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { portalApiLogger } from '../../../../utils/logger';
 import { useDropdownClose } from '../../hooks';
 import {
   MagnifyingGlass,
@@ -57,11 +58,7 @@ import {
   ManualCompareColumn,
   ManualCompareRow,
 } from '../../services/comparisonExportService';
-import {
-  calculateRecommendation,
-  scoreManualCompare,
-  ProductScoreInput,
-} from '../../services/compareScoringService';
+import { calculateRecommendation, scoreManualCompare, ProductScoreInput } from '../../services/compareScoringService';
 
 // =============================================================================
 // Smart Discovery Intelligence Types
@@ -74,15 +71,24 @@ interface SupplierIntelligence {
   highWinRate: boolean;
 }
 
-// Mock supplier intelligence data (in production, this comes from backend)
+// Derive supplier intelligence from real item data
 const getSupplierIntelligence = (item: Item): SupplierIntelligence => {
-  // Simulate intelligence based on item properties
-  const seed = item.id.charCodeAt(0) + (item.totalQuotes || 0);
+  // Response speed based on avgResponseTime (in hours)
+  const avgHours = item.avgResponseTime || 24;
+  let responseSpeed: 'fast' | 'moderate' | 'slow' = 'slow';
+  if (avgHours <= 4) responseSpeed = 'fast';
+  else if (avgHours <= 12) responseSpeed = 'moderate';
+
+  // RFQ success rate from real data
+  const totalQuotes = item.totalQuotes || 0;
+  const successfulOrders = item.successfulOrders || 0;
+  const rfqSuccessRate = totalQuotes > 0 ? Math.round((successfulOrders / totalQuotes) * 100) : 0;
+
   return {
-    responseSpeed: seed % 3 === 0 ? 'fast' : seed % 3 === 1 ? 'moderate' : 'slow',
-    rfqSuccessRate: 60 + (seed % 40),
-    verified: seed % 4 !== 0,
-    highWinRate: (item.successfulOrders || 0) > 5 || seed % 5 === 0,
+    responseSpeed,
+    rfqSuccessRate,
+    verified: false, // Placeholder: resolve from seller profile when available
+    highWinRate: successfulOrders >= 5,
   };
 };
 
@@ -157,18 +163,15 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
   const { getToken } = useAuth();
 
   // Close sort dropdown on click outside or escape key
-  const sortDropdownRef = useDropdownClose<HTMLDivElement>(
-    () => setShowFilters(false),
-    showFilters
-  );
+  const sortDropdownRef = useDropdownClose<HTMLDivElement>(() => setShowFilters(false), showFilters);
 
   // Toggle item for comparison (max 3)
   const toggleCompareItem = useCallback((item: Item, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setSelectedForCompare(prev => {
-      const isSelected = prev.some(i => i.id === item.id);
+    setSelectedForCompare((prev) => {
+      const isSelected = prev.some((i) => i.id === item.id);
       if (isSelected) {
-        return prev.filter(i => i.id !== item.id);
+        return prev.filter((i) => i.id !== item.id);
       }
       if (prev.length >= 3) {
         return prev; // Max 3 items
@@ -198,11 +201,6 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
 
     return filtered;
   }, [items, sortBy, hideOutOfStock]);
-
-  // Count out of stock items for display
-  const outOfStockCount = useMemo(() => {
-    return items.filter((item: Item) => item.stock === 0).length;
-  }, [items]);
 
   // Show preloader for 1.5 seconds on initial load
   useEffect(() => {
@@ -251,15 +249,9 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
   const isRTL = direction === 'rtl';
 
   return (
-    <div
-      className="min-h-screen transition-colors"
-      style={{ backgroundColor: styles.bgPrimary }}
-    >
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
-        <PageHeader
-          title={t('buyer.marketplace.title')}
-          subtitle={t('buyer.marketplace.subtitle')}
-        />
+        <PageHeader title={t('buyer.marketplace.title')} subtitle={t('buyer.marketplace.subtitle')} />
 
         {/* Search & Filters Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
@@ -296,7 +288,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
             >
               <ArrowsDownUp size={16} style={{ color: styles.textSecondary }} />
               <span className="text-sm" style={{ color: styles.textSecondary }}>
-                {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
+                {SORT_OPTIONS.find((o) => o.value === sortBy)?.label}
               </span>
               <CaretDown size={14} style={{ color: styles.textMuted, marginInlineStart: 'auto' }} />
             </button>
@@ -338,24 +330,16 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
             title={t('buyer.marketplace.hideOutOfStock')}
           >
             <Package size={16} style={{ color: hideOutOfStock ? styles.success : styles.textSecondary }} />
-            <span className="text-sm whitespace-nowrap" style={{ color: hideOutOfStock ? styles.success : styles.textSecondary }}>
+            <span
+              className="text-sm whitespace-nowrap"
+              style={{ color: hideOutOfStock ? styles.success : styles.textSecondary }}
+            >
               {t('buyer.marketplace.inStockOnly')}
             </span>
-            {outOfStockCount > 0 && !hideOutOfStock && (
-              <span
-                className="text-xs px-1.5 py-0.5 rounded-full"
-                style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}
-              >
-                {outOfStockCount}
-              </span>
-            )}
           </button>
 
           {/* View Toggle */}
-          <div
-            className="flex items-center rounded-lg border overflow-hidden"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center rounded-lg border overflow-hidden" style={{ borderColor: styles.border }}>
             <ViewToggle active={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
               <GridFour size={16} />
             </ViewToggle>
@@ -472,7 +456,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
                 onClick={() => handleItemClick(item)}
                 formatPrice={formatPrice}
                 isRTL={isRTL}
-                isSelectedForCompare={selectedForCompare.some(i => i.id === item.id)}
+                isSelectedForCompare={selectedForCompare.some((i) => i.id === item.id)}
                 onToggleCompare={(e) => toggleCompareItem(item, e)}
                 canAddToCompare={selectedForCompare.length < 3}
                 onRequestQuote={(e) => {
@@ -517,7 +501,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
           source="listing"
           defaultQuantity={selectedItemForRFQ.minOrderQty}
           onSuccess={(rfq: ItemRFQ) => {
-            console.log('RFQ created from marketplace:', rfq.id);
+            portalApiLogger.info('RFQ created from marketplace:', rfq.id);
             setSelectedItemForRFQ(null);
           }}
         />
@@ -614,28 +598,16 @@ const ProductTable: React.FC<ProductTableProps> = ({
               >
                 {t('buyer.marketplace.product') || 'Product'}
               </th>
-              <th
-                className="px-4 py-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.marketplace.price') || 'Price'}
               </th>
-              <th
-                className="px-4 py-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 MOQ
               </th>
-              <th
-                className="px-4 py-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.marketplace.stock') || 'Stock'}
               </th>
-              <th
-                className="px-4 py-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.marketplace.leadTime') || 'Lead Time'}
               </th>
               <th
@@ -644,30 +616,22 @@ const ProductTable: React.FC<ProductTableProps> = ({
               >
                 {t('buyer.marketplace.location') || 'Location'}
               </th>
-              <th
-                className="px-4 py-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.marketplace.rating') || 'Rating'}
               </th>
-              <th
-                className="px-4 py-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="px-4 py-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('common.actions') || 'Actions'}
               </th>
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => {
+            {items.map((item, _index) => {
               const isRfqOnly = requiresRFQ(item);
               const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
               const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
               const firstImage = images?.[0];
-              // Mock rating for demo
-              const rating = 4.2 + (index % 8) * 0.1;
               const intel = getSupplierIntelligence(item);
-              const isSelected = selectedForCompare.some(i => i.id === item.id);
+              const isSelected = selectedForCompare.some((i) => i.id === item.id);
 
               return (
                 <tr
@@ -698,9 +662,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                         }}
                         disabled={!canAddToCompare && !isSelected}
                       >
-                        {isSelected && (
-                          <Scales size={10} weight="bold" style={{ color: '#fff' }} />
-                        )}
+                        {isSelected && <Scales size={10} weight="bold" style={{ color: '#fff' }} />}
                       </button>
                     </td>
                   )}
@@ -719,10 +681,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p
-                            className="text-sm font-medium line-clamp-1"
-                            style={{ color: styles.textPrimary }}
-                          >
+                          <p className="text-sm font-medium line-clamp-1" style={{ color: styles.textPrimary }}>
                             {displayName}
                           </p>
                           <TrustBadges intel={intel} compact />
@@ -772,10 +731,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                   </td>
 
                   {/* Location - Left aligned */}
-                  <td
-                    className="px-4 py-3"
-                    style={{ textAlign: isRTL ? 'right' : 'left' }}
-                  >
+                  <td className="px-4 py-3" style={{ textAlign: isRTL ? 'right' : 'left' }}>
                     <span className="text-sm flex items-center gap-1" style={{ color: styles.textSecondary }}>
                       <MapPin size={12} />
                       {item.origin || '-'}
@@ -785,9 +741,9 @@ const ProductTable: React.FC<ProductTableProps> = ({
                   {/* Rating - Center aligned */}
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Star size={12} weight="fill" style={{ color: '#f59e0b' }} />
-                      <span className="text-sm" style={{ color: styles.textSecondary }}>
-                        {rating.toFixed(1)}
+                      <Star size={12} weight="fill" style={{ color: styles.textMuted }} />
+                      <span className="text-sm" style={{ color: styles.textMuted }}>
+                        --
                       </span>
                     </div>
                   </td>
@@ -824,6 +780,7 @@ interface TrustBadgesProps {
 }
 
 const TrustBadges: React.FC<TrustBadgesProps> = ({ intel, compact = false }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t } = usePortal();
 
   const badges = [];
@@ -862,10 +819,7 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ intel, compact = false }) => 
       {badges.slice(0, compact ? 2 : 3).map((badge, idx) => {
         const Icon = badge.icon;
         return (
-          <div
-            key={idx}
-            className="relative group"
-          >
+          <div key={idx} className="relative group">
             <div
               className={`flex items-center gap-0.5 ${compact ? 'p-0.5' : 'px-1.5 py-0.5'} rounded`}
               style={{ backgroundColor: `${badge.color}15` }}
@@ -965,6 +919,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   canAddToCompare = true,
   onRequestQuote,
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, language, t } = usePortal();
   const isRfqOnly = requiresRFQ(item);
   const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
@@ -1010,9 +965,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           disabled={!canAddToCompare && !isSelectedForCompare}
           title={isSelectedForCompare ? 'Remove from comparison' : 'Add to comparison'}
         >
-          {isSelectedForCompare && (
-            <Scales size={12} weight="bold" style={{ color: '#fff' }} />
-          )}
+          {isSelectedForCompare && <Scales size={12} weight="bold" style={{ color: '#fff' }} />}
         </button>
       )}
 
@@ -1038,9 +991,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Quick Action */}
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-        >
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
             style={{ backgroundColor: '#fff', color: '#000' }}
@@ -1066,18 +1017,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Name */}
-        <h3
-          className="font-medium text-xs mt-0.5 line-clamp-2 min-h-[2.5rem]"
-          style={{ color: styles.textPrimary }}
-        >
+        <h3 className="font-medium text-xs mt-0.5 line-clamp-2 min-h-[2.5rem]" style={{ color: styles.textPrimary }}>
           {displayName}
         </h3>
 
         {/* Manufacturer - fixed height slot */}
-        <p
-          className="text-[10px] mt-0.5 line-clamp-1 min-h-[1rem]"
-          style={{ color: styles.textMuted }}
-        >
+        <p className="text-[10px] mt-0.5 line-clamp-1 min-h-[1rem]" style={{ color: styles.textMuted }}>
           {item.manufacturer || '\u00A0'}
         </p>
 
@@ -1111,8 +1056,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
               itemId={item.id}
               size="sm"
               variant="primary"
+              showQuantity={true}
               minOrderQty={item.minOrderQty}
-              maxOrderQty={item.maxOrderQty}
+              maxOrderQty={item.maxOrderQty !== null ? Math.min(item.maxOrderQty, item.stock) : item.stock}
               disabled={item.stock === 0}
             />
           </div>
@@ -1149,13 +1095,8 @@ interface ComparisonPanelProps {
   isRTL: boolean;
 }
 
-const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
-  items,
-  onRemove,
-  onClear,
-  onCompare,
-  isRTL,
-}) => {
+const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ items, onRemove, onClear, onCompare, isRTL }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, language, sidebarWidth, sidebarCollapsed } = usePortal();
   const collapsedWidth = 64;
   // Add 1px for border
@@ -1179,7 +1120,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
               {items.length}/3 selected
             </span>
             <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              {items.map(item => {
+              {items.map((item) => {
                 const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
                 const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
                 const firstImage = images?.[0];
@@ -1257,9 +1198,10 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
   items,
   onClose,
   formatPrice,
-  isRTL,
+  _isRTL,
   defaultTab = 'products',
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, language } = usePortal();
   const [activeTab, setActiveTab] = useState<CompareTab>(defaultTab);
 
@@ -1310,7 +1252,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
   // Convert items to scoring input
   const getScoreInputs = (): ProductScoreInput[] => {
-    return items.map(item => {
+    return items.map((item) => {
       const intel = getSupplierIntelligence(item);
       const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
       return {
@@ -1336,7 +1278,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
   // Prepare export data
   const getExportData = (): ComparisonExportItem[] => {
-    return items.map(item => {
+    return items.map((item) => {
       const intel = getSupplierIntelligence(item);
       const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
       return {
@@ -1385,36 +1327,36 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
   const getBestValue = (key: string): string | null => {
     if (key === 'price') {
-      const priced = items.filter(i => !requiresRFQ(i));
+      const priced = items.filter((i) => !requiresRFQ(i));
       if (priced.length === 0) return null;
-      const lowest = priced.reduce((a, b) => a.price < b.price ? a : b);
+      const lowest = priced.reduce((a, b) => (a.price < b.price ? a : b));
       return lowest.id;
     }
     if (key === 'leadTime') {
-      const withLead = items.filter(i => i.leadTimeDays);
+      const withLead = items.filter((i) => i.leadTimeDays);
       if (withLead.length === 0) return null;
-      const fastest = withLead.reduce((a, b) => (a.leadTimeDays || 999) < (b.leadTimeDays || 999) ? a : b);
+      const fastest = withLead.reduce((a, b) => ((a.leadTimeDays || 999) < (b.leadTimeDays || 999) ? a : b));
       return fastest.id;
     }
     if (key === 'stock') {
-      const bestStock = items.reduce((a, b) => (a.stock || 0) > (b.stock || 0) ? a : b);
+      const bestStock = items.reduce((a, b) => ((a.stock || 0) > (b.stock || 0) ? a : b));
       if ((bestStock.stock || 0) > 0) return bestStock.id;
       return null;
     }
     if (key === 'moq') {
-      const lowest = items.reduce((a, b) => a.minOrderQty < b.minOrderQty ? a : b);
+      const lowest = items.reduce((a, b) => (a.minOrderQty < b.minOrderQty ? a : b));
       return lowest.id;
     }
     if (key === 'responseSpeed') {
-      const fast = items.find(i => getSupplierIntelligence(i).responseSpeed === 'fast');
+      const fast = items.find((i) => getSupplierIntelligence(i).responseSpeed === 'fast');
       if (fast) return fast.id;
-      const moderate = items.find(i => getSupplierIntelligence(i).responseSpeed === 'moderate');
+      const moderate = items.find((i) => getSupplierIntelligence(i).responseSpeed === 'moderate');
       if (moderate) return moderate.id;
       return null;
     }
     if (key === 'reliability') {
       const best = items.reduce((a, b) =>
-        getSupplierIntelligence(a).rfqSuccessRate > getSupplierIntelligence(b).rfqSuccessRate ? a : b
+        getSupplierIntelligence(a).rfqSuccessRate > getSupplierIntelligence(b).rfqSuccessRate ? a : b,
       );
       return best.id;
     }
@@ -1425,21 +1367,26 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
   const addManualColumn = () => {
     if (manualColumns.length >= 4) return;
     const newId = `col-${Date.now()}`;
-    setManualColumns([...manualColumns, { id: newId, name: `Option ${String.fromCharCode(65 + manualColumns.length)}` }]);
+    setManualColumns([
+      ...manualColumns,
+      { id: newId, name: `Option ${String.fromCharCode(65 + manualColumns.length)}` },
+    ]);
   };
 
   const removeManualColumn = (colId: string) => {
     if (manualColumns.length <= 2) return;
-    setManualColumns(manualColumns.filter(c => c.id !== colId));
-    setManualRows(manualRows.map(row => {
-      const newValues = { ...row.values };
-      delete newValues[colId];
-      return { ...row, values: newValues };
-    }));
+    setManualColumns(manualColumns.filter((c) => c.id !== colId));
+    setManualRows(
+      manualRows.map((row) => {
+        const newValues = { ...row.values };
+        delete newValues[colId];
+        return { ...row, values: newValues };
+      }),
+    );
   };
 
   const updateColumnName = (colId: string, name: string) => {
-    setManualColumns(manualColumns.map(c => c.id === colId ? { ...c, name } : c));
+    setManualColumns(manualColumns.map((c) => (c.id === colId ? { ...c, name } : c)));
   };
 
   const addManualRow = () => {
@@ -1449,15 +1396,15 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
   const removeManualRow = (rowId: string) => {
     if (manualRows.length <= 1) return;
-    setManualRows(manualRows.filter(r => r.id !== rowId));
+    setManualRows(manualRows.filter((r) => r.id !== rowId));
   };
 
   const updateRowMetric = (rowId: string, metric: string) => {
-    setManualRows(manualRows.map(r => r.id === rowId ? { ...r, metric } : r));
+    setManualRows(manualRows.map((r) => (r.id === rowId ? { ...r, metric } : r)));
   };
 
   const updateRowValue = (rowId: string, colId: string, value: string) => {
-    setManualRows(manualRows.map(r => r.id === rowId ? { ...r, values: { ...r.values, [colId]: value } } : r));
+    setManualRows(manualRows.map((r) => (r.id === rowId ? { ...r, values: { ...r.values, [colId]: value } } : r)));
   };
 
   const clearManualData = () => {
@@ -1519,11 +1466,14 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
   // Get best value for manual row
   const getManualBestValue = (row: ManualCompareRow): string | null => {
     const metricLower = row.metric.toLowerCase();
-    const isLowerBetter = metricLower.includes('price') || metricLower.includes('cost') ||
-                          metricLower.includes('lead') || metricLower.includes('time');
+    const isLowerBetter =
+      metricLower.includes('price') ||
+      metricLower.includes('cost') ||
+      metricLower.includes('lead') ||
+      metricLower.includes('time');
 
     const numericValues: { colId: string; value: number }[] = [];
-    manualColumns.forEach(col => {
+    manualColumns.forEach((col) => {
       const rawValue = row.values[col.id] || '';
       const numValue = parseFloat(rawValue.replace(/[^0-9.-]/g, ''));
       if (!isNaN(numValue)) {
@@ -1534,11 +1484,11 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
     if (numericValues.length < 2) return null;
 
     if (isLowerBetter) {
-      const minVal = Math.min(...numericValues.map(v => v.value));
-      return numericValues.find(v => v.value === minVal)?.colId || null;
+      const minVal = Math.min(...numericValues.map((v) => v.value));
+      return numericValues.find((v) => v.value === minVal)?.colId || null;
     } else {
-      const maxVal = Math.max(...numericValues.map(v => v.value));
-      return numericValues.find(v => v.value === maxVal)?.colId || null;
+      const maxVal = Math.max(...numericValues.map((v) => v.value));
+      return numericValues.find((v) => v.value === maxVal)?.colId || null;
     }
   };
 
@@ -1623,11 +1573,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 </button>
               </>
             )}
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: styles.textMuted }}
-            >
+            <button onClick={onClose} className="p-2 rounded-lg transition-colors" style={{ color: styles.textMuted }}>
               <X size={20} />
             </button>
           </div>
@@ -1644,7 +1590,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   <thead>
                     <tr>
                       <th className="p-3 text-left" style={{ color: styles.textMuted, width: '18%' }}></th>
-                      {items.map(item => {
+                      {items.map((item) => {
                         const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
                         const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
                         const firstImage = images?.[0];
@@ -1669,7 +1615,10 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                             <div className={`flex flex-col items-center gap-2 ${isBestPick ? 'mt-4' : ''}`}>
                               <div
                                 className={`w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden ${isBestPick ? 'ring-2' : ''}`}
-                                style={{ backgroundColor: styles.bgSecondary, ...(isBestPick ? { ringColor: styles.success } : {}) }}
+                                style={{
+                                  backgroundColor: styles.bgSecondary,
+                                  ...(isBestPick ? { ringColor: styles.success } : {}),
+                                }}
                               >
                                 {firstImage ? (
                                   <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
@@ -1677,7 +1626,10 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                                   <Package size={24} style={{ color: styles.textMuted }} />
                                 )}
                               </div>
-                              <span className="text-sm font-medium text-center line-clamp-2" style={{ color: styles.textPrimary }}>
+                              <span
+                                className="text-sm font-medium text-center line-clamp-2"
+                                style={{ color: styles.textPrimary }}
+                              >
                                 {displayName}
                               </span>
                               <TrustBadges intel={intel} />
@@ -1698,7 +1650,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                           <td className="p-3 text-sm font-medium" style={{ color: styles.textSecondary }}>
                             {attr.label}
                           </td>
-                          {items.map(item => {
+                          {items.map((item) => {
                             const isBest = bestId === item.id;
                             const value = getValue(item, attr.key);
                             const isMissing = value === '—' || value === 'Contact';
@@ -1706,7 +1658,9 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                               <td key={item.id} className="p-3 text-center">
                                 <span
                                   className={`text-sm ${isBest ? 'font-semibold' : ''} ${isMissing ? 'italic' : ''}`}
-                                  style={{ color: isMissing ? styles.textMuted : (isBest ? styles.success : styles.textPrimary) }}
+                                  style={{
+                                    color: isMissing ? styles.textMuted : isBest ? styles.success : styles.textPrimary,
+                                  }}
                                 >
                                   {value}
                                   {isBest && !isMissing && ' ✓'}
@@ -1722,7 +1676,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
               </div>
 
               {/* Recommendation Summary */}
-              {recommendation && recommendation.scores.length >= 2 && (
+              {recommendation && recommendation.scores && recommendation.scores.length >= 2 && (
                 <div
                   className="rounded-lg border p-4 space-y-4"
                   style={{ borderColor: styles.border, backgroundColor: styles.bgSecondary }}
@@ -1736,18 +1690,22 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
                   {/* Score Bars */}
                   <div className="grid gap-3">
-                    {recommendation.scores.map(score => {
-                      const displayName = items.find(i => i.id === score.id)?.name || score.name;
+                    {recommendation.scores.map((score) => {
+                      const displayName = items.find((i) => i.id === score.id)?.name || score.name;
                       return (
                         <div key={score.id} className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium flex items-center gap-2" style={{ color: styles.textPrimary }}>
+                            <span
+                              className="text-sm font-medium flex items-center gap-2"
+                              style={{ color: styles.textPrimary }}
+                            >
                               {displayName}
-                              {score.isBestPick && (
-                                <Crown size={14} weight="fill" style={{ color: styles.success }} />
-                              )}
+                              {score.isBestPick && <Crown size={14} weight="fill" style={{ color: styles.success }} />}
                             </span>
-                            <span className="text-sm font-semibold" style={{ color: score.isBestPick ? styles.success : styles.textSecondary }}>
+                            <span
+                              className="text-sm font-semibold"
+                              style={{ color: score.isBestPick ? styles.success : styles.textSecondary }}
+                            >
                               {score.totalScore}/100
                             </span>
                           </div>
@@ -1773,8 +1731,16 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                       </p>
                       <ul className="space-y-1">
                         {recommendation.bestPickReasons.map((reason, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm" style={{ color: styles.textSecondary }}>
-                            <CheckCircle size={14} weight="fill" style={{ color: styles.success, marginTop: 2, flexShrink: 0 }} />
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-sm"
+                            style={{ color: styles.textSecondary }}
+                          >
+                            <CheckCircle
+                              size={14}
+                              weight="fill"
+                              style={{ color: styles.success, marginTop: 2, flexShrink: 0 }}
+                            />
                             {reason}
                           </li>
                         ))}
@@ -1784,7 +1750,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
                   {/* Pros/Cons per Product */}
                   <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
-                    {recommendation.scores.map(score => (
+                    {recommendation.scores.map((score) => (
                       <div key={score.id} className="space-y-2">
                         <p className="text-xs font-semibold" style={{ color: styles.textPrimary }}>
                           {score.name}
@@ -1792,7 +1758,11 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                         {score.pros.length > 0 && (
                           <div className="space-y-1">
                             {score.pros.map((pro, idx) => (
-                              <div key={idx} className="flex items-start gap-1.5 text-xs" style={{ color: styles.success }}>
+                              <div
+                                key={idx}
+                                className="flex items-start gap-1.5 text-xs"
+                                style={{ color: styles.success }}
+                              >
                                 <TrendUp size={12} style={{ marginTop: 1, flexShrink: 0 }} />
                                 {pro}
                               </div>
@@ -1802,7 +1772,11 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                         {score.cons.length > 0 && (
                           <div className="space-y-1">
                             {score.cons.map((con, idx) => (
-                              <div key={idx} className="flex items-start gap-1.5 text-xs" style={{ color: styles.error }}>
+                              <div
+                                key={idx}
+                                className="flex items-start gap-1.5 text-xs"
+                                style={{ color: styles.error }}
+                              >
                                 <TrendDown size={12} style={{ marginTop: 1, flexShrink: 0 }} />
                                 {con}
                               </div>
@@ -1856,12 +1830,18 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   <thead>
                     <tr>
                       <th className="p-2 text-left" style={{ width: '20%' }}>
-                        <span className="text-xs font-medium" style={{ color: styles.textMuted }}>Metric</span>
+                        <span className="text-xs font-medium" style={{ color: styles.textMuted }}>
+                          Metric
+                        </span>
                       </th>
                       {manualColumns.map((col, idx) => {
                         const isBest = manualScoring.bestColumnId === col.id;
                         return (
-                          <th key={col.id} className="p-2 text-center relative" style={{ width: `${80 / manualColumns.length}%` }}>
+                          <th
+                            key={col.id}
+                            className="p-2 text-center relative"
+                            style={{ width: `${80 / manualColumns.length}%` }}
+                          >
                             {isBest && (
                               <div
                                 className="absolute -top-1 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
@@ -1914,7 +1894,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                               placeholder="Metric name"
                             />
                           </td>
-                          {manualColumns.map(col => {
+                          {manualColumns.map((col) => {
                             const isBest = bestColId === col.id;
                             return (
                               <td key={col.id} className="p-2">
@@ -1956,8 +1936,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 onClick={addManualRow}
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed transition-colors"
                 style={{ borderColor: styles.border, color: styles.textMuted }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = styles.info}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = styles.border}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = styles.info)}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = styles.border)}
               >
                 <Plus size={14} />
                 Add Row
@@ -1971,7 +1951,9 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
               <div className="flex items-start gap-2 p-3 rounded-lg" style={{ backgroundColor: `${styles.info}10` }}>
                 <Info size={16} style={{ color: styles.info, marginTop: 2 }} />
                 <div className="text-sm" style={{ color: styles.textSecondary }}>
-                  <p className="font-medium" style={{ color: styles.textPrimary }}>Import comparison data</p>
+                  <p className="font-medium" style={{ color: styles.textPrimary }}>
+                    Import comparison data
+                  </p>
                   <p>Paste CSV data or upload a file. First row = headers, first column = metric names.</p>
                 </div>
               </div>
@@ -1982,11 +1964,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   <label className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                     Paste CSV data
                   </label>
-                  <button
-                    onClick={loadSampleTemplate}
-                    className="text-xs"
-                    style={{ color: styles.info }}
-                  >
+                  <button onClick={loadSampleTemplate} className="text-xs" style={{ color: styles.info }}>
                     Load sample template
                   </button>
                 </div>
@@ -2020,7 +1998,9 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
               {/* Divider */}
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-px" style={{ backgroundColor: styles.border }} />
-                <span className="text-xs" style={{ color: styles.textMuted }}>or</span>
+                <span className="text-xs" style={{ color: styles.textMuted }}>
+                  or
+                </span>
                 <div className="flex-1 h-px" style={{ backgroundColor: styles.border }} />
               </div>
 
@@ -2037,8 +2017,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   onClick={() => fileInputRef.current?.click()}
                   className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed transition-colors"
                   style={{ borderColor: styles.border, color: styles.textMuted }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = styles.info}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = styles.border}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = styles.info)}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = styles.border)}
                 >
                   <UploadSimple size={24} />
                   <span className="text-sm font-medium">Click to upload CSV file</span>
@@ -2051,7 +2031,9 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 <div className="p-3 rounded-lg" style={{ backgroundColor: `${styles.error}10` }}>
                   <div className="flex items-center gap-2 mb-2">
                     <Warning size={16} style={{ color: styles.error }} />
-                    <span className="text-sm font-medium" style={{ color: styles.error }}>Import Issues</span>
+                    <span className="text-sm font-medium" style={{ color: styles.error }}>
+                      Import Issues
+                    </span>
                   </div>
                   <ul className="space-y-1">
                     {importErrors.map((err, idx) => (

@@ -249,10 +249,10 @@ export const rateLimiters = {
     // Relaxed: 200 requests per minute (for read operations)
     relaxed: rateLimit({ windowMs: 60 * 1000, max: 200 }),
 
-    // Auth: 5 attempts per 15 minutes
+    // Auth: 5 attempts per 15 minutes (relaxed in development)
     auth: rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 5,
+        max: process.env.NODE_ENV === 'production' ? 5 : 100,
         message: 'Too many authentication attempts',
     }),
 

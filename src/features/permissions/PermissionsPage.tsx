@@ -15,7 +15,7 @@ type PermissionTab = 'roles' | 'matrix' | 'columns' | 'audit';
 
 export const PermissionsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<PermissionTab>('roles');
-  const [showRoleEditor, setShowRoleEditor] = useState(false);
+  const [_showRoleEditor, setShowRoleEditor] = useState(false);
   const { roles, isLoading } = usePermissions();
 
   const tabs = [
@@ -35,12 +35,8 @@ export const PermissionsPage: React.FC = () => {
               <Shield size={24} className="text-rose-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
-                Permissions & Roles
-              </h1>
-              <p className="text-sm text-stone-500">
-                Manage access control and user permissions
-              </p>
+              <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-200">Permissions & Roles</h1>
+              <p className="text-sm text-stone-500">Manage access control and user permissions</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -61,26 +57,24 @@ export const PermissionsPage: React.FC = () => {
         <div className="grid grid-cols-4 gap-4 mb-4">
           <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg">
             <p className="text-sm text-stone-500">Total Roles</p>
-            <p className="text-xl font-semibold text-stone-800 dark:text-stone-200">
-              {roles.length}
-            </p>
+            <p className="text-xl font-semibold text-stone-800 dark:text-stone-200">{roles.length}</p>
           </div>
           <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg">
             <p className="text-sm text-stone-500">Admins</p>
             <p className="text-xl font-semibold text-rose-600">
-              {roles.find(r => r.name === 'Admin')?.memberCount || 0}
+              {roles.find((r) => r.name === 'Admin')?.memberCount || 0}
             </p>
           </div>
           <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg">
             <p className="text-sm text-stone-500">Members</p>
             <p className="text-xl font-semibold text-blue-600">
-              {roles.find(r => r.name === 'Member')?.memberCount || 0}
+              {roles.find((r) => r.name === 'Member')?.memberCount || 0}
             </p>
           </div>
           <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg">
             <p className="text-sm text-stone-500">Custom Roles</p>
             <p className="text-xl font-semibold text-stone-800 dark:text-stone-200">
-              {roles.filter(r => !r.isSystem).length}
+              {roles.filter((r) => !r.isSystem).length}
             </p>
           </div>
         </div>

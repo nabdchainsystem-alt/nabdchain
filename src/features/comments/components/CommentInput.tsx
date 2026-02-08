@@ -27,7 +27,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
   const handleSubmit = () => {
     if (content.trim() && !disabled) {
-      // TODO: Parse @mentions from content
+      // Extract @mention user IDs from markdown-style mention syntax
       const mentions: string[] = [];
       const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
       let match;
@@ -53,7 +53,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
       const start = textarea.selectionStart;
       const newContent = content.slice(0, start) + '@' + content.slice(start);
       setContent(newContent);
-      // TODO: Trigger mention suggestions
+      // Future: show mention suggestion dropdown after inserting @
     }
   };
 
@@ -91,8 +91,8 @@ export const CommentInput: React.FC<CommentInputProps> = ({
             multiple
             className="hidden"
             onChange={(e) => {
-              // TODO: Handle file attachments
-              featureLogger.debug('[CommentInput] File attachment - NOT IMPLEMENTED', e.target.files);
+              // Future: upload and attach selected files to the comment
+              featureLogger.debug('[CommentInput] File attachment not yet wired up', e.target.files);
             }}
           />
 
@@ -151,9 +151,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
         </div>
       </div>
 
-      <p className="mt-1 text-[10px] text-stone-400">
-        Press Enter to send, Shift+Enter for new line
-      </p>
+      <p className="mt-1 text-[10px] text-stone-400">Press Enter to send, Shift+Enter for new line</p>
     </div>
   );
 };

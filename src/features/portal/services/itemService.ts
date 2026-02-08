@@ -3,10 +3,10 @@
 // =============================================================================
 
 import { API_URL } from '../../../config/api';
+import { logPortalApiCall } from '../../../utils/logger';
 import {
   Item,
   CreateItemData,
-  UpdateItemData,
   ItemFilters,
   MarketplaceFilters,
   ItemRFQ,
@@ -15,6 +15,15 @@ import {
   ItemStatus,
   ItemVisibility,
 } from '../types/item.types';
+
+// DEV-only: Log item creation/marketplace queries for debugging
+const isDev = import.meta.env.DEV;
+const logItemFlow = (action: string, data: unknown) => {
+  if (isDev) {
+    // eslint-disable-next-line no-console
+    console.debug(`[ItemService] ${action}`, data);
+  }
+};
 
 // =============================================================================
 // Types
@@ -68,15 +77,23 @@ export const itemService = {
     if (filters.maxPrice !== undefined) url.searchParams.append('maxPrice', filters.maxPrice.toString());
     if (filters.inStock) url.searchParams.append('inStock', 'true');
 
+    logItemFlow('getSellerItems REQUEST', { filters });
+
     const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
 
+    logPortalApiCall('GET', '/api/items', response.status);
+
     if (!response.ok) {
-      throw new Error('Failed to fetch items');
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      logItemFlow('getSellerItems ERROR', { status: response.status, error });
+      throw new Error(error.error || error.hint || 'Failed to fetch items');
     }
 
-    return response.json();
+    const items = await response.json();
+    logItemFlow('getSellerItems RESPONSE', { count: items.length });
+    return items;
   },
 
   /**
@@ -117,6 +134,14 @@ export const itemService = {
    * Create new item
    */
   async createItem(token: string, data: CreateItemData): Promise<Item> {
+    // DEV: Log item creation request for debugging visibility issues
+    logItemFlow('createItem REQUEST', {
+      status: data.status,
+      visibility: data.visibility,
+      stock: data.stock,
+      name: data.name,
+    });
+
     const response = await fetch(`${API_URL}/items`, {
       method: 'POST',
       headers: {
@@ -126,12 +151,26 @@ export const itemService = {
       body: JSON.stringify(data),
     });
 
+    logPortalApiCall('POST', '/api/items', response.status);
+
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to create item');
+      logItemFlow('createItem ERROR', error);
+      // Include validation details in the error message
+      const details = error.details ? JSON.stringify(error.details) : '';
+      throw new Error(`${error.error || 'Failed to create item'}${details ? ': ' + details : ''}`);
     }
 
-    return response.json();
+    const item = await response.json();
+    // DEV: Log created item to verify status/visibility saved correctly
+    logItemFlow('createItem RESPONSE', {
+      id: item.id,
+      status: item.status,
+      visibility: item.visibility,
+      willShowInMarketplace: item.status === 'active' && item.visibility !== 'hidden',
+    });
+
+    return item;
   },
 
   /**
@@ -190,11 +229,7 @@ export const itemService = {
   /**
    * Bulk update item status
    */
-  async bulkUpdateStatus(
-    token: string,
-    itemIds: string[],
-    status: ItemStatus
-  ): Promise<BulkUpdateResult> {
+  async bulkUpdateStatus(token: string, itemIds: string[], status: ItemStatus): Promise<BulkUpdateResult> {
     const response = await fetch(`${API_URL}/items/bulk/status`, {
       method: 'POST',
       headers: {
@@ -214,11 +249,7 @@ export const itemService = {
   /**
    * Bulk update item visibility
    */
-  async bulkUpdateVisibility(
-    token: string,
-    itemIds: string[],
-    visibility: ItemVisibility
-  ): Promise<BulkUpdateResult> {
+  async bulkUpdateVisibility(token: string, itemIds: string[], visibility: ItemVisibility): Promise<BulkUpdateResult> {
     const response = await fetch(`${API_URL}/items/bulk/visibility`, {
       method: 'POST',
       headers: {
@@ -258,10 +289,7 @@ export const itemService = {
   /**
    * Get marketplace items (public view)
    */
-  async getMarketplaceItems(
-    token: string,
-    filters: MarketplaceFilters = {}
-  ): Promise<PaginatedResponse<Item>> {
+  async getMarketplaceItems(token: string, filters: MarketplaceFilters = {}): Promise<PaginatedResponse<Item>> {
     const url = new URL(`${API_URL}/items/marketplace/browse`);
 
     if (filters.category) url.searchParams.append('category', filters.category);
@@ -274,15 +302,31 @@ export const itemService = {
     if (filters.brand) url.searchParams.append('brand', filters.brand);
     if (filters.sortBy) url.searchParams.append('sortBy', filters.sortBy);
 
+    // DEV: Log marketplace query for debugging
+    logItemFlow('getMarketplaceItems REQUEST', { filters });
+
     const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
+
+    logPortalApiCall('GET', '/api/items/marketplace/browse', response.status);
 
     if (!response.ok) {
       throw new Error('Failed to fetch marketplace items');
     }
 
-    return response.json();
+    const result = await response.json();
+    // DEV: Log marketplace results
+    logItemFlow('getMarketplaceItems RESPONSE', {
+      totalItems: result.pagination?.total || 0,
+      itemsReturned: result.items?.length || 0,
+      hint:
+        result.items?.length === 0
+          ? 'No items found. Check: 1) Seller created items with Publish (not Draft), 2) Items have stock > 0'
+          : undefined,
+    });
+
+    return result;
   },
 
   /**
@@ -310,7 +354,7 @@ export const itemService = {
   async getSellerPublicItems(
     token: string,
     sellerId: string,
-    filters: MarketplaceFilters = {}
+    filters: MarketplaceFilters = {},
   ): Promise<PaginatedResponse<Item>> {
     const url = new URL(`${API_URL}/items/marketplace/seller/${sellerId}`);
 
@@ -348,7 +392,16 @@ export const itemService = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to create RFQ');
+      // Include validation details in error message if available
+      let errorMessage = error.error || 'Failed to create RFQ';
+      if (error.details && Array.isArray(error.details)) {
+        const details = error.details
+          .map((d: { path?: string[]; message?: string }) => `${d.path?.join('.')}: ${d.message}`)
+          .join(', ');
+        errorMessage = `${errorMessage} (${details})`;
+        console.error('RFQ validation error details:', error.details);
+      }
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -438,6 +491,43 @@ export const itemService = {
 
     if (!response.ok) {
       throw new Error('Failed to reject RFQ');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Cancel RFQ (buyer) - only for pending/under_review RFQs
+   */
+  async cancelRFQ(token: string, rfqId: string): Promise<ItemRFQ> {
+    const response = await fetch(`${API_URL}/items/rfq/${rfqId}/cancel`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      // Include details in error message if available
+      const message = error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to cancel RFQ';
+      throw new Error(message);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Reactivate a cancelled RFQ (buyer) - only for cancelled RFQs
+   */
+  async reactivateRFQ(token: string, rfqId: string): Promise<ItemRFQ> {
+    const response = await fetch(`${API_URL}/items/rfq/${rfqId}/reactivate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      const message = error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to reactivate RFQ';
+      throw new Error(message);
     }
 
     return response.json();

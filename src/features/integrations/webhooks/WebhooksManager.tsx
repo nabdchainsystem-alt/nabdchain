@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Globe, Plus, Play, Pause, Trash, Clock, Check, X } from 'phosphor-react';
 import type { Webhook as WebhookType } from '../types';
 
@@ -28,9 +28,7 @@ export const WebhooksManager: React.FC<WebhooksManagerProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Globe size={20} className="text-stone-600 dark:text-stone-400" />
-          <h2 className="font-semibold text-stone-800 dark:text-stone-200">
-            Webhooks
-          </h2>
+          <h2 className="font-semibold text-stone-800 dark:text-stone-200">Webhooks</h2>
         </div>
         <button
           onClick={onAdd}
@@ -45,16 +43,9 @@ export const WebhooksManager: React.FC<WebhooksManagerProps> = ({
       {webhooks.length === 0 ? (
         <div className="p-8 bg-stone-50 dark:bg-stone-800 rounded-xl text-center">
           <Globe size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
-          <p className="text-stone-600 dark:text-stone-400 mb-2">
-            No webhooks configured
-          </p>
-          <p className="text-sm text-stone-500 mb-4">
-            Create webhooks to send real-time data to external services
-          </p>
-          <button
-            onClick={onAdd}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
-          >
+          <p className="text-stone-600 dark:text-stone-400 mb-2">No webhooks configured</p>
+          <p className="text-sm text-stone-500 mb-4">Create webhooks to send real-time data to external services</p>
+          <button onClick={onAdd} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm">
             Create Your First Webhook
           </button>
         </div>
@@ -67,30 +58,22 @@ export const WebhooksManager: React.FC<WebhooksManagerProps> = ({
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    webhook.active
-                      ? 'bg-green-100 dark:bg-green-900/30'
-                      : 'bg-stone-100 dark:bg-stone-800'
-                  }`}>
-                    <Globe
-                      size={20}
-                      className={webhook.active ? 'text-green-600' : 'text-stone-400'}
-                    />
+                  <div
+                    className={`p-2 rounded-lg ${
+                      webhook.active ? 'bg-green-100 dark:bg-green-900/30' : 'bg-stone-100 dark:bg-stone-800'
+                    }`}
+                  >
+                    <Globe size={20} className={webhook.active ? 'text-green-600' : 'text-stone-400'} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-stone-800 dark:text-stone-200">
-                      {webhook.name}
-                    </h3>
-                    <p className="text-xs text-stone-500 font-mono mt-0.5 truncate max-w-[300px]">
-                      {webhook.url}
-                    </p>
+                    <h3 className="font-medium text-stone-800 dark:text-stone-200">{webhook.name}</h3>
+                    <p className="text-xs text-stone-500 font-mono mt-0.5 truncate max-w-[300px]">{webhook.url}</p>
                     <div className="flex items-center gap-3 mt-2 text-xs text-stone-500">
                       <span className="flex items-center gap-1">
                         <Clock size={12} />
                         {webhook.lastTriggered
                           ? `Last triggered ${new Date(webhook.lastTriggered).toLocaleDateString()}`
-                          : 'Never triggered'
-                        }
+                          : 'Never triggered'}
                       </span>
                       <span className="flex items-center gap-1">
                         {webhook.failureCount > 0 ? (
@@ -152,9 +135,7 @@ export const WebhooksManager: React.FC<WebhooksManagerProps> = ({
 
       {/* Coming Soon Notice */}
       <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
-          Webhooks feature coming soon
-        </p>
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">Webhooks feature coming soon</p>
       </div>
     </div>
   );

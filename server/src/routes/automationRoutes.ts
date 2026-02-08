@@ -2,7 +2,7 @@
 // Automation Routes - Stage 8: Automation, Payouts & Scale
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { automationRulesService } from '../services/automationRulesService';
@@ -149,9 +149,9 @@ const createFromTemplateSchema = z.object({
  * GET /api/automation/rules
  * List seller's automation rules
  */
-router.get('/rules', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/rules', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -173,9 +173,9 @@ router.get('/rules', requireAuth, async (req: AuthRequest, res: Response) => {
  * POST /api/automation/rules
  * Create a new automation rule
  */
-router.post('/rules', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/rules', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -201,14 +201,14 @@ router.post('/rules', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/automation/rules/:id
  * Get a single rule with recent executions
  */
-router.get('/rules/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/rules/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const rule = await automationRulesService.getRule(userId, req.params.id);
+    const rule = await automationRulesService.getRule(userId, req.params.id as string);
 
     if (!rule) {
       return res.status(404).json({ error: 'Rule not found' });
@@ -225,15 +225,15 @@ router.get('/rules/:id', requireAuth, async (req: AuthRequest, res: Response) =>
  * PUT /api/automation/rules/:id
  * Update an automation rule
  */
-router.put('/rules/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.put('/rules/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const input = updateRuleSchema.parse(req.body);
-    const result = await automationRulesService.updateRule(userId, req.params.id, input);
+    const result = await automationRulesService.updateRule(userId, req.params.id as string, input);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -253,14 +253,14 @@ router.put('/rules/:id', requireAuth, async (req: AuthRequest, res: Response) =>
  * DELETE /api/automation/rules/:id
  * Delete an automation rule
  */
-router.delete('/rules/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/rules/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const result = await automationRulesService.deleteRule(userId, req.params.id);
+    const result = await automationRulesService.deleteRule(userId, req.params.id as string);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -277,15 +277,15 @@ router.delete('/rules/:id', requireAuth, async (req: AuthRequest, res: Response)
  * POST /api/automation/rules/:id/toggle
  * Enable or disable a rule
  */
-router.post('/rules/:id/toggle', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/rules/:id/toggle', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const body = toggleRuleSchema.parse(req.body);
-    const result = await automationRulesService.toggleRule(userId, req.params.id, body.enabled);
+    const result = await automationRulesService.toggleRule(userId, req.params.id as string, body.enabled);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -309,9 +309,9 @@ router.post('/rules/:id/toggle', requireAuth, async (req: AuthRequest, res: Resp
  * GET /api/automation/executions
  * Get execution history
  */
-router.get('/executions', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/executions', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -333,9 +333,9 @@ router.get('/executions', requireAuth, async (req: AuthRequest, res: Response) =
  * GET /api/automation/executions/stats
  * Get execution statistics
  */
-router.get('/executions/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/executions/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -358,9 +358,9 @@ router.get('/executions/stats', requireAuth, async (req: AuthRequest, res: Respo
  * GET /api/automation/templates
  * Get available rule templates
  */
-router.get('/templates', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/templates', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -377,9 +377,9 @@ router.get('/templates', requireAuth, async (req: AuthRequest, res: Response) =>
  * POST /api/automation/templates/create
  * Create a rule from a template
  */
-router.post('/templates/create', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/templates/create', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

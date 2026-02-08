@@ -1,13 +1,15 @@
 // =============================================================================
 // Portal Authentication Service
-// Handles Buyer and Seller signup, login, and token management
+// =============================================================================
+// Handles Buyer and Seller signup, login, and JWT token management.
+// Includes account lockout protection and improved password hashing.
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
-
-const prisma = new PrismaClient();
+import { generateTokenPair, PortalTokenPayload } from '../auth/portalToken';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -34,6 +36,7 @@ export interface LoginInput {
   email: string;
   password: string;
   portalType: 'buyer' | 'seller';
+  ipAddress?: string;
 }
 
 export interface AuthResponse {
@@ -58,6 +61,7 @@ export interface AuthResponse {
   };
   accessToken?: string;
   refreshToken?: string;
+  expiresIn?: number;
   redirectTo?: string;
   error?: {
     code: string;
@@ -74,33 +78,164 @@ export interface ValidationResult {
 }
 
 // =============================================================================
-// Password Utilities
+// Password Utilities (Improved)
 // =============================================================================
 
-const SALT_ROUNDS = 10;
+// Password hash versions for migration
+const PASSWORD_HASH_VERSION = 2;
+const PBKDF2_ITERATIONS_V2 = 100000; // 100k iterations (OWASP recommended minimum)
+const PBKDF2_ITERATIONS_V1 = 1000;   // Legacy (low security)
 
+/**
+ * Hash password with versioned algorithm
+ * Format: v{version}:{salt}:{hash}
+ */
 function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return `${salt}:${hash}`;
+  const salt = crypto.randomBytes(32).toString('hex');
+  const hash = crypto.pbkdf2Sync(
+    password,
+    salt,
+    PBKDF2_ITERATIONS_V2,
+    64,
+    'sha512'
+  ).toString('hex');
+  return `v${PASSWORD_HASH_VERSION}:${salt}:${hash}`;
 }
 
-function verifyPassword(password: string, storedHash: string): boolean {
+/**
+ * Verify password against stored hash
+ * Supports both v1 (legacy) and v2 formats
+ */
+function verifyPassword(password: string, storedHash: string): { valid: boolean; needsRehash: boolean } {
+  // Check for versioned hash (v2+)
+  if (storedHash.startsWith('v2:')) {
+    const [_version, salt, hash] = storedHash.split(':');
+    const verifyHash = crypto.pbkdf2Sync(
+      password,
+      salt,
+      PBKDF2_ITERATIONS_V2,
+      64,
+      'sha512'
+    ).toString('hex');
+    return { valid: hash === verifyHash, needsRehash: false };
+  }
+
+  // Legacy v1 format (salt:hash with 1000 iterations)
   const [salt, hash] = storedHash.split(':');
-  const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return hash === verifyHash;
+  if (!salt || !hash) {
+    return { valid: false, needsRehash: false };
+  }
+
+  const verifyHash = crypto.pbkdf2Sync(
+    password,
+    salt,
+    PBKDF2_ITERATIONS_V1,
+    64,
+    'sha512'
+  ).toString('hex');
+
+  return {
+    valid: hash === verifyHash,
+    needsRehash: true, // Needs upgrade to v2
+  };
+}
+
+/**
+ * Upgrade password hash to latest version
+ * Should be called after successful login with legacy hash
+ */
+async function upgradePasswordHash(userId: string, password: string): Promise<void> {
+  const newHash = hashPassword(password);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newHash },
+  });
+  apiLogger.info(`[Portal Auth] Upgraded password hash for user ${userId} to v${PASSWORD_HASH_VERSION}`);
 }
 
 // =============================================================================
-// Token Utilities
+// Account Lockout (In-Memory for now; migrate to Redis for multi-instance production)
 // =============================================================================
 
-function generateAccessToken(): string {
-  return `at_${uuidv4().replace(/-/g, '')}${crypto.randomBytes(16).toString('hex')}`;
+interface LoginAttempt {
+  count: number;
+  firstAttempt: number;
+  lockedUntil?: number;
 }
 
-function generateRefreshToken(): string {
-  return `rt_${uuidv4().replace(/-/g, '')}${crypto.randomBytes(16).toString('hex')}`;
+// In-memory store (use Redis in production)
+const loginAttempts = new Map<string, LoginAttempt>();
+
+const LOCKOUT_CONFIG = {
+  maxAttempts: 10,           // Max failed attempts before lockout
+  windowMs: 30 * 60 * 1000,  // 30 minute window for counting attempts
+  lockoutMs: 15 * 60 * 1000, // 15 minute lockout duration
+};
+
+/**
+ * Check if account is locked out
+ */
+function isAccountLocked(email: string): { locked: boolean; remainingMs?: number } {
+  const key = email.toLowerCase();
+  const attempt = loginAttempts.get(key);
+
+  if (!attempt) {
+    return { locked: false };
+  }
+
+  if (attempt.lockedUntil) {
+    const now = Date.now();
+    if (now < attempt.lockedUntil) {
+      return {
+        locked: true,
+        remainingMs: attempt.lockedUntil - now,
+      };
+    }
+    // Lockout expired, reset
+    loginAttempts.delete(key);
+    return { locked: false };
+  }
+
+  return { locked: false };
+}
+
+/**
+ * Record a failed login attempt
+ */
+function recordFailedAttempt(email: string): { locked: boolean; remainingAttempts: number } {
+  const key = email.toLowerCase();
+  const now = Date.now();
+  let attempt = loginAttempts.get(key);
+
+  if (!attempt || (now - attempt.firstAttempt) > LOCKOUT_CONFIG.windowMs) {
+    // Reset if no previous attempts or window expired
+    attempt = { count: 1, firstAttempt: now };
+  } else {
+    attempt.count++;
+  }
+
+  // Check if should lock
+  if (attempt.count >= LOCKOUT_CONFIG.maxAttempts) {
+    attempt.lockedUntil = now + LOCKOUT_CONFIG.lockoutMs;
+    loginAttempts.set(key, attempt);
+
+    apiLogger.warn(`[Portal Auth] Account locked for ${email} after ${attempt.count} failed attempts`);
+
+    return { locked: true, remainingAttempts: 0 };
+  }
+
+  loginAttempts.set(key, attempt);
+  return {
+    locked: false,
+    remainingAttempts: LOCKOUT_CONFIG.maxAttempts - attempt.count,
+  };
+}
+
+/**
+ * Clear failed attempts after successful login
+ */
+function clearFailedAttempts(email: string): void {
+  loginAttempts.delete(email.toLowerCase());
 }
 
 // =============================================================================
@@ -288,7 +423,7 @@ export const portalAuthService = {
       };
     }
 
-    // Hash password
+    // Hash password with secure algorithm
     const passwordHash = hashPassword(input.password);
 
     // Create user and buyer profile in transaction
@@ -325,9 +460,15 @@ export const portalAuthService = {
       return { user, buyerProfile };
     });
 
-    // Generate tokens
-    const accessToken = generateAccessToken();
-    const refreshToken = generateRefreshToken();
+    // Generate JWT tokens
+    const tokenPayload: PortalTokenPayload = {
+      userId: result.user.id,
+      email: result.user.email,
+      portalRole: 'buyer',
+      buyerId: result.buyerProfile.id,
+    };
+
+    const tokens = generateTokenPair(tokenPayload);
 
     return {
       success: true,
@@ -342,8 +483,9 @@ export const portalAuthService = {
         companyName: result.buyerProfile.companyName,
         status: result.buyerProfile.status,
       },
-      accessToken,
-      refreshToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
       redirectTo: '/portal/buyer/dashboard',
     };
   },
@@ -400,7 +542,7 @@ export const portalAuthService = {
     const baseSlug = generateSlug(displayName);
     const slug = await ensureUniqueSlug(baseSlug);
 
-    // Hash password
+    // Hash password with secure algorithm
     const passwordHash = hashPassword(input.password);
 
     // Create user and seller profile in transaction
@@ -438,9 +580,15 @@ export const portalAuthService = {
       return { user, sellerProfile };
     });
 
-    // Generate tokens
-    const accessToken = generateAccessToken();
-    const refreshToken = generateRefreshToken();
+    // Generate JWT tokens
+    const tokenPayload: PortalTokenPayload = {
+      userId: result.user.id,
+      email: result.user.email,
+      portalRole: 'seller',
+      sellerId: result.sellerProfile.id,
+    };
+
+    const tokens = generateTokenPair(tokenPayload);
 
     return {
       success: true,
@@ -457,8 +605,9 @@ export const portalAuthService = {
         status: result.sellerProfile.status,
         onboardingStep: 1,
       },
-      accessToken,
-      refreshToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
       redirectTo: '/portal/seller/onboarding',
     };
   },
@@ -469,6 +618,19 @@ export const portalAuthService = {
   async login(input: LoginInput): Promise<AuthResponse> {
     const email = sanitizeInput(input.email).toLowerCase();
 
+    // Check account lockout
+    const lockStatus = isAccountLocked(email);
+    if (lockStatus.locked) {
+      const remainingMinutes = Math.ceil((lockStatus.remainingMs || 0) / 60000);
+      return {
+        success: false,
+        error: {
+          code: 'ACCOUNT_LOCKED',
+          message: `Account temporarily locked. Please try again in ${remainingMinutes} minute(s).`,
+        },
+      };
+    }
+
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
@@ -478,6 +640,8 @@ export const portalAuthService = {
     });
 
     if (!user || !user.passwordHash) {
+      // Record failed attempt but don't reveal if user exists
+      recordFailedAttempt(email);
       return {
         success: false,
         error: {
@@ -488,7 +652,20 @@ export const portalAuthService = {
     }
 
     // Verify password
-    if (!verifyPassword(input.password, user.passwordHash)) {
+    const passwordResult = verifyPassword(input.password, user.passwordHash);
+    if (!passwordResult.valid) {
+      const attemptResult = recordFailedAttempt(email);
+
+      if (attemptResult.locked) {
+        return {
+          success: false,
+          error: {
+            code: 'ACCOUNT_LOCKED',
+            message: 'Too many failed attempts. Account temporarily locked for 15 minutes.',
+          },
+        };
+      }
+
       return {
         success: false,
         error: {
@@ -509,12 +686,52 @@ export const portalAuthService = {
       };
     }
 
-    // Generate tokens
-    const accessToken = generateAccessToken();
-    const refreshToken = generateRefreshToken();
+    // Check if suspended
+    if (user.portalStatus === 'suspended') {
+      return {
+        success: false,
+        error: {
+          code: 'ACCOUNT_SUSPENDED',
+          message: 'Your account has been suspended. Please contact support.',
+        },
+      };
+    }
+
+    // Clear failed attempts on successful login
+    clearFailedAttempts(email);
+
+    // Upgrade password hash if needed (non-blocking)
+    if (passwordResult.needsRehash) {
+      upgradePasswordHash(user.id, input.password).catch(err => {
+        apiLogger.error('[Portal Auth] Failed to upgrade password hash:', err);
+      });
+    }
 
     // Build response based on role
     if (user.portalRole === 'buyer') {
+      // Auto-create BuyerProfile if missing (e.g. user created outside signup flow)
+      let buyerProfile = user.buyerProfile;
+      if (!buyerProfile) {
+        apiLogger.info('[Portal Auth] Auto-creating missing BuyerProfile for userId:', user.id);
+        buyerProfile = await prisma.buyerProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.name || 'Buyer',
+            companyName: user.companyName || user.name || 'My Company',
+            status: 'active',
+          },
+        });
+      }
+
+      const tokenPayload: PortalTokenPayload = {
+        userId: user.id,
+        email: user.email,
+        portalRole: 'buyer',
+        buyerId: buyerProfile.id,
+      };
+
+      const tokens = generateTokenPair(tokenPayload);
+
       return {
         success: true,
         user: {
@@ -523,21 +740,50 @@ export const portalAuthService = {
           fullName: user.name || '',
           portalRole: 'buyer',
         },
-        buyer: user.buyerProfile ? {
-          id: user.buyerProfile.id,
-          companyName: user.buyerProfile.companyName,
-          status: user.buyerProfile.status,
-        } : undefined,
-        accessToken,
-        refreshToken,
+        buyer: {
+          id: buyerProfile.id,
+          companyName: buyerProfile.companyName,
+          status: buyerProfile.status,
+        },
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         redirectTo: '/portal/buyer/dashboard',
       };
     }
 
-    // For seller, fetch seller profile
-    const sellerProfile = await prisma.sellerProfile.findUnique({
+    // For seller, fetch or auto-create seller profile
+    let sellerProfile = await prisma.sellerProfile.findUnique({
       where: { userId: user.id },
     });
+
+    if (!sellerProfile) {
+      apiLogger.info('[Portal Auth] Auto-creating missing SellerProfile for userId:', user.id);
+      const baseSlug = generateSlug(user.companyName || user.name || 'seller');
+      const slug = await ensureUniqueSlug(baseSlug);
+      sellerProfile = await prisma.sellerProfile.create({
+        data: {
+          userId: user.id,
+          displayName: user.companyName || user.name || 'My Store',
+          slug,
+          status: 'incomplete',
+          profileComplete: false,
+          companyVerified: false,
+          bankVerified: false,
+          documentsVerified: false,
+          canPublish: false,
+        },
+      });
+    }
+
+    const tokenPayload: PortalTokenPayload = {
+      userId: user.id,
+      email: user.email,
+      portalRole: 'seller',
+      sellerId: sellerProfile.id,
+    };
+
+    const tokens = generateTokenPair(tokenPayload);
 
     return {
       success: true,
@@ -547,16 +793,17 @@ export const portalAuthService = {
         fullName: user.name || '',
         portalRole: 'seller',
       },
-      seller: sellerProfile ? {
+      seller: {
         id: sellerProfile.id,
         displayName: sellerProfile.displayName,
         slug: sellerProfile.slug,
         status: sellerProfile.status,
         onboardingStep: getOnboardingStep(sellerProfile),
-      } : undefined,
-      accessToken,
-      refreshToken,
-      redirectTo: sellerProfile?.status === 'incomplete'
+      },
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+      redirectTo: sellerProfile.status === 'incomplete'
         ? '/portal/seller/onboarding'
         : '/portal/seller/dashboard',
     };
@@ -886,7 +1133,7 @@ export const portalAuthService = {
         currentStep,
       };
     } catch (error) {
-      console.error('Save onboarding step error:', error);
+      apiLogger.error('Save onboarding step error:', error);
       return { success: false, error: 'Failed to save step data' };
     }
   },
@@ -949,6 +1196,83 @@ export const portalAuthService = {
     });
 
     return { success: true };
+  },
+
+  // ---------------------------------------------------------------------------
+  // Get User for Token Refresh
+  // ---------------------------------------------------------------------------
+  async getUserForTokenRefresh(userId: string): Promise<PortalTokenPayload | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        companyName: true,
+        portalRole: true,
+        portalStatus: true,
+        buyerProfile: { select: { id: true } },
+      },
+    });
+
+    if (!user || !user.portalRole || user.portalStatus === 'suspended') {
+      return null;
+    }
+
+    // Resolve buyer profile (auto-create if missing)
+    let buyerId: string | undefined;
+    if (user.portalRole === 'buyer') {
+      if (user.buyerProfile) {
+        buyerId = user.buyerProfile.id;
+      } else {
+        const newProfile = await prisma.buyerProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.name || 'Buyer',
+            companyName: user.companyName || user.name || 'My Company',
+            status: 'active',
+          },
+        });
+        buyerId = newProfile.id;
+      }
+    }
+
+    // Resolve seller profile (auto-create if missing)
+    let sellerId: string | undefined;
+    if (user.portalRole === 'seller') {
+      const sellerProfile = await prisma.sellerProfile.findUnique({
+        where: { userId },
+        select: { id: true },
+      });
+      if (sellerProfile) {
+        sellerId = sellerProfile.id;
+      } else {
+        const baseSlug = generateSlug(user.companyName || user.name || 'seller');
+        const slug = await ensureUniqueSlug(baseSlug);
+        const newProfile = await prisma.sellerProfile.create({
+          data: {
+            userId: user.id,
+            displayName: user.companyName || user.name || 'My Store',
+            slug,
+            status: 'incomplete',
+            profileComplete: false,
+            companyVerified: false,
+            bankVerified: false,
+            documentsVerified: false,
+            canPublish: false,
+          },
+        });
+        sellerId = newProfile.id;
+      }
+    }
+
+    return {
+      userId: user.id,
+      email: user.email,
+      portalRole: user.portalRole as 'buyer' | 'seller' | 'admin' | 'staff',
+      buyerId,
+      sellerId,
+    };
   },
 };
 

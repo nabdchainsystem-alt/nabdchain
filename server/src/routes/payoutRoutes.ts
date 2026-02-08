@@ -2,10 +2,15 @@
 // Payout Routes - Stage 8: Automation, Payouts & Scale
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { idempotency } from '../middleware/idempotencyMiddleware';
+import {
+  requirePortalAuth,
+  requirePortalRole,
+  PortalAuthRequest,
+} from '../middleware/portalAdminMiddleware';
 import { sellerPayoutService } from '../services/sellerPayoutService';
 import { apiLogger } from '../utils/logger';
 
@@ -53,9 +58,9 @@ const failPayoutSchema = z.object({
  * GET /api/payouts/seller
  * List seller's payouts with pagination
  */
-router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -77,9 +82,9 @@ router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/payouts/seller/stats
  * Get payout statistics for the seller
  */
-router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -96,9 +101,9 @@ router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response)
  * GET /api/payouts/seller/eligible
  * Check seller's eligible payout amount with enhanced withdrawal logic
  */
-router.get('/seller/eligible', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/eligible', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -115,9 +120,9 @@ router.get('/seller/eligible', requireAuth, async (req: AuthRequest, res: Respon
  * GET /api/payouts/seller/timeline
  * Get funds timeline showing lifecycle of funds from order to payout
  */
-router.get('/seller/timeline', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/timeline', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -135,9 +140,9 @@ router.get('/seller/timeline', requireAuth, async (req: AuthRequest, res: Respon
  * GET /api/payouts/seller/settings
  * Get seller's payout settings
  */
-router.get('/seller/settings', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/settings', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -154,9 +159,9 @@ router.get('/seller/settings', requireAuth, async (req: AuthRequest, res: Respon
  * PUT /api/payouts/seller/settings
  * Update seller's payout settings
  */
-router.put('/seller/settings', requireAuth, async (req: AuthRequest, res: Response) => {
+router.put('/seller/settings', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -178,15 +183,15 @@ router.put('/seller/settings', requireAuth, async (req: AuthRequest, res: Respon
  * GET /api/payouts/seller/:id
  * Get a single payout details
  */
-router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const payout = await sellerPayoutService.getPayoutDetails(
-      String(req.params.id),
+      String(req.params.id as string),
       userId
     );
 
@@ -205,15 +210,15 @@ router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) =
  * GET /api/payouts/seller/:id/history
  * Get payout event history
  */
-router.get('/seller/:id/history', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id/history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const history = await sellerPayoutService.getPayoutHistory(
-      String(req.params.id),
+      String(req.params.id as string),
       userId
     );
 
@@ -232,14 +237,8 @@ router.get('/seller/:id/history', requireAuth, async (req: AuthRequest, res: Res
  * GET /api/payouts/admin/pending
  * List all pending payouts (admin only)
  */
-router.get('/admin/pending', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/admin/pending', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
     const payouts = await sellerPayoutService.getPendingPayouts();
     return res.json(payouts);
   } catch (error) {
@@ -252,13 +251,8 @@ router.get('/admin/pending', requireAuth, async (req: AuthRequest, res: Response
  * GET /api/payouts/admin/status/:status
  * List payouts by status (admin only)
  */
-router.get('/admin/status/:status', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/admin/status/:status', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const status = req.params.status as 'pending' | 'processing' | 'settled' | 'on_hold' | 'failed';
     const validStatuses = ['pending', 'processing', 'settled', 'on_hold', 'failed'];
 
@@ -266,7 +260,6 @@ router.get('/admin/status/:status', requireAuth, async (req: AuthRequest, res: R
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    // TODO: Add admin role check
     const payouts = await sellerPayoutService.getPayoutsByStatus(status);
     return res.json(payouts);
   } catch (error) {
@@ -279,17 +272,12 @@ router.get('/admin/status/:status', requireAuth, async (req: AuthRequest, res: R
  * POST /api/payouts/admin/:id/approve
  * Approve a pending payout (admin only)
  */
-router.post('/admin/:id/approve', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/:id/approve', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
+    const adminId = req.portalUser!.id;
     const result = await sellerPayoutService.approvePayout(
-      String(req.params.id),
-      userId
+      String(req.params.id as string),
+      adminId
     );
 
     if (!result.success) {
@@ -307,17 +295,12 @@ router.post('/admin/:id/approve', requireAuth, async (req: AuthRequest, res: Res
  * POST /api/payouts/admin/:id/process
  * Start processing a payout (admin only)
  */
-router.post('/admin/:id/process', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/:id/process', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
+    const adminId = req.portalUser!.id;
     const result = await sellerPayoutService.processPayout(
-      String(req.params.id),
-      userId
+      String(req.params.id as string),
+      adminId
     );
 
     if (!result.success) {
@@ -336,20 +319,15 @@ router.post('/admin/:id/process', requireAuth, async (req: AuthRequest, res: Res
  * Mark payout as settled (admin only)
  * Protected by idempotency to prevent duplicate settlements
  */
-router.post('/admin/:id/settle', requireAuth, idempotency({ required: true, entityType: 'payout' }), async (req: AuthRequest, res: Response) => {
+router.post('/admin/:id/settle', requirePortalAuth(), requirePortalRole('admin'), idempotency({ required: true, entityType: 'payout' }), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    const adminId = req.portalUser!.id;
     const body = settlePayoutSchema.parse(req.body);
 
-    // TODO: Add admin role check
     const result = await sellerPayoutService.settlePayout(
-      String(req.params.id),
+      String(req.params.id as string),
       body.bankReference,
-      userId
+      adminId
     );
 
     if (!result.success) {
@@ -370,21 +348,16 @@ router.post('/admin/:id/settle', requireAuth, idempotency({ required: true, enti
  * POST /api/payouts/admin/:id/hold
  * Put payout on hold (admin only)
  */
-router.post('/admin/:id/hold', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/:id/hold', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    const adminId = req.portalUser!.id;
     const body = holdPayoutSchema.parse(req.body);
 
-    // TODO: Add admin role check
     const result = await sellerPayoutService.holdPayout(
-      String(req.params.id),
+      String(req.params.id as string),
       body.reason,
       body.holdUntil ? new Date(body.holdUntil) : undefined,
-      userId
+      adminId
     );
 
     if (!result.success) {
@@ -405,20 +378,15 @@ router.post('/admin/:id/hold', requireAuth, async (req: AuthRequest, res: Respon
  * POST /api/payouts/admin/:id/fail
  * Mark payout as failed (admin only)
  */
-router.post('/admin/:id/fail', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/:id/fail', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    const adminId = req.portalUser!.id;
     const body = failPayoutSchema.parse(req.body);
 
-    // TODO: Add admin role check
     const result = await sellerPayoutService.failPayout(
-      String(req.params.id),
+      String(req.params.id as string),
       body.reason,
-      userId
+      adminId
     );
 
     if (!result.success) {
@@ -439,14 +407,8 @@ router.post('/admin/:id/fail', requireAuth, async (req: AuthRequest, res: Respon
  * POST /api/payouts/admin/batch-create
  * Create batch payouts for all eligible sellers (admin only)
  */
-router.post('/admin/batch-create', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/admin/batch-create', requirePortalAuth(), requirePortalRole('admin'), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // TODO: Add admin role check
     const result = await sellerPayoutService.createBatchPayouts(new Date());
 
     return res.json({

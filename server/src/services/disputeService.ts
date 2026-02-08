@@ -6,9 +6,9 @@
 // Platform remains neutral; resolution requires mutual agreement or escalation.
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import type { MarketplaceDispute, Prisma } from '@prisma/client';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -194,14 +194,11 @@ function calculateResolutionDeadline(): Date {
  * Create a new dispute
  * Only buyers can create disputes on delivered orders
  */
-async function createDispute(input: CreateDisputeInput): Promise<{ success: boolean; dispute?: any; error?: string }> {
+async function createDispute(input: CreateDisputeInput): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     // Validate order exists and is delivered
     const order = await prisma.marketplaceOrder.findUnique({
       where: { id: input.orderId },
-      include: {
-        invoice: true,
-      },
     });
 
     if (!order) {
@@ -215,6 +212,12 @@ async function createDispute(input: CreateDisputeInput): Promise<{ success: bool
     if (order.status !== 'delivered' && order.status !== 'closed') {
       return { success: false, error: 'Disputes can only be opened on delivered orders' };
     }
+
+    // Look up invoice separately (no relation on MarketplaceOrder)
+    const invoice = await prisma.marketplaceInvoice.findUnique({
+      where: { orderId: input.orderId },
+      select: { id: true, invoiceNumber: true, sellerName: true, sellerCompany: true },
+    });
 
     // Check if dispute already exists for this order
     const existingDispute = await prisma.marketplaceDispute.findFirst({
@@ -248,15 +251,15 @@ async function createDispute(input: CreateDisputeInput): Promise<{ success: bool
         disputeNumber,
         orderId: order.id,
         orderNumber: order.orderNumber,
-        invoiceId: order.invoice?.id,
-        invoiceNumber: order.invoice?.invoiceNumber,
+        invoiceId: invoice?.id,
+        invoiceNumber: invoice?.invoiceNumber,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
-        buyerName: order.buyerName,
+        buyerName: order.buyerName || '',
         buyerEmail: order.buyerEmail,
         buyerCompany: order.buyerCompany,
-        sellerName: order.sellerName,
-        sellerCompany: order.sellerCompany,
+        sellerName: invoice?.sellerName || '',
+        sellerCompany: invoice?.sellerCompany,
         itemId: order.itemId,
         itemName: order.itemName,
         itemSku: order.itemSku,
@@ -302,7 +305,7 @@ async function createDispute(input: CreateDisputeInput): Promise<{ success: bool
 
     return { success: true, dispute };
   } catch (error) {
-    console.error('Error creating dispute:', error);
+    apiLogger.error('Error creating dispute:', error);
     return { success: false, error: 'Failed to create dispute' };
   }
 }
@@ -346,7 +349,7 @@ async function getDispute(disputeId: string, userId: string): Promise<any | null
 async function getBuyerDisputes(
   buyerId: string,
   filters: DisputeFilters = {}
-): Promise<{ disputes: any[]; total: number; page: number; limit: number }> {
+): Promise<{ disputes: MarketplaceDispute[]; total: number; page: number; limit: number }> {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
@@ -414,7 +417,7 @@ async function getBuyerDisputes(
 async function getSellerDisputes(
   sellerId: string,
   filters: DisputeFilters = {}
-): Promise<{ disputes: any[]; total: number; page: number; limit: number }> {
+): Promise<{ disputes: MarketplaceDispute[]; total: number; page: number; limit: number }> {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
@@ -596,7 +599,7 @@ async function getSellerDisputeStats(sellerId: string): Promise<DisputeStats> {
 async function markAsUnderReview(
   disputeId: string,
   sellerId: string
-): Promise<{ success: boolean; dispute?: any; error?: string }> {
+): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: disputeId },
@@ -630,7 +633,7 @@ async function markAsUnderReview(
 
     return { success: true, dispute: updated };
   } catch (error) {
-    console.error('Error marking dispute as under review:', error);
+    apiLogger.error('Error marking dispute as under review:', error);
     return { success: false, error: 'Failed to update dispute' };
   }
 }
@@ -638,7 +641,7 @@ async function markAsUnderReview(
 /**
  * Seller responds to dispute
  */
-async function sellerRespond(input: SellerRespondInput): Promise<{ success: boolean; dispute?: any; error?: string }> {
+async function sellerRespond(input: SellerRespondInput): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: input.disputeId },
@@ -656,7 +659,7 @@ async function sellerRespond(input: SellerRespondInput): Promise<{ success: bool
       return { success: false, error: 'Dispute is not in a respondable state' };
     }
 
-    const updateData: any = {
+    const updateData: Prisma.MarketplaceDisputeUpdateInput = {
       status: 'seller_responded',
       sellerResponseType: input.responseType,
       sellerResponse: input.response,
@@ -698,7 +701,7 @@ async function sellerRespond(input: SellerRespondInput): Promise<{ success: bool
 
     return { success: true, dispute: updated };
   } catch (error) {
-    console.error('Error submitting seller response:', error);
+    apiLogger.error('Error submitting seller response:', error);
     return { success: false, error: 'Failed to submit response' };
   }
 }
@@ -709,7 +712,7 @@ async function sellerRespond(input: SellerRespondInput): Promise<{ success: bool
 async function buyerAcceptResolution(
   disputeId: string,
   buyerId: string
-): Promise<{ success: boolean; dispute?: any; error?: string }> {
+): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: disputeId },
@@ -757,7 +760,7 @@ async function buyerAcceptResolution(
 
     return { success: true, dispute: updated };
   } catch (error) {
-    console.error('Error accepting resolution:', error);
+    apiLogger.error('Error accepting resolution:', error);
     return { success: false, error: 'Failed to accept resolution' };
   }
 }
@@ -769,7 +772,7 @@ async function buyerRejectResolution(
   disputeId: string,
   buyerId: string,
   reason: string
-): Promise<{ success: boolean; dispute?: any; error?: string }> {
+): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: disputeId },
@@ -806,7 +809,7 @@ async function buyerRejectResolution(
 
     return { success: true, dispute: updated };
   } catch (error) {
-    console.error('Error rejecting resolution:', error);
+    apiLogger.error('Error rejecting resolution:', error);
     return { success: false, error: 'Failed to reject resolution' };
   }
 }
@@ -818,7 +821,7 @@ async function escalateDispute(
   disputeId: string,
   actorId: string,
   reason: string
-): Promise<{ success: boolean; dispute?: any; error?: string }> {
+): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: disputeId },
@@ -863,7 +866,7 @@ async function escalateDispute(
 
     return { success: true, dispute: updated };
   } catch (error) {
-    console.error('Error escalating dispute:', error);
+    apiLogger.error('Error escalating dispute:', error);
     return { success: false, error: 'Failed to escalate dispute' };
   }
 }
@@ -874,7 +877,7 @@ async function escalateDispute(
 async function closeDispute(
   disputeId: string,
   actorId: string
-): Promise<{ success: boolean; dispute?: any; error?: string }> {
+): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: disputeId },
@@ -915,7 +918,7 @@ async function closeDispute(
 
     return { success: true, dispute: updated };
   } catch (error) {
-    console.error('Error closing dispute:', error);
+    apiLogger.error('Error closing dispute:', error);
     return { success: false, error: 'Failed to close dispute' };
   }
 }
@@ -927,7 +930,7 @@ async function addEvidence(
   disputeId: string,
   buyerId: string,
   newEvidence: DisputeEvidence[]
-): Promise<{ success: boolean; dispute?: any; error?: string }> {
+): Promise<{ success: boolean; dispute?: MarketplaceDispute; error?: string }> {
   try {
     const dispute = await prisma.marketplaceDispute.findUnique({
       where: { id: disputeId },
@@ -969,10 +972,10 @@ async function addEvidence(
 
     return {
       success: true,
-      dispute: { ...updated, evidence: combinedEvidence }
+      dispute: { ...updated, evidence: combinedEvidence } as unknown as MarketplaceDispute
     };
   } catch (error) {
-    console.error('Error adding evidence:', error);
+    apiLogger.error('Error adding evidence:', error);
     return { success: false, error: 'Failed to add evidence' };
   }
 }

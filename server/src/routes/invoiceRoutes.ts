@@ -2,14 +2,44 @@
 // Invoice Routes - Marketplace Invoice API (Stage 6)
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { marketplaceInvoiceService, InvoiceStatus } from '../services/marketplaceInvoiceService';
 import { apiLogger } from '../utils/logger';
+import { prisma } from '../lib/prisma';
+import { resolveBuyerId } from '../utils/resolveBuyerId';
 
 const router = Router();
 
+// =============================================================================
+// Helper: Resolve sellerId from portal auth or database lookup
+// =============================================================================
+async function resolveSellerId(req: Request): Promise<string | null> {
+  // First check portal JWT token for sellerId
+  const portalAuth = (req as any).portalAuth;
+  if (portalAuth?.sellerId) {
+    return portalAuth.sellerId;
+  }
+
+  // Fall back to looking up seller by userId
+  const userId = (req as AuthRequest).auth?.userId;
+  if (!userId) {
+    return null;
+  }
+
+  // Look up SellerProfile by userId
+  const seller = await prisma.sellerProfile.findFirst({
+    where: { userId },
+    select: { id: true },
+  });
+
+  return seller?.id || null;
+}
+
+// =============================================================================
+// Helper: Resolve buyerId from portal auth or database lookup
+// =============================================================================
 // =============================================================================
 // Validation Schemas
 // =============================================================================
@@ -36,15 +66,15 @@ const cancelInvoiceSchema = z.object({
  * GET /api/invoices/seller
  * Get all invoices for the authenticated seller
  */
-router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
     const filters = invoiceFiltersSchema.parse(req.query);
-    const result = await marketplaceInvoiceService.getSellerInvoices(userId, filters);
+    const result = await marketplaceInvoiceService.getSellerInvoices(sellerId, filters);
 
     return res.json(result);
   } catch (error) {
@@ -60,14 +90,14 @@ router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/invoices/seller/stats
  * Get seller invoice statistics
  */
-router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
-    const stats = await marketplaceInvoiceService.getSellerInvoiceStats(userId);
+    const stats = await marketplaceInvoiceService.getSellerInvoiceStats(sellerId);
     return res.json(stats);
   } catch (error) {
     apiLogger.error('Error fetching seller invoice stats:', error);
@@ -79,14 +109,14 @@ router.get('/seller/stats', requireAuth, async (req: AuthRequest, res: Response)
  * GET /api/invoices/seller/:id
  * Get single invoice for seller
  */
-router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
-    const invoice = await marketplaceInvoiceService.getInvoice(String(req.params.id), userId);
+    const invoice = await marketplaceInvoiceService.getInvoice(String(req.params.id as string), sellerId);
 
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
@@ -103,16 +133,16 @@ router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) =
  * POST /api/invoices/seller/:id/issue
  * Issue an invoice (freeze content, start payment terms)
  */
-router.post('/seller/:id/issue', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/issue', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
     const result = await marketplaceInvoiceService.issueInvoice({
-      invoiceId: String(req.params.id),
-      sellerId: userId,
+      invoiceId: String(req.params.id as string),
+      sellerId,
     });
 
     if (!result.success) {
@@ -130,18 +160,18 @@ router.post('/seller/:id/issue', requireAuth, async (req: AuthRequest, res: Resp
  * POST /api/invoices/seller/:id/cancel
  * Cancel a draft invoice
  */
-router.post('/seller/:id/cancel', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/cancel', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
     const body = cancelInvoiceSchema.parse(req.body);
 
     const result = await marketplaceInvoiceService.cancelInvoice({
-      invoiceId: String(req.params.id),
-      sellerId: userId,
+      invoiceId: String(req.params.id as string),
+      sellerId,
       reason: body.reason,
     });
 
@@ -163,14 +193,14 @@ router.post('/seller/:id/cancel', requireAuth, async (req: AuthRequest, res: Res
  * GET /api/invoices/seller/:id/history
  * Get invoice event history
  */
-router.get('/seller/:id/history', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id/history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
-    const events = await marketplaceInvoiceService.getInvoiceHistory(String(req.params.id), userId);
+    const events = await marketplaceInvoiceService.getInvoiceHistory(String(req.params.id as string), sellerId);
     return res.json(events);
   } catch (error) {
     apiLogger.error('Error fetching invoice history:', error);
@@ -186,15 +216,15 @@ router.get('/seller/:id/history', requireAuth, async (req: AuthRequest, res: Res
  * GET /api/invoices/buyer
  * Get all invoices for the authenticated buyer
  */
-router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
 
     const filters = invoiceFiltersSchema.parse(req.query);
-    const result = await marketplaceInvoiceService.getBuyerInvoices(userId, filters);
+    const result = await marketplaceInvoiceService.getBuyerInvoices(buyerId, filters);
 
     return res.json(result);
   } catch (error) {
@@ -210,14 +240,14 @@ router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/invoices/buyer/stats
  * Get buyer invoice statistics
  */
-router.get('/buyer/stats', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/stats', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
 
-    const stats = await marketplaceInvoiceService.getBuyerInvoiceStats(userId);
+    const stats = await marketplaceInvoiceService.getBuyerInvoiceStats(buyerId);
     return res.json(stats);
   } catch (error) {
     apiLogger.error('Error fetching buyer invoice stats:', error);
@@ -229,14 +259,14 @@ router.get('/buyer/stats', requireAuth, async (req: AuthRequest, res: Response) 
  * GET /api/invoices/buyer/:id
  * Get single invoice for buyer
  */
-router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
 
-    const invoice = await marketplaceInvoiceService.getInvoice(String(req.params.id), userId);
+    const invoice = await marketplaceInvoiceService.getInvoice(String(req.params.id as string), buyerId);
 
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
@@ -257,14 +287,18 @@ router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) =>
  * GET /api/invoices/order/:orderId
  * Get invoice for a specific order
  */
-router.get('/order/:orderId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/order/:orderId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Try to resolve either sellerId or buyerId - the user could be either
+    const sellerId = await resolveSellerId(req);
+    const buyerId = await resolveBuyerId(req);
+    const userIdentifier = sellerId || buyerId;
+
+    if (!userIdentifier) {
+      return res.status(401).json({ error: 'Unauthorized - no seller or buyer profile found' });
     }
 
-    const invoice = await marketplaceInvoiceService.getInvoiceByOrder(String(req.params.orderId), userId);
+    const invoice = await marketplaceInvoiceService.getInvoiceByOrder(String(req.params.orderId), userIdentifier);
 
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found for this order' });
@@ -282,14 +316,14 @@ router.get('/order/:orderId', requireAuth, async (req: AuthRequest, res: Respons
  * Manually trigger invoice generation for an order
  * (Usually auto-triggered on delivery)
  */
-router.post('/generate/:orderId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/generate/:orderId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Only sellers should be able to generate invoices
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - only sellers can generate invoices' });
     }
 
-    // Note: This could be restricted to sellers only
     const result = await marketplaceInvoiceService.createFromDeliveredOrder(String(req.params.orderId));
 
     if (!result.success) {

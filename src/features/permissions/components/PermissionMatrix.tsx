@@ -36,7 +36,7 @@ const actions: { id: PermissionAction; label: string }[] = [
 ];
 
 export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ roles }) => {
-  const hasPermission = (role: Role, resource: PermissionResource, action: PermissionAction) => {
+  const _hasPermission = (role: Role, resource: PermissionResource, action: PermissionAction) => {
     const perm = role.permissions.find((p) => p.resource === resource);
     return perm?.actions.includes(action) || false;
   };
@@ -52,12 +52,8 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ roles }) => 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-            Permission Matrix
-          </h3>
-          <p className="text-sm text-stone-500">
-            Compare permissions across all roles
-          </p>
+          <h3 className="font-semibold text-stone-800 dark:text-stone-200">Permission Matrix</h3>
+          <p className="text-sm text-stone-500">Compare permissions across all roles</p>
         </div>
         <div className="flex items-center gap-4 text-xs text-stone-500">
           <div className="flex items-center gap-1">
@@ -117,8 +113,8 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ roles }) => 
                             level === 'full'
                               ? 'bg-green-500'
                               : level === 'partial'
-                              ? 'bg-amber-500'
-                              : 'bg-stone-200 dark:bg-stone-700'
+                                ? 'bg-amber-500'
+                                : 'bg-stone-200 dark:bg-stone-700'
                           }`}
                         >
                           {level === 'full' && <Check size={14} className="text-white" />}
@@ -139,8 +135,8 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ roles }) => 
       <div className="flex items-start gap-2 p-3 bg-stone-50 dark:bg-stone-800 rounded-lg">
         <Info size={18} className="text-stone-400 mt-0.5" />
         <p className="text-sm text-stone-500">
-          Click on a role name to view detailed permissions or edit the role.
-          System roles (Admin, Member, Guest) have predefined permissions that cannot be modified.
+          Click on a role name to view detailed permissions or edit the role. System roles (Admin, Member, Guest) have
+          predefined permissions that cannot be modified.
         </p>
       </div>
 

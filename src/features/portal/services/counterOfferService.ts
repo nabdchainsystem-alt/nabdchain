@@ -6,12 +6,7 @@
 // =============================================================================
 
 import { API_URL } from '../../../config/api';
-import {
-  CounterOffer,
-  CreateCounterOfferData,
-  Quote,
-  QuoteWithRFQ,
-} from '../types/item.types';
+import { CounterOffer, CreateCounterOfferData, QuoteWithRFQ } from '../types/item.types';
 
 // =============================================================================
 // Response Types
@@ -36,11 +31,7 @@ export const counterOfferService = {
    * Create a counter-offer on a quote (Buyer action)
    * Counter-offers allow buyers to propose different terms
    */
-  async createCounterOffer(
-    token: string,
-    quoteId: string,
-    data: CreateCounterOfferData
-  ): Promise<CounterOffer> {
+  async createCounterOffer(token: string, quoteId: string, data: CreateCounterOfferData): Promise<CounterOffer> {
     const response = await fetch(`${API_URL}/items/quotes/${quoteId}/counter-offer`, {
       method: 'POST',
       headers: {
@@ -86,7 +77,7 @@ export const counterOfferService = {
   async acceptCounterOffer(
     token: string,
     counterOfferId: string,
-    response?: string
+    response?: string,
   ): Promise<AcceptCounterOfferResponse> {
     const res = await fetch(`${API_URL}/items/counter-offers/${counterOfferId}/accept`, {
       method: 'POST',
@@ -108,11 +99,7 @@ export const counterOfferService = {
   /**
    * Reject a counter-offer (Seller action)
    */
-  async rejectCounterOffer(
-    token: string,
-    counterOfferId: string,
-    response: string
-  ): Promise<CounterOffer> {
+  async rejectCounterOffer(token: string, counterOfferId: string, response: string): Promise<CounterOffer> {
     const res = await fetch(`${API_URL}/items/counter-offers/${counterOfferId}/reject`, {
       method: 'POST',
       headers: {

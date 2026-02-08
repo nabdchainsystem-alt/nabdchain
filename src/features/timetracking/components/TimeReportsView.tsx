@@ -10,7 +10,7 @@ interface TimeReportsViewProps {
   dateRange?: { start: Date; end: Date };
 }
 
-export const TimeReportsView: React.FC<TimeReportsViewProps> = ({ dateRange }) => {
+export const TimeReportsView: React.FC<TimeReportsViewProps> = ({ _dateRange }) => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -29,9 +29,7 @@ export const TimeReportsView: React.FC<TimeReportsViewProps> = ({ dateRange }) =
               <stat.icon size={16} className={`text-${stat.color}-500`} />
               <span className="text-xs text-stone-500">{stat.label}</span>
             </div>
-            <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-              {stat.value}
-            </div>
+            <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">{stat.value}</div>
           </div>
         ))}
       </div>
@@ -40,9 +38,7 @@ export const TimeReportsView: React.FC<TimeReportsViewProps> = ({ dateRange }) =
       <div className="grid grid-cols-2 gap-6">
         {/* Hours by Project */}
         <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-4">
-          <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-4">
-            Hours by Project
-          </h4>
+          <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-4">Hours by Project</h4>
           <div className="h-64 flex items-center justify-center bg-stone-50 dark:bg-stone-800 rounded-lg">
             <div className="text-center">
               <ChartPie size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-2" />
@@ -53,9 +49,7 @@ export const TimeReportsView: React.FC<TimeReportsViewProps> = ({ dateRange }) =
 
         {/* Hours Trend */}
         <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-4">
-          <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-4">
-            Hours Trend
-          </h4>
+          <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-4">Hours Trend</h4>
           <div className="h-64 flex items-center justify-center bg-stone-50 dark:bg-stone-800 rounded-lg">
             <div className="text-center">
               <ChartBar size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-2" />
@@ -67,13 +61,9 @@ export const TimeReportsView: React.FC<TimeReportsViewProps> = ({ dateRange }) =
 
       {/* Team Breakdown */}
       <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-4">
-        <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-4">
-          Team Time Breakdown
-        </h4>
+        <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-4">Team Time Breakdown</h4>
         <div className="p-8 text-center bg-stone-50 dark:bg-stone-800 rounded-lg">
-          <p className="text-sm text-stone-500">
-            Team time breakdown will appear here once you start tracking time
-          </p>
+          <p className="text-sm text-stone-500">Team time breakdown will appear here once you start tracking time</p>
         </div>
       </div>
     </div>

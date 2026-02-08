@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Warning,
   Clock,
@@ -11,17 +11,12 @@ import {
   Minus,
   CheckCircle,
   XCircle,
-  Eye,
   Lightning,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { Order } from '../../types/order.types';
-import {
-  RiskLevel,
-  RiskAssessment,
-  getRiskLevelConfig,
-  TimelineStep,
-} from '../../types/timeline.types';
+import { RiskLevel, RiskAssessment, getRiskLevelConfig, TimelineStep } from '../../types/timeline.types';
+import { ThemeStyles } from '../../../../theme/portalColors';
 
 // =============================================================================
 // Types
@@ -58,18 +53,15 @@ interface SLABreachSummaryProps {
 
 export const SLABreachSummary: React.FC<SLABreachSummaryProps> = ({ summary }) => {
   const { styles } = usePortal();
-  const successRate = summary.totalOrders > 0
-    ? Math.round((summary.onTimeDeliveries / summary.totalOrders) * 100)
-    : 100;
+  const successRate =
+    summary.totalOrders > 0 ? Math.round((summary.onTimeDeliveries / summary.totalOrders) * 100) : 100;
 
   const TrendIcon = summary.trend === 'improving' ? TrendUp : summary.trend === 'declining' ? TrendDown : Minus;
-  const trendColor = summary.trend === 'improving' ? styles.success : summary.trend === 'declining' ? styles.error : styles.textMuted;
+  const trendColor =
+    summary.trend === 'improving' ? styles.success : summary.trend === 'declining' ? styles.error : styles.textMuted;
 
   return (
-    <div
-      className="p-4 rounded-xl"
-      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
-    >
+    <div className="p-4 rounded-xl" style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Timer size={18} style={{ color: styles.info }} />
@@ -93,10 +85,7 @@ export const SLABreachSummary: React.FC<SLABreachSummaryProps> = ({ summary }) =
             On-time rate
           </span>
         </div>
-        <div
-          className="h-2 rounded-full overflow-hidden"
-          style={{ backgroundColor: styles.bgSecondary }}
-        >
+        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -148,19 +137,25 @@ export const SLABreachSummary: React.FC<SLABreachSummaryProps> = ({ summary }) =
           <p className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
             {summary.totalOrders}
           </p>
-          <p className="text-xs" style={{ color: styles.textMuted }}>Orders</p>
+          <p className="text-xs" style={{ color: styles.textMuted }}>
+            Orders
+          </p>
         </div>
         <div className="text-center">
           <p className="text-lg font-semibold" style={{ color: styles.success }}>
             {summary.onTimeDeliveries}
           </p>
-          <p className="text-xs" style={{ color: styles.textMuted }}>On Time</p>
+          <p className="text-xs" style={{ color: styles.textMuted }}>
+            On Time
+          </p>
         </div>
         <div className="text-center">
           <p className="text-lg font-semibold" style={{ color: styles.error }}>
             {summary.slaBreaches}
           </p>
-          <p className="text-xs" style={{ color: styles.textMuted }}>Breaches</p>
+          <p className="text-xs" style={{ color: styles.textMuted }}>
+            Breaches
+          </p>
         </div>
       </div>
     </div>
@@ -174,7 +169,7 @@ export const SLABreachSummary: React.FC<SLABreachSummaryProps> = ({ summary }) =
 interface RiskWarningCardProps {
   order: OrderWithRisk;
   onView: () => void;
-  styles: any;
+  styles: ThemeStyles;
 }
 
 const RiskWarningCard: React.FC<RiskWarningCardProps> = ({ order, onView, styles }) => {
@@ -187,19 +182,27 @@ const RiskWarningCard: React.FC<RiskWarningCardProps> = ({ order, onView, styles
 
   const getBgColor = () => {
     switch (risk.overallRisk) {
-      case 'critical': return styles.isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)';
-      case 'high': return styles.isDark ? 'rgba(249, 115, 22, 0.1)' : 'rgba(249, 115, 22, 0.05)';
-      case 'medium': return styles.isDark ? 'rgba(234, 179, 8, 0.1)' : 'rgba(234, 179, 8, 0.05)';
-      default: return styles.bgSecondary;
+      case 'critical':
+        return styles.isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)';
+      case 'high':
+        return styles.isDark ? 'rgba(249, 115, 22, 0.1)' : 'rgba(249, 115, 22, 0.05)';
+      case 'medium':
+        return styles.isDark ? 'rgba(234, 179, 8, 0.1)' : 'rgba(234, 179, 8, 0.05)';
+      default:
+        return styles.bgSecondary;
     }
   };
 
   const getAccentColor = () => {
     switch (risk.overallRisk) {
-      case 'critical': return styles.error;
-      case 'high': return '#f97316';
-      case 'medium': return styles.warning;
-      default: return styles.textMuted;
+      case 'critical':
+        return styles.error;
+      case 'high':
+        return '#f97316';
+      case 'medium':
+        return styles.warning;
+      default:
+        return styles.textMuted;
     }
   };
 
@@ -329,11 +332,7 @@ export const OrderRiskWarnings: React.FC<OrderRiskWarningsProps> = ({
           </span>
         </div>
         {onViewAll && (
-          <button
-            onClick={onViewAll}
-            className="text-xs flex items-center gap-1"
-            style={{ color: styles.info }}
-          >
+          <button onClick={onViewAll} className="text-xs flex items-center gap-1" style={{ color: styles.info }}>
             View All <ArrowRight size={12} />
           </button>
         )}
@@ -341,13 +340,13 @@ export const OrderRiskWarnings: React.FC<OrderRiskWarningsProps> = ({
 
       {/* Risk Summary */}
       {(criticalCount > 0 || highCount > 0) && (
-        <div className="flex items-center gap-4 px-4 py-2 border-b" style={{ borderColor: styles.border, backgroundColor: styles.bgSecondary }}>
+        <div
+          className="flex items-center gap-4 px-4 py-2 border-b"
+          style={{ borderColor: styles.border, backgroundColor: styles.bgSecondary }}
+        >
           {criticalCount > 0 && (
             <div className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: styles.error }}
-              />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: styles.error }} />
               <span className="text-xs" style={{ color: styles.error }}>
                 {criticalCount} Critical
               </span>
@@ -355,10 +354,7 @@ export const OrderRiskWarnings: React.FC<OrderRiskWarningsProps> = ({
           )}
           {highCount > 0 && (
             <div className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: '#f97316' }}
-              />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#f97316' }} />
               <span className="text-xs" style={{ color: '#f97316' }}>
                 {highCount} High Risk
               </span>
@@ -370,12 +366,7 @@ export const OrderRiskWarnings: React.FC<OrderRiskWarningsProps> = ({
       {/* Order List */}
       <div className="p-3 space-y-2">
         {riskyOrders.map((order) => (
-          <RiskWarningCard
-            key={order.id}
-            order={order}
-            onView={() => onViewOrder(order)}
-            styles={styles}
-          />
+          <RiskWarningCard key={order.id} order={order} onView={() => onViewOrder(order)} styles={styles} />
         ))}
       </div>
     </div>
@@ -466,10 +457,7 @@ export const QuickActionCards: React.FC<QuickActionCardsProps> = ({ stats, onAct
                 </span>
               )}
             </div>
-            <p
-              className="text-sm font-medium"
-              style={{ color: hasItems ? styles.textPrimary : styles.textMuted }}
-            >
+            <p className="text-sm font-medium" style={{ color: hasItems ? styles.textPrimary : styles.textMuted }}>
               {card.label}
             </p>
             {hasItems && (

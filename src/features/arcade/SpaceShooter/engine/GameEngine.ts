@@ -16,7 +16,7 @@ import {
   EnemyType,
   MovementPattern,
   PowerUp,
-  PowerUpType
+  PowerUpType,
 } from '../types';
 import { getAudioManager, AudioManager } from './AudioManager';
 
@@ -28,6 +28,7 @@ export class GameEngine {
   private input: InputState;
   private animationId: number | null = null;
   private lastTime: number = 0;
+  private _cleanup: (() => void) | null = null;
   private accumulator: number = 0;
   private readonly FIXED_TIMESTEP: number = 1000 / 60; // 60fps
   private audio: AudioManager;
@@ -79,7 +80,7 @@ export class GameEngine {
       up: false,
       down: false,
       fire: false,
-      pause: false
+      pause: false,
     };
   }
 
@@ -100,7 +101,7 @@ export class GameEngine {
       waveDelay: 3000,
       enemiesSpawned: 0,
       enemiesPerWave: 5,
-      highScore
+      highScore,
     };
   }
 
@@ -109,7 +110,7 @@ export class GameEngine {
       id: 'player',
       position: {
         x: this.config.width / 2 - 20,
-        y: this.config.height - 80
+        y: this.config.height - 80,
       },
       velocity: { x: 0, y: 0 },
       width: 40,
@@ -121,7 +122,7 @@ export class GameEngine {
       invincibleTimer: 0,
       powerUpLevel: 0,
       fireRate: this.config.playerFireRate,
-      lastFireTime: 0
+      lastFireTime: 0,
     };
   }
 
@@ -133,7 +134,7 @@ export class GameEngine {
         y: Math.random() * this.config.height,
         speed: 0.5 + Math.random() * 2,
         size: 0.5 + Math.random() * 1.5,
-        brightness: 0.3 + Math.random() * 0.7
+        brightness: 0.3 + Math.random() * 0.7,
       });
     }
     return stars;
@@ -155,7 +156,7 @@ export class GameEngine {
     window.addEventListener('keyup', handleKeyUp);
 
     // Store cleanup function
-    (this as any)._cleanup = () => {
+    this._cleanup = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
@@ -205,8 +206,14 @@ export class GameEngine {
     this.state.player.position.y = canvasY - this.state.player.height / 2;
 
     // Clamp to bounds
-    this.state.player.position.x = Math.max(0, Math.min(this.config.width - this.state.player.width, this.state.player.position.x));
-    this.state.player.position.y = Math.max(0, Math.min(this.config.height - this.state.player.height, this.state.player.position.y));
+    this.state.player.position.x = Math.max(
+      0,
+      Math.min(this.config.width - this.state.player.width, this.state.player.position.x),
+    );
+    this.state.player.position.y = Math.max(
+      0,
+      Math.min(this.config.height - this.state.player.height, this.state.player.position.y),
+    );
   }
 
   public setTouchFiring(firing: boolean): void {
@@ -249,14 +256,14 @@ export class GameEngine {
 
   public destroy(): void {
     this.stop();
-    if ((this as any)._cleanup) {
-      (this as any)._cleanup();
+    if (this._cleanup) {
+      this._cleanup();
     }
   }
 
   public setCallbacks(
     onStateChange: (state: GameState) => void,
-    onGameOver: (score: number, highScore: number) => void
+    onGameOver: (score: number, highScore: number) => void,
   ): void {
     this.onStateChange = onStateChange;
     this.onGameOver = onGameOver;
@@ -375,14 +382,14 @@ export class GameEngine {
       position: { x, y },
       velocity: {
         x: angleOffset * speed,
-        y: isPlayer ? -speed : speed
+        y: isPlayer ? -speed : speed,
       },
       width: isPlayer ? 4 : 6,
       height: isPlayer ? 12 : 8,
       active: true,
       damage: isPlayer ? 1 : 1,
       isPlayerBullet: isPlayer,
-      color: isPlayer ? '#00ffff' : '#ff6600'
+      color: isPlayer ? '#00ffff' : '#ff6600',
     };
 
     if (isPlayer) {
@@ -418,9 +425,12 @@ export class GameEngine {
           if (enemy.patternTime > 1000) {
             enemy.velocity.y = 4;
           }
+
           break;
         case 'circle':
-          const radius = 50;
+          // eslint-disable-next-line no-case-declarations
+          const _radius = 50;
+          // eslint-disable-next-line no-case-declarations
           const speed = enemy.patternTime / 500;
           enemy.position.x += Math.cos(speed) * 2;
           enemy.position.y += Math.sin(speed) * 1 + 0.5;
@@ -432,11 +442,7 @@ export class GameEngine {
 
       // Enemy firing
       if (now - enemy.lastFireTime > enemy.fireRate && enemy.position.y > 50) {
-        this.createBullet(
-          enemy.position.x + enemy.width / 2 - 3,
-          enemy.position.y + enemy.height,
-          false
-        );
+        this.createBullet(enemy.position.x + enemy.width / 2 - 3, enemy.position.y + enemy.height, false);
         enemy.lastFireTime = now;
       }
 
@@ -515,7 +521,7 @@ export class GameEngine {
             this.createExplosion(
               enemy.position.x + enemy.width / 2,
               enemy.position.y + enemy.height / 2,
-              enemy.type === 'tank' ? 30 : 20
+              enemy.type === 'tank' ? 30 : 20,
             );
 
             // Chance to drop power-up
@@ -554,11 +560,7 @@ export class GameEngine {
 
         if (this.checkAABBCollision(player, enemy)) {
           enemy.active = false;
-          this.createExplosion(
-            enemy.position.x + enemy.width / 2,
-            enemy.position.y + enemy.height / 2,
-            20
-          );
+          this.createExplosion(enemy.position.x + enemy.width / 2, enemy.position.y + enemy.height / 2, 20);
           this.playerHit();
           break;
         }
@@ -575,14 +577,16 @@ export class GameEngine {
         this.createHitParticles(
           powerUp.position.x + powerUp.width / 2,
           powerUp.position.y + powerUp.height / 2,
-          '#00ff00'
+          '#00ff00',
         );
       }
     }
   }
 
-  private checkAABBCollision(a: { position: { x: number; y: number }; width: number; height: number },
-                              b: { position: { x: number; y: number }; width: number; height: number }): boolean {
+  private checkAABBCollision(
+    a: { position: { x: number; y: number }; width: number; height: number },
+    b: { position: { x: number; y: number }; width: number; height: number },
+  ): boolean {
     return (
       a.position.x < b.position.x + b.width &&
       a.position.x + a.width > b.position.x &&
@@ -595,11 +599,7 @@ export class GameEngine {
     const player = this.state.player;
     player.lives--;
 
-    this.createExplosion(
-      player.position.x + player.width / 2,
-      player.position.y + player.height / 2,
-      15
-    );
+    this.createExplosion(player.position.x + player.width / 2, player.position.y + player.height / 2, 15);
 
     if (player.lives <= 0) {
       this.gameOver();
@@ -633,7 +633,7 @@ export class GameEngine {
         position: { x, y },
         velocity: {
           x: Math.cos(angle) * speed,
-          y: Math.sin(angle) * speed
+          y: Math.sin(angle) * speed,
         },
         width: 4,
         height: 4,
@@ -644,7 +644,7 @@ export class GameEngine {
         size: 3 + Math.random() * 4,
         decay: 0.02 + Math.random() * 0.02,
         rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.3
+        rotationSpeed: (Math.random() - 0.5) * 0.3,
       };
 
       this.state.particles.push(particle);
@@ -661,7 +661,7 @@ export class GameEngine {
         position: { x, y },
         velocity: {
           x: Math.cos(angle) * speed,
-          y: Math.sin(angle) * speed
+          y: Math.sin(angle) * speed,
         },
         width: 2,
         height: 2,
@@ -672,7 +672,7 @@ export class GameEngine {
         size: 2 + Math.random() * 2,
         decay: 0.05,
         rotation: 0,
-        rotationSpeed: 0
+        rotationSpeed: 0,
       };
 
       this.state.particles.push(particle);
@@ -690,7 +690,7 @@ export class GameEngine {
       width: 24,
       height: 24,
       active: true,
-      type
+      type,
     };
 
     this.state.powerUps.push(powerUp);
@@ -725,17 +725,14 @@ export class GameEngine {
     // Spawn enemies for current wave
     const spawnInterval = Math.max(500, 2000 - this.state.wave * 150);
 
-    if (
-      this.state.enemiesSpawned < this.state.enemiesPerWave &&
-      this.state.waveTimer > spawnInterval
-    ) {
+    if (this.state.enemiesSpawned < this.state.enemiesPerWave && this.state.waveTimer > spawnInterval) {
       this.spawnEnemy();
       this.state.enemiesSpawned++;
       this.state.waveTimer = 0;
     }
 
     // Check if wave is complete
-    const activeEnemies = this.state.enemies.filter(e => e.active).length;
+    const activeEnemies = this.state.enemies.filter((e) => e.active).length;
     if (this.state.enemiesSpawned >= this.state.enemiesPerWave && activeEnemies === 0) {
       // Next wave
       this.state.wave++;
@@ -764,7 +761,8 @@ export class GameEngine {
     const patterns: MovementPattern[] = ['straight', 'zigzag', 'sine', 'dive'];
 
     // Higher waves have tougher enemies
-    let type: EnemyType = types[Math.floor(Math.random() * Math.min(types.length, 2 + Math.floor(this.state.wave / 3)))];
+    const type: EnemyType =
+      types[Math.floor(Math.random() * Math.min(types.length, 2 + Math.floor(this.state.wave / 3)))];
     const pattern = patterns[Math.floor(Math.random() * patterns.length)];
 
     let width = 36;
@@ -796,7 +794,7 @@ export class GameEngine {
       id: `enemy_${Date.now()}_${Math.random()}`,
       position: {
         x: 20 + Math.random() * (this.config.width - 40 - width),
-        y: -height - 20
+        y: -height - 20,
       },
       velocity: { x: 0, y: speed },
       width,
@@ -808,18 +806,18 @@ export class GameEngine {
       fireRate,
       lastFireTime: performance.now() + Math.random() * 1000,
       pattern,
-      patternTime: 0
+      patternTime: 0,
     };
 
     this.state.enemies.push(enemy);
   }
 
   private cleanup(): void {
-    this.state.enemies = this.state.enemies.filter(e => e.active);
-    this.state.playerBullets = this.state.playerBullets.filter(b => b.active);
-    this.state.enemyBullets = this.state.enemyBullets.filter(b => b.active);
-    this.state.particles = this.state.particles.filter(p => p.active);
-    this.state.powerUps = this.state.powerUps.filter(p => p.active);
+    this.state.enemies = this.state.enemies.filter((e) => e.active);
+    this.state.playerBullets = this.state.playerBullets.filter((b) => b.active);
+    this.state.enemyBullets = this.state.enemyBullets.filter((b) => b.active);
+    this.state.particles = this.state.particles.filter((p) => p.active);
+    this.state.powerUps = this.state.powerUps.filter((p) => p.active);
   }
 
   private render(): void {
@@ -990,7 +988,7 @@ export class GameEngine {
         0,
         bullet.position.x + bullet.width / 2,
         bullet.position.y + bullet.height / 2,
-        bullet.height
+        bullet.height,
       );
       gradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
       gradient.addColorStop(0.5, 'rgba(0, 200, 255, 0.3)');
@@ -1003,7 +1001,9 @@ export class GameEngine {
         bullet.position.y + bullet.height / 2,
         bullet.width + 4,
         bullet.height + 4,
-        0, 0, Math.PI * 2
+        0,
+        0,
+        Math.PI * 2,
       );
       ctx.fill();
 
@@ -1023,7 +1023,7 @@ export class GameEngine {
         0,
         bullet.position.x + bullet.width / 2,
         bullet.position.y + bullet.height / 2,
-        bullet.width + 4
+        bullet.width + 4,
       );
       gradient.addColorStop(0, 'rgba(255, 100, 0, 0.9)');
       gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
@@ -1034,7 +1034,8 @@ export class GameEngine {
         bullet.position.x + bullet.width / 2,
         bullet.position.y + bullet.height / 2,
         bullet.width + 2,
-        0, Math.PI * 2
+        0,
+        Math.PI * 2,
       );
       ctx.fill();
 
@@ -1045,7 +1046,8 @@ export class GameEngine {
         bullet.position.x + bullet.width / 2,
         bullet.position.y + bullet.height / 2,
         bullet.width / 2,
-        0, Math.PI * 2
+        0,
+        Math.PI * 2,
       );
       ctx.fill();
     }

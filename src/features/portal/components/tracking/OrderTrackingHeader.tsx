@@ -5,15 +5,7 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  X,
-  ArrowLeft,
-  Package,
-  User,
-  Storefront,
-  Hash,
-  FileText,
-} from 'phosphor-react';
+import { ArrowLeft, Package, User, Storefront, Hash, FileText } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { OrderTrackingHeaderProps, getConfidenceConfig } from './tracking.types';
 
@@ -89,29 +81,18 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
         <div
           className="flex items-center gap-2 px-3 py-1.5 rounded-full"
           style={{
-            backgroundColor: styles.isDark
-              ? `${confidenceConfig.bgColor}30`
-              : confidenceConfig.bgColor,
+            backgroundColor: styles.isDark ? `${confidenceConfig.bgColor}30` : confidenceConfig.bgColor,
           }}
         >
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: confidenceConfig.dotColor }}
-          />
-          <span
-            className="text-sm font-medium"
-            style={{ color: confidenceConfig.textColor }}
-          >
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: confidenceConfig.dotColor }} />
+          <span className="text-sm font-medium" style={{ color: confidenceConfig.textColor }}>
             {confidenceConfig.label}
           </span>
         </div>
       </div>
 
       {/* Second row: Product and parties info */}
-      <div
-        className="px-6 pb-4"
-        style={{ borderColor: styles.border }}
-      >
+      <div className="px-6 pb-4" style={{ borderColor: styles.border }}>
         {/* Product info */}
         <div className={`flex items-center gap-3 mb-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
           {order.itemImage ? (
@@ -130,10 +111,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
             </div>
           )}
           <div className={isRtl ? 'text-right' : ''}>
-            <p
-              className="font-medium text-sm"
-              style={{ color: styles.textPrimary }}
-            >
+            <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
               {order.itemName}
             </p>
             <p className="text-xs" style={{ color: styles.textMuted }}>
@@ -148,9 +126,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
           {role === 'seller' && (
             <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
               <User size={16} style={{ color: styles.textMuted }} />
-              <span style={{ color: styles.textSecondary }}>
-                {order.buyerCompany || order.buyerName}
-              </span>
+              <span style={{ color: styles.textSecondary }}>{order.buyerCompany || order.buyerName}</span>
             </div>
           )}
 
@@ -158,9 +134,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
           {role === 'buyer' && (
             <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
               <Storefront size={16} style={{ color: styles.textMuted }} />
-              <span style={{ color: styles.textSecondary }}>
-                {t('tracking.seller') || 'Seller'}
-              </span>
+              <span style={{ color: styles.textSecondary }}>{t('tracking.seller') || 'Seller'}</span>
             </div>
           )}
 
@@ -168,9 +142,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
           {order.rfqNumber && (
             <div className={`flex items-center gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
               <FileText size={16} style={{ color: styles.textMuted }} />
-              <span style={{ color: styles.textMuted }}>
-                RFQ #{order.rfqNumber}
-              </span>
+              <span style={{ color: styles.textMuted }}>RFQ #{order.rfqNumber}</span>
             </div>
           )}
         </div>

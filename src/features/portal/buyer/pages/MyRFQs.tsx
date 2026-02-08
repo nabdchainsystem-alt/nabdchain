@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { portalApiLogger } from '../../../../utils/logger';
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,6 +9,7 @@ import {
   flexRender,
   createColumnHelper,
   SortingState,
+  PaginationState,
 } from '@tanstack/react-table';
 import {
   Plus,
@@ -33,16 +35,21 @@ import {
   ShieldCheck,
   CurrencyDollar,
   Spinner,
+  Prohibit,
+  Package,
+  User,
 } from 'phosphor-react';
 import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
+import { useToast } from '../../components/Toast';
 import { usePortal } from '../../context/PortalContext';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import { quoteService } from '../../services/quoteService';
 import { counterOfferService } from '../../services/counterOfferService';
+import { marketplaceOrderService } from '../../services/marketplaceOrderService';
 import { QuoteDetailPanel } from '../components/QuoteDetailPanel';
 import { CounterOfferDialog } from '../components/CounterOfferDialog';
-import { ValidityCountdown } from '../../components/ValidityCountdown';
 import { ItemRFQ, Quote, QuoteWithRFQ, CreateCounterOfferData } from '../../types/item.types';
 import { HybridCompareModal } from '../../components/HybridCompareModal';
 
@@ -50,7 +57,7 @@ interface MyRFQsProps {
   onNavigate: (page: string) => void;
 }
 
-type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired' | 'negotiating';
+type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired' | 'negotiating' | 'cancelled';
 
 // Extended RFQ with intelligence data
 interface RFQ {
@@ -75,8 +82,8 @@ interface RFQ {
   hasMultipleQuotes?: boolean;
   relatedQuotes?: SupplierQuote[];
   timeline?: TimelineEvent[];
-  // Real data from API
-  quote?: Quote;
+  // Real data from API - uses partial Quote type since we only access id to fetch full details
+  quote?: Partial<Quote> & { id: string };
   rawRfq?: ItemRFQ;
 }
 
@@ -99,132 +106,6 @@ interface TimelineEvent {
   actor?: string;
 }
 
-// Mock data with intelligence fields
-const MOCK_RFQS: RFQ[] = [
-  {
-    id: 'RFQ-2024-001',
-    itemName: 'Industrial Hydraulic Pump',
-    itemSku: 'HYD-PUMP-001',
-    sellerName: 'HydroTech Solutions',
-    quantity: 5,
-    status: 'quoted',
-    quotedPrice: 2350,
-    currency: 'SAR',
-    message: 'Need urgent delivery for maintenance project',
-    createdAt: '2024-01-15T10:30:00Z',
-    respondedAt: '2024-01-15T14:45:00Z',
-    expiresAt: '2024-01-22T14:45:00Z',
-    leadTimeDays: 7,
-    supplierReliability: 94,
-    supplierResponseSpeed: 'fast',
-    hasMultipleQuotes: true,
-    relatedQuotes: [
-      { supplierId: 's1', supplierName: 'HydroTech Solutions', quotedPrice: 2350, leadTimeDays: 7, reliability: 94, responseSpeed: 'fast', verified: true, quotedAt: '2024-01-15T14:45:00Z' },
-      { supplierId: 's2', supplierName: 'Pump Masters', quotedPrice: 2480, leadTimeDays: 5, reliability: 88, responseSpeed: 'moderate', verified: true, quotedAt: '2024-01-16T09:00:00Z' },
-      { supplierId: 's3', supplierName: 'Industrial Flow Co', quotedPrice: 2200, leadTimeDays: 12, reliability: 78, responseSpeed: 'slow', verified: false, quotedAt: '2024-01-17T11:30:00Z' },
-    ],
-    timeline: [
-      { id: 't1', type: 'created', timestamp: '2024-01-15T10:30:00Z', description: 'RFQ created' },
-      { id: 't2', type: 'viewed', timestamp: '2024-01-15T11:00:00Z', description: 'Viewed by HydroTech Solutions', actor: 'HydroTech Solutions' },
-      { id: 't3', type: 'quoted', timestamp: '2024-01-15T14:45:00Z', description: 'Quote received: SAR 2,350', actor: 'HydroTech Solutions' },
-      { id: 't4', type: 'quoted', timestamp: '2024-01-16T09:00:00Z', description: 'Quote received: SAR 2,480', actor: 'Pump Masters' },
-      { id: 't5', type: 'quoted', timestamp: '2024-01-17T11:30:00Z', description: 'Quote received: SAR 2,200', actor: 'Industrial Flow Co' },
-    ],
-  },
-  {
-    id: 'RFQ-2024-002',
-    itemName: 'Steel Bearings Set',
-    itemSku: 'BRG-STL-100',
-    sellerName: 'SKF Authorized Dealer',
-    quantity: 100,
-    status: 'pending',
-    currency: 'SAR',
-    message: 'Bulk order for production line',
-    createdAt: '2024-01-18T09:15:00Z',
-    timeline: [
-      { id: 't1', type: 'created', timestamp: '2024-01-18T09:15:00Z', description: 'RFQ created' },
-      { id: 't2', type: 'viewed', timestamp: '2024-01-18T10:30:00Z', description: 'Viewed by SKF Authorized Dealer', actor: 'SKF Authorized Dealer' },
-    ],
-  },
-  {
-    id: 'RFQ-2024-003',
-    itemName: 'Air Compressor Unit',
-    itemSku: 'CMP-AIR-500',
-    sellerName: 'Atlas Copco MENA',
-    quantity: 2,
-    status: 'accepted',
-    quotedPrice: 16500,
-    currency: 'SAR',
-    createdAt: '2024-01-10T11:20:00Z',
-    respondedAt: '2024-01-10T16:30:00Z',
-    leadTimeDays: 14,
-    supplierReliability: 98,
-    supplierResponseSpeed: 'fast',
-    timeline: [
-      { id: 't1', type: 'created', timestamp: '2024-01-10T11:20:00Z', description: 'RFQ created' },
-      { id: 't2', type: 'quoted', timestamp: '2024-01-10T16:30:00Z', description: 'Quote received: SAR 16,500', actor: 'Atlas Copco MENA' },
-      { id: 't3', type: 'accepted', timestamp: '2024-01-11T09:00:00Z', description: 'Quote accepted' },
-    ],
-  },
-  {
-    id: 'RFQ-2024-004',
-    itemName: 'Electric Motor 15KW',
-    itemSku: 'MTR-ELC-15K',
-    sellerName: 'Siemens Industrial',
-    quantity: 3,
-    status: 'negotiating',
-    quotedPrice: 10200,
-    currency: 'SAR',
-    message: 'Quote too high, looking for alternatives',
-    createdAt: '2024-01-08T08:45:00Z',
-    respondedAt: '2024-01-09T10:15:00Z',
-    leadTimeDays: 10,
-    supplierReliability: 96,
-    supplierResponseSpeed: 'moderate',
-    counterOfferCount: 1,
-    timeline: [
-      { id: 't1', type: 'created', timestamp: '2024-01-08T08:45:00Z', description: 'RFQ created' },
-      { id: 't2', type: 'quoted', timestamp: '2024-01-09T10:15:00Z', description: 'Quote received: SAR 10,200', actor: 'Siemens Industrial' },
-      { id: 't3', type: 'counter_offer', timestamp: '2024-01-10T14:00:00Z', description: 'Counter offer sent: SAR 9,500' },
-    ],
-  },
-  {
-    id: 'RFQ-2024-005',
-    itemName: 'Valve Assembly Kit',
-    itemSku: 'VLV-KIT-200',
-    sellerName: 'FlowControl Systems',
-    quantity: 25,
-    status: 'expired',
-    currency: 'SAR',
-    createdAt: '2024-01-01T14:00:00Z',
-    expiresAt: '2024-01-08T14:00:00Z',
-    timeline: [
-      { id: 't1', type: 'created', timestamp: '2024-01-01T14:00:00Z', description: 'RFQ created' },
-      { id: 't2', type: 'expired', timestamp: '2024-01-08T14:00:00Z', description: 'RFQ expired - no response' },
-    ],
-  },
-  {
-    id: 'RFQ-2024-006',
-    itemName: 'PLC Controller Module',
-    itemSku: 'PLC-CTR-S7',
-    sellerName: 'Automation Parts Co',
-    quantity: 4,
-    status: 'quoted',
-    quotedPrice: 17800,
-    currency: 'SAR',
-    createdAt: '2024-01-20T13:30:00Z',
-    respondedAt: '2024-01-20T17:00:00Z',
-    expiresAt: '2024-01-27T17:00:00Z',
-    leadTimeDays: 5,
-    supplierReliability: 91,
-    supplierResponseSpeed: 'fast',
-    timeline: [
-      { id: 't1', type: 'created', timestamp: '2024-01-20T13:30:00Z', description: 'RFQ created' },
-      { id: 't2', type: 'quoted', timestamp: '2024-01-20T17:00:00Z', description: 'Quote received: SAR 17,800', actor: 'Automation Parts Co' },
-    ],
-  },
-];
-
 // Helper functions
 const formatDate = (dateStr: string): string => {
   const date = new Date(dateStr);
@@ -243,13 +124,59 @@ const formatCurrency = (amount: number, currency: string): string => {
 const StatusBadge: React.FC<{ status: RFQStatus; showIcon?: boolean }> = ({ status, showIcon = false }) => {
   const { styles, t } = usePortal();
 
-  const config: Record<RFQStatus, { bg: string; darkBg: string; text: string; darkText: string; label: string; icon: React.ElementType }> = {
-    pending: { bg: '#fef3c7', darkBg: '#78350f', text: '#92400e', darkText: '#fef3c7', label: t('buyer.myRfqs.pending') || 'Waiting', icon: Hourglass },
-    quoted: { bg: '#dbeafe', darkBg: '#1e3a5f', text: '#1e40af', darkText: '#93c5fd', label: t('buyer.myRfqs.quoted') || 'Responded', icon: CheckCircle },
-    negotiating: { bg: '#f3e8ff', darkBg: '#581c87', text: '#7c3aed', darkText: '#c4b5fd', label: 'Negotiating', icon: ArrowsClockwise },
-    accepted: { bg: '#dcfce7', darkBg: '#14532d', text: '#166534', darkText: '#bbf7d0', label: t('buyer.myRfqs.accepted') || 'Accepted', icon: Handshake },
-    rejected: { bg: '#fee2e2', darkBg: '#7f1d1d', text: '#991b1b', darkText: '#fecaca', label: t('buyer.myRfqs.rejected') || 'Rejected', icon: X },
-    expired: { bg: '#f3f4f6', darkBg: '#374151', text: '#6b7280', darkText: '#9ca3af', label: t('buyer.myRfqs.expired') || 'Expired', icon: Timer },
+  const config: Record<
+    RFQStatus,
+    { bg: string; darkBg: string; text: string; darkText: string; label: string; icon: React.ElementType }
+  > = {
+    pending: {
+      bg: '#fef3c7',
+      darkBg: '#78350f',
+      text: '#92400e',
+      darkText: '#fef3c7',
+      label: t('buyer.myRfqs.pending') || 'Waiting',
+      icon: Hourglass,
+    },
+    quoted: {
+      bg: '#dbeafe',
+      darkBg: '#1e3a5f',
+      text: '#1e40af',
+      darkText: '#93c5fd',
+      label: t('buyer.myRfqs.quoted') || 'Responded',
+      icon: CheckCircle,
+    },
+    negotiating: {
+      bg: '#f3e8ff',
+      darkBg: '#581c87',
+      text: '#7c3aed',
+      darkText: '#c4b5fd',
+      label: 'Negotiating',
+      icon: ArrowsClockwise,
+    },
+    accepted: {
+      bg: '#dcfce7',
+      darkBg: '#14532d',
+      text: '#166534',
+      darkText: '#bbf7d0',
+      label: t('buyer.myRfqs.accepted') || 'Accepted',
+      icon: Handshake,
+    },
+    rejected: {
+      bg: '#fee2e2',
+      darkBg: '#7f1d1d',
+      text: '#991b1b',
+      darkText: '#fecaca',
+      label: t('buyer.myRfqs.rejected') || 'Rejected',
+      icon: X,
+    },
+    expired: {
+      bg: '#f3f4f6',
+      darkBg: '#374151',
+      text: '#6b7280',
+      darkText: '#9ca3af',
+      label: t('buyer.myRfqs.expired') || 'Expired',
+      icon: Timer,
+    },
+    cancelled: { bg: '#f3f4f6', darkBg: '#374151', text: '#6b7280', darkText: '#9ca3af', label: 'Cancelled', icon: X },
   };
 
   const c = config[status];
@@ -298,6 +225,7 @@ const ResponseSpeedIndicator: React.FC<{ speed?: 'fast' | 'moderate' | 'slow' }>
 export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
+  const toast = useToast();
 
   // Data state
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
@@ -308,6 +236,7 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   // Modal state
   const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
@@ -328,6 +257,14 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const [showHybridModal, setShowHybridModal] = useState(false);
   const [rfqForHybrid, setRfqForHybrid] = useState<RFQ | null>(null);
 
+  // Cancel RFQ state
+  const [cancelConfirm, setCancelConfirm] = useState<RFQ | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // Reactivate RFQ state
+  const [reactivateConfirm, setReactivateConfirm] = useState<RFQ | null>(null);
+  const [isReactivating, setIsReactivating] = useState(false);
+
   // Fetch RFQs on mount
   useEffect(() => {
     fetchRfqs();
@@ -345,36 +282,121 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
       const apiRfqs = await itemService.getBuyerRFQs(token);
 
       // Transform API RFQs to our RFQ type with additional computed fields
-      const transformedRfqs: RFQ[] = apiRfqs.map((rfq: ItemRFQ) => ({
-        id: rfq.rfqNumber || rfq.id.slice(0, 8).toUpperCase(),
-        rfqId: rfq.id,
-        itemName: rfq.item?.name || 'General RFQ',
-        itemSku: rfq.item?.sku || '',
-        sellerName: rfq.sellerCompanyName || 'Unknown Seller',
-        quantity: rfq.quantity || 1,
-        status: mapApiStatusToRfqStatus(rfq.status),
-        quotedPrice: rfq.quote?.totalPrice,
-        currency: rfq.quote?.currency || 'SAR',
-        message: rfq.message,
-        createdAt: rfq.createdAt,
-        respondedAt: rfq.quote?.sentAt,
-        expiresAt: rfq.quote?.validUntil,
-        leadTimeDays: rfq.quote?.deliveryDays,
-        supplierReliability: 90, // TODO: Get from seller profile
-        supplierResponseSpeed: 'moderate' as const,
-        hasMultipleQuotes: false, // TODO: Implement multiple quotes logic
-        quote: rfq.quote,
-        rawRfq: rfq,
-      }));
+      const transformedRfqs = apiRfqs.map((rfq: ItemRFQ) => {
+        // Get the first/latest quote from the quotes array (backend returns quotes sorted by createdAt desc)
+        const latestQuote = rfq.quotes?.[0];
 
-      setRfqs(transformedRfqs);
+        // Extract item name - from item if linked, otherwise from message for general RFQs
+        let itemName = rfq.item?.name || '';
+        let partNumber = rfq.item?.sku || '';
+        if (!itemName && rfq.message) {
+          // Extract "Part: XXX" from message for general RFQs
+          const partMatch = rfq.message.match(/^Part:\s*(.+?)(?:\n|$)/i);
+          if (partMatch) {
+            itemName = partMatch[1].trim();
+          }
+          // Extract "Part Number: XXX" from message
+          const partNumMatch = rfq.message.match(/Part Number:\s*(.+?)(?:\n|$)/i);
+          if (partNumMatch && partNumMatch[1].trim() !== 'N/A') {
+            partNumber = partNumMatch[1].trim();
+          }
+        }
+        if (!itemName) {
+          itemName = 'General RFQ';
+        }
+
+        return {
+          id: rfq.rfqNumber || rfq.id.slice(0, 8).toUpperCase(),
+          rfqId: rfq.id,
+          itemName,
+          itemSku: partNumber,
+          sellerName:
+            ((latestQuote as Record<string, unknown> | undefined)?.seller as { companyName?: string } | undefined)
+              ?.companyName ||
+            rfq.sellerCompanyName ||
+            (latestQuote ? 'Seller' : 'Open to All'),
+          quantity: rfq.quantity || 1,
+          status: mapApiStatusToRfqStatus(rfq.status),
+          quotedPrice: latestQuote?.totalPrice,
+          currency: latestQuote?.currency || 'SAR',
+          message: rfq.message,
+          createdAt: rfq.createdAt,
+          respondedAt: latestQuote?.sentAt,
+          expiresAt: latestQuote?.validUntil,
+          leadTimeDays: latestQuote?.deliveryDays,
+          supplierReliability: 90, // Placeholder: resolve from seller profile when available
+          supplierResponseSpeed: 'moderate' as const,
+          hasMultipleQuotes: (rfq.quotes?.length || 0) > 1,
+          quote: latestQuote,
+          rawRfq: rfq,
+        };
+      });
+
+      setRfqs(transformedRfqs as RFQ[]);
     } catch (err) {
       console.error('Failed to fetch RFQs:', err);
       setError(err instanceof Error ? err.message : 'Failed to load RFQs');
-      // Fall back to mock data in development
-      setRfqs(MOCK_RFQS);
+      setRfqs([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Cancel RFQ handler
+  const handleCancelRFQ = async (rfq: RFQ) => {
+    if (!rfq.rfqId) return;
+
+    try {
+      setIsCancelling(true);
+      const token = await getToken();
+      if (!token) return;
+
+      await itemService.cancelRFQ(token, rfq.rfqId);
+      setCancelConfirm(null);
+      fetchRfqs(); // Refresh list
+      toast.addToast({
+        type: 'success',
+        title: 'RFQ Cancelled',
+        message: `RFQ ${rfq.id} has been cancelled. You can reactivate it later.`,
+      });
+    } catch (err) {
+      console.error('Failed to cancel RFQ:', err);
+      toast.addToast({
+        type: 'error',
+        title: 'Failed to Cancel RFQ',
+        message: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Reactivate RFQ handler
+  const handleReactivateRFQ = async (rfq: RFQ) => {
+    if (!rfq.rfqId) return;
+
+    try {
+      setIsReactivating(true);
+      const token = await getToken();
+      if (!token) return;
+
+      await itemService.reactivateRFQ(token, rfq.rfqId);
+      setReactivateConfirm(null);
+      fetchRfqs(); // Refresh list
+      toast.addToast({
+        type: 'success',
+        title: 'RFQ Reactivated',
+        message: `RFQ ${rfq.id} is now active again and can receive quotes.`,
+      });
+    } catch (err) {
+      console.error('Failed to reactivate RFQ:', err);
+      toast.addToast({
+        type: 'error',
+        title: 'Failed to Reactivate RFQ',
+        message: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -382,14 +404,16 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const mapApiStatusToRfqStatus = (status: string): RFQStatus => {
     const statusMap: Record<string, RFQStatus> = {
       PENDING: 'pending',
+      NEW: 'pending',
       UNDER_REVIEW: 'pending',
       QUOTED: 'quoted',
       ACCEPTED: 'accepted',
       REJECTED: 'rejected',
       EXPIRED: 'expired',
-      CANCELLED: 'expired',
+      CANCELLED: 'cancelled',
     };
-    return statusMap[status] || 'pending';
+    // Handle case-insensitive status matching
+    return statusMap[status.toUpperCase()] || 'pending';
   };
 
   // View quote details
@@ -428,13 +452,46 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const handleAcceptQuote = async (quoteId: string) => {
     try {
       const token = await getToken();
-      if (!token) return;
+      if (!token) {
+        console.error('[AcceptQuote] No auth token available');
+        toast.addToast({
+          type: 'error',
+          title: 'Authentication Required',
+          message: 'Please log in again to accept quotes.',
+        });
+        return;
+      }
 
-      await itemService.acceptRFQ(token, selectedQuote?.rfqId || '');
+      portalApiLogger.info('[AcceptQuote] Accepting quote:', quoteId);
+
+      // Use the correct endpoint: POST /api/items/quotes/:id/accept
+      // This creates a MarketplaceOrder and updates Quote + RFQ status
+      const order = await marketplaceOrderService.acceptQuote(token, quoteId, {});
+      portalApiLogger.info('[AcceptQuote] Order created:', order);
+
       setShowQuotePanel(false);
+      setShowDetailModal(false);
       fetchRfqs(); // Refresh list
+
+      // Success feedback with toast
+      toast.addToast({
+        type: 'success',
+        title: 'Quote Accepted!',
+        message: `Order ${order.orderNumber || ''} has been created. You can track it in Orders.`,
+        duration: 5000,
+        action: {
+          label: 'View Orders',
+          onClick: () => onNavigate('orders'),
+        },
+      });
     } catch (err) {
-      console.error('Failed to accept quote:', err);
+      console.error('[AcceptQuote] Failed:', err);
+      toast.addToast({
+        type: 'error',
+        title: 'Failed to Accept Quote',
+        message: err instanceof Error ? err.message : 'An unexpected error occurred.',
+        duration: 6000,
+      });
     }
   };
 
@@ -443,11 +500,22 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
       const token = await getToken();
       if (!token) return;
 
-      await itemService.rejectRFQ(token, selectedQuote?.rfqId || '');
+      // Use the correct endpoint: POST /api/items/quotes/:id/reject
+      await marketplaceOrderService.rejectQuote(token, quoteId, { reason });
       setShowQuotePanel(false);
       fetchRfqs();
+      toast.addToast({
+        type: 'info',
+        title: 'Quote Declined',
+        message: 'The seller has been notified of your decision.',
+      });
     } catch (err) {
       console.error('Failed to reject quote:', err);
+      toast.addToast({
+        type: 'error',
+        title: 'Failed to Decline Quote',
+        message: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      });
     }
   };
 
@@ -486,17 +554,17 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const waiting = rfqs.filter(r => r.status === 'pending').length;
-    const responded = rfqs.filter(r => r.status === 'quoted').length;
-    const negotiating = rfqs.filter(r => r.status === 'negotiating').length;
-    const accepted = rfqs.filter(r => r.status === 'accepted').length;
-    const withMultipleQuotes = rfqs.filter(r => r.hasMultipleQuotes).length;
+    const waiting = rfqs.filter((r) => r.status === 'pending').length;
+    const responded = rfqs.filter((r) => r.status === 'quoted').length;
+    const negotiating = rfqs.filter((r) => r.status === 'negotiating').length;
+    const accepted = rfqs.filter((r) => r.status === 'accepted').length;
+    const withMultipleQuotes = rfqs.filter((r) => r.hasMultipleQuotes).length;
     return { waiting, responded, negotiating, accepted, withMultipleQuotes };
   }, [rfqs]);
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return rfqs.filter(rfq => {
+    return rfqs.filter((rfq) => {
       if (statusFilter !== 'all' && rfq.status !== statusFilter) return false;
       return true;
     });
@@ -506,151 +574,170 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const columnHelper = createColumnHelper<RFQ>();
 
   // Columns
-  const columns = useMemo(() => [
-    columnHelper.accessor('id', {
-      header: t('buyer.myRfqs.rfqId'),
-      cell: info => (
-        <span className="font-mono text-xs" style={{ color: styles.textPrimary }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('itemName', {
-      header: t('buyer.myRfqs.item'),
-      cell: info => (
-        <div>
-          <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('id', {
+        header: t('buyer.myRfqs.rfqId'),
+        cell: (info) => (
+          <span className="font-mono text-xs" style={{ color: styles.textPrimary }}>
             {info.getValue()}
-          </div>
-          <div className="text-xs font-mono" style={{ color: styles.textMuted }}>
-            {info.row.original.itemSku}
-          </div>
-        </div>
-      ),
-    }),
-    columnHelper.accessor('sellerName', {
-      header: t('buyer.myRfqs.seller'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textPrimary }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('quantity', {
-      header: t('buyer.myRfqs.qty'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textPrimary }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('quotedPrice', {
-      header: t('buyer.myRfqs.quotedPrice'),
-      cell: info => {
-        const price = info.getValue();
-        const rfq = info.row.original;
-        return price ? (
+          </span>
+        ),
+      }),
+      columnHelper.accessor('itemName', {
+        header: t('buyer.myRfqs.item'),
+        cell: (info) => (
           <div>
+            <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {info.getValue()}
+            </div>
+            <div className="text-xs font-mono" style={{ color: styles.textMuted }}>
+              {info.row.original.itemSku}
+            </div>
+          </div>
+        ),
+      }),
+      columnHelper.accessor('quantity', {
+        header: t('buyer.myRfqs.qty'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textPrimary }}>
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('sellerName', {
+        header: t('buyer.myRfqs.seller') || 'Seller',
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textSecondary }}>
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('quotedPrice', {
+        header: t('buyer.myRfqs.quotedPrice'),
+        cell: (info) => {
+          const price = info.getValue();
+          const rfq = info.row.original;
+          return price ? (
             <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
               {formatCurrency(price, rfq.currency)}
             </span>
-            {rfq.expiresAt && (
-              <div className="mt-1">
-                <ValidityCountdown
-                  validUntil={rfq.expiresAt}
-                  size="xs"
-                  variant="badge"
-                  showIcon={true}
-                />
-              </div>
-            )}
-          </div>
-        ) : (
-          <span className="text-xs" style={{ color: styles.textMuted }}>
-            {t('buyer.myRfqs.awaitingQuote')}
+          ) : (
+            <span className="text-xs" style={{ color: styles.textMuted }}>
+              {t('buyer.myRfqs.awaitingQuote')}
+            </span>
+          );
+        },
+      }),
+      columnHelper.accessor('status', {
+        header: t('buyer.myRfqs.status'),
+        cell: (info) => <StatusBadge status={info.getValue()} />,
+      }),
+      columnHelper.accessor('createdAt', {
+        header: t('buyer.myRfqs.created'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textMuted }}>
+            {formatDate(info.getValue())}
           </span>
-        );
-      },
-    }),
-    columnHelper.accessor('status', {
-      header: t('buyer.myRfqs.status'),
-      cell: info => <StatusBadge status={info.getValue()} />,
-    }),
-    columnHelper.accessor('createdAt', {
-      header: t('buyer.myRfqs.created'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textMuted }}>
-          {formatDate(info.getValue())}
-        </span>
-      ),
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
-      cell: info => {
-        const rfq = info.row.original;
-        const hasQuote = rfq.status === 'quoted' || rfq.quote;
-        const hasComparison = rfq.hasMultipleQuotes;
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
+        cell: (info) => {
+          const rfq = info.row.original;
+          const hasQuote = rfq.status === 'quoted' || rfq.quote;
+          const hasComparison = rfq.hasMultipleQuotes;
+          const canCancel = rfq.status === 'pending';
+          const canReactivate = rfq.status === 'cancelled';
 
-        return (
-          <div className="flex items-center justify-center gap-1">
-            {hasComparison && (
-              <button
-                onClick={() => {
-                  setSelectedRFQ(rfq);
-                  setDetailTab('compare');
-                  setShowDetailModal(true);
-                }}
-                className="p-1.5 rounded-md transition-colors"
-                style={{ color: styles.info }}
-                title="Compare Quotes"
-              >
-                <Scales size={16} />
-              </button>
-            )}
-            {hasQuote && (
-              <button
-                onClick={() => handleViewQuote(rfq)}
-                disabled={isLoadingQuote}
-                className="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1"
-                style={{
-                  backgroundColor: styles.isDark ? '#1e3a5f' : '#dbeafe',
-                  color: styles.info,
-                }}
-                title="View Quote"
-              >
-                {isLoadingQuote ? <Spinner size={12} className="animate-spin" /> : <CurrencyDollar size={12} />}
-                View Quote
-              </button>
-            )}
-            <button
-              onClick={() => openDetail(rfq)}
-              className="p-1.5 rounded-md transition-colors"
-              style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              title={t('buyer.myRfqs.viewDetails')}
-            >
-              <Eye size={16} />
-            </button>
-          </div>
-        );
-      },
-    }),
-  ], [columnHelper, styles, t, openDetail, handleViewQuote, isLoadingQuote]);
+          return (
+            <div className="flex items-center justify-center gap-1">
+              {hasComparison && (
+                <button
+                  onClick={() => {
+                    setSelectedRFQ(rfq);
+                    setDetailTab('compare');
+                    setShowDetailModal(true);
+                  }}
+                  className="p-1.5 rounded-md transition-colors"
+                  style={{ color: styles.info }}
+                  title="Compare Quotes"
+                >
+                  <Scales size={16} />
+                </button>
+              )}
+              {hasQuote ? (
+                <button
+                  onClick={() => handleViewQuote(rfq)}
+                  disabled={isLoadingQuote}
+                  className="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1"
+                  style={{
+                    backgroundColor: styles.isDark ? '#1e3a5f' : '#dbeafe',
+                    color: styles.info,
+                  }}
+                  title="View Quote"
+                >
+                  {isLoadingQuote ? <Spinner size={12} className="animate-spin" /> : <Eye size={12} />}
+                  View
+                </button>
+              ) : (
+                <button
+                  onClick={() => openDetail(rfq)}
+                  className="p-1.5 rounded-md transition-colors"
+                  style={{ color: styles.textMuted }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  title={t('buyer.myRfqs.viewDetails')}
+                >
+                  <Eye size={16} />
+                </button>
+              )}
+              {canCancel && (
+                <button
+                  onClick={() => setCancelConfirm(rfq)}
+                  className="p-1.5 rounded-md transition-colors"
+                  style={{ color: '#ef4444' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  title="Cancel RFQ"
+                >
+                  <Prohibit size={16} />
+                </button>
+              )}
+              {canReactivate && (
+                <button
+                  onClick={() => setReactivateConfirm(rfq)}
+                  className="p-1.5 rounded-md transition-colors"
+                  style={{ color: styles.success }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  title="Reactivate RFQ"
+                >
+                  <ArrowsClockwise size={16} />
+                </button>
+              )}
+            </div>
+          );
+        },
+      }),
+    ],
+    [columnHelper, styles, t, openDetail, handleViewQuote, isLoadingQuote],
+  );
 
   // Table instance
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, pagination },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 10 } },
+    autoResetPageIndex: false,
   });
 
   const clearFilters = () => {
@@ -675,41 +762,51 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
         />
 
         {/* Stats Cards - RFQ Status Intelligence */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-          <StatCard
-            icon={Hourglass}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+          <KPICard
+            id="waiting"
             label="Waiting"
-            value={stats.waiting}
-            color="#f59e0b"
-            styles={styles}
+            value={stats.waiting.toString()}
+            change=""
+            trend="neutral"
+            icon={<Hourglass size={18} />}
+            color="amber"
           />
-          <StatCard
-            icon={CheckCircle}
+          <KPICard
+            id="responded"
             label="Responded"
-            value={stats.responded}
-            color={styles.info}
-            styles={styles}
+            value={stats.responded.toString()}
+            change=""
+            trend="neutral"
+            icon={<CheckCircle size={18} />}
+            color="blue"
           />
-          <StatCard
-            icon={ArrowsClockwise}
+          <KPICard
+            id="negotiating"
             label="Negotiating"
-            value={stats.negotiating}
-            color="#8b5cf6"
-            styles={styles}
+            value={stats.negotiating.toString()}
+            change=""
+            trend="neutral"
+            icon={<ArrowsClockwise size={18} />}
+            color="violet"
           />
-          <StatCard
-            icon={Handshake}
+          <KPICard
+            id="accepted"
             label="Accepted"
-            value={stats.accepted}
-            color={styles.success}
-            styles={styles}
+            value={stats.accepted.toString()}
+            change=""
+            trend="neutral"
+            icon={<Handshake size={18} />}
+            color="emerald"
           />
-          <StatCard
-            icon={Scales}
+          <KPICard
+            id="multipleQuotes"
             label="Multiple Quotes"
-            value={stats.withMultipleQuotes}
-            color={styles.info}
-            styles={styles}
+            value={stats.withMultipleQuotes.toString()}
+            change=""
+            trend="neutral"
+            icon={<Scales size={18} />}
+            color="blue"
           />
         </div>
 
@@ -747,6 +844,7 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
               { value: 'negotiating', label: 'Negotiating' },
               { value: 'accepted', label: t('buyer.myRfqs.accepted') || 'Accepted' },
               { value: 'rejected', label: t('buyer.myRfqs.rejected') || 'Rejected' },
+              { value: 'cancelled', label: 'Cancelled' },
               { value: 'expired', label: t('buyer.myRfqs.expired') || 'Expired' },
             ]}
             placeholder={t('buyer.myRfqs.allStatus') || 'All Status'}
@@ -773,7 +871,9 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
           >
             <div className="text-center">
               <Spinner size={32} className="animate-spin mx-auto mb-3" style={{ color: styles.info }} />
-              <p className="text-sm" style={{ color: styles.textMuted }}>Loading your RFQs...</p>
+              <p className="text-sm" style={{ color: styles.textMuted }}>
+                Loading your RFQs...
+              </p>
             </div>
           </div>
         )}
@@ -784,12 +884,10 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
             className="p-4 rounded-lg border mb-4"
             style={{ backgroundColor: styles.isDark ? '#7f1d1d' : '#fef2f2', borderColor: '#ef4444' }}
           >
-            <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>
-            <button
-              onClick={fetchRfqs}
-              className="mt-2 text-sm underline"
-              style={{ color: '#ef4444' }}
-            >
+            <p className="text-sm" style={{ color: '#ef4444' }}>
+              {error}
+            </p>
+            <button onClick={fetchRfqs} className="mt-2 text-sm underline" style={{ color: '#ef4444' }}>
               Try again
             </button>
           </div>
@@ -801,24 +899,17 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
             icon={FileText}
             title={t('buyer.myRfqs.noRfqs')}
             description={t('buyer.myRfqs.noRfqsDesc')}
-            action={
-              <Button onClick={() => onNavigate('rfq')}>
-                {t('buyer.myRfqs.createRfq')}
-              </Button>
-            }
+            action={<Button onClick={() => onNavigate('rfq')}>{t('buyer.myRfqs.createRfq')}</Button>}
           />
         )}
         {!isLoading && filteredData.length > 0 && (
           <div>
-            <div
-              className="overflow-hidden rounded-lg border"
-              style={{ borderColor: styles.border }}
-            >
+            <div className="overflow-hidden rounded-lg border" style={{ borderColor: styles.border }}>
               <table className="min-w-full">
                 <thead style={{ backgroundColor: styles.bgSecondary }}>
-                  {table.getHeaderGroups().map(headerGroup => (
+                  {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                      {headerGroup.headers.map(header => (
+                      {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
                           className="px-4 py-3 text-xs font-semibold cursor-pointer select-none"
@@ -827,11 +918,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
                         >
                           <div className="flex items-center gap-1">
                             {flexRender(header.column.columnDef.header, header.getContext())}
-                            {header.column.getIsSorted() && (
-                              header.column.getIsSorted() === 'asc'
-                                ? <CaretUp size={12} />
-                                : <CaretDown size={12} />
-                            )}
+                            {header.column.getIsSorted() &&
+                              (header.column.getIsSorted() === 'asc' ? <CaretUp size={12} /> : <CaretDown size={12} />)}
                           </div>
                         </th>
                       ))}
@@ -839,21 +927,25 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
                   ))}
                 </thead>
                 <tbody style={{ backgroundColor: styles.bgCard }}>
-                  {table.getRowModel().rows.map((row, idx) => (
-                    <tr
-                      key={row.id}
-                      className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                      style={{
-                        borderTop: idx > 0 ? `1px solid ${styles.border}` : undefined,
-                      }}
-                    >
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id} className="px-4 py-3">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {table.getRowModel().rows.map((row, idx) => {
+                    const isCancelled = (row.original as RFQ).status === 'cancelled';
+                    return (
+                      <tr
+                        key={row.id}
+                        className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 relative"
+                        style={{
+                          borderTop: idx > 0 ? `1px solid ${styles.border}` : undefined,
+                          opacity: isCancelled ? 0.5 : 1,
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-4 py-3">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -865,8 +957,12 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
             >
               <div className="text-sm" style={{ color: styles.textMuted }}>
                 {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
-                -{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredData.length)}
-                {' '}{t('common.of')} {filteredData.length}
+                -
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                  filteredData.length,
+                )}{' '}
+                {t('common.of')} {filteredData.length}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -907,6 +1003,12 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
             setRfqForHybrid(selectedRFQ);
             setShowHybridModal(true);
           }}
+          onAcceptQuote={(rfq) => {
+            if (rfq.quote?.id) {
+              handleAcceptQuote(rfq.quote.id);
+              setShowDetailModal(false);
+            }
+          }}
         />
       )}
 
@@ -919,9 +1021,9 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
             setShowQuotePanel(false);
             setSelectedQuote(null);
           }}
-          onAccept={handleAcceptQuote}
-          onReject={handleRejectQuote}
-          onCounterOffer={handleCounterOffer}
+          onAccept={() => handleAcceptQuote(selectedQuote.id)}
+          onReject={(reason) => handleRejectQuote(selectedQuote.id, reason || 'Quote rejected by buyer')}
+          onCounterOffer={() => handleCounterOffer(selectedQuote)}
         />
       )}
 
@@ -956,38 +1058,138 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
           }}
         />
       )}
+
+      {/* Cancel RFQ Confirmation Modal */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div
+            className="w-full max-w-md rounded-xl border shadow-xl p-6"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+              >
+                <Prohibit size={20} style={{ color: '#ef4444' }} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                  Cancel RFQ?
+                </h3>
+                <p className="text-sm" style={{ color: styles.textMuted }}>
+                  You can reactivate it later if needed
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: styles.bgSecondary }}>
+              <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                {cancelConfirm.itemName}
+              </p>
+              <p className="text-xs" style={{ color: styles.textMuted }}>
+                RFQ #{cancelConfirm.id} • Qty: {cancelConfirm.quantity}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setCancelConfirm(null)}
+                disabled={isCancelling}
+                className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+                style={{ borderColor: styles.border, color: styles.textSecondary }}
+              >
+                Keep RFQ
+              </button>
+              <button
+                onClick={() => handleCancelRFQ(cancelConfirm)}
+                disabled={isCancelling}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                style={{ backgroundColor: '#ef4444', color: '#fff' }}
+              >
+                {isCancelling ? (
+                  <>
+                    <Spinner size={14} className="animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Cancel RFQ'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reactivate RFQ Confirmation Modal */}
+      {reactivateConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div
+            className="w-full max-w-md rounded-xl border shadow-xl p-6"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
+              >
+                <ArrowsClockwise size={20} style={{ color: styles.success }} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
+                  Reactivate RFQ?
+                </h3>
+                <p className="text-sm" style={{ color: styles.textMuted }}>
+                  This will make the RFQ active again
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: styles.bgSecondary }}>
+              <p className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                {reactivateConfirm.itemName}
+              </p>
+              <p className="text-xs" style={{ color: styles.textMuted }}>
+                RFQ #{reactivateConfirm.id} • Qty: {reactivateConfirm.quantity}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setReactivateConfirm(null)}
+                disabled={isReactivating}
+                className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+                style={{ borderColor: styles.border, color: styles.textSecondary }}
+              >
+                Keep Cancelled
+              </button>
+              <button
+                onClick={() => handleReactivateRFQ(reactivateConfirm)}
+                disabled={isReactivating}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                style={{ backgroundColor: styles.success, color: '#fff' }}
+              >
+                {isReactivating ? (
+                  <>
+                    <Spinner size={14} className="animate-spin" />
+                    Reactivating...
+                  </>
+                ) : (
+                  'Reactivate RFQ'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // =============================================================================
-// Stat Card Component
+// VAT Constant
 // =============================================================================
-const StatCard: React.FC<{
-  icon: React.ElementType;
-  label: string;
-  value: number;
-  color: string;
-  styles: ReturnType<typeof usePortal>['styles'];
-}> = ({ icon: Icon, label, value, color, styles }) => (
-  <div
-    className="p-3 rounded-lg border"
-    style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-  >
-    <div className="flex items-center gap-2">
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: `${color}15` }}
-      >
-        <Icon size={16} weight="fill" style={{ color }} />
-      </div>
-      <div>
-        <p className="text-[10px]" style={{ color: styles.textMuted }}>{label}</p>
-        <p className="text-lg font-bold" style={{ color: styles.textPrimary }}>{value}</p>
-      </div>
-    </div>
-  </div>
-);
+const VAT_RATE = 0.15; // 15% VAT (Saudi Arabia standard)
 
 // =============================================================================
 // RFQ Detail Modal with Compare, Timeline, Negotiate
@@ -1000,6 +1202,7 @@ interface RFQDetailModalProps {
   formatCurrency: (amount: number, currency: string) => string;
   formatDate: (date: string) => string;
   onCustomize?: () => void;
+  onAcceptQuote?: (rfq: RFQ) => void;
 }
 
 const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
@@ -1010,8 +1213,10 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
   formatCurrency,
   formatDate,
   onCustomize,
+  onAcceptQuote,
 }) => {
   const { styles } = usePortal();
+  const canAccept = rfq.status === 'quoted' && rfq.quote?.id;
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: Eye },
@@ -1022,24 +1227,35 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div
-        className="w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-xl border shadow-xl flex flex-col"
-        style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        className="w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col"
+        style={{ backgroundColor: styles.bgCard }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: styles.border }}>
-          <div>
-            <h2 className="text-lg font-bold" style={{ color: styles.textPrimary }}>
-              {rfq.id}
-            </h2>
-            <p className="text-sm" style={{ color: styles.textMuted }}>
-              {rfq.itemName}
-            </p>
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: `1px solid ${styles.border}` }}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${styles.info}15` }}
+            >
+              <FileText size={24} weight="duotone" style={{ color: styles.info }} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: styles.textPrimary }}>
+                {rfq.id}
+              </h2>
+              <p className="text-sm" style={{ color: styles.textMuted }}>
+                {rfq.itemName}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge status={rfq.status} showIcon />
             <button
               onClick={onClose}
-              className="p-2 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
               style={{ color: styles.textMuted }}
             >
               <X size={20} />
@@ -1048,15 +1264,15 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 p-2 border-b" style={{ borderColor: styles.border }}>
-          {tabs.map(tab => {
+        <div className="flex items-center gap-1 px-4 py-2" style={{ borderBottom: `1px solid ${styles.border}` }}>
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => !tab.disabled && onTabChange(tab.id)}
                 disabled={tab.disabled}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
                 style={{
                   backgroundColor: activeTab === tab.id ? styles.bgActive : 'transparent',
                   color: activeTab === tab.id ? styles.textPrimary : styles.textSecondary,
@@ -1070,12 +1286,18 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-6">
           {activeTab === 'overview' && (
             <OverviewTab rfq={rfq} formatCurrency={formatCurrency} formatDate={formatDate} styles={styles} />
           )}
           {activeTab === 'compare' && rfq.relatedQuotes && (
-            <CompareTab quotes={rfq.relatedQuotes} currency={rfq.currency} formatCurrency={formatCurrency} styles={styles} onCustomize={onCustomize} />
+            <CompareTab
+              quotes={rfq.relatedQuotes}
+              currency={rfq.currency}
+              formatCurrency={formatCurrency}
+              styles={styles}
+              onCustomize={onCustomize}
+            />
           )}
           {activeTab === 'timeline' && rfq.timeline && (
             <TimelineTab timeline={rfq.timeline} formatDate={formatDate} styles={styles} />
@@ -1083,22 +1305,27 @@ const RFQDetailModal: React.FC<RFQDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t" style={{ borderColor: styles.border }}>
-          {rfq.status === 'quoted' && (
-            <button
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ backgroundColor: styles.success, color: '#fff' }}
-            >
-              Accept Quote
-            </button>
-          )}
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderTop: `1px solid ${styles.border}` }}
+        >
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+            className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
             style={{ borderColor: styles.border, color: styles.textSecondary }}
           >
             Close
           </button>
+          {canAccept && onAcceptQuote && (
+            <button
+              onClick={() => onAcceptQuote(rfq)}
+              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all flex items-center gap-2 hover:opacity-90"
+              style={{ backgroundColor: styles.success }}
+            >
+              <CheckCircle size={18} weight="bold" />
+              Accept Quote
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1111,47 +1338,194 @@ const OverviewTab: React.FC<{
   formatCurrency: (amount: number, currency: string) => string;
   formatDate: (date: string) => string;
   styles: ReturnType<typeof usePortal>['styles'];
-}> = ({ rfq, formatCurrency, formatDate, styles }) => (
-  <div className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
-      <InfoCard label="Item" value={rfq.itemName} subValue={rfq.itemSku} styles={styles} />
-      <InfoCard label="Supplier" value={rfq.sellerName} styles={styles} />
-      <InfoCard label="Quantity" value={`${rfq.quantity} units`} styles={styles} />
-      <InfoCard
-        label="Quoted Price"
-        value={rfq.quotedPrice ? formatCurrency(rfq.quotedPrice, rfq.currency) : 'Awaiting'}
-        valueColor={rfq.quotedPrice ? styles.success : styles.textMuted}
-        styles={styles}
-      />
-      <InfoCard label="Lead Time" value={rfq.leadTimeDays ? `${rfq.leadTimeDays} days` : 'TBD'} styles={styles} />
-      <InfoCard label="Created" value={formatDate(rfq.createdAt)} styles={styles} />
-    </div>
+}> = ({ rfq, formatCurrency, formatDate, styles }) => {
+  // Calculate VAT if quoted
+  const subtotal = rfq.quotedPrice || 0;
+  const vatAmount = subtotal * VAT_RATE;
+  const totalWithVat = subtotal + vatAmount;
 
-    {rfq.supplierReliability && (
-      <div className="p-4 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
-        <h4 className="text-sm font-semibold mb-3" style={{ color: styles.textPrimary }}>
-          Supplier Intelligence
-        </h4>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-xs" style={{ color: styles.textMuted }}>Reliability</p>
-            <p className="text-lg font-bold" style={{ color: styles.success }}>{rfq.supplierReliability}%</p>
+  return (
+    <div className="space-y-5">
+      {/* Item & Supplier Section */}
+      <div className="grid grid-cols-2 gap-4">
+        <div
+          className="p-4 rounded-xl"
+          style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.borderLight}` }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: styles.bgCard }}
+            >
+              <Package size={20} style={{ color: styles.textMuted }} />
+            </div>
+            <div>
+              <p className="text-xs" style={{ color: styles.textMuted }}>
+                Item
+              </p>
+              <p className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+                {rfq.itemName}
+              </p>
+              {rfq.itemSku && (
+                <p className="text-xs font-mono" style={{ color: styles.textMuted }}>
+                  {rfq.itemSku}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="text-xs" style={{ color: styles.textMuted }}>Response Speed</p>
-            <ResponseSpeedIndicator speed={rfq.supplierResponseSpeed} />
-          </div>
-          <div>
-            <p className="text-xs" style={{ color: styles.textMuted }}>Quote Expires</p>
-            <p className="text-sm font-medium" style={{ color: rfq.expiresAt ? styles.textPrimary : styles.textMuted }}>
-              {rfq.expiresAt ? formatDate(rfq.expiresAt) : 'N/A'}
-            </p>
+        </div>
+
+        <div
+          className="p-4 rounded-xl"
+          style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.borderLight}` }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: styles.bgCard }}
+            >
+              <User size={20} style={{ color: styles.textMuted }} />
+            </div>
+            <div>
+              <p className="text-xs" style={{ color: styles.textMuted }}>
+                Supplier
+              </p>
+              <p className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+                {rfq.sellerName}
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    )}
-  </div>
-);
+
+      {/* Quantity & Lead Time */}
+      <div className="grid grid-cols-2 gap-4">
+        <div
+          className="p-4 rounded-xl"
+          style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.borderLight}` }}
+        >
+          <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
+            Quantity
+          </p>
+          <p className="text-xl font-bold" style={{ color: styles.textPrimary }}>
+            {rfq.quantity} <span className="text-sm font-normal">units</span>
+          </p>
+        </div>
+        <div
+          className="p-4 rounded-xl"
+          style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.borderLight}` }}
+        >
+          <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
+            Lead Time
+          </p>
+          <p className="text-xl font-bold" style={{ color: styles.textPrimary }}>
+            {rfq.leadTimeDays ? `${rfq.leadTimeDays}` : '—'} <span className="text-sm font-normal">days</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Pricing Section with VAT */}
+      {rfq.quotedPrice ? (
+        <div
+          className="p-5 rounded-xl"
+          style={{ backgroundColor: `${styles.success}08`, border: `1px solid ${styles.success}30` }}
+        >
+          <h4 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: styles.textPrimary }}>
+            <CurrencyDollar size={16} weight="bold" />
+            Price Breakdown
+          </h4>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm" style={{ color: styles.textSecondary }}>
+                Subtotal
+              </span>
+              <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                {formatCurrency(subtotal, rfq.currency)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm" style={{ color: styles.textSecondary }}>
+                VAT (15%)
+              </span>
+              <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                {formatCurrency(vatAmount, rfq.currency)}
+              </span>
+            </div>
+            <div
+              className="pt-3 mt-3 flex justify-between items-center"
+              style={{ borderTop: `1px dashed ${styles.border}` }}
+            >
+              <span className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+                Total (incl. VAT)
+              </span>
+              <span className="text-2xl font-bold" style={{ color: styles.success }}>
+                {formatCurrency(totalWithVat, rfq.currency)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="p-5 rounded-xl text-center"
+          style={{ backgroundColor: styles.bgSecondary, border: `1px dashed ${styles.border}` }}
+        >
+          <Hourglass size={24} style={{ color: styles.textMuted, margin: '0 auto 8px' }} />
+          <p className="text-sm font-medium" style={{ color: styles.textMuted }}>
+            Awaiting Quote
+          </p>
+          <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
+            Seller is preparing their offer
+          </p>
+        </div>
+      )}
+
+      {/* Supplier Intelligence */}
+      {rfq.supplierReliability && (
+        <div
+          className="p-4 rounded-xl"
+          style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.borderLight}` }}
+        >
+          <h4 className="text-xs font-semibold mb-3 uppercase tracking-wider" style={{ color: styles.textMuted }}>
+            Supplier Intelligence
+          </h4>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs" style={{ color: styles.textMuted }}>
+                Reliability
+              </p>
+              <p className="text-lg font-bold" style={{ color: styles.success }}>
+                {rfq.supplierReliability}%
+              </p>
+            </div>
+            <div>
+              <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
+                Response Speed
+              </p>
+              <ResponseSpeedIndicator speed={rfq.supplierResponseSpeed} />
+            </div>
+            <div>
+              <p className="text-xs" style={{ color: styles.textMuted }}>
+                Quote Expires
+              </p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: rfq.expiresAt ? styles.textPrimary : styles.textMuted }}
+              >
+                {rfq.expiresAt ? formatDate(rfq.expiresAt) : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Created Date */}
+      <div className="flex items-center justify-between text-xs" style={{ color: styles.textMuted }}>
+        <span>Created: {formatDate(rfq.createdAt)}</span>
+        {rfq.respondedAt && <span>Responded: {formatDate(rfq.respondedAt)}</span>}
+      </div>
+    </div>
+  );
+};
 
 // Compare Tab - Supplier Comparison View
 const CompareTab: React.FC<{
@@ -1161,9 +1535,9 @@ const CompareTab: React.FC<{
   styles: ReturnType<typeof usePortal>['styles'];
   onCustomize?: () => void;
 }> = ({ quotes, currency, formatCurrency, styles, onCustomize }) => {
-  const lowestPrice = Math.min(...quotes.map(q => q.quotedPrice));
-  const fastestDelivery = Math.min(...quotes.map(q => q.leadTimeDays));
-  const highestReliability = Math.max(...quotes.map(q => q.reliability));
+  const lowestPrice = Math.min(...quotes.map((q) => q.quotedPrice));
+  const fastestDelivery = Math.min(...quotes.map((q) => q.leadTimeDays));
+  const highestReliability = Math.max(...quotes.map((q) => q.reliability));
 
   return (
     <div className="space-y-4">
@@ -1188,11 +1562,21 @@ const CompareTab: React.FC<{
         <table className="w-full text-sm">
           <thead style={{ backgroundColor: styles.bgSecondary }}>
             <tr>
-              <th className="px-4 py-3 text-left" style={{ color: styles.textMuted }}>Supplier</th>
-              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>Price</th>
-              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>Lead Time</th>
-              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>Reliability</th>
-              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>Action</th>
+              <th className="px-4 py-3 text-left" style={{ color: styles.textMuted }}>
+                Supplier
+              </th>
+              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>
+                Price
+              </th>
+              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>
+                Lead Time
+              </th>
+              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>
+                Reliability
+              </th>
+              <th className="px-4 py-3 text-center" style={{ color: styles.textMuted }}>
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -1205,16 +1589,17 @@ const CompareTab: React.FC<{
                 <tr
                   key={quote.supplierId}
                   className="border-t"
-                  style={{ borderColor: styles.border, backgroundColor: idx % 2 === 0 ? 'transparent' : styles.bgSecondary }}
+                  style={{
+                    borderColor: styles.border,
+                    backgroundColor: idx % 2 === 0 ? 'transparent' : styles.bgSecondary,
+                  }}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="font-medium" style={{ color: styles.textPrimary }}>
                         {quote.supplierName}
                       </span>
-                      {quote.verified && (
-                        <ShieldCheck size={14} weight="fill" style={{ color: styles.success }} />
-                      )}
+                      {quote.verified && <ShieldCheck size={14} weight="fill" style={{ color: styles.success }} />}
                     </div>
                     <ResponseSpeedIndicator speed={quote.responseSpeed} />
                   </td>
@@ -1237,9 +1622,7 @@ const CompareTab: React.FC<{
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span
-                      style={{ color: isMostReliable ? styles.success : styles.textSecondary }}
-                    >
+                    <span style={{ color: isMostReliable ? styles.success : styles.textSecondary }}>
                       {quote.reliability}%
                     </span>
                   </td>
@@ -1313,13 +1696,10 @@ const TimelineTab: React.FC<{
 
       <div className="relative">
         {/* Timeline line */}
-        <div
-          className="absolute left-4 top-0 bottom-0 w-0.5"
-          style={{ backgroundColor: styles.border }}
-        />
+        <div className="absolute left-4 top-0 bottom-0 w-0.5" style={{ backgroundColor: styles.border }} />
 
         <div className="space-y-4">
-          {timeline.map((event, idx) => {
+          {timeline.map((event, _idx) => {
             const Icon = getEventIcon(event.type);
             const color = getEventColor(event.type);
             return (
@@ -1333,10 +1713,7 @@ const TimelineTab: React.FC<{
                 </div>
 
                 {/* Event content */}
-                <div
-                  className="flex-1 p-3 rounded-lg"
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
+                <div className="flex-1 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                       {event.description}
@@ -1361,7 +1738,7 @@ const TimelineTab: React.FC<{
 };
 
 // Info Card Helper
-const InfoCard: React.FC<{
+const _InfoCard: React.FC<{
   label: string;
   value: string;
   subValue?: string;
@@ -1369,9 +1746,17 @@ const InfoCard: React.FC<{
   styles: ReturnType<typeof usePortal>['styles'];
 }> = ({ label, value, subValue, valueColor, styles }) => (
   <div className="p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
-    <p className="text-xs mb-1" style={{ color: styles.textMuted }}>{label}</p>
-    <p className="text-sm font-medium" style={{ color: valueColor || styles.textPrimary }}>{value}</p>
-    {subValue && <p className="text-xs font-mono" style={{ color: styles.textMuted }}>{subValue}</p>}
+    <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
+      {label}
+    </p>
+    <p className="text-sm font-medium" style={{ color: valueColor || styles.textPrimary }}>
+      {value}
+    </p>
+    {subValue && (
+      <p className="text-xs font-mono" style={{ color: styles.textMuted }}>
+        {subValue}
+      </p>
+    )}
   </div>
 );
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -31,11 +31,7 @@ import { useAuth } from '../../../../../auth-adapter';
 import { Select, EmptyState } from '../../../components';
 import { usePortal } from '../../../context/PortalContext';
 import { marketplaceOrderService } from '../../../services/marketplaceOrderService';
-import {
-  MarketplaceOrder,
-  MarketplaceOrderStatus,
-  OrderHealthStatus,
-} from '../../../types/item.types';
+import { MarketplaceOrder, MarketplaceOrderStatus, OrderHealthStatus } from '../../../types/item.types';
 
 interface OrdersTabProps {
   onNavigate?: (page: string, data?: Record<string, unknown>) => void;
@@ -75,19 +71,88 @@ const formatCurrency = (amount: number, currency: string): string => {
 };
 
 // Status Badge Component
-const StatusBadge: React.FC<{ status: MarketplaceOrderStatus; showIcon?: boolean }> = ({ status, showIcon = false }) => {
+const StatusBadge: React.FC<{ status: MarketplaceOrderStatus; showIcon?: boolean }> = ({
+  status,
+  showIcon = false,
+}) => {
   const { styles, t } = usePortal();
 
-  const config: Record<MarketplaceOrderStatus, { bg: string; darkBg: string; text: string; darkText: string; label: string; icon: React.ElementType }> = {
-    pending_confirmation: { bg: '#fef3c7', darkBg: '#78350f', text: '#92400e', darkText: '#fef3c7', label: t('buyer.orders.pendingConfirmation'), icon: Clock },
-    confirmed: { bg: '#e0e7ff', darkBg: '#312e81', text: '#3730a3', darkText: '#c7d2fe', label: t('buyer.orders.confirmed'), icon: CheckCircle },
-    processing: { bg: '#f3e8ff', darkBg: '#3b2d5f', text: '#7c3aed', darkText: '#ddd6fe', label: t('buyer.orders.processing') || 'Processing', icon: Clock },
-    shipped: { bg: '#f0fdf4', darkBg: '#14532d', text: '#15803d', darkText: '#86efac', label: t('buyer.orders.shipped'), icon: Truck },
-    delivered: { bg: '#dcfce7', darkBg: '#14532d', text: '#166534', darkText: '#bbf7d0', label: t('buyer.orders.delivered'), icon: Handshake },
-    closed: { bg: '#f3f4f6', darkBg: '#374151', text: '#6b7280', darkText: '#d1d5db', label: t('buyer.orders.closed') || 'Closed', icon: CheckCircle },
-    cancelled: { bg: '#fee2e2', darkBg: '#7f1d1d', text: '#991b1b', darkText: '#fecaca', label: t('buyer.orders.cancelled'), icon: X },
-    failed: { bg: '#fee2e2', darkBg: '#7f1d1d', text: '#991b1b', darkText: '#fecaca', label: t('buyer.orders.failed') || 'Failed', icon: WarningCircle },
-    refunded: { bg: '#f3f4f6', darkBg: '#374151', text: '#6b7280', darkText: '#d1d5db', label: t('buyer.orders.refunded') || 'Refunded', icon: Package },
+  const config: Record<
+    MarketplaceOrderStatus,
+    { bg: string; darkBg: string; text: string; darkText: string; label: string; icon: React.ElementType }
+  > = {
+    pending_confirmation: {
+      bg: '#fef3c7',
+      darkBg: '#78350f',
+      text: '#92400e',
+      darkText: '#fef3c7',
+      label: t('buyer.orders.pendingConfirmation'),
+      icon: Clock,
+    },
+    confirmed: {
+      bg: '#e0e7ff',
+      darkBg: '#312e81',
+      text: '#3730a3',
+      darkText: '#c7d2fe',
+      label: t('buyer.orders.confirmed'),
+      icon: CheckCircle,
+    },
+    processing: {
+      bg: '#f3e8ff',
+      darkBg: '#3b2d5f',
+      text: '#7c3aed',
+      darkText: '#ddd6fe',
+      label: t('buyer.orders.processing') || 'Processing',
+      icon: Clock,
+    },
+    shipped: {
+      bg: '#f0fdf4',
+      darkBg: '#14532d',
+      text: '#15803d',
+      darkText: '#86efac',
+      label: t('buyer.orders.shipped'),
+      icon: Truck,
+    },
+    delivered: {
+      bg: '#dcfce7',
+      darkBg: '#14532d',
+      text: '#166534',
+      darkText: '#bbf7d0',
+      label: t('buyer.orders.delivered'),
+      icon: Handshake,
+    },
+    closed: {
+      bg: '#f3f4f6',
+      darkBg: '#374151',
+      text: '#6b7280',
+      darkText: '#d1d5db',
+      label: t('buyer.orders.closed') || 'Closed',
+      icon: CheckCircle,
+    },
+    cancelled: {
+      bg: '#fee2e2',
+      darkBg: '#7f1d1d',
+      text: '#991b1b',
+      darkText: '#fecaca',
+      label: t('buyer.orders.cancelled'),
+      icon: X,
+    },
+    failed: {
+      bg: '#fee2e2',
+      darkBg: '#7f1d1d',
+      text: '#991b1b',
+      darkText: '#fecaca',
+      label: t('buyer.orders.failed') || 'Failed',
+      icon: WarningCircle,
+    },
+    refunded: {
+      bg: '#f3f4f6',
+      darkBg: '#374151',
+      text: '#6b7280',
+      darkText: '#d1d5db',
+      label: t('buyer.orders.refunded') || 'Refunded',
+      icon: Package,
+    },
   };
 
   const c = config[status] || config.pending_confirmation;
@@ -179,7 +244,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return orders.filter(order => {
+    return orders.filter((order) => {
       if (statusFilter !== 'all' && order.status !== statusFilter) return false;
       if (healthFilter !== 'all' && order.healthStatus !== healthFilter) return false;
       if (globalFilter) {
@@ -200,103 +265,104 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   const columnHelper = createColumnHelper<MarketplaceOrder>();
 
   // Columns
-  const columns = useMemo(() => [
-    columnHelper.accessor('orderNumber', {
-      header: t('buyer.orders.orderNumber'),
-      cell: info => (
-        <span className="font-mono text-xs" style={{ color: styles.textPrimary }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('itemName', {
-      header: t('buyer.orders.item'),
-      cell: info => {
-        const order = info.row.original;
-        return (
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-                {info.getValue()}
-              </span>
-              {order.hasException && (
-                <WarningCircle size={14} weight="fill" style={{ color: styles.error }} />
-              )}
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('orderNumber', {
+        header: t('buyer.orders.orderNumber'),
+        cell: (info) => (
+          <span className="font-mono text-xs" style={{ color: styles.textPrimary }}>
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('itemName', {
+        header: t('buyer.orders.item'),
+        cell: (info) => {
+          const order = info.row.original;
+          return (
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                  {info.getValue()}
+                </span>
+                {order.hasException && <WarningCircle size={14} weight="fill" style={{ color: styles.error }} />}
+              </div>
+              <div className="text-xs font-mono" style={{ color: styles.textMuted }}>
+                {order.itemSku}
+              </div>
             </div>
-            <div className="text-xs font-mono" style={{ color: styles.textMuted }}>
-              {order.itemSku}
-            </div>
-          </div>
-        );
-      },
-    }),
-    columnHelper.accessor('quantity', {
-      header: t('buyer.orders.qty'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textPrimary }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('totalPrice', {
-      header: t('buyer.orders.total'),
-      cell: info => (
-        <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-          {formatCurrency(info.getValue(), info.row.original.currency)}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('status', {
-      header: t('buyer.orders.status'),
-      cell: info => <StatusBadge status={info.getValue()} showIcon />,
-    }),
-    columnHelper.accessor('healthStatus', {
-      header: t('buyer.orders.health'),
-      cell: info => <HealthBadge health={mapHealthStatus(info.getValue(), info.row.original.hasException)} />,
-    }),
-    columnHelper.accessor('createdAt', {
-      header: t('buyer.orders.date'),
-      cell: info => (
-        <span className="text-sm" style={{ color: styles.textMuted }}>
-          {formatDate(info.getValue())}
-        </span>
-      ),
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
-      cell: info => {
-        const order = info.row.original;
-        const canTrack = !['cancelled', 'failed', 'refunded'].includes(order.status);
+          );
+        },
+      }),
+      columnHelper.accessor('quantity', {
+        header: t('buyer.orders.qty'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textPrimary }}>
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('totalPrice', {
+        header: t('buyer.orders.total'),
+        cell: (info) => (
+          <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+            {formatCurrency(info.getValue(), info.row.original.currency)}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('status', {
+        header: t('buyer.orders.status'),
+        cell: (info) => <StatusBadge status={info.getValue()} showIcon />,
+      }),
+      columnHelper.accessor('healthStatus', {
+        header: t('buyer.orders.health'),
+        cell: (info) => <HealthBadge health={mapHealthStatus(info.getValue(), info.row.original.hasException)} />,
+      }),
+      columnHelper.accessor('createdAt', {
+        header: t('buyer.orders.date'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textMuted }}>
+            {formatDate(info.getValue())}
+          </span>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
+        cell: (info) => {
+          const order = info.row.original;
+          const canTrack = !['cancelled', 'failed', 'refunded'].includes(order.status);
 
-        return (
-          <div className="flex items-center justify-center gap-1">
-            {canTrack && onNavigate && (
+          return (
+            <div className="flex items-center justify-center gap-1">
+              {canTrack && onNavigate && (
+                <button
+                  onClick={() => onNavigate('order-tracking', { orderId: order.id })}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: styles.isDark ? '#1e3a5f' : '#dbeafe',
+                    color: styles.info,
+                  }}
+                >
+                  <Truck size={12} />
+                  {t('buyer.orders.track') || 'Track'}
+                </button>
+              )}
               <button
-                onClick={() => onNavigate('order-tracking', { orderId: order.id })}
-                className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
-                style={{
-                  backgroundColor: styles.isDark ? '#1e3a5f' : '#dbeafe',
-                  color: styles.info,
-                }}
+                className="p-1.5 rounded-md transition-colors"
+                style={{ color: styles.textMuted }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <Truck size={12} />
-                {t('buyer.orders.track') || 'Track'}
+                <Eye size={16} />
               </button>
-            )}
-            <button
-              className="p-1.5 rounded-md transition-colors"
-              style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <Eye size={16} />
-            </button>
-          </div>
-        );
-      },
-    }),
-  ], [columnHelper, styles, t]);
+            </div>
+          );
+        },
+      }),
+    ],
+    [columnHelper, styles, t],
+  );
 
   // Table instance
   const table = useReactTable({
@@ -441,9 +507,9 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead style={{ backgroundColor: styles.bgSecondary }}>
-                      {table.getHeaderGroups().map(headerGroup => (
+                      {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
-                          {headerGroup.headers.map(header => (
+                          {headerGroup.headers.map((header) => (
                             <th
                               key={header.id}
                               className="px-4 py-3 text-xs font-semibold cursor-pointer select-none"
@@ -452,11 +518,12 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                             >
                               <div className="flex items-center gap-1">
                                 {flexRender(header.column.columnDef.header, header.getContext())}
-                                {header.column.getIsSorted() && (
-                                  header.column.getIsSorted() === 'asc'
-                                    ? <CaretUp size={12} />
-                                    : <CaretDown size={12} />
-                                )}
+                                {header.column.getIsSorted() &&
+                                  (header.column.getIsSorted() === 'asc' ? (
+                                    <CaretUp size={12} />
+                                  ) : (
+                                    <CaretDown size={12} />
+                                  ))}
                               </div>
                             </th>
                           ))}
@@ -471,10 +538,10 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                           style={{
                             borderTop: idx > 0 ? `1px solid ${styles.border}` : undefined,
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          {row.getVisibleCells().map(cell => (
+                          {row.getVisibleCells().map((cell) => (
                             <td key={cell.id} className="px-4 py-3">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </td>
@@ -493,9 +560,13 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                   style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
                 >
                   <span className="text-sm" style={{ color: styles.textMuted }}>
-                    {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
-                    -{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredData.length)}
-                    {' '}{t('common.of')} {filteredData.length}
+                    {t('common.showing')}{' '}
+                    {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+                    {Math.min(
+                      (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                      filteredData.length,
+                    )}{' '}
+                    {t('common.of')} {filteredData.length}
                   </span>
 
                   <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>

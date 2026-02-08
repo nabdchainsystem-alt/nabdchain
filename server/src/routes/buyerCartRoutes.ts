@@ -2,11 +2,12 @@
 // Buyer Cart Routes - RFQ Aggregation Cart API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import * as buyerCartService from '../services/buyerCartService';
 import { apiLogger } from '../utils/logger';
+import { resolveBuyerId } from '../utils/resolveBuyerId';
 
 const router = Router();
 
@@ -33,7 +34,10 @@ const updateCartItemSchema = z.object({
  */
 router.get('/', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const cart = await buyerCartService.getOrCreateCart(buyerId);
     res.json(cart);
   } catch (error) {
@@ -48,7 +52,10 @@ router.get('/', requireAuth, async (req, res: Response) => {
  */
 router.get('/grouped', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const groups = await buyerCartService.getCartGroupedBySeller(buyerId);
     res.json(groups);
   } catch (error) {
@@ -63,7 +70,10 @@ router.get('/grouped', requireAuth, async (req, res: Response) => {
  */
 router.post('/items', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const input = addToCartSchema.parse(req.body);
     const cart = await buyerCartService.addToCart(buyerId, input);
     res.json(cart);
@@ -97,7 +107,10 @@ router.post('/items', requireAuth, async (req, res: Response) => {
  */
 router.patch('/items/:itemId', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const itemId = req.params.itemId as string;
     const input = updateCartItemSchema.parse(req.body);
     const cart = await buyerCartService.updateCartItem(buyerId, itemId, input);
@@ -132,7 +145,10 @@ router.patch('/items/:itemId', requireAuth, async (req, res: Response) => {
  */
 router.delete('/items/:itemId', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const itemId = req.params.itemId as string;
     const cart = await buyerCartService.removeFromCart(buyerId, itemId);
     res.json(cart);
@@ -158,7 +174,10 @@ router.delete('/items/:itemId', requireAuth, async (req, res: Response) => {
  */
 router.delete('/', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const cart = await buyerCartService.clearCart(buyerId);
     res.json(cart);
   } catch (error) {
@@ -177,7 +196,10 @@ router.delete('/', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const result = await buyerCartService.createRFQFromAllCart(buyerId);
     res.json({
       success: true,
@@ -200,7 +222,10 @@ router.post('/rfq', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq/seller/:sellerId', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const sellerId = req.params.sellerId as string;
     const result = await buyerCartService.createRFQFromCartForSeller(buyerId, sellerId);
     res.json({
@@ -226,7 +251,10 @@ router.post('/rfq/seller/:sellerId', requireAuth, async (req, res: Response) => 
  */
 router.post('/lock', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const cart = await buyerCartService.lockCart(buyerId, 'manual_lock');
     res.json(cart);
   } catch (error) {
@@ -245,7 +273,10 @@ router.post('/lock', requireAuth, async (req, res: Response) => {
  */
 router.post('/unlock', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const cart = await buyerCartService.unlockCart(buyerId);
     res.json(cart);
   } catch (error) {
@@ -268,7 +299,10 @@ router.post('/unlock', requireAuth, async (req, res: Response) => {
  */
 router.post('/buy-now', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const result = await buyerCartService.buyNowFromAllCart(buyerId);
     res.json({
       success: true,
@@ -301,7 +335,10 @@ router.post('/buy-now', requireAuth, async (req, res: Response) => {
  */
 router.post('/buy-now/seller/:sellerId', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const sellerId = req.params.sellerId as string;
     const result = await buyerCartService.buyNowFromCartForSeller(buyerId, sellerId);
     res.json({

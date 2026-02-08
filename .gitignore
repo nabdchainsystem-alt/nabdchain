@@ -11,11 +11,23 @@ build
 
 # Environment variables (NEVER commit these)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 server/.env
-server/.env.local
-server/.env.*.local
+server/.env.*
+!server/.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Secrets and keys (NEVER commit these)
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/secrets/
+**/credentials.json
+**/*-credentials.json
 
 # Database files (should not be committed)
 server/prisma/*.db

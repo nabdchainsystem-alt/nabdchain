@@ -1,27 +1,20 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   TrendUp,
   TrendDown,
   Warning,
   WarningCircle,
   Lightning,
-  Clock,
   ChartLineUp,
   Buildings,
   Cube,
-  ArrowRight,
   CaretDown,
   CaretUp,
   CheckCircle,
   X,
-  Eye,
   Truck,
   CurrencyDollar,
   Fire,
-  Timer,
-  ShieldCheck,
-  ArrowsClockwise,
-  CalendarBlank,
   Heartbeat,
   Info,
   Package,
@@ -29,7 +22,6 @@ import {
   Storefront,
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
-import { useAuth } from '../../../../../auth-adapter';
 import { BuyerDashboardSummary } from '../../../types/order.types';
 
 interface DashboardTabProps {
@@ -95,144 +87,30 @@ interface Snackbar {
 }
 
 // =============================================================================
-// Mock Data Generators (Production: Backend aggregation)
+// Empty defaults (Production: Backend aggregation)
 // =============================================================================
 
-const generatePurchaseVelocity = (): PurchaseVelocity => {
-  const weeklyData = [8, 12, 10, 15, 11, 18, 14, 16];
-  const current = weeklyData[weeklyData.length - 1];
-  const previous = weeklyData[weeklyData.length - 2];
-  const avgRecent = weeklyData.slice(-4).reduce((a, b) => a + b, 0) / 4;
-  const avgPast = weeklyData.slice(0, 4).reduce((a, b) => a + b, 0) / 4;
-
-  let trend: PurchaseVelocity['trend'] = 'steady';
-  let insight = 'Purchase activity is stable';
-
-  if (avgRecent > avgPast * 1.15) {
-    trend = 'accelerating';
-    insight = 'Purchasing is up 15%+ - consider negotiating volume discounts';
-  } else if (avgRecent < avgPast * 0.85) {
-    trend = 'slowing';
-    insight = 'Purchasing has slowed - review inventory levels';
-  }
-
-  return { current, previous, trend, insight, weeklyData };
+const emptyPurchaseVelocity: PurchaseVelocity = {
+  current: 0,
+  previous: 0,
+  trend: 'steady',
+  insight: 'No purchase activity yet',
+  weeklyData: [],
 };
-
-const generateSupplierRisks = (): SupplierRisk[] => [
-  {
-    supplierId: 's1',
-    supplierName: 'HydroTech Solutions',
-    dependencyScore: 78,
-    spendShare: 42,
-    riskLevel: 'high',
-    factors: ['Single source for hydraulic pumps', '42% of total spend'],
-    alternativeCount: 2,
-  },
-  {
-    supplierId: 's2',
-    supplierName: 'Industrial Parts MENA',
-    dependencyScore: 45,
-    spendShare: 23,
-    riskLevel: 'medium',
-    factors: ['Primary bearings supplier', 'Long lead times'],
-    alternativeCount: 5,
-  },
-  {
-    supplierId: 's3',
-    supplierName: 'Atlas Copco',
-    dependencyScore: 22,
-    spendShare: 12,
-    riskLevel: 'low',
-    factors: ['Multiple alternatives available'],
-    alternativeCount: 8,
-  },
-];
-
-const generateInventoryBurnRates = (): InventoryBurnRate[] => [
-  {
-    itemId: 'i1',
-    itemName: 'Hydraulic Pump Seals',
-    currentStock: 12,
-    burnRate: 4,
-    daysUntilEmpty: 21,
-    status: 'warning',
-    reorderSuggested: true,
-  },
-  {
-    itemId: 'i2',
-    itemName: 'Steel Bearings Set',
-    currentStock: 5,
-    burnRate: 2.5,
-    daysUntilEmpty: 14,
-    status: 'critical',
-    reorderSuggested: true,
-  },
-  {
-    itemId: 'i3',
-    itemName: 'Industrial Lubricant 20L',
-    currentStock: 48,
-    burnRate: 3,
-    daysUntilEmpty: 112,
-    status: 'ok',
-    reorderSuggested: false,
-  },
-];
-
-const generateSmartAlerts = (): SmartAlert[] => [
-  {
-    id: 'a1',
-    type: 'price_increase',
-    severity: 'high',
-    title: 'Price Increase Detected',
-    message: 'Hydraulic pumps from HydroTech increased by 12% this week',
-    itemName: 'Industrial Hydraulic Pump',
-    supplierName: 'HydroTech Solutions',
-    actionLabel: 'Find Alternatives',
-    actionTarget: 'marketplace',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'a2',
-    type: 'delay_risk',
-    severity: 'medium',
-    title: 'Potential Delivery Delay',
-    message: 'Your order #ORD-2024-0158 may be delayed by 2-3 days due to carrier backlog',
-    supplierName: 'Atlas Copco MENA',
-    actionLabel: 'Track Order',
-    actionTarget: 'orders',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'a3',
-    type: 'opportunity',
-    severity: 'low',
-    title: 'Volume Discount Available',
-    message: 'Based on your purchase velocity, you qualify for 8% bulk discount on bearings',
-    supplierName: 'SKF Authorized Dealer',
-    actionLabel: 'Request Quote',
-    actionTarget: 'rfq',
-    createdAt: new Date().toISOString(),
-  },
-];
 
 // =============================================================================
 // Dashboard Tab Component
 // =============================================================================
 
-export const DashboardTab: React.FC<DashboardTabProps> = ({
-  onNavigate,
-  dashboardData,
-  isLoading,
-}) => {
+export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigate, dashboardData, isLoading }) => {
   const { styles, t, direction } = usePortal();
   const isRTL = direction === 'rtl';
 
   // State
-  const [purchaseVelocity] = useState<PurchaseVelocity>(generatePurchaseVelocity);
-  const [supplierRisks] = useState<SupplierRisk[]>(generateSupplierRisks);
-  const [burnRates] = useState<InventoryBurnRate[]>(generateInventoryBurnRates);
-  const [alerts, setAlerts] = useState<SmartAlert[]>(generateSmartAlerts);
+  const [purchaseVelocity] = useState<PurchaseVelocity>(emptyPurchaseVelocity);
+  const [supplierRisks] = useState<SupplierRisk[]>([]);
+  const [burnRates] = useState<InventoryBurnRate[]>([]);
+  const [alerts, setAlerts] = useState<SmartAlert[]>([]);
   const [snackbars, setSnackbars] = useState<Snackbar[]>([]);
   const [expandedPanels, setExpandedPanels] = useState<Record<string, boolean>>({
     velocity: true,
@@ -242,37 +120,37 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
   // Toggle panel expansion
   const togglePanel = useCallback((panel: string) => {
-    setExpandedPanels(prev => ({ ...prev, [panel]: !prev[panel] }));
+    setExpandedPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
   }, []);
 
   // Dismiss alert
   const dismissAlert = useCallback((alertId: string) => {
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
+    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
     showSnackbar('Alert dismissed', 'info');
   }, []);
 
   // Show snackbar
   const showSnackbar = useCallback((message: string, type: Snackbar['type'], action?: Snackbar['action']) => {
     const id = Date.now().toString();
-    setSnackbars(prev => [...prev, { id, message, type, action }]);
+    setSnackbars((prev) => [...prev, { id, message, type, action }]);
     setTimeout(() => {
-      setSnackbars(prev => prev.filter(s => s.id !== id));
+      setSnackbars((prev) => prev.filter((s) => s.id !== id));
     }, 4000);
   }, []);
 
   // Handle action from alert
-  const handleAlertAction = useCallback((alert: SmartAlert) => {
-    if (alert.actionTarget && onNavigate) {
-      onNavigate(alert.actionTarget);
-      showSnackbar(`Navigating to ${alert.actionTarget}...`, 'info');
-    }
-  }, [onNavigate, showSnackbar]);
+  const handleAlertAction = useCallback(
+    (alert: SmartAlert) => {
+      if (alert.actionTarget && onNavigate) {
+        onNavigate(alert.actionTarget);
+        showSnackbar(`Navigating to ${alert.actionTarget}...`, 'info');
+      }
+    },
+    [onNavigate, showSnackbar],
+  );
 
   // Calculate high priority count
-  const highPriorityCount = useMemo(() =>
-    alerts.filter(a => a.severity === 'high').length,
-    [alerts]
-  );
+  const _highPriorityCount = useMemo(() => alerts.filter((a) => a.severity === 'high').length, [alerts]);
 
   return (
     <div className="space-y-6" dir={direction}>
@@ -295,36 +173,38 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           title="Purchase Velocity"
           subtitle={purchaseVelocity.insight}
           icon={ChartLineUp}
-          iconColor={purchaseVelocity.trend === 'accelerating' ? styles.success : purchaseVelocity.trend === 'slowing' ? '#f59e0b' : styles.info}
+          iconColor={
+            purchaseVelocity.trend === 'accelerating'
+              ? styles.success
+              : purchaseVelocity.trend === 'slowing'
+                ? '#f59e0b'
+                : styles.info
+          }
           isExpanded={expandedPanels.velocity}
           onToggle={() => togglePanel('velocity')}
           styles={styles}
           isRTL={isRTL}
         >
-          <PurchaseVelocityContent
-            velocity={purchaseVelocity}
-            styles={styles}
-            isRTL={isRTL}
-          />
+          <PurchaseVelocityContent velocity={purchaseVelocity} styles={styles} isRTL={isRTL} />
         </InsightPanel>
 
         {/* Supplier Dependency Risk Panel */}
         <InsightPanel
           id="risks"
           title="Supplier Dependency Risk"
-          subtitle={`${supplierRisks.filter(r => r.riskLevel === 'high').length} high-risk dependencies`}
+          subtitle={`${supplierRisks.filter((r) => r.riskLevel === 'high').length} high-risk dependencies`}
           icon={Buildings}
-          iconColor={supplierRisks.some(r => r.riskLevel === 'high') ? styles.error : styles.success}
+          iconColor={supplierRisks.some((r) => r.riskLevel === 'high') ? styles.error : styles.success}
           isExpanded={expandedPanels.risks}
           onToggle={() => togglePanel('risks')}
-          badge={supplierRisks.filter(r => r.riskLevel === 'high').length > 0 ? 'Action Needed' : undefined}
+          badge={supplierRisks.filter((r) => r.riskLevel === 'high').length > 0 ? 'Action Needed' : undefined}
           badgeColor={styles.error}
           styles={styles}
           isRTL={isRTL}
         >
           <SupplierRiskContent
             risks={supplierRisks}
-            onFindAlternatives={(supplierId) => {
+            onFindAlternatives={(_supplierId) => {
               showSnackbar('Searching for alternative suppliers...', 'info');
               onNavigate?.('marketplace');
             }}
@@ -337,19 +217,19 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         <InsightPanel
           id="burnRate"
           title="Inventory Burn Rate"
-          subtitle={`${burnRates.filter(b => b.status !== 'ok').length} items need attention`}
+          subtitle={`${burnRates.filter((b) => b.status !== 'ok').length} items need attention`}
           icon={Cube}
-          iconColor={burnRates.some(b => b.status === 'critical') ? styles.error : '#f59e0b'}
+          iconColor={burnRates.some((b) => b.status === 'critical') ? styles.error : '#f59e0b'}
           isExpanded={expandedPanels.burnRate}
           onToggle={() => togglePanel('burnRate')}
-          badge={burnRates.filter(b => b.status === 'critical').length > 0 ? 'Critical' : undefined}
+          badge={burnRates.filter((b) => b.status === 'critical').length > 0 ? 'Critical' : undefined}
           badgeColor={styles.error}
           styles={styles}
           isRTL={isRTL}
         >
           <BurnRateContent
             items={burnRates}
-            onReorder={(itemId) => {
+            onReorder={(_itemId) => {
               showSnackbar('Opening RFQ for reorder...', 'success');
               onNavigate?.('rfq');
             }}
@@ -359,17 +239,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </InsightPanel>
 
         {/* Quick Stats Mini Panel */}
-        <QuickStatsPanel
-          data={dashboardData}
-          isLoading={isLoading}
-          styles={styles}
-          isRTL={isRTL}
-          t={t}
-        />
+        <QuickStatsPanel data={dashboardData} isLoading={isLoading} styles={styles} isRTL={isRTL} t={t} />
       </div>
 
       {/* Contextual Snackbars */}
-      <SnackbarContainer snackbars={snackbars} onDismiss={(id) => setSnackbars(prev => prev.filter(s => s.id !== id))} styles={styles} />
+      <SnackbarContainer
+        snackbars={snackbars}
+        onDismiss={(id) => setSnackbars((prev) => prev.filter((s) => s.id !== id))}
+        styles={styles}
+      />
     </div>
   );
 };
@@ -386,13 +264,7 @@ interface SmartAlertsSectionProps {
   isRTL: boolean;
 }
 
-const SmartAlertsSection: React.FC<SmartAlertsSectionProps> = ({
-  alerts,
-  onDismiss,
-  onAction,
-  styles,
-  isRTL,
-}) => {
+const SmartAlertsSection: React.FC<SmartAlertsSectionProps> = ({ alerts, onDismiss, onAction, styles, isRTL }) => {
   const getAlertConfig = (alert: SmartAlert) => {
     const configs = {
       price_increase: { icon: TrendUp, color: styles.error, bg: 'rgba(239, 68, 68, 0.08)' },
@@ -425,7 +297,7 @@ const SmartAlertsSection: React.FC<SmartAlertsSectionProps> = ({
       </div>
 
       <div className="space-y-2">
-        {sortedAlerts.slice(0, 3).map(alert => {
+        {sortedAlerts.slice(0, 3).map((alert) => {
           const config = getAlertConfig(alert);
           const Icon = config.icon;
 
@@ -450,9 +322,7 @@ const SmartAlertsSection: React.FC<SmartAlertsSectionProps> = ({
                   <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                     {alert.title}
                   </span>
-                  {alert.severity === 'high' && (
-                    <Fire size={12} weight="fill" style={{ color: styles.error }} />
-                  )}
+                  {alert.severity === 'high' && <Fire size={12} weight="fill" style={{ color: styles.error }} />}
                 </div>
                 <p className="text-xs mt-0.5" style={{ color: styles.textSecondary }}>
                   {alert.message}
@@ -510,7 +380,7 @@ interface InsightPanelProps {
 }
 
 const InsightPanel: React.FC<InsightPanelProps> = ({
-  id,
+  _id,
   title,
   subtitle,
   icon: Icon,
@@ -560,17 +430,11 @@ const InsightPanel: React.FC<InsightPanelProps> = ({
             </p>
           </div>
         </div>
-        <div style={{ color: styles.textMuted }}>
-          {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
-        </div>
+        <div style={{ color: styles.textMuted }}>{isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}</div>
       </button>
 
       {/* Expandable Content */}
-      {isExpanded && (
-        <div className="p-4 pt-0">
-          {children}
-        </div>
-      )}
+      {isExpanded && <div className="p-4 pt-0">{children}</div>}
     </div>
   );
 };
@@ -585,13 +449,10 @@ interface PurchaseVelocityContentProps {
   isRTL: boolean;
 }
 
-const PurchaseVelocityContent: React.FC<PurchaseVelocityContentProps> = ({
-  velocity,
-  styles,
-  isRTL,
-}) => {
+const PurchaseVelocityContent: React.FC<PurchaseVelocityContentProps> = ({ velocity, styles, isRTL }) => {
   const maxValue = Math.max(...velocity.weeklyData);
-  const trendColor = velocity.trend === 'accelerating' ? styles.success : velocity.trend === 'slowing' ? '#f59e0b' : styles.info;
+  const trendColor =
+    velocity.trend === 'accelerating' ? styles.success : velocity.trend === 'slowing' ? '#f59e0b' : styles.info;
 
   return (
     <div className="space-y-4">
@@ -619,10 +480,17 @@ const PurchaseVelocityContent: React.FC<PurchaseVelocityContentProps> = ({
       </div>
 
       {/* Stats Row */}
-      <div className={`flex items-center justify-between p-3 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`} style={{ backgroundColor: styles.bgSecondary }}>
+      <div
+        className={`flex items-center justify-between p-3 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}
+        style={{ backgroundColor: styles.bgSecondary }}
+      >
         <div className={isRTL ? 'text-right' : ''}>
-          <span className="text-xs" style={{ color: styles.textMuted }}>This Week</span>
-          <p className="text-lg font-bold" style={{ color: styles.textPrimary }}>{velocity.current} orders</p>
+          <span className="text-xs" style={{ color: styles.textMuted }}>
+            This Week
+          </span>
+          <p className="text-lg font-bold" style={{ color: styles.textPrimary }}>
+            {velocity.current} orders
+          </p>
         </div>
         <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {velocity.current > velocity.previous ? (
@@ -640,7 +508,10 @@ const PurchaseVelocityContent: React.FC<PurchaseVelocityContentProps> = ({
       </div>
 
       {/* Insight */}
-      <div className={`flex items-start gap-2 p-3 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`} style={{ backgroundColor: `${trendColor}10` }}>
+      <div
+        className={`flex items-start gap-2 p-3 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}
+        style={{ backgroundColor: `${trendColor}10` }}
+      >
         <Info size={14} style={{ color: trendColor, marginTop: 2 }} />
         <p className="text-xs" style={{ color: styles.textSecondary }}>
           {velocity.insight}
@@ -661,19 +532,14 @@ interface SupplierRiskContentProps {
   isRTL: boolean;
 }
 
-const SupplierRiskContent: React.FC<SupplierRiskContentProps> = ({
-  risks,
-  onFindAlternatives,
-  styles,
-  isRTL,
-}) => {
+const SupplierRiskContent: React.FC<SupplierRiskContentProps> = ({ risks, onFindAlternatives, styles, isRTL }) => {
   const getRiskColor = (level: SupplierRisk['riskLevel']) => {
     return level === 'high' ? styles.error : level === 'medium' ? '#f59e0b' : styles.success;
   };
 
   return (
     <div className="space-y-3">
-      {risks.map(risk => {
+      {risks.map((risk) => {
         const color = getRiskColor(risk.riskLevel);
         return (
           <div
@@ -699,7 +565,9 @@ const SupplierRiskContent: React.FC<SupplierRiskContentProps> = ({
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold" style={{ color }}>{risk.dependencyScore}</span>
+                <span className="text-xs font-bold" style={{ color }}>
+                  {risk.dependencyScore}
+                </span>
               </div>
             </div>
 
@@ -752,12 +620,7 @@ interface BurnRateContentProps {
   isRTL: boolean;
 }
 
-const BurnRateContent: React.FC<BurnRateContentProps> = ({
-  items,
-  onReorder,
-  styles,
-  isRTL,
-}) => {
+const BurnRateContent: React.FC<BurnRateContentProps> = ({ items, onReorder, styles, isRTL }) => {
   const getStatusConfig = (status: InventoryBurnRate['status']) => {
     return {
       critical: { color: styles.error, label: 'Critical', icon: Fire },
@@ -771,7 +634,7 @@ const BurnRateContent: React.FC<BurnRateContentProps> = ({
 
   return (
     <div className="space-y-2">
-      {sortedItems.map(item => {
+      {sortedItems.map((item) => {
         const config = getStatusConfig(item.status);
         const Icon = config.icon;
         const daysWidth = Math.min((item.daysUntilEmpty / 90) * 100, 100);
@@ -847,13 +710,7 @@ interface QuickStatsPanelProps {
   t: (key: string) => string;
 }
 
-const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({
-  data,
-  isLoading,
-  styles,
-  isRTL,
-  t,
-}) => {
+const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ data, isLoading, styles, isRTL, _t }) => {
   const stats = [
     {
       label: 'Total Spend',
@@ -886,10 +743,7 @@ const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({
   ];
 
   return (
-    <div
-      className="rounded-xl border p-4"
-      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-    >
+    <div className="rounded-xl border p-4" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
       <h3 className={`text-sm font-semibold mb-4 ${isRTL ? 'text-right' : ''}`} style={{ color: styles.textPrimary }}>
         Quick Overview
       </h3>
@@ -918,7 +772,8 @@ const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({
                   </span>
                   {stat.trend !== undefined && (
                     <span className="text-[10px]" style={{ color: stat.trend >= 0 ? styles.success : styles.error }}>
-                      {stat.trend >= 0 ? '+' : ''}{stat.trend}%
+                      {stat.trend >= 0 ? '+' : ''}
+                      {stat.trend}%
                     </span>
                   )}
                 </div>
@@ -941,23 +796,20 @@ interface SnackbarContainerProps {
   styles: ReturnType<typeof usePortal>['styles'];
 }
 
-const SnackbarContainer: React.FC<SnackbarContainerProps> = ({
-  snackbars,
-  onDismiss,
-  styles,
-}) => {
+const SnackbarContainer: React.FC<SnackbarContainerProps> = ({ snackbars, onDismiss, styles }) => {
   if (snackbars.length === 0) return null;
 
-  const getSnackbarConfig = (type: Snackbar['type']) => ({
-    success: { color: styles.success, icon: CheckCircle },
-    info: { color: styles.info, icon: Info },
-    warning: { color: '#f59e0b', icon: Warning },
-    error: { color: styles.error, icon: WarningCircle },
-  })[type];
+  const getSnackbarConfig = (type: Snackbar['type']) =>
+    ({
+      success: { color: styles.success, icon: CheckCircle },
+      info: { color: styles.info, icon: Info },
+      warning: { color: '#f59e0b', icon: Warning },
+      error: { color: styles.error, icon: WarningCircle },
+    })[type];
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 space-y-2">
-      {snackbars.map(snackbar => {
+      {snackbars.map((snackbar) => {
         const config = getSnackbarConfig(snackbar.type);
         const Icon = config.icon;
 

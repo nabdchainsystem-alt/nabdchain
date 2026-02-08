@@ -101,17 +101,17 @@ export const exportComparisonToPDF = (data: ComparisonExportData): void => {
   doc.setTextColor(0, 0, 0);
 
   // Build table headers - first column is attribute name, rest are product names
-  const headers = ['Attribute', ...items.map(item => item.name)];
+  const headers = ['Attribute', ...items.map((item) => item.name)];
 
   // Build table rows
   const rows = [
-    ['Price', ...items.map(item => item.price)],
-    ['Lead Time', ...items.map(item => item.leadTime)],
-    ['Availability', ...items.map(item => item.availability)],
-    ['Min. Order', ...items.map(item => item.minOrder)],
-    ['Response Speed', ...items.map(item => item.responseSpeed)],
-    ['Reliability', ...items.map(item => item.reliability)],
-    ['Badges', ...items.map(item => getBadgeText(item))],
+    ['Price', ...items.map((item) => item.price)],
+    ['Lead Time', ...items.map((item) => item.leadTime)],
+    ['Availability', ...items.map((item) => item.availability)],
+    ['Min. Order', ...items.map((item) => item.minOrder)],
+    ['Response Speed', ...items.map((item) => item.responseSpeed)],
+    ['Reliability', ...items.map((item) => item.reliability)],
+    ['Badges', ...items.map((item) => getBadgeText(item))],
   ];
 
   // Generate table
@@ -150,7 +150,7 @@ export const exportComparisonToPDF = (data: ComparisonExportData): void => {
       `Page ${i} of ${pageCount} | NABD Marketplace`,
       doc.internal.pageSize.width / 2,
       doc.internal.pageSize.height - 10,
-      { align: 'center' }
+      { align: 'center' },
     );
   }
 
@@ -168,18 +168,18 @@ export const exportComparisonToExcel = (data: ComparisonExportData): void => {
 
   // Build worksheet data
   // Header row: Attribute + Product names
-  const headers = ['Attribute', ...items.map(item => item.name)];
+  const headers = ['Attribute', ...items.map((item) => item.name)];
 
   // Data rows
   const rows = [
-    ['Price', ...items.map(item => item.price)],
-    ['Lead Time', ...items.map(item => item.leadTime)],
-    ['Availability', ...items.map(item => item.availability)],
-    ['Min. Order', ...items.map(item => item.minOrder)],
-    ['Response Speed', ...items.map(item => item.responseSpeed)],
-    ['Reliability', ...items.map(item => item.reliability)],
-    ['Verified', ...items.map(item => item.isVerified ? 'Yes' : 'No')],
-    ['Fast Responder', ...items.map(item => item.isFastResponder ? 'Yes' : 'No')],
+    ['Price', ...items.map((item) => item.price)],
+    ['Lead Time', ...items.map((item) => item.leadTime)],
+    ['Availability', ...items.map((item) => item.availability)],
+    ['Min. Order', ...items.map((item) => item.minOrder)],
+    ['Response Speed', ...items.map((item) => item.responseSpeed)],
+    ['Reliability', ...items.map((item) => item.reliability)],
+    ['Verified', ...items.map((item) => (item.isVerified ? 'Yes' : 'No'))],
+    ['Fast Responder', ...items.map((item) => (item.isFastResponder ? 'Yes' : 'No'))],
   ];
 
   // Create worksheet
@@ -228,13 +228,10 @@ export const exportManualCompareToPDF = (data: ManualCompareExportData): void =>
   doc.setTextColor(0, 0, 0);
 
   // Build table headers
-  const headers = ['Metric', ...columns.map(col => col.name)];
+  const headers = ['Metric', ...columns.map((col) => col.name)];
 
   // Build table rows
-  const tableRows = rows.map(row => [
-    row.metric,
-    ...columns.map(col => row.values[col.id] || '—'),
-  ]);
+  const tableRows = rows.map((row) => [row.metric, ...columns.map((col) => row.values[col.id] || '—')]);
 
   // Generate table
   autoTable(doc, {
@@ -272,7 +269,7 @@ export const exportManualCompareToPDF = (data: ManualCompareExportData): void =>
       `Page ${i} of ${pageCount} | NABD Marketplace - Manual Comparison`,
       doc.internal.pageSize.width / 2,
       doc.internal.pageSize.height - 10,
-      { align: 'center' }
+      { align: 'center' },
     );
   }
 
@@ -289,13 +286,10 @@ export const exportManualCompareToExcel = (data: ManualCompareExportData): void 
   const date = getFormattedDate();
 
   // Build worksheet data
-  const headers = ['Metric', ...columns.map(col => col.name)];
+  const headers = ['Metric', ...columns.map((col) => col.name)];
 
   // Data rows
-  const tableRows = rows.map(row => [
-    row.metric,
-    ...columns.map(col => row.values[col.id] || '—'),
-  ]);
+  const tableRows = rows.map((row) => [row.metric, ...columns.map((col) => row.values[col.id] || '—')]);
 
   // Create worksheet
   const wsData = [headers, ...tableRows];
@@ -429,11 +423,7 @@ Warranty,2 years,1 year,3 years`;
 // Hybrid Compare Types
 // =============================================================================
 
-import {
-  HybridCompareColumn,
-  HybridCompareRow,
-  HybridCompareExportData,
-} from '../types/comparison.types';
+import { HybridCompareExportData } from '../types/comparison.types';
 
 // Re-export for convenience
 export type { HybridCompareExportData };
@@ -553,14 +543,12 @@ export const exportHybridCompareToPDF = (data: HybridCompareExportData): void =>
       `Page ${i} of ${pageCount} | NABD Marketplace - Hybrid Comparison`,
       doc.internal.pageSize.width / 2,
       doc.internal.pageSize.height - 10,
-      { align: 'center' }
+      { align: 'center' },
     );
   }
 
   // Save
-  const filename = rfqNumber
-    ? `hybrid-comparison-${rfqNumber}-${date}.pdf`
-    : `hybrid-comparison-${date}.pdf`;
+  const filename = rfqNumber ? `hybrid-comparison-${rfqNumber}-${date}.pdf` : `hybrid-comparison-${date}.pdf`;
   doc.save(filename);
 };
 
@@ -620,9 +608,7 @@ export const exportHybridCompareToExcel = (data: HybridCompareExportData): void 
   XLSX.utils.book_append_sheet(wb, ws, 'Hybrid Comparison');
 
   // Save
-  const filename = rfqNumber
-    ? `hybrid-comparison-${rfqNumber}-${date}.xlsx`
-    : `hybrid-comparison-${date}.xlsx`;
+  const filename = rfqNumber ? `hybrid-comparison-${rfqNumber}-${date}.xlsx` : `hybrid-comparison-${date}.xlsx`;
   XLSX.writeFile(wb, filename);
 };
 

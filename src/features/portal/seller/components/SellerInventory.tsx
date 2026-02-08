@@ -8,17 +8,7 @@ import {
   createColumnHelper,
   SortingState,
 } from '@tanstack/react-table';
-import {
-  Cube,
-  MagnifyingGlass,
-  CaretDown,
-  CaretUp,
-  ArrowClockwise,
-  Check,
-  X,
-  Warning,
-  Funnel,
-} from 'phosphor-react';
+import { Cube, MagnifyingGlass, CaretDown, CaretUp, ArrowClockwise, Check, X, Warning, Funnel } from 'phosphor-react';
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { inventoryService, InventoryItem } from '../../services/inventoryService';
@@ -35,7 +25,7 @@ type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
 // Helper Functions
 // =============================================================================
 
-const formatCurrency = (amount: number, currency: string): string => {
+const _formatCurrency = (amount: number, currency: string): string => {
   return `${currency} ${amount.toLocaleString()}`;
 };
 
@@ -277,146 +267,155 @@ export const SellerInventory: React.FC = () => {
   }, [fetchInventory]);
 
   // Handle stock update
-  const handleStockUpdate = useCallback(async (productId: string, newStock: number) => {
-    setSaving(true);
-    const previousInventory = [...inventory];
+  const handleStockUpdate = useCallback(
+    async (productId: string, newStock: number) => {
+      setSaving(true);
+      const previousInventory = [...inventory];
 
-    // Optimistic update
-    setInventory((prev) =>
-      prev.map((item) => {
-        if (item.id === productId) {
-          const availableQty = Math.max(0, newStock - item.reservedQty);
-          let status: StockStatus = 'in_stock';
-          if (availableQty <= 0) status = 'out_of_stock';
-          else if (availableQty <= 10) status = 'low_stock';
-          return { ...item, stockQty: newStock, availableQty, status };
-        }
-        return item;
-      })
-    );
+      // Optimistic update
+      setInventory((prev) =>
+        prev.map((item) => {
+          if (item.id === productId) {
+            const availableQty = Math.max(0, newStock - item.reservedQty);
+            let status: StockStatus = 'in_stock';
+            if (availableQty <= 0) status = 'out_of_stock';
+            else if (availableQty <= 10) status = 'low_stock';
+            return { ...item, stockQty: newStock, availableQty, status };
+          }
+          return item;
+        }),
+      );
 
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      await inventoryService.updateStock(token, productId, { stockQty: newStock });
-      setEditingId(null);
-    } catch (err) {
-      // Rollback
-      setInventory(previousInventory);
-      console.error('Failed to update stock:', err);
-    } finally {
-      setSaving(false);
-    }
-  }, [inventory, getToken]);
+      try {
+        const token = await getToken();
+        if (!token) throw new Error('Not authenticated');
+        await inventoryService.updateStock(token, productId, { stockQty: newStock });
+        setEditingId(null);
+      } catch (err) {
+        // Rollback
+        setInventory(previousInventory);
+        console.error('Failed to update stock:', err);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [inventory, getToken],
+  );
 
   // Status options
-  const statusOptions = useMemo(() => [
-    { value: 'all', label: t('seller.inventory.allStatus') },
-    { value: 'in_stock', label: t('seller.inventory.inStock') },
-    { value: 'low_stock', label: t('seller.inventory.lowStock') },
-    { value: 'out_of_stock', label: t('seller.inventory.outOfStock') },
-  ], [t]);
+  const statusOptions = useMemo(
+    () => [
+      { value: 'all', label: t('seller.inventory.allStatus') },
+      { value: 'in_stock', label: t('seller.inventory.inStock') },
+      { value: 'low_stock', label: t('seller.inventory.lowStock') },
+      { value: 'out_of_stock', label: t('seller.inventory.outOfStock') },
+    ],
+    [t],
+  );
 
   // Column helper
   const columnHelper = createColumnHelper<InventoryItem>();
 
   // Columns
-  const columns = useMemo(() => [
-    columnHelper.accessor('sku', {
-      header: t('seller.inventory.sku'),
-      cell: (info) => (
-        <span className="font-mono text-xs" style={{ color: styles.textMuted }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('name', {
-      header: t('seller.inventory.product'),
-      cell: (info) => (
-        <div>
-          <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('sku', {
+        header: t('seller.inventory.sku'),
+        cell: (info) => (
+          <span className="font-mono text-xs" style={{ color: styles.textMuted }}>
             {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor('name', {
+        header: t('seller.inventory.product'),
+        cell: (info) => (
+          <div>
+            <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {info.getValue()}
+            </div>
+            <div className="text-xs" style={{ color: styles.textMuted }}>
+              {info.row.original.category}
+            </div>
           </div>
-          <div className="text-xs" style={{ color: styles.textMuted }}>
-            {info.row.original.category}
-          </div>
-        </div>
-      ),
-    }),
-    columnHelper.accessor('stockQty', {
-      header: t('seller.inventory.stockQty'),
-      cell: (info) => {
-        const item = info.row.original;
-        const isEditing = editingId === item.id;
+        ),
+      }),
+      columnHelper.accessor('stockQty', {
+        header: t('seller.inventory.stockQty'),
+        cell: (info) => {
+          const item = info.row.original;
+          const isEditing = editingId === item.id;
 
-        if (isEditing) {
+          if (isEditing) {
+            return (
+              <StockEditor
+                value={item.stockQty}
+                onSave={(newValue) => handleStockUpdate(item.id, newValue)}
+                onCancel={() => setEditingId(null)}
+                saving={saving}
+              />
+            );
+          }
+
           return (
-            <StockEditor
-              value={item.stockQty}
-              onSave={(newValue) => handleStockUpdate(item.id, newValue)}
-              onCancel={() => setEditingId(null)}
-              saving={saving}
-            />
+            <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {info.getValue()}
+            </span>
           );
-        }
-
-        return (
-          <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+        },
+      }),
+      columnHelper.accessor('reservedQty', {
+        header: t('seller.inventory.reservedQty'),
+        cell: (info) => (
+          <span className="text-sm" style={{ color: styles.textMuted }}>
             {info.getValue()}
           </span>
-        );
-      },
-    }),
-    columnHelper.accessor('reservedQty', {
-      header: t('seller.inventory.reservedQty'),
-      cell: (info) => (
-        <span className="text-sm" style={{ color: styles.textMuted }}>
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('availableQty', {
-      header: t('seller.inventory.availableQty'),
-      cell: (info) => {
-        const value = info.getValue();
-        const color = value <= 0 ? '#ef4444' : value <= 10 ? '#f59e0b' : styles.textPrimary;
-        return (
-          <span className="text-sm font-medium" style={{ color }}>
-            {value}
-          </span>
-        );
-      },
-    }),
-    columnHelper.accessor('status', {
-      header: t('seller.inventory.status'),
-      cell: (info) => <StatusBadge status={info.getValue()} />,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: t('seller.inventory.actions'),
-      cell: (info) => {
-        const item = info.row.original;
-        const isEditing = editingId === item.id;
+        ),
+      }),
+      columnHelper.accessor('availableQty', {
+        header: t('seller.inventory.availableQty'),
+        cell: (info) => {
+          const value = info.getValue();
+          const color = value <= 0 ? '#ef4444' : value <= 10 ? '#f59e0b' : styles.textPrimary;
+          return (
+            <span className="text-sm font-medium" style={{ color }}>
+              {value}
+            </span>
+          );
+        },
+      }),
+      columnHelper.accessor('status', {
+        header: t('seller.inventory.status'),
+        cell: (info) => <StatusBadge status={info.getValue()} />,
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: t('seller.inventory.actions'),
+        cell: (info) => {
+          const item = info.row.original;
+          const isEditing = editingId === item.id;
 
-        if (isEditing) return null;
+          if (isEditing) return null;
 
-        return (
-          <button
-            onClick={() => setEditingId(item.id)}
-            className="px-2 py-1 text-xs rounded border transition-colors"
-            style={{
-              borderColor: styles.border,
-              color: styles.textSecondary,
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            {t('seller.inventory.adjustStock')}
-          </button>
-        );
-      },
-    }),
-  ], [columnHelper, styles, t, editingId, handleStockUpdate, saving]);
+          return (
+            <button
+              onClick={() => setEditingId(item.id)}
+              className="px-2 py-1 text-xs rounded border transition-colors"
+              style={{
+                borderColor: styles.border,
+                color: styles.textSecondary,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              {t('seller.inventory.adjustStock')}
+            </button>
+          );
+        },
+      }),
+    ],
+    [columnHelper, styles, t, editingId, handleStockUpdate, saving],
+  );
 
   // Table instance
   const table = useReactTable({
@@ -490,11 +489,7 @@ export const SellerInventory: React.FC = () => {
         </div>
 
         {/* Status Filter */}
-        <Select
-          value={statusFilter}
-          onChange={setStatusFilter}
-          options={statusOptions}
-        />
+        <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
 
         {/* Clear Filters */}
         {hasActiveFilters && (
@@ -502,8 +497,8 @@ export const SellerInventory: React.FC = () => {
             onClick={clearFilters}
             className="flex items-center gap-1 h-9 px-3 text-xs font-medium rounded-lg transition-colors"
             style={{ color: styles.textMuted }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             <X size={14} />
             {t('seller.sales.clearFilters')}
@@ -542,10 +537,7 @@ export const SellerInventory: React.FC = () => {
 
       {/* Table */}
       {!loading && inventory.length > 0 && (
-        <div
-          className="overflow-hidden rounded-lg border"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="overflow-hidden rounded-lg border" style={{ borderColor: styles.border }}>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead style={{ backgroundColor: styles.bgSecondary }}>

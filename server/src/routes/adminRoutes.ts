@@ -49,10 +49,6 @@ const DEFAULT_FEATURE_FLAGS = [
     { key: 'page_it_support', enabled: true },
     { key: 'page_hr', enabled: true },
     { key: 'page_marketing', enabled: true },
-    // Marketplace
-    { key: 'page_marketplace', enabled: true },
-    { key: 'page_local_marketplace', enabled: true },
-    { key: 'page_foreign_marketplace', enabled: true },
 ];
 
 // Middleware to check if user is admin

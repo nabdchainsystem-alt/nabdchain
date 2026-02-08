@@ -6,6 +6,8 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+import { apiLogger } from '../utils/logger';
 import {
   orderTimelineService,
   DelayReasonCode,
@@ -59,13 +61,13 @@ const delayReasonSchema = z.object({
  * GET /api/orders/timeline/:orderId
  * Get complete timeline for an order including risk assessment
  */
-router.get('/timeline/:orderId', async (req: Request, res: Response) => {
+router.get('/timeline/:orderId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { orderId } = req.params;
-    const sellerId = req.headers['x-seller-id'] as string;
+    const orderId = req.params.orderId as string;
+    const sellerId = (req as AuthRequest).auth?.userId;
 
     if (!sellerId) {
-      return res.status(401).json({ error: 'Seller ID required' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const timeline = await orderTimelineService.buildOrderTimeline(orderId);
@@ -75,7 +77,7 @@ router.get('/timeline/:orderId', async (req: Request, res: Response) => {
       data: timeline,
     });
   } catch (error) {
-    console.error('Error fetching order timeline:', error);
+    apiLogger.error('Error fetching order timeline:', error);
     res.status(500).json({
       error: 'Failed to fetch order timeline',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -87,13 +89,13 @@ router.get('/timeline/:orderId', async (req: Request, res: Response) => {
  * POST /api/orders/:orderId/delay
  * Report a delay on an order
  */
-router.post('/:orderId/delay', async (req: Request, res: Response) => {
+router.post('/:orderId/delay', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { orderId } = req.params;
-    const sellerId = req.headers['x-seller-id'] as string;
+    const orderId = req.params.orderId as string;
+    const sellerId = (req as AuthRequest).auth?.userId;
 
     if (!sellerId) {
-      return res.status(401).json({ error: 'Seller ID required' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     // Validate request body
@@ -114,10 +116,10 @@ router.post('/:orderId/delay', async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
-        details: error.errors,
+        details: error.issues,
       });
     }
-    console.error('Error reporting delay:', error);
+    apiLogger.error('Error reporting delay:', error);
     res.status(500).json({
       error: 'Failed to report delay',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -129,12 +131,12 @@ router.post('/:orderId/delay', async (req: Request, res: Response) => {
  * GET /api/orders/at-risk
  * Get orders that are at risk or have SLA breaches
  */
-router.get('/at-risk', async (req: Request, res: Response) => {
+router.get('/at-risk', requireAuth, async (req: Request, res: Response) => {
   try {
-    const sellerId = req.headers['x-seller-id'] as string;
+    const sellerId = (req as AuthRequest).auth?.userId;
 
     if (!sellerId) {
-      return res.status(401).json({ error: 'Seller ID required' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const { includeAtRisk, includeCritical } = req.query;
@@ -150,7 +152,7 @@ router.get('/at-risk', async (req: Request, res: Response) => {
       count: orders.length,
     });
   } catch (error) {
-    console.error('Error fetching at-risk orders:', error);
+    apiLogger.error('Error fetching at-risk orders:', error);
     res.status(500).json({
       error: 'Failed to fetch at-risk orders',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -162,12 +164,12 @@ router.get('/at-risk', async (req: Request, res: Response) => {
  * GET /api/orders/sla-summary
  * Get SLA breach summary for seller dashboard
  */
-router.get('/sla-summary', async (req: Request, res: Response) => {
+router.get('/sla-summary', requireAuth, async (req: Request, res: Response) => {
   try {
-    const sellerId = req.headers['x-seller-id'] as string;
+    const sellerId = (req as AuthRequest).auth?.userId;
 
     if (!sellerId) {
-      return res.status(401).json({ error: 'Seller ID required' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const { period } = req.query;
@@ -182,7 +184,7 @@ router.get('/sla-summary', async (req: Request, res: Response) => {
       data: summary,
     });
   } catch (error) {
-    console.error('Error fetching SLA summary:', error);
+    apiLogger.error('Error fetching SLA summary:', error);
     res.status(500).json({
       error: 'Failed to fetch SLA summary',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -194,12 +196,12 @@ router.get('/sla-summary', async (req: Request, res: Response) => {
  * GET /api/orders/seller-performance
  * Get seller performance statistics
  */
-router.get('/seller-performance', async (req: Request, res: Response) => {
+router.get('/seller-performance', requireAuth, async (req: Request, res: Response) => {
   try {
-    const sellerId = req.headers['x-seller-id'] as string;
+    const sellerId = (req as AuthRequest).auth?.userId;
 
     if (!sellerId) {
-      return res.status(401).json({ error: 'Seller ID required' });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const stats = await orderTimelineService.getSellerPerformanceStats(sellerId);
@@ -209,7 +211,7 @@ router.get('/seller-performance', async (req: Request, res: Response) => {
       data: stats,
     });
   } catch (error) {
-    console.error('Error fetching seller performance:', error);
+    apiLogger.error('Error fetching seller performance:', error);
     res.status(500).json({
       error: 'Failed to fetch seller performance',
       message: error instanceof Error ? error.message : 'Unknown error',

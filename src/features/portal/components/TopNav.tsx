@@ -23,14 +23,8 @@ interface TopNavProps {
  *
  * Includes: Logo, Main sections (center), Language/Theme toggles, Role badge, Sign out
  */
-export const TopNav: React.FC<TopNavProps> = ({
-  role,
-  currentPage,
-  navItems,
-  onNavigate,
-  onLogout,
-  onRoleSwitch,
-}) => {
+export const TopNav: React.FC<TopNavProps> = ({ role, currentPage, navItems, onNavigate, onLogout, onRoleSwitch }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { language, setLanguage, toggleTheme, t, direction, styles } = usePortal();
   const RoleIcon = role === 'buyer' ? ShoppingCart : Storefront;
   const roleLabel = role === 'buyer' ? t('common.buyer') : t('common.seller');

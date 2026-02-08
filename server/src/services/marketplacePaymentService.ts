@@ -5,10 +5,9 @@
 // Lifecycle: PENDING -> CONFIRMED | FAILED
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { marketplaceInvoiceService } from './marketplaceInvoiceService';
-
-const prisma = new PrismaClient();
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -84,8 +83,8 @@ async function logInvoiceEvent(
   actorId: string | null,
   actorType: 'buyer' | 'seller' | 'system',
   eventType: string,
-  fromStatus?: string,
-  toStatus?: string,
+  fromStatus?: string | null,
+  toStatus?: string | null,
   metadata?: Record<string, unknown>
 ): Promise<void> {
   await prisma.marketplaceInvoiceEvent.create({
@@ -236,7 +235,7 @@ export const marketplacePaymentService = {
 
       return { success: true, payment };
     } catch (error) {
-      console.error('Error recording payment:', error);
+      apiLogger.error('Error recording payment:', error);
 
       // Check for unique constraint violation (bank reference duplicate)
       if (error instanceof Error && error.message.includes('Unique constraint')) {
@@ -371,7 +370,7 @@ export const marketplacePaymentService = {
 
       return { success: true, payment: result.updatedPayment };
     } catch (error) {
-      console.error('Error confirming payment:', error);
+      apiLogger.error('Error confirming payment:', error);
 
       if (error instanceof Error && error.message.includes('status changed')) {
         return { success: false, error: 'Payment was modified by another process', code: 'CONCURRENT_MODIFICATION' };
@@ -433,7 +432,7 @@ export const marketplacePaymentService = {
 
       return { success: true, payment: updatedPayment };
     } catch (error) {
-      console.error('Error failing payment:', error);
+      apiLogger.error('Error failing payment:', error);
       return { success: false, error: 'Failed to update payment' };
     }
   },

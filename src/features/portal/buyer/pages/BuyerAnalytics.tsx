@@ -4,8 +4,6 @@ import {
   CurrencyCircleDollar,
   FileText,
   Clock,
-  TrendUp,
-  TrendDown,
   ChartBar,
   Funnel,
   Star,
@@ -24,15 +22,11 @@ import {
   SkeletonListSkeleton,
   SkeletonFunnelChart,
 } from '../../components';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 import { buyerAnalyticsService } from '../../services/buyerAnalyticsService';
-import {
-  BuyerAnalyticsSummary,
-  SpendByCategory,
-  SupplierPerformance,
-  RFQFunnel,
-} from '../../types/analytics.types';
+import { BuyerAnalyticsSummary, SpendByCategory, SupplierPerformance, RFQFunnel } from '../../types/analytics.types';
 
 interface BuyerAnalyticsProps {
   onNavigate: (page: string) => void;
@@ -52,16 +46,13 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [analytics, setAnalytics] = useState<BuyerAnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const { styles, t, direction, language } = usePortal();
   const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   // Close dropdown on click outside or escape key
-  const periodDropdownRef = useDropdownClose<HTMLDivElement>(
-    () => setShowPeriodDropdown(false),
-    showPeriodDropdown
-  );
+  const periodDropdownRef = useDropdownClose<HTMLDivElement>(() => setShowPeriodDropdown(false), showPeriodDropdown);
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -88,20 +79,14 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-  const selectedPeriod = PERIOD_OPTIONS.find(p => p.value === period);
+  const selectedPeriod = PERIOD_OPTIONS.find((p) => p.value === period);
 
   return (
-    <div
-      className="min-h-screen transition-colors"
-      style={{ backgroundColor: styles.bgPrimary }}
-    >
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
         {/* Header with Period Selector */}
         <div className={`flex items-start justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <PageHeader
-            title={t('buyer.analytics.title')}
-            subtitle={t('buyer.analytics.subtitle')}
-          />
+          <PageHeader title={t('buyer.analytics.title')} subtitle={t('buyer.analytics.subtitle')} />
 
           {/* Period Selector */}
           <div className="relative" ref={periodDropdownRef}>
@@ -174,49 +159,74 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" dir={direction}>
               <KPICard
+                id="totalSpend"
                 label={t('buyer.analytics.totalSpend')}
                 value={`${analytics.kpis.currency} ${analytics.kpis.totalSpend.toLocaleString()}`}
-                trend={analytics.kpis.trends.spend}
-                icon={CurrencyCircleDollar}
-                iconColor={styles.info}
+                change={
+                  analytics.kpis.trends.spend !== 0
+                    ? `${analytics.kpis.trends.spend >= 0 ? '+' : ''}${analytics.kpis.trends.spend}%`
+                    : ''
+                }
+                trend={analytics.kpis.trends.spend > 0 ? 'up' : analytics.kpis.trends.spend < 0 ? 'down' : 'neutral'}
+                icon={<CurrencyCircleDollar size={18} />}
+                color="blue"
               />
               <KPICard
+                id="rfqsSent"
                 label={t('buyer.analytics.rfqsSent')}
                 value={analytics.kpis.rfqsSent.toString()}
-                trend={analytics.kpis.trends.rfqs}
-                icon={FileText}
-                iconColor="#8b5cf6"
+                change={
+                  analytics.kpis.trends.rfqs !== 0
+                    ? `${analytics.kpis.trends.rfqs >= 0 ? '+' : ''}${analytics.kpis.trends.rfqs}%`
+                    : ''
+                }
+                trend={analytics.kpis.trends.rfqs > 0 ? 'up' : analytics.kpis.trends.rfqs < 0 ? 'down' : 'neutral'}
+                icon={<FileText size={18} />}
+                color="violet"
               />
               <KPICard
+                id="avgResponseTime"
                 label={t('buyer.analytics.avgResponseTime')}
                 value={`${analytics.kpis.avgResponseTime}h`}
-                trend={analytics.kpis.trends.responseTime}
-                trendInverted
-                icon={Clock}
-                iconColor="#f59e0b"
+                change={
+                  analytics.kpis.trends.responseTime !== 0
+                    ? `${analytics.kpis.trends.responseTime >= 0 ? '+' : ''}${analytics.kpis.trends.responseTime}%`
+                    : ''
+                }
+                trend={
+                  analytics.kpis.trends.responseTime < 0
+                    ? 'up'
+                    : analytics.kpis.trends.responseTime > 0
+                      ? 'down'
+                      : 'neutral'
+                }
+                icon={<Clock size={18} />}
+                color="amber"
               />
               <KPICard
+                id="savingsVsMarket"
                 label={t('buyer.analytics.savingsVsMarket')}
                 value={`${analytics.kpis.savingsVsMarket}%`}
-                trend={analytics.kpis.trends.savings}
-                icon={Percent}
-                iconColor={styles.success}
+                change={
+                  analytics.kpis.trends.savings !== 0
+                    ? `${analytics.kpis.trends.savings >= 0 ? '+' : ''}${analytics.kpis.trends.savings}%`
+                    : ''
+                }
+                trend={
+                  analytics.kpis.trends.savings > 0 ? 'up' : analytics.kpis.trends.savings < 0 ? 'down' : 'neutral'
+                }
+                icon={<Percent size={18} />}
+                color="emerald"
               />
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Spend by Category */}
-              <SpendByCategoryChart
-                data={analytics.spendByCategory}
-                currency={analytics.kpis.currency}
-              />
+              <SpendByCategoryChart data={analytics.spendByCategory} currency={analytics.kpis.currency} />
 
               {/* Supplier Performance */}
-              <SupplierPerformanceTable
-                suppliers={analytics.topSuppliers}
-                onViewAll={() => onNavigate('workspace')}
-              />
+              <SupplierPerformanceTable suppliers={analytics.topSuppliers} onViewAll={() => onNavigate('workspace')} />
             </div>
 
             {/* RFQ Funnel */}
@@ -224,86 +234,6 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
           </>
         )}
       </Container>
-    </div>
-  );
-};
-
-// =============================================================================
-// KPI Card Component
-// =============================================================================
-
-interface KPICardProps {
-  label: string;
-  value: string;
-  trend?: number;
-  trendInverted?: boolean;
-  icon: React.ComponentType<{ size: number; weight?: string; style?: React.CSSProperties }>;
-  iconColor: string;
-}
-
-const KPICard: React.FC<KPICardProps> = ({
-  label,
-  value,
-  trend,
-  trendInverted = false,
-  icon: Icon,
-  iconColor,
-}) => {
-  const { styles, t, direction } = usePortal();
-  const isRTL = direction === 'rtl';
-
-  // For inverted metrics (like response time), negative is good
-  const isPositive = trendInverted ? (trend !== undefined && trend < 0) : (trend !== undefined && trend >= 0);
-  const trendValue = trend !== undefined ? Math.abs(trend) : 0;
-
-  return (
-    <div
-      className="p-5 rounded-lg border transition-colors"
-      style={{
-        borderColor: styles.border,
-        backgroundColor: styles.bgCard,
-      }}
-    >
-      <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <div className={isRTL ? 'text-right' : ''}>
-          <p
-            className="text-xs font-medium uppercase tracking-wider"
-            style={{ color: styles.textMuted }}
-          >
-            {label}
-          </p>
-          <p
-            className="mt-2 text-2xl font-semibold"
-            style={{
-              color: styles.textPrimary,
-              fontFamily: styles.fontHeading,
-            }}
-          >
-            {value}
-          </p>
-          {trend !== undefined && (
-            <div className={`mt-1 flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              {isPositive ? (
-                <TrendUp size={14} weight="bold" style={{ color: styles.success }} />
-              ) : (
-                <TrendDown size={14} weight="bold" style={{ color: styles.error }} />
-              )}
-              <span
-                className="text-xs font-medium"
-                style={{ color: isPositive ? styles.success : styles.error }}
-              >
-                {trend >= 0 ? '+' : ''}{trend}% {t('buyer.analytics.vsPrevPeriod')}
-              </span>
-            </div>
-          )}
-        </div>
-        <div
-          className="w-10 h-10 rounded-md flex items-center justify-center"
-          style={{ backgroundColor: `${iconColor}15` }}
-        >
-          <Icon size={20} weight="duotone" style={{ color: iconColor }} />
-        </div>
-      </div>
     </div>
   );
 };
@@ -323,19 +253,13 @@ const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({ data, curre
 
   // Color palette for categories
   const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6b7280'];
-  const maxAmount = Math.max(...data.map(d => d.amount));
+  const maxAmount = Math.max(...data.map((d) => d.amount));
 
   return (
-    <div
-      className="p-6 rounded-lg border"
-      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-    >
+    <div className="p-6 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
       <div className={`flex items-center gap-2 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <ChartBar size={20} weight="duotone" style={{ color: styles.info }} />
-        <h3
-          className="text-sm font-semibold"
-          style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-        >
+        <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
           {t('buyer.analytics.spendByCategory')}
         </h3>
       </div>
@@ -351,10 +275,7 @@ const SpendByCategoryChart: React.FC<SpendByCategoryChartProps> = ({ data, curre
                 {currency} {item.amount.toLocaleString()} ({item.percentage.toFixed(1)}%)
               </span>
             </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -379,25 +300,16 @@ interface SupplierPerformanceTableProps {
   onViewAll: () => void;
 }
 
-const SupplierPerformanceTable: React.FC<SupplierPerformanceTableProps> = ({
-  suppliers,
-  onViewAll,
-}) => {
+const SupplierPerformanceTable: React.FC<SupplierPerformanceTableProps> = ({ suppliers, onViewAll }) => {
   const { styles, t, direction } = usePortal();
   const isRTL = direction === 'rtl';
 
   return (
-    <div
-      className="p-6 rounded-lg border"
-      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-    >
+    <div className="p-6 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
       <div className={`flex items-center justify-between mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <Trophy size={20} weight="duotone" style={{ color: '#f59e0b' }} />
-          <h3
-            className="text-sm font-semibold"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-          >
+          <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
             {t('buyer.analytics.supplierPerformance')}
           </h3>
         </div>
@@ -420,33 +332,20 @@ const SupplierPerformanceTable: React.FC<SupplierPerformanceTableProps> = ({
               >
                 {t('buyer.analytics.supplier')}
               </th>
-              <th
-                className="pb-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="pb-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.analytics.onTime')}
               </th>
-              <th
-                className="pb-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="pb-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.analytics.quality')}
               </th>
-              <th
-                className="pb-3 text-xs font-medium text-center"
-                style={{ color: styles.textMuted }}
-              >
+              <th className="pb-3 text-xs font-medium text-center" style={{ color: styles.textMuted }}>
                 {t('buyer.analytics.response')}
               </th>
             </tr>
           </thead>
           <tbody>
             {suppliers.slice(0, 5).map((supplier, index) => (
-              <tr
-                key={supplier.supplierId}
-                className="border-t"
-                style={{ borderColor: styles.border }}
-              >
+              <tr key={supplier.supplierId} className="border-t" style={{ borderColor: styles.border }}>
                 <td className="py-3">
                   <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div
@@ -478,11 +377,12 @@ const SupplierPerformanceTable: React.FC<SupplierPerformanceTableProps> = ({
                   <span
                     className="text-sm font-medium"
                     style={{
-                      color: supplier.onTimeDeliveryRate >= 95
-                        ? styles.success
-                        : supplier.onTimeDeliveryRate >= 85
-                        ? '#f59e0b'
-                        : styles.error,
+                      color:
+                        supplier.onTimeDeliveryRate >= 95
+                          ? styles.success
+                          : supplier.onTimeDeliveryRate >= 85
+                            ? '#f59e0b'
+                            : styles.error,
                     }}
                   >
                     {supplier.onTimeDeliveryRate}%
@@ -550,16 +450,10 @@ const RFQFunnelChart: React.FC<RFQFunnelChartProps> = ({ funnel }) => {
   ];
 
   return (
-    <div
-      className="p-6 rounded-lg border"
-      style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-    >
+    <div className="p-6 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
       <div className={`flex items-center gap-2 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <Funnel size={20} weight="duotone" style={{ color: '#8b5cf6' }} />
-        <h3
-          className="text-sm font-semibold"
-          style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-        >
+        <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
           {t('buyer.analytics.rfqFunnel')}
         </h3>
         <span
@@ -590,18 +484,12 @@ const RFQFunnelChart: React.FC<RFQFunnelChartProps> = ({ funnel }) => {
                 >
                   {stage.value}
                 </p>
-                <p
-                  className="text-xs text-center mt-1"
-                  style={{ color: styles.textSecondary }}
-                >
+                <p className="text-xs text-center mt-1" style={{ color: styles.textSecondary }}>
                   {stage.label}
                 </p>
               </div>
               {stage.rate !== undefined && (
-                <p
-                  className="text-xs text-center mt-2"
-                  style={{ color: styles.textMuted }}
-                >
+                <p className="text-xs text-center mt-2" style={{ color: styles.textMuted }}>
                   {stage.rate.toFixed(1)}% {t('buyer.analytics.conversionRate')}
                 </p>
               )}

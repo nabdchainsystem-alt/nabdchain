@@ -5,9 +5,9 @@
 // Every update creates a new version; old versions are immutable.
 // =============================================================================
 
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -18,6 +18,7 @@ export type QuoteStatus = 'draft' | 'sent' | 'revised' | 'expired' | 'accepted' 
 export interface CreateQuoteInput {
   rfqId: string;
   sellerId: string;
+  sellerIds?: string[]; // All possible seller IDs for authorization check
   buyerId: string;
   unitPrice: number;
   quantity: number;
@@ -174,23 +175,26 @@ export async function createDraft(input: CreateQuoteInput): Promise<{
       return { success: false, error: 'RFQ not found' };
     }
 
-    if (rfq.status !== 'under_review') {
+    // Allow quotes for open RFQs (new, viewed, under_review, quoted for revision)
+    const blockedStatuses = ['accepted', 'rejected', 'cancelled', 'expired'];
+    if (blockedStatuses.includes(rfq.status)) {
       return {
         success: false,
-        error: `Cannot create quote for RFQ in "${rfq.status}" status. RFQ must be "under_review".`,
+        error: `Cannot create quote: this RFQ has already been ${rfq.status}.`,
       };
     }
 
-    // Verify seller owns this RFQ
-    if (rfq.sellerId !== input.sellerId) {
+    // Verify seller owns this RFQ (for DIRECT RFQs) or it's a MARKETPLACE RFQ
+    const sellerIdsToCheck = input.sellerIds || [input.sellerId];
+    if (rfq.sellerId && !sellerIdsToCheck.includes(rfq.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this RFQ' };
     }
 
-    // Check for existing draft quote on this RFQ
+    // Check for existing draft quote on this RFQ (check all seller IDs)
     const existingDraft = await prisma.quote.findFirst({
       where: {
         rfqId: input.rfqId,
-        sellerId: input.sellerId,
+        sellerId: { in: sellerIdsToCheck },
         status: 'draft',
         isLatest: true,
       },
@@ -253,7 +257,7 @@ export async function createDraft(input: CreateQuoteInput): Promise<{
 
     return { success: true, quote };
   } catch (error) {
-    console.error('Error creating draft quote:', error);
+    apiLogger.error('Error creating draft quote:', error);
     return { success: false, error: 'Failed to create quote' };
   }
 }
@@ -386,7 +390,7 @@ export async function updateQuote(
       };
     }
   } catch (error) {
-    console.error('Error updating quote:', error);
+    apiLogger.error('Error updating quote:', error);
     return { success: false, error: 'Failed to update quote' };
   }
 }
@@ -397,7 +401,8 @@ export async function updateQuote(
  */
 export async function sendQuote(
   quoteId: string,
-  sellerId: string
+  sellerId: string,
+  sellerIds?: string[]
 ): Promise<{
   success: boolean;
   quote?: Prisma.QuoteGetPayload<{ include: { rfq: true } }>;
@@ -414,8 +419,9 @@ export async function sendQuote(
       return { success: false, error: 'Quote not found' };
     }
 
-    // Verify seller owns this quote
-    if (existingQuote.sellerId !== sellerId) {
+    // Verify seller owns this quote (check all possible seller IDs)
+    const allSellerIds = sellerIds || [sellerId];
+    if (!allSellerIds.includes(existingQuote.sellerId)) {
       return { success: false, error: 'Unauthorized: You do not own this quote' };
     }
 
@@ -488,7 +494,7 @@ export async function sendQuote(
 
     return { success: true, quote: updatedQuote };
   } catch (error) {
-    console.error('Error sending quote:', error);
+    apiLogger.error('Error sending quote:', error);
     return { success: false, error: 'Failed to send quote' };
   }
 }
@@ -535,7 +541,7 @@ export async function getQuote(
 
     return { success: true, quote };
   } catch (error) {
-    console.error('Error getting quote:', error);
+    apiLogger.error('Error getting quote:', error);
     return { success: false, error: 'Failed to get quote' };
   }
 }
@@ -578,7 +584,7 @@ export async function getQuotesByRFQ(
 
     return { success: true, quotes };
   } catch (error) {
-    console.error('Error getting quotes for RFQ:', error);
+    apiLogger.error('Error getting quotes for RFQ:', error);
     return { success: false, error: 'Failed to get quotes' };
   }
 }
@@ -638,7 +644,7 @@ export async function getSellerQuotes(
       },
     };
   } catch (error) {
-    console.error('Error getting seller quotes:', error);
+    apiLogger.error('Error getting seller quotes:', error);
     return { success: false, error: 'Failed to get quotes' };
   }
 }
@@ -675,7 +681,7 @@ export async function getQuoteVersions(
 
     return { success: true, versions };
   } catch (error) {
-    console.error('Error getting quote versions:', error);
+    apiLogger.error('Error getting quote versions:', error);
     return { success: false, error: 'Failed to get quote versions' };
   }
 }
@@ -712,7 +718,7 @@ export async function getQuoteHistory(
 
     return { success: true, events };
   } catch (error) {
-    console.error('Error getting quote history:', error);
+    apiLogger.error('Error getting quote history:', error);
     return { success: false, error: 'Failed to get quote history' };
   }
 }
@@ -763,7 +769,7 @@ export async function expireQuotes(): Promise<{
 
     return { success: true, expiredCount: quotesToExpire.length };
   } catch (error) {
-    console.error('Error expiring quotes:', error);
+    apiLogger.error('Error expiring quotes:', error);
     return { success: false, expiredCount: 0, error: 'Failed to expire quotes' };
   }
 }
@@ -805,7 +811,7 @@ export async function deleteDraft(
 
     return { success: true };
   } catch (error) {
-    console.error('Error deleting quote:', error);
+    apiLogger.error('Error deleting quote:', error);
     return { success: false, error: 'Failed to delete quote' };
   }
 }

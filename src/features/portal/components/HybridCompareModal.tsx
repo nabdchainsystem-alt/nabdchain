@@ -18,14 +18,7 @@ import {
 } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 import { SupplierQuote } from '../types/comparison.types';
-import {
-  HybridComparisonData,
-  HybridCompareColumn,
-  HybridCompareRow,
-  HybridCellValue,
-  quotesToHybridData,
-  countDataPoints,
-} from '../types/comparison.types';
+import { HybridComparisonData, HybridCellValue, quotesToHybridData, countDataPoints } from '../types/comparison.types';
 import {
   addManualColumn,
   removeColumn,
@@ -70,9 +63,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
   const { styles } = usePortal();
 
   // Initialize data from quotes
-  const [data, setData] = useState<HybridComparisonData>(() =>
-    quotesToHybridData(quotes, currency, rfqInfo)
-  );
+  const [data, setData] = useState<HybridComparisonData>(() => quotesToHybridData(quotes, currency, rfqInfo));
 
   // UI state
   const [activeTab, setActiveTab] = useState<'compare' | 'import'>('compare');
@@ -87,9 +78,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
       rows: data.rows.map((r) => ({
         id: r.id,
         metric: r.metric,
-        values: Object.fromEntries(
-          Object.entries(r.values).map(([k, v]) => [k, (v as HybridCellValue).value])
-        ),
+        values: Object.fromEntries(Object.entries(r.values).map(([k, v]) => [k, (v as HybridCellValue).value])),
       })),
     });
   }, [data]);
@@ -108,14 +97,14 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
     (columnId: string) => {
       setData(removeColumn(data, columnId));
     },
-    [data]
+    [data],
   );
 
   const handleUpdateColumnName = useCallback(
     (columnId: string, name: string) => {
       setData(updateColumnName(data, columnId, name));
     },
-    [data]
+    [data],
   );
 
   const handleAddRow = useCallback(() => {
@@ -126,21 +115,21 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
     (rowId: string) => {
       setData(removeRow(data, rowId));
     },
-    [data]
+    [data],
   );
 
   const handleUpdateRowMetric = useCallback(
     (rowId: string, metric: string) => {
       setData(updateRowMetric(data, rowId, metric));
     },
-    [data]
+    [data],
   );
 
   const handleUpdateCellValue = useCallback(
     (rowId: string, columnId: string, value: string) => {
       setData(updateCellValue(data, rowId, columnId, value));
     },
-    [data]
+    [data],
   );
 
   const handleRefreshLiveData = useCallback(() => {
@@ -233,9 +222,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
               </h2>
               <p className="text-sm" style={{ color: styles.textMuted }}>
                 {rfqInfo?.itemName || 'Compare supplier quotes with custom data'}
-                {rfqInfo?.rfqNumber && (
-                  <span className="ml-2 opacity-60">• {rfqInfo.rfqNumber}</span>
-                )}
+                {rfqInfo?.rfqNumber && <span className="ml-2 opacity-60">• {rfqInfo.rfqNumber}</span>}
               </p>
             </div>
           </div>
@@ -258,8 +245,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
               style={{
                 backgroundColor: activeTab === tab ? styles.bgCard : 'transparent',
                 color: activeTab === tab ? ACCENT_COLOR : styles.textMuted,
-                borderBottom:
-                  activeTab === tab ? `2px solid ${ACCENT_COLOR}` : '2px solid transparent',
+                borderBottom: activeTab === tab ? `2px solid ${ACCENT_COLOR}` : '2px solid transparent',
               }}
             >
               {tab === 'compare' && 'Comparison'}
@@ -316,12 +302,8 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                   style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
                 >
                   <Info size={16} />
-                  {dataCounts.live > 0 && (
-                    <span className="text-blue-600">{dataCounts.live} live</span>
-                  )}
-                  {dataCounts.manual > 0 && (
-                    <span className="text-gray-500">{dataCounts.manual} manual</span>
-                  )}
+                  {dataCounts.live > 0 && <span className="text-blue-600">{dataCounts.live} live</span>}
+                  {dataCounts.manual > 0 && <span className="text-gray-500">{dataCounts.manual} manual</span>}
                   {showInfo ? <CaretUp size={12} /> : <CaretDown size={12} />}
                 </button>
               </div>
@@ -335,15 +317,11 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <DataSourceBadge source="live" size="md" />
-                      <span style={{ color: styles.textSecondary }}>
-                        Data from supplier quotes (read-only)
-                      </span>
+                      <span style={{ color: styles.textSecondary }}>Data from supplier quotes (read-only)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <DataSourceBadge source="manual" size="md" />
-                      <span style={{ color: styles.textSecondary }}>
-                        Your custom entries (editable)
-                      </span>
+                      <span style={{ color: styles.textSecondary }}>Your custom entries (editable)</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 pt-2" style={{ color: styles.textMuted }}>
@@ -355,15 +333,15 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                           quality.confidence === 'high'
                             ? styles.success
                             : quality.confidence === 'medium'
-                            ? '#f59e0b'
-                            : '#ef4444',
+                              ? '#f59e0b'
+                              : '#ef4444',
                       }}
                     >
                       {quality.confidence.charAt(0).toUpperCase() + quality.confidence.slice(1)}
                     </span>
                     <span>
-                      ({Math.round(quality.completeness)}% complete, {Math.round(quality.liveDataRatio)}%
-                      from live data)
+                      ({Math.round(quality.completeness)}% complete, {Math.round(quality.liveDataRatio)}% from live
+                      data)
                     </span>
                   </div>
                 </div>
@@ -401,10 +379,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
               )}
 
               {/* Comparison Table */}
-              <div
-                className="rounded-xl overflow-hidden"
-                style={{ border: `1px solid ${styles.border}` }}
-              >
+              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${styles.border}` }}>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[600px]">
                     <thead>
@@ -424,17 +399,13 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                             key={col.id}
                             className="px-4 py-3 text-center relative min-w-[140px]"
                             style={{
-                              backgroundColor:
-                                scores.bestColumnId === col.id ? '#fef3c7' : styles.bgSecondary,
+                              backgroundColor: scores.bestColumnId === col.id ? '#fef3c7' : styles.bgSecondary,
                             }}
                           >
                             <div className="flex flex-col items-center gap-1">
                               <div className="flex items-center justify-center gap-2">
                                 {col.source === 'live' ? (
-                                  <span
-                                    className="text-sm font-semibold"
-                                    style={{ color: styles.textPrimary }}
-                                  >
+                                  <span className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
                                     {col.name}
                                   </span>
                                 ) : (
@@ -458,18 +429,10 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                               <div className="flex items-center gap-1">
                                 <DataSourceBadge source={col.source} size="sm" />
                                 {col.isVerified && (
-                                  <ShieldCheck
-                                    size={12}
-                                    weight="fill"
-                                    style={{ color: styles.success }}
-                                  />
+                                  <ShieldCheck size={12} weight="fill" style={{ color: styles.success }} />
                                 )}
                                 {col.responseSpeed === 'fast' && (
-                                  <Lightning
-                                    size={12}
-                                    weight="fill"
-                                    style={{ color: '#f59e0b' }}
-                                  />
+                                  <Lightning size={12} weight="fill" style={{ color: '#f59e0b' }} />
                                 )}
                               </div>
                             </div>
@@ -497,10 +460,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                           >
                             <div className="flex items-center gap-2">
                               {row.rowType === 'system' ? (
-                                <span
-                                  className="text-sm font-medium"
-                                  style={{ color: styles.textPrimary }}
-                                >
+                                <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                                   {row.metric}
                                 </span>
                               ) : (
@@ -537,27 +497,18 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
                                 key={col.id}
                                 className="px-4 py-3 text-center"
                                 style={{
-                                  backgroundColor: isBestColumn
-                                    ? '#fffbeb'
-                                    : isLiveCell
-                                    ? '#eff6ff'
-                                    : 'transparent',
+                                  backgroundColor: isBestColumn ? '#fffbeb' : isLiveCell ? '#eff6ff' : 'transparent',
                                 }}
                               >
                                 {isLiveCell ? (
-                                  <span
-                                    className="text-sm"
-                                    style={{ color: styles.textPrimary }}
-                                  >
+                                  <span className="text-sm" style={{ color: styles.textPrimary }}>
                                     {cell?.value || '—'}
                                   </span>
                                 ) : (
                                   <input
                                     type="text"
                                     value={cell?.value || ''}
-                                    onChange={(e) =>
-                                      handleUpdateCellValue(row.id, col.id, e.target.value)
-                                    }
+                                    onChange={(e) => handleUpdateCellValue(row.id, col.id, e.target.value)}
                                     placeholder="—"
                                     className="w-full bg-transparent text-sm outline-none text-center placeholder:text-gray-300"
                                     style={{ color: styles.textPrimary }}
@@ -578,10 +529,7 @@ export const HybridCompareModal: React.FC<HybridCompareModalProps> = ({
           {activeTab === 'import' && (
             <div className="space-y-5">
               <div>
-                <label
-                  className="block text-sm font-semibold mb-2"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-semibold mb-2" style={{ color: styles.textPrimary }}>
                   Paste CSV Data
                 </label>
                 <textarea

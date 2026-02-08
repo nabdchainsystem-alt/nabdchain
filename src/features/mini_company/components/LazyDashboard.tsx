@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 
 interface LazyDashboardProps {
-  component: React.LazyExoticComponent<React.ComponentType<any>>;
-  props?: Record<string, any>;
+  component: React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>;
+  props?: Record<string, unknown>;
   height?: string;
 }
 
@@ -17,9 +17,7 @@ const DelayedSpinner: React.FC<{ delay?: number }> = ({ delay = 200 }) => {
 
   if (!show) return null;
 
-  return (
-    <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-  );
+  return <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />;
 };
 
 /**
@@ -27,11 +25,7 @@ const DelayedSpinner: React.FC<{ delay?: number }> = ({ delay = 200 }) => {
  * Uses IntersectionObserver for efficient visibility detection.
  * Delayed loading indicators prevent flash on fast loads.
  */
-export const LazyDashboard: React.FC<LazyDashboardProps> = ({
-  component: Component,
-  props = {},
-  height = '400px'
-}) => {
+export const LazyDashboard: React.FC<LazyDashboardProps> = ({ component: Component, props = {}, height = '400px' }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -46,8 +40,8 @@ export const LazyDashboard: React.FC<LazyDashboardProps> = ({
       },
       {
         rootMargin: '0px', // Only load when actually visible
-        threshold: 0.01
-      }
+        threshold: 0.01,
+      },
     );
 
     if (ref.current) {
@@ -60,11 +54,13 @@ export const LazyDashboard: React.FC<LazyDashboardProps> = ({
   return (
     <div ref={ref} style={{ minHeight: isVisible ? 'auto' : height }}>
       {isVisible ? (
-        <Suspense fallback={
-          <div className="flex items-center justify-center p-8" style={{ minHeight: height }}>
-            <DelayedSpinner delay={150} />
-          </div>
-        }>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8" style={{ minHeight: height }}>
+              <DelayedSpinner delay={150} />
+            </div>
+          }
+        >
           <Component {...props} />
         </Suspense>
       ) : (

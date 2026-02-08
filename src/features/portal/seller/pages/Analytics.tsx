@@ -1,16 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TrendUp, ShoppingCart, Users, Percent } from 'phosphor-react';
 import {
   Container,
   PageHeader,
-  StatCard,
   SkeletonKPICard,
   SkeletonBarChart,
   SkeletonPieChart,
   SkeletonFunnelChart,
   SkeletonListSkeleton,
 } from '../../components';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 import { sellerAnalyticsService, SellerAnalyticsSummary } from '../../services/sellerAnalyticsService';
@@ -24,7 +25,7 @@ type TimeRange = '7d' | '30d' | '90d' | '12m';
 // Category colors for charts
 const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#6b7280'];
 
-export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
+export const Analytics: React.FC<AnalyticsProps> = ({ _onNavigate }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [analytics, setAnalytics] = useState<SellerAnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,31 +53,35 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
   }, [fetchAnalytics]);
 
   // Prepare data for charts from analytics
-  const revenueData = analytics?.revenueByCategory?.map((cat, i) => ({
-    month: cat.category.substring(0, 3),
-    value: cat.amount,
-  })) || [];
+  const revenueData =
+    analytics?.revenueByCategory?.map((cat, _i) => ({
+      month: cat.category.substring(0, 3),
+      value: cat.amount,
+    })) || [];
 
-  const categoryData = analytics?.revenueByCategory?.map((cat, i) => ({
-    name: cat.category,
-    value: cat.percentage,
-    color: categoryColors[i % categoryColors.length],
-  })) || [];
+  const categoryData =
+    analytics?.revenueByCategory?.map((cat, i) => ({
+      name: cat.category,
+      value: cat.percentage,
+      color: categoryColors[i % categoryColors.length],
+    })) || [];
 
   const conversionData = analytics?.conversionFunnel || [];
 
-  const topProducts = analytics?.topProducts?.map(p => ({
-    name: p.name,
-    sku: p.sku,
-    revenue: p.revenue,
-    orders: p.orders,
-  })) || [];
+  const topProducts =
+    analytics?.topProducts?.map((p) => ({
+      name: p.name,
+      sku: p.sku,
+      revenue: p.revenue,
+      orders: p.orders,
+    })) || [];
 
-  const regionData = analytics?.regionDistribution?.map(r => ({
-    region: r.region,
-    value: r.percentage,
-    orders: r.orders,
-  })) || [];
+  const regionData =
+    analytics?.regionDistribution?.map((r) => ({
+      region: r.region,
+      value: r.percentage,
+      orders: r.orders,
+    })) || [];
 
   const timeRangeLabels: Record<TimeRange, string> = {
     '7d': t('seller.analytics.7days'),
@@ -86,10 +91,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div
-      className="min-h-screen transition-colors"
-      style={{ backgroundColor: styles.bgPrimary }}
-    >
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
         <PageHeader
           title={t('seller.analytics.title')}
@@ -142,29 +144,41 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
         {/* KPI Cards */}
         {!isLoading && analytics && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard
+            <KPICard
+              id="revenue"
               label={t('seller.analytics.revenue')}
               value={`${analytics.kpis.currency} ${analytics.kpis.revenue.toLocaleString()}`}
-              icon={TrendUp}
-              change={{ value: `${analytics.kpis.trends.revenue >= 0 ? '+' : ''}${analytics.kpis.trends.revenue}% ${t('seller.analytics.vsLastPeriod')}`, positive: analytics.kpis.trends.revenue >= 0 }}
+              change={`${analytics.kpis.trends.revenue >= 0 ? '+' : ''}${analytics.kpis.trends.revenue}%`}
+              trend={analytics.kpis.trends.revenue > 0 ? 'up' : analytics.kpis.trends.revenue < 0 ? 'down' : 'neutral'}
+              icon={<TrendUp size={18} />}
+              color="emerald"
             />
-            <StatCard
+            <KPICard
+              id="orders"
               label={t('seller.analytics.orders')}
               value={analytics.kpis.orders.toString()}
-              icon={ShoppingCart}
-              change={{ value: `${analytics.kpis.trends.orders >= 0 ? '+' : ''}${analytics.kpis.trends.orders}%`, positive: analytics.kpis.trends.orders >= 0 }}
+              change={`${analytics.kpis.trends.orders >= 0 ? '+' : ''}${analytics.kpis.trends.orders}%`}
+              trend={analytics.kpis.trends.orders > 0 ? 'up' : analytics.kpis.trends.orders < 0 ? 'down' : 'neutral'}
+              icon={<ShoppingCart size={18} />}
+              color="blue"
             />
-            <StatCard
+            <KPICard
+              id="newBuyers"
               label={t('seller.analytics.newBuyers')}
               value={analytics.kpis.newBuyers.toString()}
-              icon={Users}
-              change={{ value: `${analytics.kpis.trends.buyers >= 0 ? '+' : ''}${analytics.kpis.trends.buyers}%`, positive: analytics.kpis.trends.buyers >= 0 }}
+              change={`${analytics.kpis.trends.buyers >= 0 ? '+' : ''}${analytics.kpis.trends.buyers}%`}
+              trend={analytics.kpis.trends.buyers > 0 ? 'up' : analytics.kpis.trends.buyers < 0 ? 'down' : 'neutral'}
+              icon={<Users size={18} />}
+              color="violet"
             />
-            <StatCard
+            <KPICard
+              id="winRate"
               label={t('seller.analytics.winRate')}
               value={`${analytics.kpis.winRate}%`}
-              icon={Percent}
-              change={{ value: `${analytics.kpis.trends.winRate >= 0 ? '+' : ''}${analytics.kpis.trends.winRate}%`, positive: analytics.kpis.trends.winRate >= 0 }}
+              change={`${analytics.kpis.trends.winRate >= 0 ? '+' : ''}${analytics.kpis.trends.winRate}%`}
+              trend={analytics.kpis.trends.winRate > 0 ? 'up' : analytics.kpis.trends.winRate < 0 ? 'down' : 'neutral'}
+              icon={<Percent size={18} />}
+              color="amber"
             />
           </div>
         )}
@@ -211,10 +225,7 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode }> = ({ tit
       className="rounded-lg border p-5 transition-colors"
       style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
     >
-      <h3
-        className="text-sm font-semibold mb-4"
-        style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-      >
+      <h3 className="text-sm font-semibold mb-4" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
         {title}
       </h3>
       {children}
@@ -223,7 +234,7 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode }> = ({ tit
 };
 
 // Revenue Bar Chart Component using ECharts
-const RevenueBarChart: React.FC<{ data: typeof revenueData }> = ({ data }) => {
+const RevenueBarChart: React.FC<{ data: { month: string; value: number }[] }> = ({ data }) => {
   const { styles } = usePortal();
 
   const option = {
@@ -246,7 +257,7 @@ const RevenueBarChart: React.FC<{ data: typeof revenueData }> = ({ data }) => {
     },
     xAxis: {
       type: 'category',
-      data: data.map(d => d.month),
+      data: data.map((d) => d.month),
       axisLine: { lineStyle: { color: styles.border } },
       axisLabel: { color: styles.textMuted, fontSize: 11 },
       axisTick: { show: false },
@@ -264,7 +275,7 @@ const RevenueBarChart: React.FC<{ data: typeof revenueData }> = ({ data }) => {
     series: [
       {
         type: 'bar',
-        data: data.map(d => d.value),
+        data: data.map((d) => d.value),
         barWidth: '50%',
         itemStyle: {
           color: '#3b82f6',
@@ -283,7 +294,7 @@ const RevenueBarChart: React.FC<{ data: typeof revenueData }> = ({ data }) => {
 };
 
 // Category Donut Chart Component using ECharts
-const CategoryDonutChart: React.FC<{ data: typeof categoryData }> = ({ data }) => {
+const CategoryDonutChart: React.FC<{ data: { name: string; value: number; color: string }[] }> = ({ data }) => {
   const { styles } = usePortal();
 
   const option = {
@@ -332,7 +343,7 @@ const CategoryDonutChart: React.FC<{ data: typeof categoryData }> = ({ data }) =
           },
         },
         labelLine: { show: false },
-        data: data.map(item => ({
+        data: data.map((item) => ({
           value: item.value,
           name: item.name,
           itemStyle: { color: item.color },
@@ -345,7 +356,7 @@ const CategoryDonutChart: React.FC<{ data: typeof categoryData }> = ({ data }) =
 };
 
 // Conversion Funnel Component using ECharts
-const ConversionFunnel: React.FC<{ data: typeof conversionData }> = ({ data }) => {
+const ConversionFunnel: React.FC<{ data: { stage: string; value: number; percent: number }[] }> = ({ data }) => {
   const { styles } = usePortal();
 
   const option = {
@@ -354,7 +365,8 @@ const ConversionFunnel: React.FC<{ data: typeof conversionData }> = ({ data }) =
       backgroundColor: styles.bgCard,
       borderColor: styles.border,
       textStyle: { color: styles.textPrimary, fontSize: 12 },
-      formatter: (params: any) => `${params.name}<br/>Count: <b>${params.value}</b><br/>Rate: <b>${params.data.percent}%</b>`,
+      formatter: (params: any) =>
+        `${params.name}<br/>Count: <b>${params.value}</b><br/>Rate: <b>${params.data.percent}%</b>`,
     },
     series: [
       {
@@ -392,9 +404,7 @@ const ConversionFunnel: React.FC<{ data: typeof conversionData }> = ({ data }) =
           value: item.percent,
           name: item.stage,
           itemStyle: {
-            color: index === 0 ? '#3b82f6' :
-                   index === 1 ? '#60a5fa' :
-                   index === 2 ? '#93c5fd' : '#10b981',
+            color: index === 0 ? '#3b82f6' : index === 1 ? '#60a5fa' : index === 2 ? '#93c5fd' : '#10b981',
           },
         })),
       },
@@ -405,7 +415,9 @@ const ConversionFunnel: React.FC<{ data: typeof conversionData }> = ({ data }) =
 };
 
 // Top Products List Component
-const TopProductsList: React.FC<{ data: typeof topProducts }> = ({ data }) => {
+const TopProductsList: React.FC<{ data: { name: string; sku: string; revenue: number; orders: number }[] }> = ({
+  data,
+}) => {
   const { styles } = usePortal();
 
   return (
@@ -441,7 +453,7 @@ const TopProductsList: React.FC<{ data: typeof topProducts }> = ({ data }) => {
 };
 
 // Regional Distribution Component using ECharts
-const RegionalDistribution: React.FC<{ data: typeof regionData }> = ({ data }) => {
+const RegionalDistribution: React.FC<{ data: { region: string; value: number; orders: number }[] }> = ({ data }) => {
   const { styles } = usePortal();
 
   const option = {
@@ -453,7 +465,7 @@ const RegionalDistribution: React.FC<{ data: typeof regionData }> = ({ data }) =
       axisPointer: { type: 'shadow' },
       formatter: (params: any) => {
         const item = params[0];
-        const regionItem = data.find(d => d.region === item.name);
+        const regionItem = data.find((d) => d.region === item.name);
         return `${item.name}<br/>Share: <b>${item.value}%</b><br/>Orders: <b>${regionItem?.orders || 0}</b>`;
       },
     },
@@ -477,7 +489,7 @@ const RegionalDistribution: React.FC<{ data: typeof regionData }> = ({ data }) =
     },
     yAxis: {
       type: 'category',
-      data: data.map(d => d.region).reverse(),
+      data: data.map((d) => d.region).reverse(),
       axisLine: { show: false },
       axisLabel: { color: styles.textPrimary, fontSize: 12 },
       axisTick: { show: false },
@@ -485,7 +497,7 @@ const RegionalDistribution: React.FC<{ data: typeof regionData }> = ({ data }) =
     series: [
       {
         type: 'bar',
-        data: data.map(d => d.value).reverse(),
+        data: data.map((d) => d.value).reverse(),
         barWidth: 16,
         itemStyle: {
           color: '#3b82f6',
@@ -497,7 +509,7 @@ const RegionalDistribution: React.FC<{ data: typeof regionData }> = ({ data }) =
           color: styles.textSecondary,
           fontSize: 11,
           formatter: (params: any) => {
-            const regionItem = data.find(d => d.region === data[data.length - 1 - params.dataIndex].region);
+            const regionItem = data.find((d) => d.region === data[data.length - 1 - params.dataIndex].region);
             return `${params.value}% (${regionItem?.orders || 0})`;
           },
         },

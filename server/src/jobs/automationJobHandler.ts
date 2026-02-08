@@ -3,9 +3,8 @@
 // =============================================================================
 
 import { automationRulesService } from '../services/automationRulesService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { jobLog } from '../services/observability/structuredLogger';
 
 export const automationJobHandler = {
   /**
@@ -13,7 +12,7 @@ export const automationJobHandler = {
    * Runs every 5 minutes
    */
   async checkSLABreaches(): Promise<void> {
-    console.log('[AutomationJob] Checking SLA breaches...');
+    jobLog.info('Checking SLA breaches...');
 
     try {
       // Find SLA records approaching breach (within 24 hours)
@@ -28,7 +27,7 @@ export const automationJobHandler = {
         },
       });
 
-      console.log(`[AutomationJob] Found ${upcomingBreaches.length} upcoming SLA breaches`);
+      jobLog.info(`Found ${upcomingBreaches.length} upcoming SLA breaches`, { count: upcomingBreaches.length });
 
       // Group by seller
       const breachesBySeller = upcomingBreaches.reduce((acc, breach) => {
@@ -55,7 +54,7 @@ export const automationJobHandler = {
         }
       }
     } catch (error) {
-      console.error('[AutomationJob] Failed to check SLA breaches:', error);
+      jobLog.error('Failed to check SLA breaches', error);
     }
   },
 
@@ -64,7 +63,7 @@ export const automationJobHandler = {
    * Runs every 15 minutes
    */
   async processDelayedOrders(): Promise<void> {
-    console.log('[AutomationJob] Processing delayed orders...');
+    jobLog.info('Processing delayed orders...');
 
     try {
       // Find orders that are at risk or delayed based on healthStatus
@@ -75,7 +74,7 @@ export const automationJobHandler = {
         },
       });
 
-      console.log(`[AutomationJob] Found ${delayedOrders.length} delayed orders`);
+      jobLog.info(`Found ${delayedOrders.length} delayed orders`, { count: delayedOrders.length });
 
       for (const order of delayedOrders) {
         await automationRulesService.onOrderStatusChange(
@@ -85,7 +84,7 @@ export const automationJobHandler = {
         );
       }
     } catch (error) {
-      console.error('[AutomationJob] Failed to process delayed orders:', error);
+      jobLog.error('Failed to process delayed orders', error);
     }
   },
 
@@ -94,7 +93,7 @@ export const automationJobHandler = {
    * Runs every hour
    */
   async checkLowStock(): Promise<void> {
-    console.log('[AutomationJob] Checking low stock items...');
+    jobLog.info('Checking low stock items...');
 
     try {
       // Find items with low stock
@@ -107,7 +106,7 @@ export const automationJobHandler = {
         take: 100, // Limit batch size
       });
 
-      console.log(`[AutomationJob] Found ${lowStockItems.length} low stock items`);
+      jobLog.info(`Found ${lowStockItems.length} low stock items`, { count: lowStockItems.length });
 
       for (const item of lowStockItems) {
         await automationRulesService.onStockChange(
@@ -117,7 +116,7 @@ export const automationJobHandler = {
         );
       }
     } catch (error) {
-      console.error('[AutomationJob] Failed to check low stock:', error);
+      jobLog.error('Failed to check low stock', error);
     }
   },
 
@@ -126,7 +125,7 @@ export const automationJobHandler = {
    * Runs daily
    */
   async processStaleDisputes(): Promise<void> {
-    console.log('[AutomationJob] Processing stale disputes...');
+    jobLog.info('Processing stale disputes...');
 
     try {
       // Find disputes that have been open for more than 7 days
@@ -139,7 +138,7 @@ export const automationJobHandler = {
         },
       });
 
-      console.log(`[AutomationJob] Found ${staleDisputes.length} stale disputes`);
+      jobLog.info(`Found ${staleDisputes.length} stale disputes`, { count: staleDisputes.length });
 
       for (const dispute of staleDisputes) {
         await automationRulesService.onDisputeOpened(
@@ -148,7 +147,7 @@ export const automationJobHandler = {
         );
       }
     } catch (error) {
-      console.error('[AutomationJob] Failed to process stale disputes:', error);
+      jobLog.error('Failed to process stale disputes', error);
     }
   },
 
@@ -157,7 +156,7 @@ export const automationJobHandler = {
    * Runs daily at 6 AM
    */
   async cleanupOldLogs(): Promise<void> {
-    console.log('[AutomationJob] Cleaning up old execution logs...');
+    jobLog.info('Cleaning up old execution logs...');
 
     try {
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -168,9 +167,9 @@ export const automationJobHandler = {
         },
       });
 
-      console.log(`[AutomationJob] Deleted ${result.count} old execution logs`);
+      jobLog.info(`Deleted ${result.count} old execution logs`, { count: result.count });
     } catch (error) {
-      console.error('[AutomationJob] Failed to cleanup old logs:', error);
+      jobLog.error('Failed to cleanup old logs', error);
     }
   },
 
@@ -179,7 +178,7 @@ export const automationJobHandler = {
    * Runs every 30 minutes - alerts if RFQ unread > configurable hours (default 4)
    */
   async checkUnreadRFQs(): Promise<void> {
-    console.log('[AutomationJob] Checking unread RFQs...');
+    jobLog.info('Checking unread RFQs...');
 
     try {
       const hoursThreshold = 4; // Default: alert if unread for 4+ hours
@@ -195,10 +194,11 @@ export const automationJobHandler = {
         take: 100,
       });
 
-      console.log(`[AutomationJob] Found ${unreadRFQs.length} unread RFQs (>${hoursThreshold}h)`);
+      jobLog.info(`Found ${unreadRFQs.length} unread RFQs (>${hoursThreshold}h)`, { count: unreadRFQs.length, hoursThreshold });
 
-      // Group by seller for batch notifications
+      // Group by seller for batch notifications (skip RFQs with no seller)
       const rfqsBySeller = unreadRFQs.reduce((acc, rfq) => {
+        if (!rfq.sellerId) return acc;
         if (!acc[rfq.sellerId]) acc[rfq.sellerId] = [];
         acc[rfq.sellerId].push(rfq);
         return acc;
@@ -232,7 +232,7 @@ export const automationJobHandler = {
         }
       }
     } catch (error) {
-      console.error('[AutomationJob] Failed to check unread RFQs:', error);
+      jobLog.error('Failed to check unread RFQs', error);
     }
   },
 
@@ -241,7 +241,7 @@ export const automationJobHandler = {
    * Runs daily - flags items with no orders/RFQs for X days (default 30)
    */
   async flagSlowMovingListings(): Promise<void> {
-    console.log('[AutomationJob] Checking slow-moving listings...');
+    jobLog.info('Checking slow-moving listings...');
 
     try {
       const daysThreshold = 30; // Default: flag if no activity for 30+ days
@@ -269,7 +269,7 @@ export const automationJobHandler = {
       });
 
       const allSlowItems = [...slowMovingItems, ...neverOrderedItems];
-      console.log(`[AutomationJob] Found ${allSlowItems.length} slow-moving listings (>${daysThreshold} days)`);
+      jobLog.info(`Found ${allSlowItems.length} slow-moving listings (>${daysThreshold} days)`, { count: allSlowItems.length, daysThreshold });
 
       for (const item of allSlowItems) {
         const daysSinceActivity = item.lastOrderAt
@@ -312,7 +312,7 @@ export const automationJobHandler = {
         }
       }
     } catch (error) {
-      console.error('[AutomationJob] Failed to flag slow-moving listings:', error);
+      jobLog.error('Failed to flag slow-moving listings', error);
     }
   },
 
@@ -321,7 +321,7 @@ export const automationJobHandler = {
    * This is a comprehensive scan that runs daily to catch anything missed
    */
   async runDailyAutomationScan(): Promise<void> {
-    console.log('[AutomationJob] Running daily automation scan...');
+    jobLog.info('Running daily automation scan...');
 
     try {
       // Run all checks in sequence
@@ -332,9 +332,9 @@ export const automationJobHandler = {
       await this.flagSlowMovingListings();
       await this.processStaleDisputes();
 
-      console.log('[AutomationJob] Daily automation scan completed');
+      jobLog.info('Daily automation scan completed');
     } catch (error) {
-      console.error('[AutomationJob] Daily automation scan failed:', error);
+      jobLog.error('Daily automation scan failed', error);
     }
   },
 
@@ -343,7 +343,7 @@ export const automationJobHandler = {
    * Keys expire after 24 hours to allow retries but prevent memory bloat
    */
   async cleanupExpiredIdempotencyKeys(): Promise<void> {
-    console.log('[AutomationJob] Cleaning up expired idempotency keys...');
+    jobLog.info('Cleaning up expired idempotency keys...');
 
     try {
       const result = await prisma.idempotencyKey.deleteMany({
@@ -352,9 +352,9 @@ export const automationJobHandler = {
         },
       });
 
-      console.log(`[AutomationJob] Cleaned up ${result.count} expired idempotency keys`);
+      jobLog.info(`Cleaned up ${result.count} expired idempotency keys`, { count: result.count });
     } catch (error) {
-      console.error('[AutomationJob] Failed to cleanup idempotency keys:', error);
+      jobLog.error('Failed to cleanup idempotency keys', error);
     }
   },
 };

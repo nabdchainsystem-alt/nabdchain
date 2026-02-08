@@ -5,18 +5,10 @@
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  ChartLine,
-  TrendUp,
-  TrendDown,
-  Warning,
-  CurrencyCircleDollar,
-  ArrowRight,
-  Cube,
-  Wallet,
-} from 'phosphor-react';
+import { ChartLine, TrendUp, Warning, CurrencyCircleDollar, Cube, Wallet } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { PageLayout, Button, QuickActionCard } from '../../components';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { useAuth } from '../../../../auth-adapter';
 import { expenseAnalyticsService } from '../../services/expenseAnalyticsService';
 import { ExpenseAnalyticsDashboard, formatExpenseAmount } from '../../types/expense.types';
@@ -24,70 +16,6 @@ import { ExpenseAnalyticsDashboard, formatExpenseAmount } from '../../types/expe
 interface BuyerExpensesProps {
   onNavigate?: (page: string, data?: Record<string, unknown>) => void;
 }
-
-// Specialized StatCard with trend support for expense analytics
-const ExpenseStatCard: React.FC<{
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  color?: string;
-  highlight?: boolean;
-  trend?: { value: number; isPositive: boolean };
-  onClick?: () => void;
-}> = ({ label, value, icon: Icon, color, highlight, trend, onClick }) => {
-  const { styles } = usePortal();
-
-  return (
-    <button
-      onClick={onClick}
-      className="p-4 rounded-lg border transition-all text-left w-full group"
-      style={{
-        backgroundColor: highlight ? `${color}10` : styles.bgCard,
-        borderColor: highlight ? `${color}40` : styles.border,
-      }}
-      disabled={!onClick}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: color ? `${color}15` : styles.bgSecondary }}
-        >
-          <Icon size={20} style={{ color: color || styles.textMuted }} weight={highlight ? 'fill' : 'regular'} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-xs truncate" style={{ color: styles.textMuted }}>
-            {label}
-          </div>
-          <div className="text-xl font-bold" style={{ color: highlight ? color : styles.textPrimary }}>
-            {value}
-          </div>
-          {trend && (
-            <div className="flex items-center gap-1 mt-0.5">
-              {trend.isPositive ? (
-                <TrendDown size={12} style={{ color: styles.success }} />
-              ) : (
-                <TrendUp size={12} style={{ color: styles.error }} />
-              )}
-              <span
-                className="text-xs"
-                style={{ color: trend.isPositive ? styles.success : styles.error }}
-              >
-                {trend.value > 0 ? '+' : ''}{trend.value.toFixed(1)}%
-              </span>
-            </div>
-          )}
-        </div>
-        {onClick && (
-          <ArrowRight
-            size={16}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ color: styles.textMuted }}
-          />
-        )}
-      </div>
-    </button>
-  );
-};
 
 export const BuyerExpenses: React.FC<BuyerExpensesProps> = ({ onNavigate }) => {
   const { styles, t, direction, language } = usePortal();
@@ -130,40 +58,54 @@ export const BuyerExpenses: React.FC<BuyerExpensesProps> = ({ onNavigate }) => {
 
   // Section 2: Decision-Focused Summary
   const summarySection = summary && (
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <ExpenseStatCard
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <KPICard
+        id="totalSpend"
         label={t('buyer.expenses.totalSpend') || 'Total Spend'}
         value={formatExpenseAmount(summary.totalSpend, 'SAR', language)}
-        icon={CurrencyCircleDollar}
-        color={styles.info}
-        trend={summary.periodComparison ? {
-          value: summary.periodComparison.changePercent,
-          isPositive: summary.periodComparison.changePercent < 0,
-        } : undefined}
-        onClick={openInWorkspace}
+        change={
+          summary.periodComparison
+            ? `${summary.periodComparison.changePercent > 0 ? '+' : ''}${summary.periodComparison.changePercent.toFixed(1)}%`
+            : ''
+        }
+        trend={
+          summary.periodComparison
+            ? summary.periodComparison.changePercent < 0
+              ? 'up'
+              : summary.periodComparison.changePercent > 0
+                ? 'down'
+                : 'neutral'
+            : 'neutral'
+        }
+        icon={<CurrencyCircleDollar size={18} />}
+        color="blue"
       />
-      <ExpenseStatCard
+      <KPICard
+        id="spendLeakage"
         label={t('buyer.expenses.leakageAmount') || 'Spend Leakage'}
         value={formatExpenseAmount(summary.leakageAmount, 'SAR', language)}
-        icon={Warning}
-        color={styles.error}
-        highlight={(summary.leakageCount || 0) > 0}
-        onClick={openInWorkspace}
+        change=""
+        trend={(summary.leakageCount || 0) > 0 ? 'down' : 'neutral'}
+        icon={<Warning size={18} />}
+        color="red"
       />
-      <ExpenseStatCard
+      <KPICard
+        id="priceDrift"
         label={t('buyer.expenses.priceDriftImpact') || 'Price Drift'}
         value={formatExpenseAmount(summary.priceDriftImpact, 'SAR', language)}
-        icon={TrendUp}
-        color="#f59e0b"
-        onClick={openInWorkspace}
+        change=""
+        trend="neutral"
+        icon={<TrendUp size={18} />}
+        color="amber"
       />
-      <ExpenseStatCard
+      <KPICard
+        id="budgetUsed"
         label={t('buyer.expenses.budgetUtilization') || 'Budget Used'}
         value={`${(summary.budgetUtilization || 0).toFixed(0)}%`}
-        icon={Wallet}
-        color={summary.budgetUtilization && summary.budgetUtilization > 90 ? styles.error : styles.success}
-        highlight={summary.budgetUtilization ? summary.budgetUtilization > 90 : false}
-        onClick={openInWorkspace}
+        change=""
+        trend={summary.budgetUtilization && summary.budgetUtilization > 90 ? 'down' : 'up'}
+        icon={<Wallet size={18} />}
+        color={summary.budgetUtilization && summary.budgetUtilization > 90 ? 'red' : 'emerald'}
       />
     </div>
   );
@@ -231,17 +173,21 @@ export const BuyerExpenses: React.FC<BuyerExpensesProps> = ({ onNavigate }) => {
       summary={summarySection}
       // Section 4: Secondary Actions
       quickActions={quickActionsSection}
-      ctaBanner={summary ? {
-        title: t('buyer.expenses.workspaceCTATitle') || 'Analyze Expenses in Workspace',
-        description: t('buyer.expenses.workspaceCTADesc') || 'Access detailed analytics and category breakdowns.',
-        action: (
-          <Button onClick={openInWorkspace} variant="primary" size="lg">
-            <Cube size={18} className={isRtl ? 'ml-2' : 'mr-2'} />
-            {t('buyer.expenses.openInWorkspace') || 'Open Workspace'}
-          </Button>
-        ),
-        color: styles.info,
-      } : undefined}
+      ctaBanner={
+        summary
+          ? {
+              title: t('buyer.expenses.workspaceCTATitle') || 'Analyze Expenses in Workspace',
+              description: t('buyer.expenses.workspaceCTADesc') || 'Access detailed analytics and category breakdowns.',
+              action: (
+                <Button onClick={openInWorkspace} variant="primary" size="lg">
+                  <Cube size={18} className={isRtl ? 'ml-2' : 'mr-2'} />
+                  {t('buyer.expenses.openInWorkspace') || 'Open Workspace'}
+                </Button>
+              ),
+              color: styles.info,
+            }
+          : undefined
+      }
       secondaryExpanded={false}
     >
       {/* Section 3: Primary Content Area */}

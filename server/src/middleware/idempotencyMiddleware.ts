@@ -8,6 +8,7 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -272,7 +273,7 @@ export function idempotency(options: IdempotencyOptions = {}) {
           createdEntityId,
           entityType
         ).catch(err => {
-          console.error('[Idempotency] Failed to complete record:', err);
+          apiLogger.error('[Idempotency] Failed to complete record:', err);
         });
 
         return originalJson(body);
@@ -280,7 +281,7 @@ export function idempotency(options: IdempotencyOptions = {}) {
 
       next();
     } catch (error) {
-      console.error('[Idempotency] Middleware error:', error);
+      apiLogger.error('[Idempotency] Middleware error:', error);
       // On error, proceed without idempotency (fail open for availability)
       next();
     }

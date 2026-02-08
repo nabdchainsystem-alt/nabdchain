@@ -5,9 +5,9 @@
 // Counter-offer lifecycle: PENDING → ACCEPTED | REJECTED | EXPIRED
 // =============================================================================
 
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -171,7 +171,7 @@ export async function createCounterOffer(input: CreateCounterOfferInput): Promis
 
     return { success: true, counterOffer };
   } catch (error) {
-    console.error('Error creating counter-offer:', error);
+    apiLogger.error('Error creating counter-offer:', error);
     return { success: false, error: 'Failed to create counter-offer' };
   }
 }
@@ -331,7 +331,7 @@ export async function acceptCounterOffer(
       revisedQuote: result.revisedQuote,
     };
   } catch (error) {
-    console.error('Error accepting counter-offer:', error);
+    apiLogger.error('Error accepting counter-offer:', error);
     return { success: false, error: 'Failed to accept counter-offer' };
   }
 }
@@ -411,7 +411,7 @@ export async function rejectCounterOffer(
 
     return { success: true, counterOffer: updatedCounterOffer };
   } catch (error) {
-    console.error('Error rejecting counter-offer:', error);
+    apiLogger.error('Error rejecting counter-offer:', error);
     return { success: false, error: 'Failed to reject counter-offer' };
   }
 }
@@ -449,7 +449,7 @@ export async function getCounterOffers(
 
     return { success: true, counterOffers };
   } catch (error) {
-    console.error('Error getting counter-offers:', error);
+    apiLogger.error('Error getting counter-offers:', error);
     return { success: false, error: 'Failed to get counter-offers' };
   }
 }
@@ -482,7 +482,7 @@ export async function getCounterOffer(
 
     return { success: true, counterOffer };
   } catch (error) {
-    console.error('Error getting counter-offer:', error);
+    apiLogger.error('Error getting counter-offer:', error);
     return { success: false, error: 'Failed to get counter-offer' };
   }
 }
@@ -526,7 +526,7 @@ export async function getSellerPendingCounterOffers(
       count: counterOffers.length,
     };
   } catch (error) {
-    console.error('Error getting seller pending counter-offers:', error);
+    apiLogger.error('Error getting seller pending counter-offers:', error);
     return { success: false, error: 'Failed to get pending counter-offers' };
   }
 }
@@ -569,7 +569,7 @@ export async function expireCounterOffers(): Promise<{
 
     return { success: true, expiredCount: toExpire.length };
   } catch (error) {
-    console.error('Error expiring counter-offers:', error);
+    apiLogger.error('Error expiring counter-offers:', error);
     return { success: false, expiredCount: 0, error: 'Failed to expire counter-offers' };
   }
 }

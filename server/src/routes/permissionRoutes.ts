@@ -4,12 +4,13 @@
 // Provides endpoints for fetching user permissions, roles, and audit logs.
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { requirePermission, RBACRequest, PERMISSIONS } from '../middleware/rbacMiddleware';
 import { permissionService } from '../services/permissionService';
 import { auditService } from '../services/auditService';
 import { z } from 'zod';
+import { apiLogger } from '../utils/logger';
 
 const router = Router();
 
@@ -45,9 +46,9 @@ const auditSearchSchema = z.object({
  * GET /api/portal/permissions/me
  * Get current user's permissions and roles
  */
-router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -60,7 +61,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
       permissions: permissions.permissions,
     });
   } catch (error) {
-    console.error('Error fetching user permissions:', error);
+    apiLogger.error('Error fetching user permissions:', error);
     return res.status(500).json({ error: 'Failed to fetch permissions' });
   }
 });
@@ -69,12 +70,12 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/portal/permissions/roles
  * Get all available roles
  */
-router.get('/roles', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/roles', requireAuth, async (req: Request, res: Response) => {
   try {
     const roles = await permissionService.getAllRoles();
     return res.json({ roles });
   } catch (error) {
-    console.error('Error fetching roles:', error);
+    apiLogger.error('Error fetching roles:', error);
     return res.status(500).json({ error: 'Failed to fetch roles' });
   }
 });
@@ -83,12 +84,12 @@ router.get('/roles', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/portal/permissions/all
  * Get all permissions grouped by resource
  */
-router.get('/all', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/all', requireAuth, async (req: Request, res: Response) => {
   try {
     const permissions = await permissionService.getAllPermissions();
     return res.json({ permissions });
   } catch (error) {
-    console.error('Error fetching all permissions:', error);
+    apiLogger.error('Error fetching all permissions:', error);
     return res.status(500).json({ error: 'Failed to fetch permissions' });
   }
 });
@@ -103,7 +104,7 @@ router.get(
   requirePermission(PERMISSIONS.ANALYTICS_VIEW_ALL),
   async (req: RBACRequest, res: Response) => {
     try {
-      const { userId } = req.params;
+      const userId = req.params.userId as string;
       const userRoles = await permissionService.getUserRoles(userId);
       const userPerms = await permissionService.getUserPermissions(userId);
 
@@ -113,7 +114,7 @@ router.get(
         permissions: userPerms.permissions,
       });
     } catch (error) {
-      console.error('Error fetching user permissions:', error);
+      apiLogger.error('Error fetching user permissions:', error);
       return res.status(500).json({ error: 'Failed to fetch user permissions' });
     }
   }
@@ -133,12 +134,12 @@ router.post(
       if (!parsed.success) {
         return res.status(400).json({
           error: 'Validation failed',
-          details: parsed.error.errors,
+          details: parsed.error.issues,
         });
       }
 
       const { userId, roleCode, expiresAt } = parsed.data;
-      const assignedBy = req.auth?.userId || 'system';
+      const assignedBy = (req as AuthRequest).auth?.userId || 'system';
 
       const result = await permissionService.assignRole(
         userId,
@@ -160,7 +161,7 @@ router.post(
 
       return res.json({ success: true, message: `Role '${roleCode}' assigned to user` });
     } catch (error) {
-      console.error('Error assigning role:', error);
+      apiLogger.error('Error assigning role:', error);
       return res.status(500).json({ error: 'Failed to assign role' });
     }
   }
@@ -190,14 +191,14 @@ router.post(
 
       // Log the role revocation
       await auditService.logAuthEvent('role_revoked', userId, 'admin', {
-        metadata: { roleCode, revokedBy: req.auth?.userId },
+        metadata: { roleCode, revokedBy: (req as AuthRequest).auth?.userId },
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
       });
 
       return res.json({ success: true, message: `Role '${roleCode}' revoked from user` });
     } catch (error) {
-      console.error('Error revoking role:', error);
+      apiLogger.error('Error revoking role:', error);
       return res.status(500).json({ error: 'Failed to revoke role' });
     }
   }
@@ -207,10 +208,10 @@ router.post(
  * GET /api/portal/permissions/check
  * Check if current user has specific permission
  */
-router.get('/check', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/check', requireAuth, async (req: Request, res: Response) => {
   try {
     const { permission } = req.query;
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -228,7 +229,7 @@ router.get('/check', requireAuth, async (req: AuthRequest, res: Response) => {
       role: result.roleUsed,
     });
   } catch (error) {
-    console.error('Error checking permission:', error);
+    apiLogger.error('Error checking permission:', error);
     return res.status(500).json({ error: 'Failed to check permission' });
   }
 });
@@ -246,7 +247,8 @@ router.get(
   requireAuth,
   async (req: RBACRequest, res: Response) => {
     try {
-      const { entityType, entityId } = req.params;
+      const entityType = req.params.entityType as string;
+      const entityId = req.params.entityId as string;
       const { limit, offset } = req.query;
 
       const logs = await auditService.getEntityAuditTrail(entityType, entityId, {
@@ -256,7 +258,7 @@ router.get(
 
       return res.json({ logs });
     } catch (error) {
-      console.error('Error fetching entity audit trail:', error);
+      apiLogger.error('Error fetching entity audit trail:', error);
       return res.status(500).json({ error: 'Failed to fetch audit trail' });
     }
   }
@@ -266,9 +268,9 @@ router.get(
  * GET /api/portal/permissions/audit/me
  * Get current user's audit trail
  */
-router.get('/audit/me', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/audit/me', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -285,7 +287,7 @@ router.get('/audit/me', requireAuth, async (req: AuthRequest, res: Response) => 
 
     return res.json({ logs });
   } catch (error) {
-    console.error('Error fetching user audit trail:', error);
+    apiLogger.error('Error fetching user audit trail:', error);
     return res.status(500).json({ error: 'Failed to fetch audit trail' });
   }
 });
@@ -304,7 +306,7 @@ router.get(
       if (!parsed.success) {
         return res.status(400).json({
           error: 'Validation failed',
-          details: parsed.error.errors,
+          details: parsed.error.issues,
         });
       }
 
@@ -317,7 +319,7 @@ router.get(
 
       return res.json(result);
     } catch (error) {
-      console.error('Error searching audit logs:', error);
+      apiLogger.error('Error searching audit logs:', error);
       return res.status(500).json({ error: 'Failed to search audit logs' });
     }
   }
@@ -346,7 +348,7 @@ router.get(
         ...stats,
       });
     } catch (error) {
-      console.error('Error fetching audit stats:', error);
+      apiLogger.error('Error fetching audit stats:', error);
       return res.status(500).json({ error: 'Failed to fetch audit stats' });
     }
   }

@@ -4,17 +4,13 @@
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  ClockCounterClockwise,
-  Warning,
-  ShieldCheck,
-  Prohibit,
-  ArrowRight,
-  Lock,
-  Info,
-} from 'phosphor-react';
+import { ClockCounterClockwise, Warning, ShieldCheck, Prohibit, ArrowRight, Lock, Info } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
-import { featureGatingService, GatedAction as GatedActionType, GatingResult } from '../../services/featureGatingService';
+import {
+  featureGatingService,
+  GatedAction as GatedActionType,
+  GatingResult,
+} from '../../services/featureGatingService';
 
 export type SellerStatus = 'incomplete' | 'pending_review' | 'approved' | 'suspended';
 
@@ -35,16 +31,19 @@ export const VerificationBanner: React.FC<VerificationBannerProps> = ({
     return null;
   }
 
-  const configs: Record<Exclude<SellerStatus, 'approved'>, {
-    icon: React.ElementType;
-    iconColor: string;
-    bgColor: string;
-    borderColor: string;
-    title: string;
-    description: string;
-    showAction: boolean;
-    actionLabel?: string;
-  }> = {
+  const configs: Record<
+    Exclude<SellerStatus, 'approved'>,
+    {
+      icon: React.ElementType;
+      iconColor: string;
+      bgColor: string;
+      borderColor: string;
+      title: string;
+      description: string;
+      showAction: boolean;
+      actionLabel?: string;
+    }
+  > = {
     incomplete: {
       icon: Warning,
       iconColor: 'text-orange-500',
@@ -61,7 +60,8 @@ export const VerificationBanner: React.FC<VerificationBannerProps> = ({
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       borderColor: 'border-blue-200 dark:border-blue-800',
       title: 'Verification In Progress',
-      description: 'Your store is being reviewed. You can add products, but they won\'t be visible to buyers until approved.',
+      description:
+        "Your store is being reviewed. You can add products, but they won't be visible to buyers until approved.",
       showAction: false,
     },
     suspended: {
@@ -84,7 +84,7 @@ export const VerificationBanner: React.FC<VerificationBannerProps> = ({
         <Icon size={24} weight="fill" className={`${config.iconColor} flex-shrink-0 mt-0.5`} />
         <div className="flex-1 min-w-0">
           <h3 className={`text-sm font-semibold ${styles.textPrimary}`}>{config.title}</h3>
-          <p className={`text-sm ${styles.textPrimaryMuted} mt-0.5`}>{config.description}</p>
+          <p className={`text-sm ${styles.textMuted} mt-0.5`}>{config.description}</p>
           {config.showAction && onCompleteOnboarding && (
             <button
               onClick={onCompleteOnboarding}
@@ -155,9 +155,12 @@ export const useSellerFeatureGating = (): FeatureGating => {
     }
   }, [refresh]);
 
-  const checkFeature = useCallback((action: GatedActionType): GatingResult => {
-    return features[action] || { allowed: false, reason: 'Feature not available', reasonCode: 'UNKNOWN' };
-  }, [features]);
+  const checkFeature = useCallback(
+    (action: GatedActionType): GatingResult => {
+      return features[action] || { allowed: false, reason: 'Feature not available', reasonCode: 'UNKNOWN' };
+    },
+    [features],
+  );
 
   // Legacy compatibility mappings
   const canList = features.create_draft?.allowed ?? false;
@@ -232,12 +235,16 @@ export const GatedButton: React.FC<GatedButtonProps> = ({
           {children}
         </button>
         {showReason && showTooltip && gatingResult.reason && (
-          <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 ${styles.bgSecondary} border ${styles.border} rounded-lg shadow-lg text-xs ${styles.textPrimarySecondary} whitespace-nowrap z-50 max-w-xs`}>
+          <div
+            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 ${styles.bgSecondary} border ${styles.border} rounded-lg shadow-lg text-xs ${styles.textSecondary} whitespace-nowrap z-50 max-w-xs`}
+          >
             <div className="flex items-start gap-2">
               <Info size={14} className="flex-shrink-0 mt-0.5" />
               <span>{gatingResult.reason}</span>
             </div>
-            <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-200 dark:border-t-zinc-700`} />
+            <div
+              className={`absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-200 dark:border-t-zinc-700`}
+            />
           </div>
         )}
       </div>
@@ -262,11 +269,7 @@ interface GatedActionProps {
   fallback?: React.ReactNode;
 }
 
-export const GatedAction: React.FC<GatedActionProps> = ({
-  action,
-  children,
-  fallback,
-}) => {
+export const GatedAction: React.FC<GatedActionProps> = ({ action, children, fallback }) => {
   const { checkFeature } = useSellerFeatureGating();
   const gatingResult = checkFeature(action);
 
@@ -291,8 +294,14 @@ interface StatusBadgeProps {
 
 export const SellerStatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'sm' }) => {
   const configs: Record<SellerStatus, { label: string; className: string }> = {
-    incomplete: { label: 'Setup Incomplete', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-    pending_review: { label: 'Pending Review', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    incomplete: {
+      label: 'Setup Incomplete',
+      className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    },
+    pending_review: {
+      label: 'Pending Review',
+      className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    },
     approved: { label: 'Verified', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
     suspended: { label: 'Suspended', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
   };

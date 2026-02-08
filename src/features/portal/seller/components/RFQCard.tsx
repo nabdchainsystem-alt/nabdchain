@@ -19,11 +19,7 @@ import {
   Crown,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
-import {
-  MarketplaceRFQ,
-  getBuyerBadgeConfig,
-  formatQuantity,
-} from '../../types/rfq-marketplace.types';
+import { MarketplaceRFQ, getBuyerBadgeConfig, formatQuantity } from '../../types/rfq-marketplace.types';
 
 // =============================================================================
 // Types
@@ -48,12 +44,8 @@ interface PriorityBadge {
 // Component
 // =============================================================================
 
-export const RFQCard: React.FC<RFQCardProps> = memo(({
-  rfq,
-  isSelected,
-  onSelect,
-  onToggleSave,
-}) => {
+export const RFQCard: React.FC<RFQCardProps> = memo(({ rfq, isSelected, onSelect, onToggleSave }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t } = usePortal();
 
   const buyerBadgeConfig = getBuyerBadgeConfig(rfq.buyer.badge);
@@ -62,10 +54,13 @@ export const RFQCard: React.FC<RFQCardProps> = memo(({
     onSelect(rfq);
   }, [onSelect, rfq]);
 
-  const handleSaveClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleSave(rfq);
-  }, [onToggleSave, rfq]);
+  const handleSaveClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onToggleSave(rfq);
+    },
+    [onToggleSave, rfq],
+  );
 
   // Compute priority badges - HIGH VALUE, CLOSING SOON, ENTERPRISE
   const priorityBadges = useMemo((): PriorityBadge[] => {
@@ -124,10 +119,7 @@ export const RFQCard: React.FC<RFQCardProps> = memo(({
     >
       {/* Subtle left accent for selected state */}
       {isSelected && (
-        <div
-          className="absolute left-0 top-3 bottom-3 w-0.5 rounded-full"
-          style={{ backgroundColor: '#6b7280' }}
-        />
+        <div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-full" style={{ backgroundColor: '#6b7280' }} />
       )}
 
       <div className="px-4 py-3.5">
@@ -150,9 +142,7 @@ export const RFQCard: React.FC<RFQCardProps> = memo(({
         {/* Top Row: Title + Actions */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-gray-900 truncate text-[15px] leading-tight">
-              {rfq.partName}
-            </h3>
+            <h3 className="font-medium text-gray-900 truncate text-[15px] leading-tight">{rfq.partName}</h3>
             <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
               <span>{rfq.rfqNumber}</span>
               <span>·</span>
@@ -169,9 +159,7 @@ export const RFQCard: React.FC<RFQCardProps> = memo(({
               </span>
             )}
             {isNew && !rfq.hasQuoted && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
-                New
-              </span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">New</span>
             )}
 
             {/* Save Button */}
@@ -216,9 +204,7 @@ export const RFQCard: React.FC<RFQCardProps> = memo(({
               {buyerBadgeConfig.icon === 'user-circle' && <UserCircle size={10} weight="fill" />}
               {buyerBadgeConfig.label}
             </span>
-            <span className="text-[13px] text-gray-500 truncate max-w-[140px]">
-              {rfq.buyer.companyName}
-            </span>
+            <span className="text-[13px] text-gray-500 truncate max-w-[140px]">{rfq.buyer.companyName}</span>
           </div>
 
           {/* Deadline */}
@@ -228,8 +214,8 @@ export const RFQCard: React.FC<RFQCardProps> = memo(({
               {rfq.daysRemaining > 0
                 ? `${rfq.daysRemaining}d left`
                 : rfq.hoursRemaining
-                ? `${rfq.hoursRemaining}h left`
-                : t('seller.rfqMarketplace.expired') || 'Expired'}
+                  ? `${rfq.hoursRemaining}h left`
+                  : t('seller.rfqMarketplace.expired') || 'Expired'}
             </span>
           </div>
         </div>

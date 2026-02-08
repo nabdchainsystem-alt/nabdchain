@@ -1,5 +1,5 @@
 import React, { useState, Suspense } from 'react';
-import { SignedIn, SignedOut, useUser, useAuth } from '../../auth-adapter';
+import { SignedIn, SignedOut, useUser } from '../../auth-adapter';
 import { useSignIn, useSignUp } from '@clerk/clerk-react';
 import { NotePencil, CheckSquare, Gear, SignOut, Eye, EyeSlash, ArrowLeft, GameController } from 'phosphor-react';
 import { MobileNotes } from './MobileNotes';
@@ -17,6 +17,7 @@ type AuthView = 'landing' | 'signin' | 'signup';
 // ============ MOBILE CONTENT (After Sign In) ============
 const MobileContent: React.FC = () => {
   const [activeView, setActiveView] = useState<MobileView>('tasks');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { user } = useUser();
   const { signOut } = useClerk();
 
@@ -52,11 +53,13 @@ const MobileContent: React.FC = () => {
         {activeView === 'notes' && <MobileNotes />}
         {activeView === 'tasks' && <MobileTasks />}
         {activeView === 'arcade' && (
-          <Suspense fallback={
-            <div className="flex items-center justify-center h-full">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          }>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
             <ArcadePage />
           </Suspense>
         )}
@@ -70,9 +73,7 @@ const MobileContent: React.FC = () => {
               key={item.id}
               onClick={() => setActiveView(item.id)}
               className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
-                activeView === item.id
-                  ? 'text-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                activeView === item.id ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               {item.icon}
@@ -92,12 +93,12 @@ const MobileLanding: React.FC<{ onSignIn: () => void; onSignUp: () => void }> = 
       {/* Hero Section */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-xl">
-          <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-500 to-purple-600 font-bold text-3xl">N</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-500 to-purple-600 font-bold text-3xl">
+            N
+          </span>
         </div>
         <h1 className="text-3xl font-bold text-white mb-3">NABD Mobile</h1>
-        <p className="text-white/80 text-lg max-w-xs">
-          Quick access to your tasks and notes on the go
-        </p>
+        <p className="text-white/80 text-lg max-w-xs">Quick access to your tasks and notes on the go</p>
 
         {/* Features */}
         <div className="mt-8 space-y-3 text-left">
@@ -126,9 +127,7 @@ const MobileLanding: React.FC<{ onSignIn: () => void; onSignUp: () => void }> = 
         >
           Create Account
         </button>
-        <p className="text-center text-white/60 text-sm mt-4">
-          Lightweight version for mobile
-        </p>
+        <p className="text-center text-white/60 text-sm mt-4">Lightweight version for mobile</p>
       </div>
     </div>
   );
@@ -188,11 +187,7 @@ const MobileSignInPage: React.FC<{ onBack: () => void; onSignUp: () => void }> =
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">
-              {error}
-            </div>
-          )}
+          {error && <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">{error}</div>}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
@@ -328,9 +323,7 @@ const MobileSignUpPage: React.FC<{ onBack: () => void; onSignIn: () => void }> =
         {!pendingVerification ? (
           <form onSubmit={handleSignUp} className="space-y-4">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">
-                {error}
-              </div>
+              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">{error}</div>
             )}
 
             <div>
@@ -394,9 +387,7 @@ const MobileSignUpPage: React.FC<{ onBack: () => void; onSignIn: () => void }> =
             </p>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">
-                {error}
-              </div>
+              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">{error}</div>
             )}
 
             <div>

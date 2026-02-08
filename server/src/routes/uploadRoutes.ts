@@ -24,7 +24,7 @@ if (!fs.existsSync(uploadDir)) {
  * GET /api/upload/status
  * Check if R2 storage is configured
  */
-router.get('/status', (req: AuthRequest, res: Response) => {
+router.get('/status', (req: Request, res: Response) => {
     res.json({
         configured: storageService.isConfigured(),
         message: storageService.isConfigured()
@@ -38,9 +38,9 @@ router.get('/status', (req: AuthRequest, res: Response) => {
  * Get a presigned URL for client-side upload to R2
  * Body: { filename: string, mimeType: string, folder?: string }
  */
-router.post('/presign', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/presign', requireAuth, async (req: Request, res: Response) => {
     try {
-        const userId = req.auth?.userId;
+        const userId = (req as AuthRequest).auth?.userId;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -99,9 +99,9 @@ router.post('/presign', requireAuth, async (req: AuthRequest, res: Response) => 
  * Confirm that a file was uploaded successfully
  * Body: { key: string, size: number }
  */
-router.post('/confirm', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/confirm', requireAuth, async (req: Request, res: Response) => {
     try {
-        const userId = req.auth?.userId;
+        const userId = (req as AuthRequest).auth?.userId;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -138,9 +138,9 @@ router.post('/confirm', requireAuth, async (req: AuthRequest, res: Response) => 
  * List files for the current user
  * Query: { folder?: string }
  */
-router.get('/list', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/list', requireAuth, async (req: Request, res: Response) => {
     try {
-        const userId = req.auth?.userId;
+        const userId = (req as AuthRequest).auth?.userId;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -166,9 +166,9 @@ router.get('/list', requireAuth, async (req: AuthRequest, res: Response) => {
  * DELETE /api/upload/file/:key(*)
  * Delete a file from R2 storage
  */
-router.delete('/file/{*path}', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/file/{*path}', requireAuth, async (req: Request, res: Response) => {
     try {
-        const userId = req.auth?.userId;
+        const userId = (req as AuthRequest).auth?.userId;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -200,9 +200,9 @@ router.delete('/file/{*path}', requireAuth, async (req: AuthRequest, res: Respon
  * Legacy local upload endpoint (base64 images)
  * Kept for backward compatibility
  */
-router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
     try {
-        const userId = req.auth?.userId;
+        const userId = (req as AuthRequest).auth?.userId;
         const { image, filename } = req.body;
 
         if (!image || !filename) {

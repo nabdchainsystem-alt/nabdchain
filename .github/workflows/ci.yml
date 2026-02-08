@@ -6,50 +6,148 @@ on:
   pull_request:
     branches: [main]
 
+# Shared setup as reusable anchor
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+
 jobs:
-  quality:
-    name: Code Quality
+  # ─────────────────────────────────────────────
+  # Job 1: Lint + Type Check (fastest gate)
+  # ─────────────────────────────────────────────
+  lint-and-types:
+    name: Lint & Types
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Cache pnpm dependencies
+          version: ${{ env.PNPM_VERSION }}
+      - name: Cache pnpm
         uses: actions/cache@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install server dependencies
-        run: cd server && pnpm install --frozen-lockfile
-
-      - name: Generate Prisma Client
-        run: cd server && npx prisma generate
-
-      - name: Type Check
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+      - run: pnpm install --frozen-lockfile
+      - run: cd server && pnpm install --frozen-lockfile
+      - run: cd server && npx prisma generate
+      - name: Type Check (frontend)
         run: pnpm tsc --noEmit
-        continue-on-error: true  # Allow deployment while TS errors are being fixed
+      - name: Type Check (server)
+        run: cd server && npx tsc --noEmit
+      - name: Lint
+        run: pnpm lint --max-warnings 0
 
-      - name: Build
+  # ─────────────────────────────────────────────
+  # Job 2: Unit Tests (parallel with lint)
+  # ─────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Cache pnpm
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+      - run: pnpm install --frozen-lockfile
+      - run: cd server && pnpm install --frozen-lockfile
+      - run: cd server && npx prisma generate
+      - name: Frontend Tests + Coverage
+        run: pnpm test:coverage
+      - name: Server Tests + Coverage
+        run: cd server && pnpm test:coverage
+
+  # ─────────────────────────────────────────────
+  # Job 3: Build (parallel with tests)
+  # ─────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Cache pnpm
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+      - run: pnpm install --frozen-lockfile
+      - run: cd server && pnpm install --frozen-lockfile
+      - run: cd server && npx prisma generate
+      - name: Build Frontend
         run: pnpm build
+      - name: Build Server
+        run: cd server && npx tsc
+
+  # ─────────────────────────────────────────────
+  # Job 4: Security Scan (non-blocking)
+  # ─────────────────────────────────────────────
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - run: pnpm install --frozen-lockfile
+      - run: cd server && pnpm install --frozen-lockfile
+      - name: Audit frontend dependencies
+        run: pnpm audit --audit-level=high || true
+      - name: Audit server dependencies
+        run: cd server && pnpm audit --audit-level=high || true
+
+  # ─────────────────────────────────────────────
+  # Job 5: E2E Tests (after build passes)
+  # ─────────────────────────────────────────────
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Cache pnpm
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+      - run: pnpm install --frozen-lockfile
+      - run: cd server && pnpm install --frozen-lockfile
+      - run: cd server && npx prisma generate
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+      - name: Run E2E Tests
+        run: pnpm test:e2e
+        env:
+          CI: true
+          VITE_USE_MOCK_AUTH: 'true'

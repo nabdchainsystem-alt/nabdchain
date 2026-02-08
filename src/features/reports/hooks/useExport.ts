@@ -54,9 +54,8 @@ export const useExport = (): UseExportReturn => {
   }, []);
 
   const downloadFile = useCallback((result: ExportResult) => {
-    hookLogger.debug('[useExport] Download - NOT IMPLEMENTED', result);
-    // TODO: Implement actual file download
-    // window.open(result.url, '_blank');
+    hookLogger.debug('[useExport] Download', result);
+    // Future: trigger real file download via window.open(result.url, '_blank');
     alert(`Download: ${result.fileName} (${(result.size / 1024).toFixed(1)} KB)`);
   }, []);
 

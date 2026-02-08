@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Clock, Calendar, Tag, CurrencyDollar } from 'phosphor-react';
+import { X, Clock, Calendar, CurrencyDollar } from 'phosphor-react';
 
 // =============================================================================
 // TIME ENTRY MODAL - PLACEHOLDER
@@ -30,8 +30,8 @@ export const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
   onClose,
   onSave,
   initialData,
-  taskId,
-  boardId,
+  _taskId,
+  _boardId,
 }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
@@ -69,10 +69,7 @@ export const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
             <Clock size={20} />
             Add Time Entry
           </h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded"
-          >
+          <button onClick={onClose} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
             <X size={20} className="text-stone-500" />
           </button>
         </div>
@@ -81,9 +78,7 @@ export const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
         <div className="p-4 space-y-4">
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Description</label>
             <input
               type="text"
               value={description}
@@ -95,9 +90,7 @@ export const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-              Date
-            </label>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Date</label>
             <div className="relative">
               <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
@@ -112,9 +105,7 @@ export const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-                Start Time
-              </label>
+              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Start Time</label>
               <input
                 type="time"
                 value={startTime}
@@ -123,9 +114,7 @@ export const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-                End Time
-              </label>
+              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">End Time</label>
               <input
                 type="time"
                 value={endTime}

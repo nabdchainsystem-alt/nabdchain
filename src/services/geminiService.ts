@@ -1,99 +1,123 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+/**
+ * Gemini AI Service
+ *
+ * SECURITY NOTE: AI API calls are now proxied through the backend.
+ * The Gemini API key is stored server-side only (in server/.env).
+ * This prevents exposing the API key to browser users.
+ */
 import { appLogger } from '../utils/logger';
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-// Initialize the API if the key exists
-const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+import { API_URL } from '../config/api';
 
 export interface ChatMessage {
-    id: string;
-    role: 'user' | 'model';
-    content: string;
-    timestamp: Date;
+  id: string;
+  role: 'user' | 'model';
+  content: string;
+  timestamp: Date;
 }
 
 /**
- * Sends a message to the Gemini Pro model and returns the response stream.
- * @param message User message
- * @param history Previous chat history
- * @returns AsyncGenerator yielding chunks of text
+ * Check if AI features are available by calling the backend.
+ * Returns true if the backend has AI configured.
  */
-export async function* chatWithGemini(message: string, history: { role: string, parts: string }[]) {
-    if (!genAI) {
-        throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.");
-    }
-
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    // Convert history to Gemini format if needed (simple role/parts mapping)
-    // The history param passed here is expected to be simple objects
-    const chat = model.startChat({
-        history: history.map(h => ({
-            role: h.role,
-            parts: [{ text: h.parts }]
-        })),
-        generationConfig: {
-            maxOutputTokens: 1000,
-        },
+async function isAIAvailable(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/ai/credits`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
     });
-
-    const result = await chat.sendMessageStream(message);
-
-    for await (const chunk of result.stream) {
-        const chunkText = chunk.text();
-        if (chunkText) {
-            yield chunkText;
-        }
-    }
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Simple single-shot response generation for the AI command bar.
+ * Sends a message to the AI via backend proxy.
+ * @param message User message
+ * @param history Previous chat history (currently not used with proxy)
+ * @returns AsyncGenerator yielding the full response (streaming not yet supported via proxy)
+ */
+export async function* chatWithGemini(message: string, _history: { role: string; parts: string }[]) {
+  // Future: implement streaming via backend; for now, yields a single full response
+  const response = await generateResponse(message);
+  yield response;
+}
+
+/**
+ * Simple single-shot response generation via backend proxy.
  * @param prompt User prompt
  * @returns Generated response text
  */
 export async function generateResponse(prompt: string): Promise<string> {
-    if (!genAI) {
-        return "Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.";
+  try {
+    const response = await fetch(`${API_URL}/ai/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        promptType: 'general',
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return 'AI features require authentication. Please sign in.';
+      }
+      const error = await response.json().catch(() => ({}));
+      return error.error || 'AI service temporarily unavailable.';
     }
 
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            systemInstruction: "You are a helpful, concise, and futuristic AI assistant for NABD - a business management platform. Keep responses brief and elegant.",
-        });
-        return result.response.text() || "I processed that, but have no words.";
-    } catch (error) {
-        appLogger.error("Gemini API Error:", error);
-        return "I encountered a disturbance in the data stream.";
-    }
+    const data = await response.json();
+    return data.response || data.text || 'I processed that, but have no words.';
+  } catch (error) {
+    appLogger.error('AI API Error:', error);
+    return 'AI service is currently unavailable. Please try again later.';
+  }
 }
 
 /**
- * Generates subtasks for a given task title using Gemini.
+ * Generates subtasks for a given task title via backend proxy.
  * @param taskTitle The title of the main task
  * @returns Array of subtask strings
  */
 export async function generateSubtasks(taskTitle: string): Promise<string[]> {
-    if (!genAI) {
-        appLogger.warn("Gemini API not configured, returning mock subtasks to avoid crash.");
-        return [];
+  try {
+    const prompt = `Generate 3-5 concise, actionable subtasks for the task: "${taskTitle}". Return ONLY the subtasks as a JSON array of strings.`;
+
+    const response = await fetch(`${API_URL}/ai/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        promptType: 'gtd',
+      }),
+    });
+
+    if (!response.ok) {
+      appLogger.warn('AI subtask generation failed, returning empty array.');
+      return [];
     }
+
+    const data = await response.json();
+    const text = data.response || data.text || '';
+
+    // Clean up potential markdown code blocks
+    const cleanText = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const prompt = `Generate 3-5 concise, actionable subtasks for the task: "${taskTitle}". Return ONLY the subtasks as a JSON array of strings. Example: ["Research competitors", "Draft outline"]. Do not include markdown formatting like \`\`\`json.`;
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
-
-        // Clean up potential markdown code blocks if the model ignores instruction
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        return JSON.parse(cleanText);
-    } catch (error) {
-        appLogger.error("Failed to generate subtasks:", error);
-        return ["Failed to generate subtasks. Check API limits."];
+      return JSON.parse(cleanText);
+    } catch {
+      // If parsing fails, return empty array
+      return [];
     }
+  } catch (error) {
+    appLogger.error('Failed to generate subtasks:', error);
+    return [];
+  }
 }
+
+// Export for backwards compatibility
+export { isAIAvailable };

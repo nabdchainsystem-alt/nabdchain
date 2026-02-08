@@ -19,21 +19,21 @@ interface CommentSectionProps {
 }
 
 export const CommentSection: React.FC<CommentSectionProps> = ({
-  entityType,
-  entityId,
+  _entityType,
+  _entityId,
   comments = [],
   onAddComment,
-  onEditComment,
-  onDeleteComment,
-  onReact,
+  _onEditComment,
+  _onDeleteComment,
+  _onReact,
 }) => {
   const [newComment, setNewComment] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSubmit = () => {
     if (newComment.trim()) {
-      // TODO: Parse mentions from content
-      featureLogger.debug('[Comments] Add comment - NOT IMPLEMENTED', { content: newComment });
+      // Mention parsing not yet implemented; passing empty mentions array
+      featureLogger.debug('[Comments] Add comment', { content: newComment });
       onAddComment?.(newComment, []);
       setNewComment('');
     }
@@ -48,18 +48,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       >
         <div className="flex items-center gap-2">
           <ChatCircle size={18} className="text-stone-500" />
-          <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
-            Comments
-          </span>
+          <span className="text-sm font-medium text-stone-700 dark:text-stone-300">Comments</span>
           {comments.length > 0 && (
             <span className="px-1.5 py-0.5 text-xs bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-400 rounded-full">
               {comments.length}
             </span>
           )}
         </div>
-        <span className="text-xs text-stone-400">
-          {isExpanded ? 'Hide' : 'Show'}
-        </span>
+        <span className="text-xs text-stone-400">{isExpanded ? 'Hide' : 'Show'}</span>
       </button>
 
       {/* Content */}
@@ -84,13 +80,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                       <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
                         {comment.authorName}
                       </span>
-                      <span className="text-xs text-stone-400">
-                        {new Date(comment.createdAt).toLocaleDateString()}
-                      </span>
+                      <span className="text-xs text-stone-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">
-                      {comment.content}
-                    </p>
+                    <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{comment.content}</p>
                   </div>
                 </div>
               ))}

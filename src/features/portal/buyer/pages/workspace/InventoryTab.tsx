@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
+import { featureLogger } from '../../../../../utils/logger';
+import { ThemeStyles } from '../../../../../theme/portalColors';
 import {
   useReactTable,
   getCoreRowModel,
@@ -24,7 +26,6 @@ import {
   X,
   Warning,
   ArrowUp,
-  ArrowDown,
   Cube,
   Clock,
   TrendDown,
@@ -64,15 +65,19 @@ const STATUS_COLORS: Record<InventoryStatus, { bg: string; text: string }> = {
 const AlertSnackbar: React.FC<{
   alerts: InventoryAlert[];
   onDismiss: (id: string) => void;
-  styles: any;
+  styles: ThemeStyles;
   t: (key: string) => string;
   isRTL: boolean;
-}> = ({ alerts, onDismiss, styles, t, isRTL }) => {
+}> = ({ alerts, onDismiss, styles, _t, isRTL }) => {
   if (alerts.length === 0) return null;
 
   const severityColors = {
     critical: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: '#ef4444' },
-    warning: { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800', icon: '#f59e0b' },
+    warning: {
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      border: 'border-amber-200 dark:border-amber-800',
+      icon: '#f59e0b',
+    },
     ok: { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', icon: '#3b82f6' },
   };
 
@@ -115,7 +120,7 @@ const AlertSnackbar: React.FC<{
 
 const ExpandedRowContent: React.FC<{
   item: InventoryItemWithForecast;
-  styles: any;
+  styles: ThemeStyles;
   t: (key: string) => string;
   isRTL: boolean;
   onReorder: (item: InventoryItemWithForecast, supplier: SupplierOption) => void;
@@ -123,10 +128,7 @@ const ExpandedRowContent: React.FC<{
   const [selectedQty, setSelectedQty] = useState(item.costSimulation.recommendedQty);
 
   return (
-    <div
-      className="p-4 border-t"
-      style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
-    >
+    <div className="p-4 border-t" style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Forecast Details */}
         <div>
@@ -171,8 +173,8 @@ const ExpandedRowContent: React.FC<{
                   item.forecast.confidenceLevel === 'high'
                     ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                     : item.forecast.confidenceLevel === 'medium'
-                    ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                    : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                      ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                 }`}
               >
                 {t(`buyer.inventory.${item.forecast.confidenceLevel}`)}
@@ -205,7 +207,9 @@ const ExpandedRowContent: React.FC<{
                     className={`flex items-center gap-2 text-xs mt-0.5 ${isRTL ? 'flex-row-reverse' : ''}`}
                     style={{ color: styles.textMuted }}
                   >
-                    <span>{supplier.currency} {supplier.lastUnitPrice}</span>
+                    <span>
+                      {supplier.currency} {supplier.lastUnitPrice}
+                    </span>
                     <span>•</span>
                     <span>{supplier.avgDeliveryDays}d</span>
                     <span>•</span>
@@ -285,7 +289,8 @@ const ExpandedRowContent: React.FC<{
                 >
                   <Lightning size={14} style={{ color: styles.success }} />
                   <span className="text-xs font-medium" style={{ color: styles.success }}>
-                    {t('buyer.inventory.save')} SAR {item.costSimulation.potentialSavings.toFixed(0)} ({item.costSimulation.savingsPercent}%)
+                    {t('buyer.inventory.save')} SAR {item.costSimulation.potentialSavings.toFixed(0)} (
+                    {item.costSimulation.savingsPercent}%)
                   </span>
                 </div>
               )}
@@ -396,7 +401,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
 
   const handleReorder = (item: InventoryItemWithForecast, supplier: SupplierOption) => {
     // In production, this would open a purchase order creation flow
-    console.log('Reorder:', item.productName, 'from', supplier.supplierName);
+    featureLogger.info('Reorder:', item.productName, 'from', supplier.supplierName);
   };
 
   const columns = useMemo(
@@ -420,9 +425,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
       }),
       columnHelper.accessor('productName', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.productName')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.productName')}</span>
         ),
         cell: (info) => (
           <span className="font-medium" style={{ color: styles.textPrimary }}>
@@ -431,11 +434,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
         ),
       }),
       columnHelper.accessor('sku', {
-        header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.sku')}
-          </span>
-        ),
+        header: () => <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.sku')}</span>,
         cell: (info) => (
           <span className="font-mono text-xs" style={{ color: styles.textSecondary }}>
             {info.getValue()}
@@ -444,9 +443,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
       }),
       columnHelper.accessor('quantity', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.quantityOnHand')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.quantityOnHand')}</span>
         ),
         cell: (info) => {
           const item = info.row.original;
@@ -474,10 +471,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
                 >
                   <Check size={16} style={{ color: styles.success }} />
                 </button>
-                <button
-                  onClick={handleCancel}
-                  className="p-1 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30"
-                >
+                <button onClick={handleCancel} className="p-1 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30">
                   <X size={16} style={{ color: styles.error }} />
                 </button>
               </div>
@@ -501,12 +495,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
         ),
         cell: (info) => {
           const days = info.getValue();
-          const color =
-            days <= 7
-              ? styles.error
-              : days <= 14
-              ? '#f59e0b'
-              : styles.success;
+          const color = days <= 7 ? styles.error : days <= 14 ? '#f59e0b' : styles.success;
 
           return (
             <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -520,17 +509,13 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
       }),
       columnHelper.accessor('status', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.stockStatus')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.stockStatus')}</span>
         ),
         cell: (info) => {
           const status = info.getValue() as InventoryStatus;
           const colors = STATUS_COLORS[status];
           return (
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}
-            >
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}>
               {t(`buyer.workspace.${status}`)}
             </span>
           );
@@ -538,9 +523,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
       }),
       columnHelper.display({
         id: 'actions',
-        header: () => (
-          <span className="w-full text-center block">{t('common.actions')}</span>
-        ),
+        header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
         cell: (info) => {
           const item = info.row.original;
           const isEditing = editingId === item.id;
@@ -562,7 +545,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
         },
       }),
     ],
-    [t, styles, isRTL, editingId, editingQty]
+    [t, styles, isRTL, editingId, editingQty],
   );
 
   const table = useReactTable({
@@ -594,9 +577,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
     const criticalItems = inventory.filter((item) => item.status === 'critical').length;
     const lowStockItems = inventory.filter((item) => item.status === 'low').length;
     const reorderNeeded = inventory.filter((item) => item.forecast.daysUntilStockout <= 14).length;
-    const avgDaysToStockout = inventory.length > 0
-      ? Math.round(inventory.reduce((sum, item) => sum + item.forecast.daysUntilStockout, 0) / inventory.length)
-      : 0;
+    const avgDaysToStockout =
+      inventory.length > 0
+        ? Math.round(inventory.reduce((sum, item) => sum + item.forecast.daysUntilStockout, 0) / inventory.length)
+        : 0;
 
     // Calculate incoming/used from pending orders
     const incomingQty = inventory.reduce((sum, item) => sum + item.pendingOrderQty, 0);
@@ -617,21 +601,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
   return (
     <div dir={direction}>
       {/* Inline Alerts (Snackbars) */}
-      <AlertSnackbar
-        alerts={alerts}
-        onDismiss={handleDismissAlert}
-        styles={styles}
-        t={t}
-        isRTL={isRTL}
-      />
+      <AlertSnackbar alerts={alerts} onDismiss={handleDismissAlert} styles={styles} t={t} isRTL={isRTL} />
 
       {/* Inventory Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {/* Total Items */}
-        <div
-          className="p-4 rounded-lg border"
-          style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-        >
+        <div className="p-4 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Cube size={18} style={{ color: styles.info }} />
             <span className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
@@ -647,10 +622,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
         </div>
 
         {/* Avg Days to Stockout */}
-        <div
-          className="p-4 rounded-lg border"
-          style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-        >
+        <div className="p-4 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Clock size={18} style={{ color: styles.warning || '#f59e0b' }} />
             <span className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
@@ -660,11 +632,12 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
           <p
             className="text-2xl font-bold mt-2"
             style={{
-              color: inventorySummary.avgDaysToStockout < 14
-                ? styles.error
-                : inventorySummary.avgDaysToStockout < 30
-                ? '#f59e0b'
-                : styles.success,
+              color:
+                inventorySummary.avgDaysToStockout < 14
+                  ? styles.error
+                  : inventorySummary.avgDaysToStockout < 30
+                    ? '#f59e0b'
+                    : styles.success,
             }}
           >
             {inventorySummary.avgDaysToStockout}
@@ -675,10 +648,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
         </div>
 
         {/* Used/Outgoing */}
-        <div
-          className="p-4 rounded-lg border"
-          style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-        >
+        <div className="p-4 rounded-lg border" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <ArrowUp size={18} style={{ color: '#f59e0b' }} />
             <span className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
@@ -718,7 +688,8 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
             {inventorySummary.reorderNeeded}
           </p>
           <p className="text-xs mt-1" style={{ color: styles.textSecondary }}>
-            {inventorySummary.criticalItems} {t('buyer.workspace.critical')}, {inventorySummary.lowStockItems} {t('buyer.workspace.low')}
+            {inventorySummary.criticalItems} {t('buyer.workspace.critical')}, {inventorySummary.lowStockItems}{' '}
+            {t('buyer.workspace.low')}
           </p>
         </div>
       </div>
@@ -799,19 +770,14 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
           <table className="w-full">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr
-                  key={headerGroup.id}
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
+                <tr key={headerGroup.id} style={{ backgroundColor: styles.bgSecondary }}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                       style={{ color: styles.textMuted }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
                 </tr>
@@ -839,13 +805,13 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => {
-                  const item = row.original;
+                  const item = row.original as InventoryItemWithForecast;
                   const rowBg =
                     item.status === 'critical'
                       ? 'bg-red-50/50 dark:bg-red-900/10'
                       : item.status === 'low'
-                      ? 'bg-amber-50/50 dark:bg-amber-900/10'
-                      : '';
+                        ? 'bg-amber-50/50 dark:bg-amber-900/10'
+                        : '';
 
                   return (
                     <Fragment key={row.id}>
@@ -891,7 +857,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
               {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
+                table.getFilteredRowModel().rows.length,
               )}{' '}
               {t('common.of')} {table.getFilteredRowModel().rows.length}
             </span>

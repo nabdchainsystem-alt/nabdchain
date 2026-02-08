@@ -12,7 +12,7 @@ interface TaskRowProps {
   onUpdate: (updatedItem: TaskItem) => void;
   onDelete: () => void;
   isOverlay?: boolean;
-  dragHandleProps?: any;
+  dragHandleProps?: Record<string, unknown>;
 }
 
 export const TaskRow: React.FC<TaskRowProps> = ({
@@ -23,9 +23,8 @@ export const TaskRow: React.FC<TaskRowProps> = ({
   onUpdate,
   onDelete,
   isOverlay = false,
-  dragHandleProps
+  dragHandleProps,
 }) => {
-
   const handleStatusChange = (newStatus: Status) => {
     onUpdate({ ...item, status: newStatus });
   };
@@ -66,8 +65,12 @@ export const TaskRow: React.FC<TaskRowProps> = ({
         />
         {!isOverlay && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover/row:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm pl-2">
-            <button className="text-gray-400 hover:text-gray-600"><MessageCircle className="w-4 h-4" /></button>
-            <button className="text-gray-400 hover:text-red-600" onClick={onDelete}><X className="w-4 h-4" /></button>
+            <button className="text-gray-400 hover:text-gray-600">
+              <MessageCircle className="w-4 h-4" />
+            </button>
+            <button className="text-gray-400 hover:text-red-600" onClick={onDelete}>
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>

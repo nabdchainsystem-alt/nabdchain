@@ -80,17 +80,15 @@ export const sellerRfqInboxService = {
       throw new Error(error.error || 'Failed to fetch RFQ detail');
     }
 
-    return response.json();
+    // Backend returns { rfq, history }, extract just the rfq
+    const data = await response.json();
+    return data.rfq || data;
   },
 
   /**
    * Update RFQ status (mark as under_review or ignored)
    */
-  async updateStatus(
-    token: string,
-    rfqId: string,
-    data: StatusUpdateData
-  ): Promise<SellerInboxRFQ | null> {
+  async updateStatus(token: string, rfqId: string, data: StatusUpdateData): Promise<SellerInboxRFQ | null> {
     const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/status`, {
       method: 'PATCH',
       headers: {
@@ -122,22 +120,14 @@ export const sellerRfqInboxService = {
   /**
    * Mark RFQ as ignored with reason
    */
-  async markIgnored(
-    token: string,
-    rfqId: string,
-    reason: string
-  ): Promise<SellerInboxRFQ | null> {
+  async markIgnored(token: string, rfqId: string, reason: string): Promise<SellerInboxRFQ | null> {
     return this.updateStatus(token, rfqId, { status: 'ignored', ignoredReason: reason });
   },
 
   /**
    * Add internal note to RFQ
    */
-  async addNote(
-    token: string,
-    rfqId: string,
-    data: InternalNoteData
-  ): Promise<SellerInboxRFQ | null> {
+  async addNote(token: string, rfqId: string, data: InternalNoteData): Promise<SellerInboxRFQ | null> {
     const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/notes`, {
       method: 'POST',
       headers: {

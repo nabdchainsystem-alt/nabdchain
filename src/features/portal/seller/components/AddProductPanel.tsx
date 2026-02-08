@@ -6,7 +6,6 @@ import {
   Cube,
   Info,
   Image as ImageIcon,
-  CaretDown,
   CloudArrowUp,
   Trash,
   CheckCircle,
@@ -19,11 +18,8 @@ import {
   Sparkle,
   WarningCircle,
   CaretRight,
-  MagnifyingGlass,
-  ShoppingCart,
   Gauge,
   FloppyDisk,
-  Timer,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { Select } from '../../components';
@@ -115,7 +111,7 @@ const initialFormData: ProductFormData = {
   dimensions: '',
   material: '',
   status: 'draft',
-  visibility: 'draft',
+  visibility: 'publish', // Default to publish so items are visible in marketplace
   scheduledDate: '',
   hasVariants: false,
   variants: [],
@@ -155,12 +151,13 @@ const categoryKeywords: Record<string, string[]> = {
 const generateSKU = (name: string, category: string, manufacturer: string): string => {
   const prefix = category ? category.split('.')[1]?.substring(0, 3).toUpperCase() || 'PRD' : 'PRD';
   const mfrCode = manufacturer ? manufacturer.substring(0, 3).toUpperCase() : 'GEN';
-  const nameCode = name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .substring(0, 3)
-    .toUpperCase() || 'XXX';
+  const nameCode =
+    name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .substring(0, 3)
+      .toUpperCase() || 'XXX';
   const random = Math.floor(1000 + Math.random() * 9000);
   return `${prefix}-${mfrCode}-${nameCode}-${random}`;
 };
@@ -270,8 +267,8 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   const isEditing = !!editProduct;
 
   // Progressive Disclosure State
-  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  const [_showAdvancedFields, _setShowAdvancedFields] = useState(false);
+  const [_expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     basicInfo: true,
     pricing: true,
     details: false,
@@ -294,10 +291,13 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   const saveDraftToStorage = useCallback(() => {
     if (!isEditing && formData.name) {
       setIsDraftSaving(true);
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
-        data: formData,
-        timestamp: new Date().toISOString(),
-      }));
+      localStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify({
+          data: formData,
+          timestamp: new Date().toISOString(),
+        }),
+      );
       setLastSaved(new Date());
       setTimeout(() => setIsDraftSaving(false), 500);
     }
@@ -349,8 +349,8 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   }, []);
 
   // Toggle section expansion
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  const _toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   // Populate form when editing
@@ -388,7 +388,16 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   // Calculate completeness
   const completeness = useMemo(() => {
     const requiredFields = ['name', 'sku', 'price', 'stock', 'category'];
-    const optionalFields = ['description', 'manufacturer', 'brand', 'weight', 'dimensions', 'material', 'partNumber', 'image'];
+    const optionalFields = [
+      'description',
+      'manufacturer',
+      'brand',
+      'weight',
+      'dimensions',
+      'material',
+      'partNumber',
+      'image',
+    ];
 
     const requiredComplete = requiredFields.filter((f) => {
       const val = formData[f as keyof ProductFormData];
@@ -474,14 +483,15 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   };
 
   const handleUpdateVariant = (id: string, field: keyof ProductVariant, value: string | number) => {
-    const updated = formData.variants.map((v) =>
-      v.id === id ? { ...v, [field]: value } : v
-    );
+    const updated = formData.variants.map((v) => (v.id === id ? { ...v, [field]: value } : v));
     handleChange('variants', updated);
   };
 
   const handleRemoveVariant = (id: string) => {
-    handleChange('variants', formData.variants.filter((v) => v.id !== id));
+    handleChange(
+      'variants',
+      formData.variants.filter((v) => v.id !== id),
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -554,11 +564,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-30"
-        style={{ top: '64px' }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-30" style={{ top: '64px' }} onClick={onClose} />
 
       {/* Panel */}
       <div
@@ -568,27 +574,18 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
           bottom: 0,
           backgroundColor: styles.bgPrimary,
           borderLeft: `2px solid ${styles.border}`,
-          boxShadow: styles.isDark
-            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
-            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          boxShadow: styles.isDark ? '-12px 0 40px rgba(0, 0, 0, 0.6)' : '-8px 0 30px rgba(0, 0, 0, 0.1)',
           right: isRtl ? 'auto' : 0,
           left: isRtl ? 0 : 'auto',
           borderLeftWidth: isRtl ? 0 : 1,
           borderRightWidth: isRtl ? 1 : 0,
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-            ? 'translateX(-100%)'
-            : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
         dir={direction}
       >
         {/* Header with Completeness & Readiness */}
-        <div
-          className="flex flex-col border-b shrink-0"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex flex-col border-b shrink-0" style={{ borderColor: styles.border }}>
           {/* Animated Progress Bar - Top Strip */}
           <div className="relative h-1.5 w-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
             {/* Background segments for visual guide */}
@@ -661,11 +658,21 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                   style={{
                     backgroundColor: completeness.isComplete
-                      ? styles.isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
+                      ? styles.isDark
+                        ? 'rgba(34, 197, 94, 0.15)'
+                        : 'rgba(34, 197, 94, 0.1)'
                       : completeness.percentage >= 60
-                        ? styles.isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)'
-                        : styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)',
-                    color: completeness.isComplete ? styles.success : completeness.percentage >= 60 ? styles.info : '#EAB308',
+                        ? styles.isDark
+                          ? 'rgba(59, 130, 246, 0.15)'
+                          : 'rgba(59, 130, 246, 0.1)'
+                        : styles.isDark
+                          ? 'rgba(234, 179, 8, 0.15)'
+                          : 'rgba(234, 179, 8, 0.1)',
+                    color: completeness.isComplete
+                      ? styles.success
+                      : completeness.percentage >= 60
+                        ? styles.info
+                        : '#EAB308',
                     transition: 'background-color 0.3s ease, color 0.3s ease',
                   }}
                 >
@@ -674,9 +681,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                   ) : (
                     <WarningCircle size={12} weight="fill" />
                   )}
-                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {completeness.percentage}%
-                  </span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{completeness.percentage}%</span>
                   {t('addProduct.complete')}
                 </div>
                 {/* Readiness Score Badge */}
@@ -684,18 +689,28 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                   onClick={() => setShowReadinessPanel(!showReadinessPanel)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:scale-105"
                   style={{
-                    backgroundColor: readinessScore.total >= 80
-                      ? styles.isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
-                      : readinessScore.total >= 50
-                        ? styles.isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)'
-                        : styles.isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)',
-                    color: readinessScore.total >= 80 ? styles.success : readinessScore.total >= 50 ? styles.info : '#EAB308',
+                    backgroundColor:
+                      readinessScore.total >= 80
+                        ? styles.isDark
+                          ? 'rgba(34, 197, 94, 0.15)'
+                          : 'rgba(34, 197, 94, 0.1)'
+                        : readinessScore.total >= 50
+                          ? styles.isDark
+                            ? 'rgba(59, 130, 246, 0.15)'
+                            : 'rgba(59, 130, 246, 0.1)'
+                          : styles.isDark
+                            ? 'rgba(234, 179, 8, 0.15)'
+                            : 'rgba(234, 179, 8, 0.1)',
+                    color:
+                      readinessScore.total >= 80
+                        ? styles.success
+                        : readinessScore.total >= 50
+                          ? styles.info
+                          : '#EAB308',
                   }}
                 >
                   <Gauge size={12} weight="fill" />
-                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {readinessScore.total}/100
-                  </span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{readinessScore.total}/100</span>
                 </button>
               </div>
               <div className="flex items-center gap-3 mt-1">
@@ -723,44 +738,44 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
               </div>
             </div>
 
-          <div className="flex items-center gap-2">
-            {/* Readiness Panel Toggle */}
-            <button
-              onClick={() => setShowReadinessPanel(!showReadinessPanel)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
-              style={{
-                backgroundColor: showReadinessPanel ? styles.bgActive : styles.bgSecondary,
-                color: showReadinessPanel ? styles.textPrimary : styles.textSecondary,
-              }}
-            >
-              <Gauge size={14} />
-              {t('addProduct.readinessScore') || 'Readiness'}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Readiness Panel Toggle */}
+              <button
+                onClick={() => setShowReadinessPanel(!showReadinessPanel)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
+                style={{
+                  backgroundColor: showReadinessPanel ? styles.bgActive : styles.bgSecondary,
+                  color: showReadinessPanel ? styles.textPrimary : styles.textSecondary,
+                }}
+              >
+                <Gauge size={14} />
+                {t('addProduct.readinessScore') || 'Readiness'}
+              </button>
 
-            {/* Preview Toggle */}
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
-              style={{
-                backgroundColor: showPreview ? styles.bgActive : styles.bgSecondary,
-                color: showPreview ? styles.textPrimary : styles.textSecondary,
-              }}
-            >
-              {showPreview ? <EyeSlash size={14} /> : <Eye size={14} />}
-              {t('addProduct.preview')}
-            </button>
+              {/* Preview Toggle */}
+              <button
+                onClick={() => setShowPreview(!showPreview)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
+                style={{
+                  backgroundColor: showPreview ? styles.bgActive : styles.bgSecondary,
+                  color: showPreview ? styles.textPrimary : styles.textSecondary,
+                }}
+              >
+                {showPreview ? <EyeSlash size={14} /> : <Eye size={14} />}
+                {t('addProduct.preview')}
+              </button>
 
-            <button
-              onClick={onClose}
-              className="p-2 rounded-md transition-colors"
-              style={{ color: styles.textSecondary }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <X size={20} />
-            </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-md transition-colors"
+                style={{ color: styles.textSecondary }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
-        </div>
         </div>
 
         {/* Readiness Score Panel */}
@@ -775,12 +790,24 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold"
                   style={{
-                    backgroundColor: readinessScore.total >= 80
-                      ? styles.isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)'
-                      : readinessScore.total >= 50
-                        ? styles.isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)'
-                        : styles.isDark ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.15)',
-                    color: readinessScore.total >= 80 ? styles.success : readinessScore.total >= 50 ? styles.info : '#EAB308',
+                    backgroundColor:
+                      readinessScore.total >= 80
+                        ? styles.isDark
+                          ? 'rgba(34, 197, 94, 0.2)'
+                          : 'rgba(34, 197, 94, 0.15)'
+                        : readinessScore.total >= 50
+                          ? styles.isDark
+                            ? 'rgba(59, 130, 246, 0.2)'
+                            : 'rgba(59, 130, 246, 0.15)'
+                          : styles.isDark
+                            ? 'rgba(234, 179, 8, 0.2)'
+                            : 'rgba(234, 179, 8, 0.15)',
+                    color:
+                      readinessScore.total >= 80
+                        ? styles.success
+                        : readinessScore.total >= 50
+                          ? styles.info
+                          : '#EAB308',
                   }}
                 >
                   {readinessScore.total}
@@ -790,10 +817,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                     {readinessScore.total >= 80 ? 'Excellent' : readinessScore.total >= 50 ? 'Good' : 'Needs Work'}
                   </p>
                   <p className="text-xs" style={{ color: styles.textMuted }}>
-                    {readinessScore.total >= 80
-                      ? 'Ready to attract buyers'
-                      : 'Add more details to improve'
-                    }
+                    {readinessScore.total >= 80 ? 'Ready to attract buyers' : 'Add more details to improve'}
                   </p>
                 </div>
               </div>
@@ -810,19 +834,17 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                         {item.score}/{item.maxScore}
                       </span>
                     </div>
-                    <div
-                      className="h-1.5 rounded-full overflow-hidden"
-                      style={{ backgroundColor: styles.bgPrimary }}
-                    >
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgPrimary }}>
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
                           width: `${(item.score / item.maxScore) * 100}%`,
-                          backgroundColor: item.score >= item.maxScore * 0.8
-                            ? styles.success
-                            : item.score >= item.maxScore * 0.5
-                              ? styles.info
-                              : '#EAB308',
+                          backgroundColor:
+                            item.score >= item.maxScore * 0.8
+                              ? styles.success
+                              : item.score >= item.maxScore * 0.5
+                                ? styles.info
+                                : '#EAB308',
                         }}
                       />
                     </div>
@@ -846,12 +868,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
               {/* Basic Information */}
               <Section icon={Package} title={t('addProduct.basicInfo')} styles={styles}>
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    label={t('addProduct.productName')}
-                    required
-                    styles={styles}
-                    className="col-span-2"
-                  >
+                  <FormField label={t('addProduct.productName')} required styles={styles} className="col-span-2">
                     <input
                       type="text"
                       value={formData.name}
@@ -1009,31 +1026,16 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                 <div className="grid grid-cols-2 gap-4">
                   <FormField label={t('addProduct.category')} required styles={styles}>
                     <div className="space-y-2">
-                      <div className="relative">
-                        <select
-                          value={formData.category}
-                          onChange={(e) => handleChange('category', e.target.value)}
-                          className={`w-full px-3 py-2.5 rounded-md border text-sm outline-none appearance-none ${isRtl ? 'pl-8' : 'pr-8'}`}
-                          style={{
-                            borderColor: styles.border,
-                            backgroundColor: styles.bgCard,
-                            color: formData.category ? styles.textPrimary : styles.textMuted,
-                          }}
-                          required
-                        >
-                          <option value="">{t('addProduct.selectCategory')}</option>
-                          {categoryKeys.map((catKey) => (
-                            <option key={catKey} value={catKey}>
-                              {t(catKey)}
-                            </option>
-                          ))}
-                        </select>
-                        <CaretDown
-                          size={16}
-                          className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${isRtl ? 'left-3' : 'right-3'}`}
-                          style={{ color: styles.textMuted }}
-                        />
-                      </div>
+                      <Select
+                        value={formData.category}
+                        onChange={(value) => handleChange('category', value)}
+                        options={categoryKeys.map((catKey) => ({
+                          value: catKey,
+                          label: t(catKey),
+                        }))}
+                        placeholder={t('addProduct.selectCategory')}
+                        className="w-full"
+                      />
                       {/* Category Suggestion */}
                       {suggestedCategory && (
                         <button
@@ -1150,7 +1152,9 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                             type="number"
                             placeholder={t('addProduct.variantPriceModifier')}
                             value={variant.priceModifier || ''}
-                            onChange={(e) => handleUpdateVariant(variant.id, 'priceModifier', parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              handleUpdateVariant(variant.id, 'priceModifier', parseFloat(e.target.value) || 0)
+                            }
                             className="px-2 py-1.5 rounded border text-sm"
                             style={{
                               borderColor: styles.border,
@@ -1307,7 +1311,10 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                       </span>
                       <span
                         className="text-xs px-2 py-0.5 rounded"
-                        style={{ backgroundColor: styles.isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}
+                        style={{
+                          backgroundColor: styles.isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+                          color: '#8B5CF6',
+                        }}
                       >
                         {t('addProduct.featured')}
                       </span>
@@ -1431,7 +1438,11 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
               color: styles.isDark ? '#0F1115' : '#E6E8EB',
             }}
           >
-            {isEditing ? t('common.save') : (formData.visibility === 'scheduled' ? t('addProduct.schedule') : t('addProduct.publish'))}
+            {isEditing
+              ? t('common.save')
+              : formData.visibility === 'scheduled'
+                ? t('addProduct.schedule')
+                : t('addProduct.publish')}
           </button>
         </div>
       </div>
@@ -1455,10 +1466,7 @@ const ProductPreview: React.FC<{
       style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
     >
       {/* Image */}
-      <div
-        className="h-48 flex items-center justify-center"
-        style={{ backgroundColor: styles.bgSecondary }}
-      >
+      <div className="h-48 flex items-center justify-center" style={{ backgroundColor: styles.bgSecondary }}>
         {formData.image ? (
           <img src={formData.image} alt="Preview" className="h-full w-full object-contain" />
         ) : (
@@ -1469,10 +1477,7 @@ const ProductPreview: React.FC<{
       {/* Content */}
       <div className="p-4 space-y-3">
         <div>
-          <h3
-            className="text-base font-semibold"
-            style={{ color: styles.textPrimary }}
-          >
+          <h3 className="text-base font-semibold" style={{ color: styles.textPrimary }}>
             {formData.name || 'Product Name'}
           </h3>
           <p className="text-xs mt-0.5" style={{ color: styles.textMuted }}>
@@ -1491,9 +1496,7 @@ const ProductPreview: React.FC<{
           >
             {formData.category ? t(formData.category) : 'Category'}
           </span>
-          <span style={{ color: styles.textMuted }}>
-            Stock: {formData.stock || '0'}
-          </span>
+          <span style={{ color: styles.textMuted }}>Stock: {formData.stock || '0'}</span>
         </div>
 
         {formData.description && (
@@ -1536,7 +1539,9 @@ const VisibilityOption: React.FC<{
     style={{
       borderColor: selected ? styles.success : styles.border,
       backgroundColor: selected
-        ? styles.isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.05)'
+        ? styles.isDark
+          ? 'rgba(34, 197, 94, 0.1)'
+          : 'rgba(34, 197, 94, 0.05)'
         : 'transparent',
     }}
   >
@@ -1587,10 +1592,7 @@ const Section: React.FC<SectionProps> = ({
         disabled={!collapsible}
       >
         <Icon size={18} style={{ color: styles.textSecondary }} />
-        <h3
-          className="text-sm font-semibold uppercase tracking-wide flex-1"
-          style={{ color: styles.textSecondary }}
-        >
+        <h3 className="text-sm font-semibold uppercase tracking-wide flex-1" style={{ color: styles.textSecondary }}>
           {title}
         </h3>
         {badge && (
@@ -1741,10 +1743,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ styles, value, onChange, 
           </p>
         </div>
       ) : (
-        <div
-          className="relative rounded-xl overflow-hidden"
-          style={{ backgroundColor: styles.bgSecondary }}
-        >
+        <div className="relative rounded-xl overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
           <img
             src={value || ''}
             alt={variant === 'marketplace' ? 'Marketplace banner preview' : 'Product preview'}
@@ -1776,10 +1775,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ styles, value, onChange, 
         </div>
       )}
 
-      <div
-        className="rounded-lg p-4"
-        style={{ backgroundColor: styles.bgSecondary }}
-      >
+      <div className="rounded-lg p-4" style={{ backgroundColor: styles.bgSecondary }}>
         <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: styles.textMuted }}>
           {variant === 'marketplace' ? t('addProduct.bannerRequirements') : t('addProduct.imageRequirements')}
         </p>
@@ -1787,7 +1783,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ styles, value, onChange, 
           <SpecItem label={t('addProduct.format')} value="PNG, JPG, WebP" styles={styles} />
           <SpecItem label={t('addProduct.maxSize')} value={imageSpecs[variant].maxSize} styles={styles} />
           <SpecItem label={t('addProduct.recommended')} value={imageSpecs[variant].recommended} styles={styles} />
-          <SpecItem label={t('addProduct.aspectRatio')} value={variant === 'marketplace' ? t('addProduct.wide') : t('addProduct.square')} styles={styles} />
+          <SpecItem
+            label={t('addProduct.aspectRatio')}
+            value={variant === 'marketplace' ? t('addProduct.wide') : t('addProduct.square')}
+            styles={styles}
+          />
         </div>
         <p className="text-xs mt-3" style={{ color: styles.textMuted }}>
           {variant === 'marketplace' ? t('addProduct.marketplaceImageDesc') : t('addProduct.productImageDesc')}
@@ -1804,8 +1804,12 @@ const SpecItem: React.FC<{
   styles: ReturnType<typeof usePortal>['styles'];
 }> = ({ label, value, styles }) => (
   <div className="flex items-center justify-between">
-    <span className="text-xs" style={{ color: styles.textMuted }}>{label}</span>
-    <span className="text-xs font-medium" style={{ color: styles.textSecondary }}>{value}</span>
+    <span className="text-xs" style={{ color: styles.textMuted }}>
+      {label}
+    </span>
+    <span className="text-xs font-medium" style={{ color: styles.textSecondary }}>
+      {value}
+    </span>
   </div>
 );
 

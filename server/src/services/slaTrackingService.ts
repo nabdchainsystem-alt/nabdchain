@@ -5,9 +5,8 @@
 // No auto-penalties - data collection for seller performance metrics.
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -86,7 +85,7 @@ async function recordSLAStart(input: RecordSLAInput): Promise<any> {
       },
     });
   } catch (error) {
-    console.error('Error recording SLA start:', error);
+    apiLogger.error('Error recording SLA start:', error);
     throw error;
   }
 }
@@ -130,7 +129,7 @@ async function recordSLACompletion(
       },
     });
   } catch (error) {
-    console.error('Error recording SLA completion:', error);
+    apiLogger.error('Error recording SLA completion:', error);
     throw error;
   }
 }

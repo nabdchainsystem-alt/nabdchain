@@ -5,7 +5,18 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowsClockwise, Trophy, Play, Pause, ArrowsOut, ArrowsIn, X, SpeakerHigh, SpeakerSlash } from 'phosphor-react';
+import {
+  ArrowLeft,
+  ArrowsClockwise,
+  Trophy,
+  Play,
+  Pause,
+  ArrowsOut,
+  ArrowsIn,
+  X,
+  SpeakerHigh,
+  SpeakerSlash,
+} from 'phosphor-react';
 import { getGameAudio } from '../utils/GameAudio';
 
 interface SnakeGameProps {
@@ -171,6 +182,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
         break;
       case 'shrink':
         // Instantly shrink snake by 3 segments (min 3 segments)
+        // eslint-disable-next-line no-case-declarations
         const snake = snakeRef.current;
         if (snake.length > 3) {
           const removeCount = Math.min(3, snake.length - 3);
@@ -191,39 +203,42 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
     setActivePowerUps(activeList);
   }, []);
 
-  const checkCollision = useCallback((head: Segment): boolean => {
-    const margin = SEGMENT_SIZE / 2;
-    const hasGhost = activePowerUpsRef.current.has('ghost');
-    const hasShield = activePowerUpsRef.current.has('shield');
+  const checkCollision = useCallback(
+    (head: Segment): boolean => {
+      const margin = SEGMENT_SIZE / 2;
+      const hasGhost = activePowerUpsRef.current.has('ghost');
+      const hasShield = activePowerUpsRef.current.has('shield');
 
-    // Wall collision (skip if ghost mode)
-    if (!hasGhost) {
-      if (
-        head.x < margin ||
-        head.x > canvasSize.width - margin ||
-        head.y < margin ||
-        head.y > canvasSize.height - margin
-      ) {
-        return true;
-      }
-    }
-
-    // Self collision (skip if shield mode)
-    if (!hasShield) {
-      const snake = snakeRef.current;
-      for (let i = 4; i < snake.length; i++) {
-        const segment = snake[i];
-        const dx = head.x - segment.x;
-        const dy = head.y - segment.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < SEGMENT_SIZE * 0.8) {
+      // Wall collision (skip if ghost mode)
+      if (!hasGhost) {
+        if (
+          head.x < margin ||
+          head.x > canvasSize.width - margin ||
+          head.y < margin ||
+          head.y > canvasSize.height - margin
+        ) {
           return true;
         }
       }
-    }
 
-    return false;
-  }, [canvasSize]);
+      // Self collision (skip if shield mode)
+      if (!hasShield) {
+        const snake = snakeRef.current;
+        for (let i = 4; i < snake.length; i++) {
+          const segment = snake[i];
+          const dx = head.x - segment.x;
+          const dy = head.y - segment.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < SEGMENT_SIZE * 0.8) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    },
+    [canvasSize],
+  );
 
   const gameLoop = useCallback(() => {
     const canvas = canvasRef.current;
@@ -271,10 +286,18 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
     // Move head
     const head = { ...snake[0] };
     switch (directionRef.current) {
-      case 'UP': head.y -= speed; break;
-      case 'DOWN': head.y += speed; break;
-      case 'LEFT': head.x -= speed; break;
-      case 'RIGHT': head.x += speed; break;
+      case 'UP':
+        head.y -= speed;
+        break;
+      case 'DOWN':
+        head.y += speed;
+        break;
+      case 'LEFT':
+        head.x -= speed;
+        break;
+      case 'RIGHT':
+        head.x += speed;
+        break;
     }
 
     // Wrap around if ghost mode
@@ -461,20 +484,28 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
 
         switch (directionRef.current) {
           case 'RIGHT':
-            eye1X = segment.x + 4; eye1Y = segment.y - eyeOffset;
-            eye2X = segment.x + 4; eye2Y = segment.y + eyeOffset;
+            eye1X = segment.x + 4;
+            eye1Y = segment.y - eyeOffset;
+            eye2X = segment.x + 4;
+            eye2Y = segment.y + eyeOffset;
             break;
           case 'LEFT':
-            eye1X = segment.x - 4; eye1Y = segment.y - eyeOffset;
-            eye2X = segment.x - 4; eye2Y = segment.y + eyeOffset;
+            eye1X = segment.x - 4;
+            eye1Y = segment.y - eyeOffset;
+            eye2X = segment.x - 4;
+            eye2Y = segment.y + eyeOffset;
             break;
           case 'UP':
-            eye1X = segment.x - eyeOffset; eye1Y = segment.y - 4;
-            eye2X = segment.x + eyeOffset; eye2Y = segment.y - 4;
+            eye1X = segment.x - eyeOffset;
+            eye1Y = segment.y - 4;
+            eye2X = segment.x + eyeOffset;
+            eye2Y = segment.y - 4;
             break;
           default:
-            eye1X = segment.x - eyeOffset; eye1Y = segment.y + 4;
-            eye2X = segment.x + eyeOffset; eye2Y = segment.y + 4;
+            eye1X = segment.x - eyeOffset;
+            eye1Y = segment.y + 4;
+            eye2X = segment.x + eyeOffset;
+            eye2Y = segment.y + 4;
         }
 
         ctx.beginPath();
@@ -525,7 +556,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
           initGame();
           setIsPlaying(true);
         } else {
-          setIsPlaying(p => !p);
+          setIsPlaying((p) => !p);
         }
         return;
       }
@@ -536,10 +567,18 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
       let newDirection: Direction | null = null;
 
       switch (e.key) {
-        case 'ArrowUp': if (currentDir !== 'DOWN') newDirection = 'UP'; break;
-        case 'ArrowDown': if (currentDir !== 'UP') newDirection = 'DOWN'; break;
-        case 'ArrowLeft': if (currentDir !== 'RIGHT') newDirection = 'LEFT'; break;
-        case 'ArrowRight': if (currentDir !== 'LEFT') newDirection = 'RIGHT'; break;
+        case 'ArrowUp':
+          if (currentDir !== 'DOWN') newDirection = 'UP';
+          break;
+        case 'ArrowDown':
+          if (currentDir !== 'UP') newDirection = 'DOWN';
+          break;
+        case 'ArrowLeft':
+          if (currentDir !== 'RIGHT') newDirection = 'LEFT';
+          break;
+        case 'ArrowRight':
+          if (currentDir !== 'LEFT') newDirection = 'RIGHT';
+          break;
       }
 
       if (newDirection) {
@@ -613,7 +652,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
   };
 
   const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
+    setIsFullscreen((prev) => !prev);
   }, []);
 
   const toggleSound = useCallback(() => {
@@ -682,7 +721,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
           {/* Active power-ups */}
           {activePowerUps.length > 0 && (
             <div className="flex items-center gap-1">
-              {activePowerUps.map(type => (
+              {activePowerUps.map((type) => (
                 <div
                   key={type}
                   className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white"
@@ -704,15 +743,12 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
             <span className="font-bold">{highScore}</span>
           </div>
           <button
-            onClick={() => gameOver ? resetGame() : setIsPlaying(p => !p)}
+            onClick={() => (gameOver ? resetGame() : setIsPlaying((p) => !p))}
             className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
           >
             {isPlaying ? <Pause size={18} className="text-white" /> : <Play size={18} className="text-white" />}
           </button>
-          <button
-            onClick={resetGame}
-            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
-          >
+          <button onClick={resetGame} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
             <ArrowsClockwise size={18} className="text-gray-400" />
           </button>
           <button
@@ -720,14 +756,22 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
             className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
             title={soundEnabled ? 'Mute' : 'Unmute'}
           >
-            {soundEnabled ? <SpeakerHigh size={18} className="text-white" /> : <SpeakerSlash size={18} className="text-gray-400" />}
+            {soundEnabled ? (
+              <SpeakerHigh size={18} className="text-white" />
+            ) : (
+              <SpeakerSlash size={18} className="text-gray-400" />
+            )}
           </button>
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? <ArrowsIn size={18} className="text-white" /> : <ArrowsOut size={18} className="text-white" />}
+            {isFullscreen ? (
+              <ArrowsIn size={18} className="text-white" />
+            ) : (
+              <ArrowsOut size={18} className="text-white" />
+            )}
           </button>
         </div>
       </div>
@@ -735,12 +779,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
       {/* Game Area */}
       <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden p-4">
         <div className="relative">
-          <canvas
-            ref={canvasRef}
-            width={canvasSize.width}
-            height={canvasSize.height}
-            className="rounded-lg"
-          />
+          <canvas ref={canvasRef} width={canvasSize.width} height={canvasSize.height} className="rounded-lg" />
 
           {/* Overlay */}
           {(!isPlaying || gameOver) && (
@@ -750,7 +789,10 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
                   <div className="text-3xl font-bold text-white mb-2">Game Over!</div>
                   <div className="text-xl text-gray-300 mb-6">Score: {score}</div>
                   <button
-                    onClick={() => { initGame(); setIsPlaying(true); }}
+                    onClick={() => {
+                      initGame();
+                      setIsPlaying(true);
+                    }}
                     className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition-colors"
                   >
                     Play Again
@@ -766,9 +808,7 @@ export const SnakeGame: React.FC<SnakeGameProps> = ({ onBack }) => {
                     <Play size={24} weight="fill" />
                     Start Game
                   </button>
-                  <p className="text-gray-400 mt-4 text-sm">
-                    Swipe or use arrow keys to move
-                  </p>
+                  <p className="text-gray-400 mt-4 text-sm">Swipe or use arrow keys to move</p>
                   <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-xs">
                     {Object.entries(POWERUP_ICONS).map(([type, icon]) => (
                       <div key={type} className="flex items-center gap-1">

@@ -52,6 +52,7 @@ export interface InboxStats {
 export interface SellerInboxRFQ {
   id: string;
   rfqNumber: string | null;
+  itemId: string | null;  // Added to match frontend expectations
   item: {
     id: string;
     name: string;
@@ -65,6 +66,7 @@ export interface SellerInboxRFQ {
   deliveryLocation: string | null;
   deliveryCity: string | null;
   requiredDeliveryDate: Date | null;
+  message: string | null;
   buyerMessage: string | null;
   status: Stage2RFQStatus;
   priorityLevel: RFQPriorityLevel;
@@ -84,6 +86,10 @@ export interface SellerInboxRFQ {
   labels: Array<{ id: string; labelId: string; label: { id: string; name: string; color: string } }>;
   noteCount: number;
   snooze: { snoozedUntil: Date; reason: string | null } | null;
+  // Buyer company name (resolved from BuyerProfile)
+  buyerCompanyName: string;
+  // RFQ Type
+  rfqType: 'DIRECT' | 'MARKETPLACE';
 }
 
 // =============================================================================
@@ -118,7 +124,7 @@ export function calculatePriorityLevel(params: {
   let score = 0;
 
   // 1. Quantity Value (30%)
-  const orderValue = params.quantity * (params.itemPrice || 100);
+  const orderValue = params.quantity * (params.itemPrice ?? 100);
   let quantityScore = 0;
   if (orderValue >= 50000) quantityScore = 100;
   else if (orderValue >= 20000) quantityScore = 80;
@@ -200,6 +206,37 @@ function shouldShowSLAWarning(status: string, createdAt: Date, viewedAt: Date | 
 }
 
 /**
+ * Parse RFQ message to extract part info for general RFQs
+ * Message format: "Part: XXX\nPart Number: YYY\nManufacturer: ZZZ\n\nDescription..."
+ */
+function parseMessageForPartInfo(message: string | null): { name: string; sku: string } | null {
+  if (!message) return null;
+
+  let partName = '';
+  let partNumber = '';
+
+  const lines = message.split('\n');
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('Part:')) {
+      partName = trimmedLine.replace('Part:', '').trim();
+    } else if (trimmedLine.startsWith('Part Number:')) {
+      const value = trimmedLine.replace('Part Number:', '').trim();
+      if (value !== 'N/A') {
+        partNumber = value;
+      }
+    }
+  }
+
+  // Only return if we found a part name
+  if (partName) {
+    return { name: partName, sku: partNumber };
+  }
+
+  return null;
+}
+
+/**
  * Generate RFQ number in format RFQ-YYYY-XXXX
  */
 async function generateRFQNumber(): Promise<string> {
@@ -236,10 +273,73 @@ async function generateRFQNumber(): Promise<string> {
 
 export const sellerRfqInboxService = {
   /**
+   * Shared transform for RFQ response objects (used by updateStatus, addInternalNote, etc.)
+   */
+  async _transformRfqForResponse(rfq: any): Promise<SellerInboxRFQ> {
+    let firstImage: string | null = null;
+    if (rfq.item?.images) {
+      const images = typeof rfq.item.images === 'string'
+        ? JSON.parse(rfq.item.images)
+        : rfq.item.images;
+      firstImage = Array.isArray(images) ? images[0] : null;
+    }
+
+    let itemData: { id: string; name: string; sku: string; image: string | null } | null = null;
+    if (rfq.item) {
+      itemData = { id: rfq.item.id, name: rfq.item.name, sku: rfq.item.sku, image: firstImage };
+    } else {
+      const parsedPart = parseMessageForPartInfo(rfq.message);
+      if (parsedPart) {
+        itemData = { id: 'general', name: parsedPart.name, sku: parsedPart.sku, image: null };
+      }
+    }
+
+    const buyerProfile = await prisma.buyerProfile.findFirst({
+      where: { id: rfq.buyerId },
+      select: { companyName: true, fullName: true },
+    });
+    const buyerName = buyerProfile?.companyName || buyerProfile?.fullName || 'Unknown Buyer';
+
+    return {
+      id: rfq.id,
+      rfqNumber: rfq.rfqNumber,
+      itemId: rfq.itemId,
+      item: itemData,
+      buyer: { company: buyerName },
+      buyerCompanyName: buyerName,
+      quantity: rfq.quantity,
+      deliveryLocation: rfq.deliveryLocation,
+      deliveryCity: rfq.deliveryCity,
+      requiredDeliveryDate: rfq.requiredDeliveryDate,
+      message: rfq.message,
+      buyerMessage: rfq.message,
+      status: rfq.status as Stage2RFQStatus,
+      priorityLevel: (rfq.priorityLevel || 'medium') as RFQPriorityLevel,
+      priorityScore: rfq.priorityScore || 50,
+      createdAt: rfq.createdAt,
+      viewedAt: rfq.viewedAt,
+      underReviewAt: rfq.underReviewAt,
+      ignoredAt: rfq.ignoredAt,
+      internalNotes: rfq.internalNotes,
+      ignoredReason: rfq.ignoredReason,
+      timeSinceReceived: formatTimeSinceReceived(rfq.createdAt),
+      slaWarning: false,
+      rfqType: rfq.rfqType as 'DIRECT' | 'MARKETPLACE' || 'MARKETPLACE',
+      isRead: rfq.viewedAt != null,
+      isArchived: rfq.ignoredAt != null,
+      archivedAt: rfq.ignoredAt,
+      labels: [],
+      noteCount: 0,
+      snooze: null,
+    };
+  },
+
+  /**
    * Get paginated RFQ inbox for seller with filters
+   * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
    */
   async getInbox(
-    sellerId: string,
+    sellerIds: string | string[],
     filters: InboxFilters = {}
   ): Promise<{
     rfqs: SellerInboxRFQ[];
@@ -250,17 +350,27 @@ export const sellerRfqInboxService = {
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
 
-    // Build where clause
+    // Normalize sellerIds to array
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
+
+    // Build where clause - Show all RFQs relevant to this seller:
+    // 1. DIRECT RFQs where sellerId matches (targeted to this seller)
+    // 2. MARKETPLACE RFQs where this seller has submitted a quote
     const where: Prisma.ItemRFQWhereInput = {
-      sellerId,
+      OR: [
+        // Direct RFQs targeted to this seller
+        { sellerId: { in: sellerIdArray } },
+        // Marketplace RFQs where seller has submitted a quote
+        { quotes: { some: { sellerId: { in: sellerIdArray } } } },
+      ],
     };
 
-    // Status filter (Stage 2 statuses only)
+    // Status filter - include all valid RFQ statuses
     if (filters.status && filters.status !== 'all') {
       where.status = filters.status;
     } else {
-      // Default to Stage 2 statuses
-      where.status = { in: ['new', 'viewed', 'under_review', 'ignored'] };
+      // Include all RFQ statuses that should appear in inbox
+      where.status = { in: ['new', 'viewed', 'under_review', 'ignored', 'quoted', 'accepted', 'rejected'] };
     }
 
     // Priority filter
@@ -357,22 +467,24 @@ export const sellerRfqInboxService = {
       prisma.itemRFQ.count({ where }),
     ]);
 
-    // Get stats for all Stage 2 RFQs
+    // Get stats for all RFQs related to this seller (direct + marketplace with quotes)
+    const statsWhere: Prisma.ItemRFQWhereInput = {
+      OR: [
+        { sellerId: { in: sellerIdArray } },
+        { quotes: { some: { sellerId: { in: sellerIdArray } } } },
+      ],
+      status: { in: ['new', 'viewed', 'under_review', 'ignored', 'quoted', 'accepted', 'rejected'] },
+    };
+
     const [statusCounts, priorityCounts] = await Promise.all([
       prisma.itemRFQ.groupBy({
         by: ['status'],
-        where: {
-          sellerId,
-          status: { in: ['new', 'viewed', 'under_review', 'ignored'] },
-        },
+        where: statsWhere,
         _count: true,
       }),
       prisma.itemRFQ.groupBy({
         by: ['priorityLevel'],
-        where: {
-          sellerId,
-          status: { in: ['new', 'viewed', 'under_review', 'ignored'] },
-        },
+        where: statsWhere,
         _count: true,
       }),
     ]);
@@ -403,6 +515,16 @@ export const sellerRfqInboxService = {
       else if (priorityLevel === 'low') stats.lowPriority = _count;
     });
 
+    // Look up buyer company names for all RFQs
+    const buyerIds = [...new Set(rfqs.map(r => r.buyerId))];
+    const buyerProfiles = buyerIds.length > 0
+      ? await prisma.buyerProfile.findMany({
+          where: { id: { in: buyerIds } },
+          select: { id: true, companyName: true, fullName: true },
+        })
+      : [];
+    const buyerMap = new Map(buyerProfiles.map(b => [b.id, b]));
+
     // Transform to SellerInboxRFQ format
     const transformedRfqs: SellerInboxRFQ[] = rfqs.map((rfq) => {
       // Parse images if JSON string
@@ -414,22 +536,44 @@ export const sellerRfqInboxService = {
         firstImage = Array.isArray(images) ? images[0] : null;
       }
 
-      return {
-        id: rfq.id,
-        rfqNumber: rfq.rfqNumber,
-        item: rfq.item ? {
+      // For general RFQs (no item), parse part info from message
+      let itemData: { id: string; name: string; sku: string; image: string | null } | null = null;
+      if (rfq.item) {
+        itemData = {
           id: rfq.item.id,
           name: rfq.item.name,
           sku: rfq.item.sku,
           image: firstImage,
-        } : null,
+        };
+      } else {
+        // Try to parse part info from message for general RFQs
+        const parsedPart = parseMessageForPartInfo(rfq.message);
+        if (parsedPart) {
+          itemData = {
+            id: 'general',
+            name: parsedPart.name,
+            sku: parsedPart.sku,
+            image: null,
+          };
+        }
+      }
+
+      const buyerInfo = buyerMap.get(rfq.buyerId);
+
+      return {
+        id: rfq.id,
+        rfqNumber: rfq.rfqNumber,
+        itemId: rfq.itemId,  // Include itemId for frontend compatibility
+        item: itemData,
         buyer: {
-          company: 'Company', // TODO: Get from buyer profile when available
+          company: buyerInfo?.companyName || buyerInfo?.fullName || 'Unknown Buyer',
         },
+        buyerCompanyName: buyerInfo?.companyName || buyerInfo?.fullName || 'Unknown Buyer',
         quantity: rfq.quantity,
         deliveryLocation: rfq.deliveryLocation,
         deliveryCity: rfq.deliveryCity,
         requiredDeliveryDate: rfq.requiredDeliveryDate,
+        message: rfq.message,
         buyerMessage: rfq.message,
         status: rfq.status as Stage2RFQStatus,
         priorityLevel: (rfq.priorityLevel || 'medium') as RFQPriorityLevel,
@@ -456,6 +600,7 @@ export const sellerRfqInboxService = {
           snoozedUntil: rfq.snooze.snoozedUntil,
           reason: rfq.snooze.reason,
         } : null,
+        rfqType: rfq.rfqType as 'DIRECT' | 'MARKETPLACE',
       };
     });
 
@@ -473,9 +618,10 @@ export const sellerRfqInboxService = {
 
   /**
    * Get single RFQ detail and auto-mark as VIEWED
+   * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
    */
   async getRFQDetail(
-    sellerId: string,
+    sellerIds: string | string[],
     rfqId: string
   ): Promise<{
     rfq: SellerInboxRFQ;
@@ -489,11 +635,18 @@ export const sellerRfqInboxService = {
       createdAt: Date;
     }>;
   }> {
-    // Get RFQ
+    // Normalize sellerIds to array
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
+
+    // Get RFQ - check both direct (sellerId matches) and marketplace (seller has quoted)
     const rfq = await prisma.itemRFQ.findFirst({
       where: {
         id: rfqId,
-        sellerId, // Ensure seller owns this RFQ
+        OR: [
+          { sellerId: { in: sellerIdArray } },
+          { quotes: { some: { sellerId: { in: sellerIdArray } } } },
+          { rfqType: 'MARKETPLACE' }, // Marketplace RFQs are visible to all sellers
+        ],
       },
       include: {
         item: {
@@ -520,7 +673,8 @@ export const sellerRfqInboxService = {
 
     // Auto-mark as viewed if status is 'new'
     if (rfq.status === 'new') {
-      await this.markAsViewed(sellerId, rfqId);
+      // Use the actual sellerId stored in the RFQ
+      await this.markAsViewed(rfq.sellerId!, rfqId);
     }
 
     // Parse images
@@ -532,23 +686,49 @@ export const sellerRfqInboxService = {
       firstImage = Array.isArray(images) ? images[0] : null;
     }
 
-    // Transform RFQ
-    const transformedRfq: SellerInboxRFQ = {
-      id: rfq.id,
-      rfqNumber: rfq.rfqNumber,
-      item: rfq.item ? {
+    // For general RFQs (no item), parse part info from message
+    let itemData: { id: string; name: string; sku: string; image: string | null } | null = null;
+    if (rfq.item) {
+      itemData = {
         id: rfq.item.id,
         name: rfq.item.name,
         sku: rfq.item.sku,
         image: firstImage,
-      } : null,
+      };
+    } else {
+      // Try to parse part info from message for general RFQs
+      const parsedPart = parseMessageForPartInfo(rfq.message);
+      if (parsedPart) {
+        itemData = {
+          id: 'general',
+          name: parsedPart.name,
+          sku: parsedPart.sku,
+          image: null,
+        };
+      }
+    }
+
+    // Look up buyer name
+    const buyerProfile = await prisma.buyerProfile.findFirst({
+      where: { id: rfq.buyerId },
+      select: { companyName: true, fullName: true },
+    });
+
+    // Transform RFQ
+    const transformedRfq: SellerInboxRFQ = {
+      id: rfq.id,
+      rfqNumber: rfq.rfqNumber,
+      itemId: rfq.itemId,  // Include itemId for frontend compatibility
+      item: itemData,
       buyer: {
-        company: 'Company', // TODO: Get from buyer profile
+        company: buyerProfile?.companyName || buyerProfile?.fullName || 'Unknown Buyer',
       },
+      buyerCompanyName: buyerProfile?.companyName || buyerProfile?.fullName || 'Unknown Buyer',
       quantity: rfq.quantity,
       deliveryLocation: rfq.deliveryLocation,
       deliveryCity: rfq.deliveryCity,
       requiredDeliveryDate: rfq.requiredDeliveryDate,
+      message: rfq.message,
       buyerMessage: rfq.message,
       status: rfq.status === 'new' ? 'viewed' : rfq.status as Stage2RFQStatus, // Reflect auto-view
       priorityLevel: (rfq.priorityLevel || 'medium') as RFQPriorityLevel,
@@ -561,6 +741,14 @@ export const sellerRfqInboxService = {
       ignoredReason: rfq.ignoredReason,
       timeSinceReceived: formatTimeSinceReceived(rfq.createdAt),
       slaWarning: false, // Not a warning once viewed
+      rfqType: (rfq as any).rfqType as 'DIRECT' | 'MARKETPLACE' || 'MARKETPLACE',
+      // Gmail-style fields
+      isRead: rfq.viewedAt != null,
+      isArchived: rfq.ignoredAt != null,
+      archivedAt: rfq.ignoredAt,
+      labels: [],
+      noteCount: 0,
+      snooze: null,
     };
 
     // Transform events/history
@@ -611,24 +799,31 @@ export const sellerRfqInboxService = {
 
   /**
    * Update RFQ status (UNDER_REVIEW or IGNORED)
+   * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
    */
   async updateStatus(
-    sellerId: string,
+    sellerIds: string | string[],
     rfqId: string,
     newStatus: 'under_review' | 'ignored',
     options?: { reason?: string }
   ): Promise<SellerInboxRFQ> {
+    // Normalize sellerIds to array
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
+
     // Validate RFQ exists and belongs to seller
     const rfq = await prisma.itemRFQ.findFirst({
-      where: { id: rfqId, sellerId },
+      where: { id: rfqId, sellerId: { in: sellerIdArray } },
     });
 
     if (!rfq) {
       throw new Error('RFQ not found');
     }
 
-    // Validate status transition
-    const validFromStatuses = ['new', 'viewed'];
+    // Use actual sellerId from the RFQ for related records
+    const actualSellerId = rfq.sellerId!;
+
+    // Validate status transition - allow transitions from most states
+    const validFromStatuses = ['new', 'viewed', 'under_review'];
     if (!validFromStatuses.includes(rfq.status)) {
       throw new Error(`Cannot change status from '${rfq.status}' to '${newStatus}'`);
     }
@@ -645,10 +840,10 @@ export const sellerRfqInboxService = {
 
     if (newStatus === 'under_review') {
       updateData.underReviewAt = new Date();
-      updateData.underReviewBy = sellerId;
+      updateData.underReviewBy = actualSellerId;
     } else if (newStatus === 'ignored') {
       updateData.ignoredAt = new Date();
-      updateData.ignoredBy = sellerId;
+      updateData.ignoredBy = actualSellerId;
       updateData.ignoredReason = options?.reason;
     }
 
@@ -670,7 +865,7 @@ export const sellerRfqInboxService = {
       prisma.itemRFQEvent.create({
         data: {
           rfqId,
-          actorId: sellerId,
+          actorId: actualSellerId,
           actorType: 'seller',
           eventType: newStatus === 'under_review' ? 'RFQ_UNDER_REVIEW' : 'RFQ_IGNORED',
           fromStatus: rfq.status,
@@ -681,59 +876,33 @@ export const sellerRfqInboxService = {
     ]);
 
     // Transform and return
-    let firstImage: string | null = null;
-    if (updatedRfq.item?.images) {
-      const images = typeof updatedRfq.item.images === 'string'
-        ? JSON.parse(updatedRfq.item.images)
-        : updatedRfq.item.images;
-      firstImage = Array.isArray(images) ? images[0] : null;
-    }
-
-    return {
-      id: updatedRfq.id,
-      rfqNumber: updatedRfq.rfqNumber,
-      item: updatedRfq.item ? {
-        id: updatedRfq.item.id,
-        name: updatedRfq.item.name,
-        sku: updatedRfq.item.sku,
-        image: firstImage,
-      } : null,
-      buyer: { company: 'Company' },
-      quantity: updatedRfq.quantity,
-      deliveryLocation: updatedRfq.deliveryLocation,
-      deliveryCity: updatedRfq.deliveryCity,
-      requiredDeliveryDate: updatedRfq.requiredDeliveryDate,
-      buyerMessage: updatedRfq.message,
-      status: updatedRfq.status as Stage2RFQStatus,
-      priorityLevel: (updatedRfq.priorityLevel || 'medium') as RFQPriorityLevel,
-      priorityScore: updatedRfq.priorityScore || 50,
-      createdAt: updatedRfq.createdAt,
-      viewedAt: updatedRfq.viewedAt,
-      underReviewAt: updatedRfq.underReviewAt,
-      ignoredAt: updatedRfq.ignoredAt,
-      internalNotes: updatedRfq.internalNotes,
-      ignoredReason: updatedRfq.ignoredReason,
-      timeSinceReceived: formatTimeSinceReceived(updatedRfq.createdAt),
-      slaWarning: false,
-    };
+    const statusResult = await this._transformRfqForResponse(updatedRfq);
+    return statusResult;
   },
 
   /**
    * Add internal note to RFQ
+   * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
    */
   async addInternalNote(
-    sellerId: string,
+    sellerIds: string | string[],
     rfqId: string,
     notes: string
   ): Promise<SellerInboxRFQ> {
+    // Normalize sellerIds to array
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
+
     // Validate RFQ exists and belongs to seller
     const rfq = await prisma.itemRFQ.findFirst({
-      where: { id: rfqId, sellerId },
+      where: { id: rfqId, sellerId: { in: sellerIdArray } },
     });
 
     if (!rfq) {
       throw new Error('RFQ not found');
     }
+
+    // Use actual sellerId from the RFQ for related records
+    const actualSellerId = rfq.sellerId!;
 
     // Update notes
     const [updatedRfq] = await prisma.$transaction([
@@ -754,7 +923,7 @@ export const sellerRfqInboxService = {
       prisma.itemRFQEvent.create({
         data: {
           rfqId,
-          actorId: sellerId,
+          actorId: actualSellerId,
           actorType: 'seller',
           eventType: 'NOTE_ADDED',
           metadata: JSON.stringify({ notesLength: notes.length }),
@@ -762,49 +931,17 @@ export const sellerRfqInboxService = {
       }),
     ]);
 
-    // Transform and return (simplified)
-    let firstImage: string | null = null;
-    if (updatedRfq.item?.images) {
-      const images = typeof updatedRfq.item.images === 'string'
-        ? JSON.parse(updatedRfq.item.images)
-        : updatedRfq.item.images;
-      firstImage = Array.isArray(images) ? images[0] : null;
-    }
-
-    return {
-      id: updatedRfq.id,
-      rfqNumber: updatedRfq.rfqNumber,
-      item: updatedRfq.item ? {
-        id: updatedRfq.item.id,
-        name: updatedRfq.item.name,
-        sku: updatedRfq.item.sku,
-        image: firstImage,
-      } : null,
-      buyer: { company: 'Company' },
-      quantity: updatedRfq.quantity,
-      deliveryLocation: updatedRfq.deliveryLocation,
-      deliveryCity: updatedRfq.deliveryCity,
-      requiredDeliveryDate: updatedRfq.requiredDeliveryDate,
-      buyerMessage: updatedRfq.message,
-      status: updatedRfq.status as Stage2RFQStatus,
-      priorityLevel: (updatedRfq.priorityLevel || 'medium') as RFQPriorityLevel,
-      priorityScore: updatedRfq.priorityScore || 50,
-      createdAt: updatedRfq.createdAt,
-      viewedAt: updatedRfq.viewedAt,
-      underReviewAt: updatedRfq.underReviewAt,
-      ignoredAt: updatedRfq.ignoredAt,
-      internalNotes: updatedRfq.internalNotes,
-      ignoredReason: updatedRfq.ignoredReason,
-      timeSinceReceived: formatTimeSinceReceived(updatedRfq.createdAt),
-      slaWarning: false,
-    };
+    // Transform and return
+    const noteResult = await this._transformRfqForResponse(updatedRfq);
+    return noteResult;
   },
 
   /**
    * Get RFQ event history
+   * @param sellerIds - Array of seller IDs to match (supports both User.id and SellerProfile.id)
    */
   async getHistory(
-    sellerId: string,
+    sellerIds: string | string[],
     rfqId: string
   ): Promise<Array<{
     id: string;
@@ -815,9 +952,12 @@ export const sellerRfqInboxService = {
     metadata: Record<string, unknown> | null;
     createdAt: Date;
   }>> {
+    // Normalize sellerIds to array
+    const sellerIdArray = Array.isArray(sellerIds) ? sellerIds : [sellerIds];
+
     // Validate RFQ belongs to seller
     const rfq = await prisma.itemRFQ.findFirst({
-      where: { id: rfqId, sellerId },
+      where: { id: rfqId, sellerId: { in: sellerIdArray } },
     });
 
     if (!rfq) {
@@ -861,8 +1001,8 @@ export const sellerRfqInboxService = {
     if (!rfq) return;
 
     // Get buyer stats (simplified - in production, would query order history)
-    const buyerOrderCount = 0; // TODO: Query from orders table
-    const buyerTotalSpend = 0; // TODO: Query from orders table
+    const buyerOrderCount = 0; // Placeholder: query from orders table when buyer order history is available
+    const buyerTotalSpend = 0; // Placeholder: query from orders table when buyer order history is available
 
     const { level, score } = calculatePriorityLevel({
       quantity: rfq.quantity,
@@ -1447,8 +1587,8 @@ export const sellerRfqInboxService = {
     expanded = expanded.replace(/\{\{quantity\}\}/g, String(rfq.quantity));
     expanded = expanded.replace(/\{\{delivery_date\}\}/g,
       rfq.requiredDeliveryDate ? rfq.requiredDeliveryDate.toLocaleDateString() : 'N/A');
-    expanded = expanded.replace(/\{\{buyer_name\}\}/g, 'Buyer'); // TODO: Get from buyer profile
-    expanded = expanded.replace(/\{\{company_name\}\}/g, 'Company'); // TODO: Get from buyer profile
+    expanded = expanded.replace(/\{\{buyer_name\}\}/g, 'Buyer'); // Future: resolve from buyer profile
+    expanded = expanded.replace(/\{\{company_name\}\}/g, 'Company'); // Future: resolve from buyer profile
 
     return expanded;
   },

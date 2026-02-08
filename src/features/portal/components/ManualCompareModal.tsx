@@ -29,12 +29,7 @@ import {
   ManualCompareColumn,
   ManualCompareRow,
 } from '../services/comparisonExportService';
-import {
-  scoreManualCompare,
-  ScoringWeights,
-  DEFAULT_WEIGHTS,
-  WEIGHT_PRESETS,
-} from '../services/compareScoringService';
+import { scoreManualCompare, ScoringWeights, DEFAULT_WEIGHTS, WEIGHT_PRESETS } from '../services/compareScoringService';
 import {
   saveComparisonSet,
   getComparisonSets,
@@ -137,7 +132,8 @@ const drawerTranslations = {
     addRow: 'إضافة صف',
     newMetric: 'معيار جديد',
     pasteCSV: 'لصق بيانات CSV',
-    csvPlaceholder: 'المعيار,الخيار أ,الخيار ب,الخيار ج\nالسعر,100 ر.س,120 ر.س,95 ر.س\nوقت التسليم,5 أيام,3 أيام,7 أيام',
+    csvPlaceholder:
+      'المعيار,الخيار أ,الخيار ب,الخيار ج\nالسعر,100 ر.س,120 ر.س,95 ر.س\nوقت التسليم,5 أيام,3 أيام,7 أيام',
     importAndCompare: 'استيراد ومقارنة',
     loadSample: 'تحميل نموذج',
     csvFormatGuide: 'دليل تنسيق CSV',
@@ -169,16 +165,14 @@ const drawerTranslations = {
   },
 };
 
-export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
-  isOpen,
-  onClose,
-  defaultTab = 'manual',
-}) => {
+export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({ isOpen, onClose, defaultTab = 'manual' }) => {
   const { styles, language, direction } = usePortal();
   const isRtl = direction === 'rtl';
   const t = drawerTranslations[language] || drawerTranslations.en;
 
-  const [activeTab, setActiveTab] = useState<'manual' | 'import' | 'saved'>(defaultTab as 'manual' | 'import' | 'saved');
+  const [activeTab, setActiveTab] = useState<'manual' | 'import' | 'saved'>(
+    defaultTab as 'manual' | 'import' | 'saved',
+  );
   const [isAnimating, setIsAnimating] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -249,13 +243,13 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
   const bestPickReasoning = useMemo(() => {
     if (!manualScores.bestColumnId) return null;
 
-    const bestCol = manualColumns.find(c => c.id === manualScores.bestColumnId);
+    const bestCol = manualColumns.find((c) => c.id === manualScores.bestColumnId);
     const reasons: string[] = [];
     const tradeOffs: { description: string; severity: 'minor' | 'moderate' | 'significant' }[] = [];
 
-    manualRows.forEach(row => {
+    manualRows.forEach((row) => {
       const values: { colId: string; value: number }[] = [];
-      manualColumns.forEach(col => {
+      manualColumns.forEach((col) => {
         const rawValue = row.values[col.id] || '';
         const numValue = parseFloat(rawValue.replace(/[^0-9.-]/g, ''));
         if (!isNaN(numValue)) {
@@ -265,7 +259,8 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
 
       if (values.length >= 2 && manualScores.bestColumnId) {
         const metricLower = row.metric.toLowerCase();
-        const isLowerBetter = metricLower.includes('price') ||
+        const isLowerBetter =
+          metricLower.includes('price') ||
           metricLower.includes('cost') ||
           metricLower.includes('lead') ||
           metricLower.includes('time') ||
@@ -276,10 +271,10 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
           metricLower.includes('حد');
 
         const bestVal = isLowerBetter
-          ? Math.min(...values.map(v => v.value))
-          : Math.max(...values.map(v => v.value));
+          ? Math.min(...values.map((v) => v.value))
+          : Math.max(...values.map((v) => v.value));
 
-        const bestValue = values.find(v => v.colId === manualScores.bestColumnId);
+        const bestValue = values.find((v) => v.colId === manualScores.bestColumnId);
         if (bestValue && bestValue.value === bestVal) {
           reasons.push(`${language === 'ar' ? 'أفضل' : 'Best'} ${row.metric.toLowerCase()}`);
         } else if (bestValue) {
@@ -289,7 +284,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
 
           if (diff > 20) {
             tradeOffs.push({
-              description: `${row.metric} ${language === 'ar' ? 'أعلى بنسبة' : 'is'} ${Math.round(diff)}% ${isLowerBetter ? (language === 'ar' ? 'أعلى' : 'higher') : (language === 'ar' ? 'أقل' : 'lower')} ${language === 'ar' ? 'من الأفضل' : 'than best'}`,
+              description: `${row.metric} ${language === 'ar' ? 'أعلى بنسبة' : 'is'} ${Math.round(diff)}% ${isLowerBetter ? (language === 'ar' ? 'أعلى' : 'higher') : language === 'ar' ? 'أقل' : 'lower'} ${language === 'ar' ? 'من الأفضل' : 'than best'}`,
               severity: diff > 50 ? 'significant' : diff > 30 ? 'moderate' : 'minor',
             });
           }
@@ -311,46 +306,66 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
     const newId = `col-${Date.now()}`;
     const letters = ['أ', 'ب', 'ج', 'د'];
     const letterIndex = manualColumns.length;
-    const optionName = language === 'ar'
-      ? `الخيار ${letters[letterIndex] || letterIndex + 1}`
-      : `Option ${String.fromCharCode(65 + manualColumns.length)}`;
+    const optionName =
+      language === 'ar'
+        ? `الخيار ${letters[letterIndex] || letterIndex + 1}`
+        : `Option ${String.fromCharCode(65 + manualColumns.length)}`;
     setManualColumns([...manualColumns, { id: newId, name: optionName }]);
   }, [manualColumns, language]);
 
-  const removeColumn = useCallback((colId: string) => {
-    if (manualColumns.length <= 2) return;
-    setManualColumns(manualColumns.filter(c => c.id !== colId));
-    setManualRows(manualRows.map(row => {
-      const newValues = { ...row.values };
-      delete newValues[colId];
-      return { ...row, values: newValues };
-    }));
-  }, [manualColumns, manualRows]);
+  const removeColumn = useCallback(
+    (colId: string) => {
+      if (manualColumns.length <= 2) return;
+      setManualColumns(manualColumns.filter((c) => c.id !== colId));
+      setManualRows(
+        manualRows.map((row) => {
+          const newValues = { ...row.values };
+          delete newValues[colId];
+          return { ...row, values: newValues };
+        }),
+      );
+    },
+    [manualColumns, manualRows],
+  );
 
-  const updateColumnName = useCallback((colId: string, name: string) => {
-    setManualColumns(manualColumns.map(c => c.id === colId ? { ...c, name } : c));
-  }, [manualColumns]);
+  const updateColumnName = useCallback(
+    (colId: string, name: string) => {
+      setManualColumns(manualColumns.map((c) => (c.id === colId ? { ...c, name } : c)));
+    },
+    [manualColumns],
+  );
 
   const addRow = useCallback(() => {
     const newId = `row-${Date.now()}`;
     setManualRows([...manualRows, { id: newId, metric: t.newMetric, values: {} }]);
   }, [manualRows, t]);
 
-  const removeRow = useCallback((rowId: string) => {
-    if (manualRows.length <= 1) return;
-    setManualRows(manualRows.filter(r => r.id !== rowId));
-  }, [manualRows]);
+  const removeRow = useCallback(
+    (rowId: string) => {
+      if (manualRows.length <= 1) return;
+      setManualRows(manualRows.filter((r) => r.id !== rowId));
+    },
+    [manualRows],
+  );
 
-  const updateRowMetric = useCallback((rowId: string, metric: string) => {
-    setManualRows(manualRows.map(r => r.id === rowId ? { ...r, metric } : r));
-  }, [manualRows]);
+  const updateRowMetric = useCallback(
+    (rowId: string, metric: string) => {
+      setManualRows(manualRows.map((r) => (r.id === rowId ? { ...r, metric } : r)));
+    },
+    [manualRows],
+  );
 
-  const updateCellValue = useCallback((rowId: string, colId: string, value: string) => {
-    setManualRows(manualRows.map(r => {
-      if (r.id !== rowId) return r;
-      return { ...r, values: { ...r.values, [colId]: value } };
-    }));
-  }, [manualRows]);
+  const updateCellValue = useCallback(
+    (rowId: string, colId: string, value: string) => {
+      setManualRows(
+        manualRows.map((r) => {
+          if (r.id !== rowId) return r;
+          return { ...r, values: { ...r.values, [colId]: value } };
+        }),
+      );
+    },
+    [manualRows],
+  );
 
   // Import handlers
   const handleImport = useCallback(() => {
@@ -381,7 +396,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
   // Individual weight handler
   const handleWeightChange = useCallback((factor: keyof ScoringWeights, value: number) => {
     setSelectedPreset('custom');
-    setWeights(prev => ({ ...prev, [factor]: value }));
+    setWeights((prev) => ({ ...prev, [factor]: value }));
   }, []);
 
   // Save comparison set handler
@@ -421,14 +436,17 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
   }, []);
 
   // Delete comparison set handler
-  const handleDeleteSet = useCallback((id: string) => {
-    if (deleteComparisonSet(id)) {
-      setSavedSets(getComparisonSets({ sortBy: 'updatedAt', sortOrder: 'desc' }));
-      if (loadedSetId === id) {
-        setLoadedSetId(null);
+  const handleDeleteSet = useCallback(
+    (id: string) => {
+      if (deleteComparisonSet(id)) {
+        setSavedSets(getComparisonSets({ sortBy: 'updatedAt', sortOrder: 'desc' }));
+        if (loadedSetId === id) {
+          setLoadedSetId(null);
+        }
       }
-    }
-  }, [loadedSetId]);
+    },
+    [loadedSetId],
+  );
 
   // Toggle favorite handler
   const handleToggleFavorite = useCallback((id: string) => {
@@ -458,16 +476,9 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div
-      className="fixed inset-0"
-      style={{ zIndex: 9990, top: '64px' }}
-      dir={direction}
-    >
+    <div className="fixed inset-0" style={{ zIndex: 9990, top: '64px' }} dir={direction}>
       {/* Clickable backdrop (no blur, no dark) - below top bar */}
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0" onClick={onClose} />
 
       {/* Drawer Panel - below top bar */}
       <div
@@ -480,15 +491,9 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
           width: '480px',
           maxWidth: '90vw',
           backgroundColor: styles.bgPrimary,
-          boxShadow: isRtl
-            ? '4px 0 24px rgba(0, 0, 0, 0.15)'
-            : '-4px 0 24px rgba(0, 0, 0, 0.15)',
+          boxShadow: isRtl ? '4px 0 24px rgba(0, 0, 0, 0.15)' : '-4px 0 24px rgba(0, 0, 0, 0.15)',
           [isRtl ? 'left' : 'right']: 0,
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-              ? 'translateX(-100%)'
-              : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
@@ -496,22 +501,19 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
         <div
           className="flex items-center justify-between px-5 py-4"
           style={{
-            background: `linear-gradient(135deg, ${styles.accent}15 0%, ${styles.accent}05 100%)`,
+            background: `linear-gradient(135deg, ${styles.info}15 0%, ${styles.info}05 100%)`,
             borderBottom: `1px solid ${styles.border}`,
           }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: styles.accent, boxShadow: `0 4px 12px ${styles.accent}40` }}
+              style={{ backgroundColor: styles.info, boxShadow: `0 4px 12px ${styles.info}40` }}
             >
               <Scales size={20} weight="bold" style={{ color: '#fff' }} />
             </div>
             <div>
-              <h2
-                className="text-lg font-bold"
-                style={{ color: styles.textPrimary }}
-              >
+              <h2 className="text-lg font-bold" style={{ color: styles.textPrimary }}>
                 {t.title}
               </h2>
               <p className="text-xs" style={{ color: styles.textMuted }}>
@@ -545,8 +547,8 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
               className="px-4 py-2 text-sm font-medium rounded-t-lg transition-all flex items-center gap-2"
               style={{
                 backgroundColor: activeTab === tab ? styles.bgCard : 'transparent',
-                color: activeTab === tab ? styles.accent : styles.textMuted,
-                borderBottom: activeTab === tab ? `2px solid ${styles.accent}` : '2px solid transparent',
+                color: activeTab === tab ? styles.info : styles.textMuted,
+                borderBottom: activeTab === tab ? `2px solid ${styles.info}` : '2px solid transparent',
               }}
             >
               {tab === 'manual' && t.tabs.manual}
@@ -562,10 +564,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
         </div>
 
         {/* Content */}
-        <div
-          className="flex-1 overflow-auto p-5"
-          style={{ backgroundColor: styles.bgCard }}
-        >
+        <div className="flex-1 overflow-auto p-5" style={{ backgroundColor: styles.bgCard }}>
           {activeTab === 'manual' && (
             <div className="space-y-4">
               {/* Weight Customization Toggle */}
@@ -574,8 +573,8 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                   onClick={() => setShowWeightPanel(!showWeightPanel)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all"
                   style={{
-                    backgroundColor: showWeightPanel ? `${styles.accent}15` : styles.bgSecondary,
-                    color: showWeightPanel ? styles.accent : styles.textSecondary,
+                    backgroundColor: showWeightPanel ? `${styles.info}15` : styles.bgSecondary,
+                    color: showWeightPanel ? styles.info : styles.textSecondary,
                   }}
                 >
                   <Sliders size={14} weight="bold" />
@@ -612,7 +611,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                           onClick={() => handlePresetChange(key)}
                           className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
                           style={{
-                            backgroundColor: selectedPreset === key ? styles.accent : styles.bgCard,
+                            backgroundColor: selectedPreset === key ? styles.info : styles.bgCard,
                             color: selectedPreset === key ? '#fff' : styles.textSecondary,
                           }}
                           title={preset.description}
@@ -623,7 +622,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                       {selectedPreset === 'custom' && (
                         <span
                           className="px-2.5 py-1 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: styles.accent, color: '#fff' }}
+                          style={{ backgroundColor: styles.info, color: '#fff' }}
                         >
                           {t.custom}
                         </span>
@@ -639,7 +638,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                           <span style={{ color: styles.textSecondary }} className="capitalize">
                             {factor === 'moq' ? 'MOQ' : factor.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
-                          <span style={{ color: styles.accent }} className="font-semibold">
+                          <span style={{ color: styles.info }} className="font-semibold">
                             {weights[factor]}%
                           </span>
                         </div>
@@ -651,7 +650,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                           onChange={(e) => handleWeightChange(factor, parseInt(e.target.value))}
                           className="w-full h-1.5 rounded-lg appearance-none cursor-pointer"
                           style={{
-                            background: `linear-gradient(to ${isRtl ? 'left' : 'right'}, ${styles.accent} ${weights[factor] * 2}%, ${styles.bgCard} ${weights[factor] * 2}%)`,
+                            background: `linear-gradient(to ${isRtl ? 'left' : 'right'}, ${styles.info} ${weights[factor] * 2}%, ${styles.bgCard} ${weights[factor] * 2}%)`,
                           }}
                         />
                       </div>
@@ -662,10 +661,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
 
               {/* Best Pick Banner with Reasoning */}
               {manualScores.bestColumnId && bestPickReasoning && (
-                <div
-                  className="rounded-xl overflow-hidden"
-                  style={{ border: '1px solid #fbbf24' }}
-                >
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #fbbf24' }}>
                   <div
                     className="flex items-center justify-between p-3 gap-2"
                     style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' }}
@@ -732,22 +728,24 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                                 key={idx}
                                 className="flex items-start gap-1.5 p-1.5 rounded-lg"
                                 style={{
-                                  backgroundColor: tradeOff.severity === 'significant'
-                                    ? 'rgba(239, 68, 68, 0.15)'
-                                    : tradeOff.severity === 'moderate'
-                                      ? 'rgba(245, 158, 11, 0.15)'
-                                      : 'rgba(156, 163, 175, 0.15)',
+                                  backgroundColor:
+                                    tradeOff.severity === 'significant'
+                                      ? 'rgba(239, 68, 68, 0.15)'
+                                      : tradeOff.severity === 'moderate'
+                                        ? 'rgba(245, 158, 11, 0.15)'
+                                        : 'rgba(156, 163, 175, 0.15)',
                                 }}
                               >
                                 <WarningCircle
                                   size={12}
                                   weight="fill"
                                   style={{
-                                    color: tradeOff.severity === 'significant'
-                                      ? '#dc2626'
-                                      : tradeOff.severity === 'moderate'
-                                        ? '#d97706'
-                                        : '#6b7280',
+                                    color:
+                                      tradeOff.severity === 'significant'
+                                        ? '#dc2626'
+                                        : tradeOff.severity === 'moderate'
+                                          ? '#d97706'
+                                          : '#6b7280',
                                     marginTop: 1,
                                     flexShrink: 0,
                                   }}
@@ -779,10 +777,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
               )}
 
               {/* Manual Table */}
-              <div
-                className="rounded-xl overflow-hidden"
-                style={{ border: `1px solid ${styles.border}` }}
-              >
+              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${styles.border}` }}>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[400px]">
                     <thead>
@@ -802,9 +797,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                             key={col.id}
                             className="px-3 py-2.5 text-center relative"
                             style={{
-                              backgroundColor: manualScores.bestColumnId === col.id
-                                ? '#fef3c7'
-                                : styles.bgSecondary,
+                              backgroundColor: manualScores.bestColumnId === col.id ? '#fef3c7' : styles.bgSecondary,
                             }}
                           >
                             <div className="flex items-center justify-center gap-1.5">
@@ -835,19 +828,16 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                           </th>
                         ))}
                         {manualColumns.length < 4 && (
-                          <th
-                            className="px-2 py-2.5"
-                            style={{ backgroundColor: styles.bgSecondary, width: '60px' }}
-                          >
+                          <th className="px-2 py-2.5" style={{ backgroundColor: styles.bgSecondary, width: '60px' }}>
                             <button
                               onClick={addColumn}
                               className="w-full py-1 rounded-lg flex items-center justify-center gap-1 text-xs font-medium transition-all"
                               style={{
-                                color: styles.accent,
-                                backgroundColor: `${styles.accent}10`,
+                                color: styles.info,
+                                backgroundColor: `${styles.info}10`,
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${styles.accent}20`}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${styles.accent}10`}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${styles.info}20`)}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = `${styles.info}10`)}
                             >
                               <Plus size={12} weight="bold" />
                               {t.add}
@@ -892,9 +882,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                               key={col.id}
                               className="px-3 py-2.5"
                               style={{
-                                backgroundColor: manualScores.bestColumnId === col.id
-                                  ? '#fffbeb'
-                                  : 'transparent',
+                                backgroundColor: manualScores.bestColumnId === col.id ? '#fffbeb' : 'transparent',
                               }}
                             >
                               <input
@@ -920,11 +908,11 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                 onClick={addRow}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
                 style={{
-                  backgroundColor: `${styles.accent}10`,
-                  color: styles.accent,
+                  backgroundColor: `${styles.info}10`,
+                  color: styles.info,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${styles.accent}20`}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${styles.accent}10`}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${styles.info}20`)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = `${styles.info}10`)}
               >
                 <Plus size={14} weight="bold" />
                 {t.addRow}
@@ -935,10 +923,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
           {activeTab === 'import' && (
             <div className="space-y-4">
               <div>
-                <label
-                  className="block text-sm font-semibold mb-2"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-semibold mb-2" style={{ color: styles.textPrimary }}>
                   {t.pasteCSV}
                 </label>
                 <textarea
@@ -953,15 +938,17 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                     outline: 'none',
                     direction: isRtl ? 'rtl' : 'ltr',
                   }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = styles.accent}
-                  onBlur={(e) => e.currentTarget.style.borderColor = styles.border}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = styles.info)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = styles.border)}
                 />
               </div>
 
               {importErrors.length > 0 && (
                 <div className="p-3 rounded-xl bg-red-50 border border-red-200">
                   {importErrors.map((err, i) => (
-                    <p key={i} className="text-sm text-red-600">{err}</p>
+                    <p key={i} className="text-sm text-red-600">
+                      {err}
+                    </p>
                   ))}
                 </div>
               )}
@@ -971,7 +958,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                   onClick={handleImport}
                   disabled={!importText.trim()}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-                  style={{ backgroundColor: styles.accent, color: '#fff' }}
+                  style={{ backgroundColor: styles.info, color: '#fff' }}
                 >
                   <Upload size={14} weight="bold" />
                   {t.importAndCompare}
@@ -983,18 +970,15 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                     backgroundColor: styles.bgSecondary,
                     color: styles.textSecondary,
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = styles.bgSecondary}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = styles.bgSecondary)}
                 >
                   <ClipboardText size={14} />
                   {t.loadSample}
                 </button>
               </div>
 
-              <div
-                className="p-4 rounded-xl"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="p-4 rounded-xl" style={{ backgroundColor: styles.bgSecondary }}>
                 <h4 className="text-sm font-semibold mb-2" style={{ color: styles.textPrimary }}>
                   {t.csvFormatGuide}
                 </h4>
@@ -1020,9 +1004,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                   <p className="font-medium mb-1" style={{ color: styles.textSecondary }}>
                     {t.noSavedYet}
                   </p>
-                  <p className="text-sm">
-                    {t.noSavedDesc}
-                  </p>
+                  <p className="text-sm">{t.noSavedDesc}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1031,8 +1013,8 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                       key={set.id}
                       className="flex items-center justify-between p-3 rounded-xl transition-all hover:shadow-md cursor-pointer"
                       style={{
-                        backgroundColor: loadedSetId === set.id ? `${styles.accent}10` : styles.bgPrimary,
-                        border: `1px solid ${loadedSetId === set.id ? styles.accent : styles.border}`,
+                        backgroundColor: loadedSetId === set.id ? `${styles.info}10` : styles.bgPrimary,
+                        border: `1px solid ${loadedSetId === set.id ? styles.info : styles.border}`,
                       }}
                       onClick={() => handleLoadSet(set)}
                     >
@@ -1067,7 +1049,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                             style={{ backgroundColor: '#fef3c7', color: '#92400e' }}
                           >
                             <Trophy size={10} weight="fill" />
-                            {set.columns.find(c => c.id === set.bestPickColumnId)?.name || t.best}
+                            {set.columns.find((c) => c.id === set.bestPickColumnId)?.name || t.best}
                           </span>
                         )}
                         <button
@@ -1132,7 +1114,7 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                   onClick={handleSaveSet}
                   disabled={!saveName.trim()}
                   className="px-3 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-                  style={{ backgroundColor: styles.accent, color: '#fff' }}
+                  style={{ backgroundColor: styles.info, color: '#fff' }}
                 >
                   {t.save}
                 </button>
@@ -1157,8 +1139,8 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                 backgroundColor: '#ef444415',
                 color: '#ef4444',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ef444425'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef444415'}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#ef444425')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ef444415')}
             >
               <FilePdf size={16} weight="fill" />
               {t.pdf}
@@ -1170,8 +1152,8 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
                 backgroundColor: '#22c55e15',
                 color: '#22c55e',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#22c55e25'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#22c55e15'}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#22c55e25')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#22c55e15')}
             >
               <FileXls size={16} weight="fill" />
               {t.excel}
@@ -1181,12 +1163,12 @@ export const ManualCompareModal: React.FC<ManualCompareModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 rounded-xl text-sm font-semibold transition-all shadow-md"
             style={{
-              backgroundColor: styles.accent,
+              backgroundColor: styles.info,
               color: '#fff',
-              boxShadow: `0 4px 12px ${styles.accent}40`,
+              boxShadow: `0 4px 12px ${styles.info}40`,
             }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
           >
             {t.done}
           </button>

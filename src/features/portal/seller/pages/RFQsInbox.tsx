@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../../../auth-adapter';
 import { sellerRfqInboxService } from '../../services/sellerRfqInboxService';
+import { portalApiClient } from '../../services/portalApiClient';
+import { SubmittedMarketplaceQuote } from '../../types/rfq-marketplace.types';
 import { counterOfferService } from '../../services/counterOfferService';
 import { QuoteFormPanel } from '../components/QuoteFormPanel';
 import { CounterOfferResponseDialog } from '../components/CounterOfferResponseDialog';
@@ -38,18 +40,17 @@ import {
   CheckCircle,
   Timer,
   NotePencil,
-  CurrencyDollar,
   PaperPlaneTilt,
   ClockAfternoon,
   Check,
   Archive,
-  Tag,
   ChatText,
   Keyboard,
   Truck,
   ArrowsClockwise,
+  User,
 } from 'phosphor-react';
-import { EmptyState, Select, SkeletonKPICard, SkeletonTableRow } from '../../components';
+import { EmptyState, Select, SkeletonTableRow } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import {
   SellerInboxRFQ,
@@ -70,7 +71,7 @@ interface RFQsInboxProps {
 }
 
 // Smart Tab types
-type SmartTab = 'all' | 'unread' | 'high_priority' | 'waiting' | 'quoted' | 'counter_offers';
+type SmartTab = 'all' | 'direct' | 'unread' | 'high_priority' | 'waiting' | 'quoted' | 'counter_offers' | 'marketplace';
 type StatusFilter = 'all' | Stage2RFQStatus;
 type PriorityFilter = 'all' | RFQPriorityLevel;
 
@@ -83,9 +84,12 @@ const columnHelper = createColumnHelper<SellerInboxRFQ>();
 // Helper Functions
 // =============================================================================
 
-const formatSLACountdown = (createdAt: string, slaHours: number = 24): { text: string; isUrgent: boolean; isOverdue: boolean } => {
+const formatSLACountdown = (
+  createdAt: string,
+  slaHours: number = 24,
+): { text: string; isUrgent: boolean; isOverdue: boolean } => {
   const created = new Date(createdAt).getTime();
-  const deadline = created + (slaHours * 60 * 60 * 1000);
+  const deadline = created + slaHours * 60 * 60 * 1000;
   const now = Date.now();
   const remaining = deadline - now;
 
@@ -155,11 +159,13 @@ const getSnoozeUntil = (option: SnoozeOption): Date => {
     case '2h':
       return new Date(now.getTime() + 2 * 60 * 60 * 1000);
     case 'tomorrow':
+      // eslint-disable-next-line no-case-declarations
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(9, 0, 0, 0);
       return tomorrow;
     case 'next_week':
+      // eslint-disable-next-line no-case-declarations
       const nextWeek = new Date(now);
       nextWeek.setDate(nextWeek.getDate() + 7);
       nextWeek.setHours(9, 0, 0, 0);
@@ -173,7 +179,7 @@ const getSnoozeUntil = (option: SnoozeOption): Date => {
 // Main Component
 // =============================================================================
 
-export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
+export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
@@ -206,10 +212,16 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
   const [selectedCounterOffer, setSelectedCounterOffer] = useState<CounterOffer | null>(null);
   const [selectedQuoteForCounter, setSelectedQuoteForCounter] = useState<Quote | null>(null);
   const [pendingCounterOffers, setPendingCounterOffers] = useState<CounterOffer[]>([]);
+  const [marketplaceQuotes, setMarketplaceQuotes] = useState<SubmittedMarketplaceQuote[]>([]);
+  const [isLoadingMarketplace, setIsLoadingMarketplace] = useState(false);
   const [isSubmittingCounterResponse, setIsSubmittingCounterResponse] = useState(false);
 
   // Toast notification
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'info' }>({ show: false, message: '', type: 'info' });
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'info' }>({
+    show: false,
+    message: '',
+    type: 'info',
+  });
 
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
@@ -218,7 +230,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
 
   // Data state
   const [rfqs, setRfqs] = useState<SellerInboxRFQ[]>([]);
-  const [stats, setStats] = useState<InboxStats>({
+  const [_stats, setStats] = useState<InboxStats>({
     new: 0,
     viewed: 0,
     underReview: 0,
@@ -234,9 +246,9 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
   const [totalItems, setTotalItems] = useState(0);
 
   // Show toast helper
-  const showToast = (message: string, type: 'success' | 'info' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
   // Fetch RFQs from API
@@ -289,8 +301,8 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
     try {
       const token = await getToken();
       if (!token) return;
-      const offers = await counterOfferService.getSellerPendingCounterOffers(token);
-      setPendingCounterOffers(offers);
+      const result = await counterOfferService.getPendingCounterOffers(token);
+      setPendingCounterOffers(result.counterOffers || []);
     } catch (err) {
       console.error('Failed to fetch pending counter-offers:', err);
     }
@@ -300,6 +312,28 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
     fetchPendingCounterOffers();
   }, [fetchPendingCounterOffers]);
 
+  // Fetch marketplace quotes
+  const fetchMarketplaceQuotes = useCallback(async () => {
+    try {
+      setIsLoadingMarketplace(true);
+
+      const result = await portalApiClient.get<{ quotes: SubmittedMarketplaceQuote[]; total: number }>(
+        '/api/v1/rfq-marketplace/my-quotes',
+      );
+
+      setMarketplaceQuotes(result.quotes || []);
+    } catch (err) {
+      console.error('Failed to fetch marketplace quotes:', err);
+    } finally {
+      setIsLoadingMarketplace(false);
+    }
+  }, []);
+
+  // Fetch marketplace quotes on initial load for correct tab count
+  useEffect(() => {
+    fetchMarketplaceQuotes();
+  }, [fetchMarketplaceQuotes]);
+
   // Handle opening counter-offer dialog
   const handleViewCounterOffer = useCallback((counterOffer: CounterOffer, quote: Quote) => {
     setSelectedCounterOffer(counterOffer);
@@ -308,137 +342,155 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
   }, []);
 
   // Handle accepting counter-offer
-  const handleAcceptCounterOffer = useCallback(async (response?: string) => {
-    if (!selectedCounterOffer) return;
+  const handleAcceptCounterOffer = useCallback(
+    async (response?: string) => {
+      if (!selectedCounterOffer) return;
 
-    try {
-      setIsSubmittingCounterResponse(true);
-      const token = await getToken();
-      if (!token) return;
+      try {
+        setIsSubmittingCounterResponse(true);
+        const token = await getToken();
+        if (!token) return;
 
-      await counterOfferService.acceptCounterOffer(token, selectedCounterOffer.id, response);
-      setShowCounterOfferDialog(false);
-      setSelectedCounterOffer(null);
-      setSelectedQuoteForCounter(null);
-      showToast('Counter-offer accepted · Revised quote created');
-      fetchRFQs();
-      fetchPendingCounterOffers();
-    } catch (err) {
-      console.error('Failed to accept counter-offer:', err);
-      showToast('Failed to accept counter-offer', 'error');
-      throw err;
-    } finally {
-      setIsSubmittingCounterResponse(false);
-    }
-  }, [getToken, selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers]);
+        await counterOfferService.acceptCounterOffer(token, selectedCounterOffer.id, response);
+        setShowCounterOfferDialog(false);
+        setSelectedCounterOffer(null);
+        setSelectedQuoteForCounter(null);
+        showToast('Counter-offer accepted · Revised quote created');
+        fetchRFQs();
+        fetchPendingCounterOffers();
+      } catch (err) {
+        console.error('Failed to accept counter-offer:', err);
+        showToast('Failed to accept counter-offer', 'error');
+        throw err;
+      } finally {
+        setIsSubmittingCounterResponse(false);
+      }
+    },
+    [getToken, selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers],
+  );
 
   // Handle rejecting counter-offer
-  const handleRejectCounterOffer = useCallback(async (response: string) => {
-    if (!selectedCounterOffer) return;
+  const handleRejectCounterOffer = useCallback(
+    async (response: string) => {
+      if (!selectedCounterOffer) return;
 
-    try {
-      setIsSubmittingCounterResponse(true);
-      const token = await getToken();
-      if (!token) return;
+      try {
+        setIsSubmittingCounterResponse(true);
+        const token = await getToken();
+        if (!token) return;
 
-      await counterOfferService.rejectCounterOffer(token, selectedCounterOffer.id, response);
-      setShowCounterOfferDialog(false);
-      setSelectedCounterOffer(null);
-      setSelectedQuoteForCounter(null);
-      showToast('Counter-offer rejected');
-      fetchRFQs();
-      fetchPendingCounterOffers();
-    } catch (err) {
-      console.error('Failed to reject counter-offer:', err);
-      showToast('Failed to reject counter-offer', 'error');
-      throw err;
-    } finally {
-      setIsSubmittingCounterResponse(false);
-    }
-  }, [getToken, selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers]);
+        await counterOfferService.rejectCounterOffer(token, selectedCounterOffer.id, response);
+        setShowCounterOfferDialog(false);
+        setSelectedCounterOffer(null);
+        setSelectedQuoteForCounter(null);
+        showToast('Counter-offer rejected');
+        fetchRFQs();
+        fetchPendingCounterOffers();
+      } catch (err) {
+        console.error('Failed to reject counter-offer:', err);
+        showToast('Failed to reject counter-offer', 'error');
+        throw err;
+      } finally {
+        setIsSubmittingCounterResponse(false);
+      }
+    },
+    [getToken, selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers],
+  );
 
   // Filter RFQs based on smart tab
   const filteredBySmartTab = useMemo(() => {
     switch (smartTab) {
+      case 'direct':
+        return rfqs.filter((r) => r.rfqType === 'DIRECT');
       case 'unread':
-        return rfqs.filter(r => r.status === 'new');
+        return rfqs.filter((r) => r.status === 'new');
       case 'high_priority':
-        return rfqs.filter(r => r.priorityLevel === 'high');
+        return rfqs.filter((r) => r.priorityLevel === 'high');
       case 'waiting':
-        return rfqs.filter(r => r.status === 'under_review');
+        return rfqs.filter((r) => r.status === 'under_review');
       case 'quoted':
-        return rfqs.filter(r => r.status === 'quoted');
+        return rfqs.filter((r) => r.status === 'quoted');
       case 'counter_offers':
         // Filter RFQs that have pending counter-offers
-        const rfqIdsWithCounterOffers = new Set(
-          pendingCounterOffers.map(co => co.quote?.rfqId).filter(Boolean)
-        );
-        return rfqs.filter(r => rfqIdsWithCounterOffers.has(r.id));
+        // eslint-disable-next-line no-case-declarations
+        const rfqIdsWithCounterOffers = new Set(pendingCounterOffers.map((co) => co.quote?.rfqId).filter(Boolean));
+        return rfqs.filter((r) => rfqIdsWithCounterOffers.has(r.id));
       default:
         return rfqs;
     }
   }, [rfqs, smartTab, pendingCounterOffers]);
 
   // Smart tab counts
-  const smartTabCounts = useMemo(() => ({
-    all: rfqs.length,
-    unread: rfqs.filter(r => r.status === 'new').length,
-    high_priority: rfqs.filter(r => r.priorityLevel === 'high').length,
-    waiting: rfqs.filter(r => r.status === 'under_review').length,
-    quoted: rfqs.filter(r => r.status === 'quoted').length,
-    counter_offers: pendingCounterOffers.length,
-  }), [rfqs, pendingCounterOffers]);
+  const smartTabCounts = useMemo(
+    () => ({
+      all: rfqs.length,
+      direct: rfqs.filter((r) => r.rfqType === 'DIRECT').length,
+      unread: rfqs.filter((r) => r.status === 'new').length,
+      high_priority: rfqs.filter((r) => r.priorityLevel === 'high').length,
+      waiting: rfqs.filter((r) => r.status === 'under_review').length,
+      quoted: rfqs.filter((r) => r.status === 'quoted').length,
+      counter_offers: pendingCounterOffers.length,
+      marketplace: marketplaceQuotes.length,
+    }),
+    [rfqs, pendingCounterOffers, marketplaceQuotes],
+  );
 
   // Handle RFQ selection (auto-marks as viewed)
-  const handleSelectRFQ = useCallback(async (rfq: SellerInboxRFQ) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
+  const handleSelectRFQ = useCallback(
+    async (rfq: SellerInboxRFQ) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
 
-      const detail = await sellerRfqInboxService.getRFQDetail(token, rfq.id);
-      if (detail) {
-        setSelectedRFQ(detail);
-        if (detail.status !== rfq.status) {
-          setRfqs(prev => prev.map(r => r.id === rfq.id ? detail : r));
-          fetchRFQs();
+        const detail = await sellerRfqInboxService.getRFQDetail(token, rfq.id);
+        if (detail) {
+          setSelectedRFQ(detail);
+          if (detail.status !== rfq.status) {
+            setRfqs((prev) => prev.map((r) => (r.id === rfq.id ? detail : r)));
+            fetchRFQs();
+          }
         }
+      } catch (err) {
+        console.error('Failed to load RFQ detail:', err);
+        setSelectedRFQ(rfq);
       }
-    } catch (err) {
-      console.error('Failed to load RFQ detail:', err);
-      setSelectedRFQ(rfq);
-    }
-  }, [getToken, fetchRFQs]);
+    },
+    [getToken, fetchRFQs],
+  );
 
   // Handle mark as under review - with optimistic UI
-  const handleMarkUnderReview = useCallback(async (rfqId: string) => {
-    // Optimistic update
-    setRfqs(prev => prev.map(r => r.id === rfqId ? { ...r, status: 'under_review' as const } : r));
-    showToast('Marked as reviewed');
+  const handleMarkUnderReview = useCallback(
+    async (rfqId: string) => {
+      // Optimistic update
+      setRfqs((prev) => prev.map((r) => (r.id === rfqId ? { ...r, status: 'under_review' as const } : r)));
+      showToast('Marked as reviewed');
 
-    try {
-      const token = await getToken();
-      if (!token) return;
+      try {
+        const token = await getToken();
+        if (!token) return;
 
-      const updated = await sellerRfqInboxService.markUnderReview(token, rfqId);
-      if (updated) {
-        setSelectedRFQ(updated);
-        // Sync with server data
+        const updated = await sellerRfqInboxService.markUnderReview(token, rfqId);
+        if (updated) {
+          setSelectedRFQ(updated);
+          // Sync with server data
+          fetchRFQs();
+        }
+      } catch (err) {
+        console.error('Failed to mark as under review:', err);
+        // Revert optimistic update on error
         fetchRFQs();
+        showToast('Failed to update', 'error');
       }
-    } catch (err) {
-      console.error('Failed to mark as under review:', err);
-      // Revert optimistic update on error
-      fetchRFQs();
-      showToast('Failed to update', 'error');
-    }
-  }, [getToken, fetchRFQs]);
+    },
+    [getToken, fetchRFQs],
+  );
 
   // Handle mark as ignored (decline) - with optimistic UI
   const handleMarkIgnored = useCallback(async () => {
     if (!dialogRFQId || !ignoreReason.trim()) return;
 
     // Optimistic update
-    setRfqs(prev => prev.map(r => r.id === dialogRFQId ? { ...r, status: 'ignored' as const } : r));
+    setRfqs((prev) => prev.map((r) => (r.id === dialogRFQId ? { ...r, status: 'ignored' as const } : r)));
     showToast('RFQ declined');
 
     // Close dialog immediately for responsive feel
@@ -472,9 +524,9 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
 
     // Optimistic update
     const noteToSave = noteContent;
-    setRfqs(prev => prev.map(r => r.id === dialogRFQId ? { ...r, internalNotes: noteToSave } : r));
+    setRfqs((prev) => prev.map((r) => (r.id === dialogRFQId ? { ...r, internalNotes: noteToSave } : r)));
     if (selectedRFQ?.id === dialogRFQId) {
-      setSelectedRFQ(prev => prev ? { ...prev, internalNotes: noteToSave } : prev);
+      setSelectedRFQ((prev) => (prev ? { ...prev, internalNotes: noteToSave } : prev));
     }
     showToast('Note saved');
 
@@ -503,55 +555,73 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
   }, [getToken, dialogRFQId, noteContent, selectedRFQ, fetchRFQs]);
 
   // Handle snooze
-  const handleSnooze = useCallback(async (rfqId: string, option: SnoozeOption) => {
-    try {
-      const _token = await getToken();
-      if (!_token) return;
+  const handleSnooze = useCallback(
+    async (rfqId: string, option: SnoozeOption) => {
+      try {
+        const _token = await getToken();
+        if (!_token) return;
 
-      const until = getSnoozeUntil(option);
-      // TODO: Call API to snooze RFQ
-      // await sellerRfqInboxService.snoozeRFQ(token, rfqId, until);
+        const _until = getSnoozeUntil(option);
+        // Future: call snooze API endpoint
+        // await sellerRfqInboxService.snoozeRFQ(token, rfqId, until);
 
-      showToast(`Snoozed until ${option === '2h' ? '2 hours' : option === 'tomorrow' ? 'tomorrow' : 'next week'}`);
-      setShowSnoozeMenu(null);
-    } catch (err) {
-      console.error('Failed to snooze RFQ:', err);
-    }
-  }, [getToken]);
+        showToast(`Snoozed until ${option === '2h' ? '2 hours' : option === 'tomorrow' ? 'tomorrow' : 'next week'}`);
+        setShowSnoozeMenu(null);
+      } catch (err) {
+        console.error('Failed to snooze RFQ:', err);
+      }
+    },
+    [getToken],
+  );
 
   // Bulk actions
   const handleBulkMarkReviewed = useCallback(async () => {
     const selectedIds = Object.keys(rowSelection);
     if (selectedIds.length === 0) return;
 
+    // Only mark RFQs that are in 'new' or 'viewed' status
+    const reviewableIds = selectedIds.filter((id) => {
+      const rfq = rfqs.find((r) => r.id === id);
+      return rfq && (rfq.status === 'new' || rfq.status === 'viewed');
+    });
+
+    if (reviewableIds.length === 0) {
+      showToast('No RFQs eligible to mark as reviewed', 'info');
+      return;
+    }
+
     try {
       const token = await getToken();
       if (!token) return;
 
-      await Promise.all(selectedIds.map(id => sellerRfqInboxService.markUnderReview(token, id)));
+      await Promise.all(reviewableIds.map((id) => sellerRfqInboxService.markUnderReview(token, id)));
       fetchRFQs();
       setRowSelection({});
-      showToast(`${selectedIds.length} RFQ(s) marked as reviewed`);
+      const skipped = selectedIds.length - reviewableIds.length;
+      showToast(`${reviewableIds.length} RFQ(s) marked as reviewed${skipped > 0 ? ` · ${skipped} skipped` : ''}`);
     } catch (err) {
       console.error('Failed to bulk mark reviewed:', err);
     }
-  }, [getToken, rowSelection, fetchRFQs]);
+  }, [getToken, rowSelection, rfqs, fetchRFQs]);
 
-  const handleBulkSnooze = useCallback(async (option: SnoozeOption) => {
-    const selectedIds = Object.keys(rowSelection);
-    if (selectedIds.length === 0) return;
+  const handleBulkSnooze = useCallback(
+    async (_option: SnoozeOption) => {
+      const selectedIds = Object.keys(rowSelection);
+      if (selectedIds.length === 0) return;
 
-    // TODO: Implement bulk snooze API call
-    showToast(`${selectedIds.length} RFQ(s) snoozed`);
-    setRowSelection({});
-    setShowBulkActions(false);
-  }, [rowSelection]);
+      // Future: call bulk snooze API endpoint
+      showToast(`${selectedIds.length} RFQ(s) snoozed`);
+      setRowSelection({});
+      setShowBulkActions(false);
+    },
+    [rowSelection],
+  );
 
   const handleBulkArchive = useCallback(async () => {
     const selectedIds = Object.keys(rowSelection);
     if (selectedIds.length === 0) return;
 
-    // TODO: Implement archive API call
+    // Future: call archive API endpoint
     showToast(`${selectedIds.length} RFQ(s) archived`);
     setRowSelection({});
     setShowBulkActions(false);
@@ -569,11 +639,11 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
       switch (e.key.toLowerCase()) {
         case 'j': // Next row
           e.preventDefault();
-          setFocusedRowIndex(prev => Math.min(prev + 1, rows.length - 1));
+          setFocusedRowIndex((prev) => Math.min(prev + 1, rows.length - 1));
           break;
         case 'k': // Previous row
           e.preventDefault();
-          setFocusedRowIndex(prev => Math.max(prev - 1, 0));
+          setFocusedRowIndex((prev) => Math.max(prev - 1, 0));
           break;
         case 'enter': // Open RFQ
           e.preventDefault();
@@ -585,8 +655,11 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
           e.preventDefault();
           if (focusedRowIndex >= 0 && focusedRowIndex < rows.length) {
             const rfq = rows[focusedRowIndex];
-            setQuoteRFQ(rfq);
-            setShowQuotePanel(true);
+            const quotable = rfq.status === 'new' || rfq.status === 'viewed' || rfq.status === 'under_review';
+            if (quotable) {
+              setQuoteRFQ(rfq);
+              setShowQuotePanel(true);
+            }
           }
           break;
         case 's': // Snooze
@@ -600,7 +673,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
           e.preventDefault();
           if (focusedRowIndex >= 0 && focusedRowIndex < rows.length) {
             const rfq = rows[focusedRowIndex];
-            setRowSelection(prev => {
+            setRowSelection((prev) => {
               const newSelection = { ...prev };
               if (newSelection[rfq.id]) {
                 delete newSelection[rfq.id];
@@ -624,7 +697,16 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredBySmartTab, focusedRowIndex, selectedRFQ, showQuotePanel, showIgnoreDialog, showNoteDialog, handleSelectRFQ, handleSnooze]);
+  }, [
+    filteredBySmartTab,
+    focusedRowIndex,
+    selectedRFQ,
+    showQuotePanel,
+    showIgnoreDialog,
+    showNoteDialog,
+    handleSelectRFQ,
+    handleSnooze,
+  ]);
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all';
 
@@ -638,287 +720,337 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
   const selectedCount = Object.keys(rowSelection).length;
 
   // Table columns with Gmail-style enhancements
-  const columns = useMemo(() => [
-    // Selection checkbox column
-    columnHelper.display({
-      id: 'select',
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllRowsSelected()}
-          onChange={table.getToggleAllRowsSelectedHandler()}
-          className="w-4 h-4 rounded cursor-pointer"
-          style={{ accentColor: styles.info }}
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={row.getIsSelected()}
-          onChange={row.getToggleSelectedHandler()}
-          onClick={(e) => e.stopPropagation()}
-          className="w-4 h-4 rounded cursor-pointer"
-          style={{ accentColor: styles.info }}
-        />
-      ),
-      size: 40,
-    }),
-    columnHelper.accessor('rfqNumber', {
-      meta: { align: 'start' as const },
-      header: t('seller.inbox.rfqId') || 'RFQ ID',
-      cell: ({ row }) => {
-        const rfq = row.original;
-        const isNew = rfq.status === 'new';
-        const priority = rfq.priorityLevel || 'medium';
-        const priorityConfig = getPriorityLevelConfig(priority);
-        const sla = formatSLACountdown(rfq.createdAt);
-        const urgency = getUrgencyBadge(rfq);
-        const lastActivity = formatLastActivity(rfq);
+  const columns = useMemo(
+    () => [
+      // Selection checkbox column
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+            className="w-4 h-4 rounded cursor-pointer"
+            style={{ accentColor: styles.info }}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            onClick={(e) => e.stopPropagation()}
+            className="w-4 h-4 rounded cursor-pointer"
+            style={{ accentColor: styles.info }}
+          />
+        ),
+        size: 40,
+      }),
+      columnHelper.accessor('rfqNumber', {
+        meta: { align: 'start' as const },
+        header: t('seller.inbox.rfqId') || 'RFQ ID',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const isNew = rfq.status === 'new';
+          const priority = rfq.priorityLevel || 'medium';
+          const _priorityConfig = getPriorityLevelConfig(priority);
+          const sla = formatSLACountdown(rfq.createdAt);
+          const urgency = getUrgencyBadge(rfq);
+          const lastActivity = formatLastActivity(rfq);
 
-        return (
-          <div className="flex items-center gap-3">
-            {/* Priority Dot */}
-            <div className="relative flex-shrink-0">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{
-                  backgroundColor: priority === 'high' ? styles.error : priority === 'medium' ? '#f59e0b' : styles.success,
-                }}
-              />
-              {isNew && (
-                <span
-                  className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ backgroundColor: styles.info }}
+          return (
+            <div className="flex items-center gap-3">
+              {/* Priority Dot */}
+              <div className="relative flex-shrink-0">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{
+                    backgroundColor:
+                      priority === 'high' ? styles.error : priority === 'medium' ? '#f59e0b' : styles.success,
+                  }}
                 />
+                {isNew && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full animate-pulse"
+                    style={{ backgroundColor: styles.info }}
+                  />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`truncate ${isNew ? 'font-semibold' : 'font-medium'}`}
+                    style={{ color: styles.textPrimary, fontSize: '0.79rem' }}
+                  >
+                    {rfq.rfqNumber || `RFQ-${rfq.id?.slice(0, 8).toUpperCase() || 'N/A'}`}
+                  </p>
+                  {/* Urgency Badge */}
+                  {urgency && (
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap"
+                      style={{
+                        backgroundColor: urgency.isExpiring ? `${styles.error}15` : `${styles.warning}15`,
+                        color: urgency.isExpiring ? styles.error : styles.warning,
+                      }}
+                    >
+                      {urgency.label}
+                    </span>
+                  )}
+                  {/* RFQ Score Badge */}
+                  {rfq.priorityScore !== undefined && rfq.priorityScore >= 70 && !urgency && (
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[10px] font-semibold tabular-nums"
+                      style={{ backgroundColor: `${styles.success}15`, color: styles.success }}
+                    >
+                      {rfq.priorityScore}
+                    </span>
+                  )}
+                </div>
+                {/* SLA Countdown + Last Activity */}
+                <div className="flex items-center gap-2">
+                  {isNew && (
+                    <p
+                      className={`text-[10px] flex items-center gap-1 ${sla.isUrgent ? 'font-medium' : ''}`}
+                      style={{ color: sla.isOverdue ? styles.error : sla.isUrgent ? styles.warning : styles.textMuted }}
+                    >
+                      <Timer size={10} weight={sla.isUrgent ? 'fill' : 'regular'} />
+                      {sla.text}
+                    </p>
+                  )}
+                  {!isNew && (
+                    <p className="text-[10px]" style={{ color: styles.textMuted }}>
+                      Last activity: {lastActivity}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        },
+        size: 200,
+      }),
+      columnHelper.accessor('item', {
+        meta: { align: 'start' as const },
+        header: t('seller.inbox.product') || 'Product',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const isNew = rfq.status === 'new';
+
+          // Backend populates item with parsed part info even for general RFQs (id='general')
+          const itemName = rfq.item?.name || t('seller.inbox.generalRfq') || 'General RFQ';
+          const itemSku = rfq.item?.sku || '';
+
+          return (
+            <div className="min-w-0">
+              <p
+                className={`truncate ${isNew ? 'font-semibold' : 'font-medium'}`}
+                style={{ color: styles.textPrimary, fontSize: '0.79rem' }}
+              >
+                {itemName}
+              </p>
+              {itemSku ? (
+                <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
+                  {itemSku}
+                </p>
+              ) : (
+                <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
+                  {rfq.rfqType === 'MARKETPLACE' ? 'Marketplace' : 'Direct'}
+                </p>
               )}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className={`truncate ${isNew ? 'font-semibold' : 'font-medium'}`} style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-                  {rfq.rfqNumber || `RFQ-${rfq.id.slice(0, 8).toUpperCase()}`}
-                </p>
-                {/* Urgency Badge */}
-                {urgency && (
-                  <span
-                    className="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap"
-                    style={{
-                      backgroundColor: urgency.isExpiring ? `${styles.error}15` : `${styles.warning}15`,
-                      color: urgency.isExpiring ? styles.error : styles.warning,
-                    }}
-                  >
-                    {urgency.label}
-                  </span>
-                )}
-                {/* RFQ Score Badge */}
-                {rfq.priorityScore !== undefined && rfq.priorityScore >= 70 && !urgency && (
-                  <span
-                    className="px-1.5 py-0.5 rounded text-[10px] font-semibold tabular-nums"
-                    style={{ backgroundColor: `${styles.success}15`, color: styles.success }}
-                  >
-                    {rfq.priorityScore}
-                  </span>
-                )}
-              </div>
-              {/* SLA Countdown + Last Activity */}
-              <div className="flex items-center gap-2">
-                {isNew && (
-                  <p
-                    className={`text-[10px] flex items-center gap-1 ${sla.isUrgent ? 'font-medium' : ''}`}
-                    style={{ color: sla.isOverdue ? styles.error : sla.isUrgent ? styles.warning : styles.textMuted }}
-                  >
-                    <Timer size={10} weight={sla.isUrgent ? 'fill' : 'regular'} />
-                    {sla.text}
-                  </p>
-                )}
-                {!isNew && (
-                  <p className="text-[10px]" style={{ color: styles.textMuted }}>
-                    Last activity: {lastActivity}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      },
-      size: 200,
-    }),
-    columnHelper.accessor('item', {
-      meta: { align: 'start' as const },
-      header: t('seller.inbox.product') || 'Product',
-      cell: ({ row }) => {
-        const rfq = row.original;
-        const hasItem = rfq.item && rfq.itemId;
-        const isNew = rfq.status === 'new';
-
-        return (
-          <div className="min-w-0">
-            <p className={`truncate ${isNew ? 'font-semibold' : 'font-medium'}`} style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-              {hasItem ? rfq.item!.name : t('seller.inbox.generalRfq') || 'General RFQ'}
-            </p>
-            <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-              {hasItem ? rfq.item!.sku : t('seller.inbox.noSpecificItem') || 'No specific item'}
-            </p>
-          </div>
-        );
-      },
-      size: 200,
-    }),
-    columnHelper.accessor('buyerCompanyName', {
-      meta: { align: 'start' as const },
-      header: t('seller.inbox.buyer') || 'Buyer',
-      cell: ({ row }) => {
-        const isNew = row.original.status === 'new';
-        return (
-          <div className="flex items-center gap-2">
-            <Buildings size={16} style={{ color: styles.textMuted }} />
-            <span className={`truncate ${isNew ? 'font-semibold' : ''}`} style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-              {row.original.buyerCompanyName || t('seller.inbox.unknownBuyer') || 'Unknown'}
-            </span>
-          </div>
-        );
-      },
-      size: 160,
-    }),
-    columnHelper.accessor('quantity', {
-      meta: { align: 'center' as const },
-      header: t('seller.inbox.qty') || 'Qty',
-      cell: ({ row }) => (
-        <span className="font-semibold tabular-nums" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-          {row.original.quantity}
-        </span>
-      ),
-      size: 70,
-    }),
-    columnHelper.accessor('status', {
-      meta: { align: 'center' as const },
-      header: t('seller.inbox.status') || 'Status',
-      cell: ({ row }) => {
-        const rfq = row.original;
-        const hasCounterOffer = pendingCounterOffers.some(co => co.quote?.rfqId === rfq.id);
-        return (
-          <div className="flex flex-col items-center gap-1">
-            <StatusBadge status={rfq.status as Stage2RFQStatus} />
-            {hasCounterOffer && (
+          );
+        },
+        size: 200,
+      }),
+      columnHelper.accessor('buyerCompanyName', {
+        meta: { align: 'start' as const },
+        header: t('seller.inbox.buyer') || 'Buyer',
+        cell: ({ row }) => {
+          const isNew = row.original.status === 'new';
+          return (
+            <div className="flex items-center gap-2">
+              <Buildings size={16} style={{ color: styles.textMuted }} />
               <span
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium animate-pulse"
-                style={{ backgroundColor: '#8b5cf620', color: '#8b5cf6' }}
+                className={`truncate ${isNew ? 'font-semibold' : ''}`}
+                style={{ color: styles.textPrimary, fontSize: '0.79rem' }}
               >
-                <ArrowsClockwise size={10} weight="bold" />
-                Counter-Offer
+                {row.original.buyerCompanyName || t('seller.inbox.unknownBuyer') || 'Unknown'}
               </span>
-            )}
-          </div>
-        );
-      },
-      size: 120,
-    }),
-    // Inline Quick Actions column
-    columnHelper.display({
-      id: 'actions',
-      meta: { align: 'center' as const },
-      header: '',
-      cell: ({ row }) => {
-        const rfq = row.original;
-        const canReview = rfq.status === 'new' || rfq.status === 'viewed';
-        const canQuote = rfq.status === 'new' || rfq.status === 'viewed' || rfq.status === 'under_review';
-        const snoozeButtonRef = React.useRef<HTMLButtonElement>(null);
-        const counterOffer = pendingCounterOffers.find(co => co.quote?.rfqId === rfq.id);
-        const hasCounterOffer = !!counterOffer;
+            </div>
+          );
+        },
+        size: 160,
+      }),
+      columnHelper.accessor('quantity', {
+        meta: { align: 'center' as const },
+        header: t('seller.inbox.qty') || 'Qty',
+        cell: ({ row }) => (
+          <span className="font-semibold tabular-nums" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+            {row.original.quantity}
+          </span>
+        ),
+        size: 70,
+      }),
+      columnHelper.accessor('status', {
+        meta: { align: 'center' as const },
+        header: t('seller.inbox.status') || 'Status',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const hasCounterOffer = pendingCounterOffers.some((co) => co.quote?.rfqId === rfq.id);
+          return (
+            <div className="flex flex-col items-center gap-1">
+              <StatusBadge status={rfq.status as Stage2RFQStatus} />
+              {hasCounterOffer && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium animate-pulse"
+                  style={{ backgroundColor: '#8b5cf620', color: '#8b5cf6' }}
+                >
+                  <ArrowsClockwise size={10} weight="bold" />
+                  Counter-Offer
+                </span>
+              )}
+            </div>
+          );
+        },
+        size: 120,
+      }),
+      // Inline Quick Actions column
+      columnHelper.display({
+        id: 'actions',
+        meta: { align: 'center' as const },
+        header: t('seller.inbox.actions') || 'Actions',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const canReview = rfq.status === 'new' || rfq.status === 'viewed';
+          const canQuote = rfq.status === 'new' || rfq.status === 'viewed' || rfq.status === 'under_review';
+          const snoozeButtonRef = React.useRef<HTMLButtonElement>(null);
+          const counterOffer = pendingCounterOffers.find((co) => co.quote?.rfqId === rfq.id);
+          const hasCounterOffer = !!counterOffer;
 
-        const handleSnoozeClick = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          if (snoozeButtonRef.current) {
-            const rect = snoozeButtonRef.current.getBoundingClientRect();
-            setSnoozeMenuPos({ x: rect.right - 140, y: rect.bottom + 4 });
-          }
-          setShowSnoozeMenu(showSnoozeMenu === rfq.id ? null : rfq.id);
-        };
+          const handleSnoozeClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (snoozeButtonRef.current) {
+              const rect = snoozeButtonRef.current.getBoundingClientRect();
+              setSnoozeMenuPos({ x: rect.right - 140, y: rect.bottom + 4 });
+            }
+            setShowSnoozeMenu(showSnoozeMenu === rfq.id ? null : rfq.id);
+          };
 
-        return (
-          <div className="flex items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
-            {/* Counter-Offer Action (Always visible if there's a counter-offer) */}
-            {hasCounterOffer && counterOffer && (
+          return (
+            <div className="flex items-center justify-center gap-0.5">
+              {/* Counter-Offer Action (Always visible if there's a counter-offer) */}
+              {hasCounterOffer && counterOffer && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (counterOffer.quote) {
+                      handleViewCounterOffer(counterOffer, counterOffer.quote);
+                    }
+                  }}
+                  className="p-1.5 rounded transition-colors !opacity-100"
+                  style={{ backgroundColor: '#8b5cf615', color: '#8b5cf6' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#8b5cf625';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#8b5cf615';
+                  }}
+                  title="View Counter-Offer"
+                >
+                  <ArrowsClockwise size={15} weight="bold" />
+                </button>
+              )}
+              {/* Quick Reply - only show for quotable RFQs */}
+              {canQuote && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuoteRFQ(rfq);
+                    setShowQuotePanel(true);
+                  }}
+                  className="p-1.5 rounded transition-colors"
+                  style={{ color: styles.textMuted }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = `${styles.info}15`;
+                    e.currentTarget.style.color = styles.info;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = styles.textMuted;
+                  }}
+                  title="Send Quote (R)"
+                >
+                  <PaperPlaneTilt size={15} />
+                </button>
+              )}
+              {/* Mark Reviewed */}
+              {canReview && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMarkUnderReview(rfq.id);
+                  }}
+                  className="p-1.5 rounded transition-colors"
+                  style={{ color: styles.textMuted }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = `${styles.success}15`;
+                    e.currentTarget.style.color = styles.success;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = styles.textMuted;
+                  }}
+                  title="Mark Reviewed"
+                >
+                  <Check size={15} weight="bold" />
+                </button>
+              )}
+              {/* Snooze */}
+              <div className="relative">
+                <button
+                  ref={snoozeButtonRef}
+                  onClick={handleSnoozeClick}
+                  className="p-1.5 rounded transition-colors"
+                  style={{ color: styles.textMuted }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = `${styles.warning}15`;
+                    e.currentTarget.style.color = styles.warning;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = styles.textMuted;
+                  }}
+                  title="Snooze (S)"
+                >
+                  <ClockAfternoon size={15} />
+                </button>
+              </div>
+              {/* View */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (counterOffer.quote) {
-                    handleViewCounterOffer(counterOffer, counterOffer.quote);
-                  }
-                }}
-                className="p-1.5 rounded transition-colors !opacity-100"
-                style={{ backgroundColor: '#8b5cf615', color: '#8b5cf6' }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#8b5cf625'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#8b5cf615'; }}
-                title="View Counter-Offer"
-              >
-                <ArrowsClockwise size={15} weight="bold" />
-              </button>
-            )}
-            {/* Quick Reply */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setQuoteRFQ(rfq);
-                setShowQuotePanel(true);
-              }}
-              className="p-1.5 rounded transition-colors"
-              style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${styles.info}15`; e.currentTarget.style.color = styles.info; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = styles.textMuted; }}
-              title="Send Quote (R)"
-            >
-              <PaperPlaneTilt size={15} />
-            </button>
-            {/* Mark Reviewed */}
-            {canReview && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMarkUnderReview(rfq.id);
+                  handleSelectRFQ(rfq);
                 }}
                 className="p-1.5 rounded transition-colors"
                 style={{ color: styles.textMuted }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${styles.success}15`; e.currentTarget.style.color = styles.success; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = styles.textMuted; }}
-                title="Mark Reviewed"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = styles.bgSecondary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="View Details (Enter)"
               >
-                <Check size={15} weight="bold" />
-              </button>
-            )}
-            {/* Snooze */}
-            <div className="relative">
-              <button
-                ref={snoozeButtonRef}
-                onClick={handleSnoozeClick}
-                className="p-1.5 rounded transition-colors"
-                style={{ color: styles.textMuted }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${styles.warning}15`; e.currentTarget.style.color = styles.warning; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = styles.textMuted; }}
-                title="Snooze (S)"
-              >
-                <ClockAfternoon size={15} />
+                <Eye size={15} />
               </button>
             </div>
-            {/* View */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSelectRFQ(rfq);
-              }}
-              className="p-1.5 rounded transition-colors"
-              style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = styles.bgSecondary; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-              title="View Details (Enter)"
-            >
-              <Eye size={15} />
-            </button>
-          </div>
-        );
-      },
-      size: 140,
-    }),
-  ], [styles, t, handleSelectRFQ, handleMarkUnderReview, showSnoozeMenu, pendingCounterOffers, handleViewCounterOffer]);
+          );
+        },
+        size: 140,
+      }),
+    ],
+    [styles, t, handleSelectRFQ, handleMarkUnderReview, showSnoozeMenu, pendingCounterOffers, handleViewCounterOffer],
+  );
 
   const table = useReactTable<SellerInboxRFQ>({
     data: filteredBySmartTab,
@@ -974,6 +1106,15 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
               styles={styles}
             />
             <SmartTabButton
+              label="Direct"
+              count={smartTabCounts.direct}
+              isActive={smartTab === 'direct'}
+              onClick={() => setSmartTab('direct')}
+              color={styles.info}
+              icon={<User size={12} weight="fill" />}
+              styles={styles}
+            />
+            <SmartTabButton
               label="Unread"
               count={smartTabCounts.unread}
               isActive={smartTab === 'unread'}
@@ -1017,6 +1158,15 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                 styles={styles}
               />
             )}
+            <SmartTabButton
+              label="Marketplace"
+              count={smartTabCounts.marketplace}
+              isActive={smartTab === 'marketplace'}
+              onClick={() => setSmartTab('marketplace')}
+              color="#f97316"
+              icon={<Package size={12} weight="bold" />}
+              styles={styles}
+            />
           </div>
         </div>
 
@@ -1030,11 +1180,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
               <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                 {selectedCount} selected
               </span>
-              <button
-                onClick={() => setRowSelection({})}
-                className="text-xs"
-                style={{ color: styles.textMuted }}
-              >
+              <button onClick={() => setRowSelection({})} className="text-xs" style={{ color: styles.textMuted }}>
                 Clear
               </button>
             </div>
@@ -1042,7 +1188,11 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
               <button
                 onClick={handleBulkMarkReviewed}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{ backgroundColor: styles.bgCard, color: styles.textSecondary, border: `1px solid ${styles.border}` }}
+                style={{
+                  backgroundColor: styles.bgCard,
+                  color: styles.textSecondary,
+                  border: `1px solid ${styles.border}`,
+                }}
               >
                 <Check size={14} weight="bold" />
                 Mark Reviewed
@@ -1051,7 +1201,11 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                 <button
                   onClick={() => setShowBulkActions(!showBulkActions)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{ backgroundColor: styles.bgCard, color: styles.textSecondary, border: `1px solid ${styles.border}` }}
+                  style={{
+                    backgroundColor: styles.bgCard,
+                    color: styles.textSecondary,
+                    border: `1px solid ${styles.border}`,
+                  }}
                 >
                   <ClockAfternoon size={14} />
                   Snooze
@@ -1062,7 +1216,13 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                     <div className="fixed inset-0 z-30" onClick={() => setShowBulkActions(false)} />
                     <div
                       className="fixed z-50 py-1 rounded-lg shadow-lg min-w-[140px]"
-                      style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, right: 0, top: '100%', marginTop: 4 }}
+                      style={{
+                        backgroundColor: styles.bgCard,
+                        border: `1px solid ${styles.border}`,
+                        right: 0,
+                        top: '100%',
+                        marginTop: 4,
+                      }}
                     >
                       <SnoozeMenuItem label="2 hours" onClick={() => handleBulkSnooze('2h')} styles={styles} />
                       <SnoozeMenuItem label="Tomorrow" onClick={() => handleBulkSnooze('tomorrow')} styles={styles} />
@@ -1074,7 +1234,11 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
               <button
                 onClick={handleBulkArchive}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{ backgroundColor: styles.bgCard, color: styles.textSecondary, border: `1px solid ${styles.border}` }}
+                style={{
+                  backgroundColor: styles.bgCard,
+                  color: styles.textSecondary,
+                  border: `1px solid ${styles.border}`,
+                }}
               >
                 <Archive size={14} />
                 Archive
@@ -1084,10 +1248,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
         )}
 
         {/* Filter Bar */}
-        <div
-          className="rounded-xl border mb-4"
-          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-        >
+        <div className="rounded-xl border mb-4" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
           <div className="flex items-center justify-between px-4 py-3">
             {/* Search */}
             <div
@@ -1117,23 +1278,23 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                 style={{
                   backgroundColor: hasActiveFilters ? `${styles.info}15` : 'transparent',
-                  color: hasActiveFilters ? styles.info : styles.textSecondary
+                  color: hasActiveFilters ? styles.info : styles.textSecondary,
                 }}
               >
                 <Funnel size={14} />
                 Filters
                 {hasActiveFilters && (
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: styles.info }}
-                  />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: styles.info }} />
                 )}
               </button>
 
               {/* Sort */}
               <Select
                 value={sorting[0]?.id || 'createdAt'}
-                onChange={(v) => { setSorting([{ id: v, desc: true }]); setCurrentPage(1); }}
+                onChange={(v) => {
+                  setSorting([{ id: v, desc: true }]);
+                  setCurrentPage(1);
+                }}
                 options={[
                   { value: 'createdAt', label: 'Date Received' },
                   { value: 'priorityScore', label: 'Priority Score' },
@@ -1151,7 +1312,10 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
             >
               <Select
                 value={priorityFilter}
-                onChange={(v) => { setPriorityFilter(v as PriorityFilter); setCurrentPage(1); }}
+                onChange={(v) => {
+                  setPriorityFilter(v as PriorityFilter);
+                  setCurrentPage(1);
+                }}
                 options={[
                   { value: 'all', label: 'All Priorities' },
                   { value: 'high', label: 'High Priority' },
@@ -1161,7 +1325,10 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
               />
               <Select
                 value={statusFilter}
-                onChange={(v) => { setStatusFilter(v as StatusFilter); setCurrentPage(1); }}
+                onChange={(v) => {
+                  setStatusFilter(v as StatusFilter);
+                  setCurrentPage(1);
+                }}
                 options={[
                   { value: 'all', label: 'All Statuses' },
                   { value: 'new', label: 'New' },
@@ -1184,7 +1351,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
         </div>
 
         {/* Loading State with Shimmer */}
-        {isLoading && (
+        {isLoading && smartTab !== 'marketplace' && (
           <div
             className="rounded-xl border overflow-hidden"
             style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
@@ -1222,7 +1389,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
         )}
 
         {/* Error State */}
-        {error && !isLoading && (
+        {error && !isLoading && smartTab !== 'marketplace' && (
           <div
             className="rounded-xl border py-16 text-center"
             style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
@@ -1231,18 +1398,14 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
             <p className="text-sm font-medium" style={{ color: styles.error }}>
               {error}
             </p>
-            <button
-              onClick={fetchRFQs}
-              className="mt-3 text-sm font-medium"
-              style={{ color: styles.info }}
-            >
+            <button onClick={fetchRFQs} className="mt-3 text-sm font-medium" style={{ color: styles.info }}>
               {t('common.retry') || 'Retry'}
             </button>
           </div>
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && filteredBySmartTab.length === 0 && (
+        {!isLoading && !error && smartTab !== 'marketplace' && filteredBySmartTab.length === 0 && (
           <div
             className="rounded-xl border py-16"
             style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
@@ -1250,16 +1413,201 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
             <EmptyState
               icon={FileText}
               title={smartTab === 'all' ? 'No RFQs Yet' : `No ${smartTab.replace('_', ' ')} RFQs`}
-              description={smartTab === 'all'
-                ? 'When buyers send quote requests, they will appear here.'
-                : 'No RFQs match this filter.'
+              description={
+                smartTab === 'all'
+                  ? 'When buyers send quote requests, they will appear here.'
+                  : 'No RFQs match this filter.'
               }
             />
           </div>
         )}
 
+        {/* Marketplace Quotes Section */}
+        {smartTab === 'marketplace' && (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+          >
+            {isLoadingMarketplace ? (
+              <div className="p-6">
+                <SkeletonTableRow columns={6} />
+                <SkeletonTableRow columns={6} />
+                <SkeletonTableRow columns={6} />
+              </div>
+            ) : marketplaceQuotes.length === 0 ? (
+              <div className="py-16">
+                <EmptyState
+                  icon={Package}
+                  title="No Marketplace Quotes Yet"
+                  description="Quotes you submit in the RFQ Marketplace will appear here. Make sure you're logged in with the same account you used to submit quotes."
+                />
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px]">
+                    <thead>
+                      <tr
+                        style={{ backgroundColor: styles.tableHeader, borderBottom: `1px solid ${styles.tableBorder}` }}
+                      >
+                        <th
+                          className="px-4 py-3 text-left text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Quote #
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Item
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Quantity
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Unit Price
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Total
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Lead Time
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Status
+                        </th>
+                        <th
+                          className="px-4 py-3 text-center text-xs font-semibold uppercase"
+                          style={{ color: styles.textMuted }}
+                        >
+                          Submitted
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {marketplaceQuotes.map((quote, index) => {
+                        const statusColors: Record<string, string> = {
+                          sent: styles.info,
+                          under_review: '#f59e0b',
+                          accepted: styles.success,
+                          rejected: styles.error,
+                        };
+                        const statusLabels: Record<string, string> = {
+                          sent: 'Sent',
+                          under_review: 'Under Review',
+                          accepted: 'Accepted',
+                          rejected: 'Rejected',
+                        };
+                        return (
+                          <tr
+                            key={quote.id}
+                            style={{
+                              borderBottom:
+                                index === marketplaceQuotes.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
+                            }}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <div>
+                                <span className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                                  {quote.quoteNumber}
+                                </span>
+                                {quote.rfqNumber && (
+                                  <span className="block text-[10px]" style={{ color: styles.textMuted }}>
+                                    {quote.rfqNumber}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div>
+                                <span className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                                  {quote.rfqPartName || 'N/A'}
+                                </span>
+                                {quote.rfqCategory && (
+                                  <span className="block text-xs" style={{ color: styles.textMuted }}>
+                                    {quote.rfqCategory}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="text-sm" style={{ color: styles.textPrimary }}>
+                                {quote.quantity.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                                {quote.currency}{' '}
+                                {quote.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="font-semibold text-sm" style={{ color: styles.success }}>
+                                {quote.currency}{' '}
+                                {quote.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="text-sm" style={{ color: styles.textSecondary }}>
+                                {quote.leadTimeDays} days
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                style={{
+                                  backgroundColor: `${statusColors[quote.status]}15`,
+                                  color: statusColors[quote.status],
+                                }}
+                              >
+                                {statusLabels[quote.status] || quote.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="text-xs" style={{ color: styles.textMuted }}>
+                                {new Date(quote.submittedAt).toLocaleDateString()}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div
+                  className="px-4 py-3 text-sm"
+                  style={{
+                    borderTop: `1px solid ${styles.tableBorder}`,
+                    backgroundColor: styles.tableHeader,
+                    color: styles.textMuted,
+                  }}
+                >
+                  Showing {marketplaceQuotes.length} marketplace quotes
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Table */}
-        {!isLoading && !error && filteredBySmartTab.length > 0 && (
+        {!isLoading && !error && smartTab !== 'marketplace' && filteredBySmartTab.length > 0 && (
           <div
             ref={tableRef}
             className="rounded-xl border overflow-hidden"
@@ -1277,12 +1625,18 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                       }}
                     >
                       {headerGroup.headers.map((header) => {
-                        const align = (header.column.columnDef.meta as { align?: 'start' | 'center' })?.align || 'start';
+                        const align =
+                          (header.column.columnDef.meta as { align?: 'start' | 'center' })?.align || 'start';
                         return (
                           <th
                             key={header.id}
                             className="px-4 py-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
-                            style={{ color: styles.textMuted, width: header.getSize(), verticalAlign: 'middle', textAlign: align }}
+                            style={{
+                              color: styles.textMuted,
+                              width: header.getSize(),
+                              verticalAlign: 'middle',
+                              textAlign: align,
+                            }}
                           >
                             {header.isPlaceholder ? null : (
                               <div
@@ -1329,18 +1683,16 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                         onClick={() => handleSelectRFQ(row.original)}
                         style={{
                           borderBottom:
-                            index === table.getRowModel().rows.length - 1
-                              ? 'none'
-                              : `1px solid ${styles.tableBorder}`,
+                            index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
                           backgroundColor: isFocused
                             ? `${styles.info}15`
                             : row.getIsSelected()
-                            ? `${styles.info}08`
-                            : sla.isOverdue && isNew
-                            ? `${styles.error}05`
-                            : isNew
-                            ? `${styles.info}03`
-                            : 'transparent',
+                              ? `${styles.info}08`
+                              : sla.isOverdue && isNew
+                                ? `${styles.error}05`
+                                : isNew
+                                  ? `${styles.info}03`
+                                  : 'transparent',
                           outline: isFocused ? `2px solid ${styles.info}` : 'none',
                           outlineOffset: '-2px',
                           // Left border for action-needed RFQs
@@ -1355,16 +1707,14 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                         }}
                         onMouseLeave={(e) => {
                           if (!isFocused && !row.getIsSelected()) {
-                            e.currentTarget.style.backgroundColor = sla.isOverdue && isNew
-                              ? `${styles.error}05`
-                              : isNew
-                              ? `${styles.info}03`
-                              : 'transparent';
+                            e.currentTarget.style.backgroundColor =
+                              sla.isOverdue && isNew ? `${styles.error}05` : isNew ? `${styles.info}03` : 'transparent';
                           }
                         }}
                       >
                         {row.getVisibleCells().map((cell) => {
-                          const align = (cell.column.columnDef.meta as { align?: 'start' | 'center' })?.align || 'start';
+                          const align =
+                            (cell.column.columnDef.meta as { align?: 'start' | 'center' })?.align || 'start';
                           return (
                             <td
                               key={cell.id}
@@ -1397,7 +1747,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
               {totalPages > 1 && (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="px-3 py-1 rounded text-sm disabled:opacity-50"
                     style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
@@ -1408,7 +1758,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
                     {currentPage} / {totalPages}
                   </span>
                   <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="px-3 py-1 rounded text-sm disabled:opacity-50"
                     style={{ backgroundColor: styles.bgSecondary, color: styles.textSecondary }}
@@ -1437,7 +1787,11 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
           >
             <SnoozeMenuItem label="2 hours" onClick={() => handleSnooze(showSnoozeMenu, '2h')} styles={styles} />
             <SnoozeMenuItem label="Tomorrow" onClick={() => handleSnooze(showSnoozeMenu, 'tomorrow')} styles={styles} />
-            <SnoozeMenuItem label="Next week" onClick={() => handleSnooze(showSnoozeMenu, 'next_week')} styles={styles} />
+            <SnoozeMenuItem
+              label="Next week"
+              onClick={() => handleSnooze(showSnoozeMenu, 'next_week')}
+              styles={styles}
+            />
           </div>
         </>
       )}
@@ -1459,8 +1813,12 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
             setShowNoteDialog(true);
           }}
           onCreateQuote={() => {
-            setQuoteRFQ(selectedRFQ);
-            setShowQuotePanel(true);
+            const rfqToQuote = selectedRFQ;
+            setSelectedRFQ(null); // Close RFQ detail panel first
+            setTimeout(() => {
+              setQuoteRFQ(rfqToQuote);
+              setShowQuotePanel(true);
+            }, 150); // Small delay for smooth transition
           }}
         />
       )}
@@ -1474,7 +1832,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
             setQuoteRFQ(null);
           }}
           rfq={quoteRFQ}
-          onSuccess={(quote: Quote) => {
+          onSuccess={(_quote: Quote) => {
             setSelectedRFQ(null);
             setShowQuotePanel(false);
             setQuoteRFQ(null);
@@ -1504,7 +1862,10 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
           <textarea
             value={ignoreReason}
             onChange={(e) => setIgnoreReason(e.target.value)}
-            placeholder={t('seller.inbox.declineReasonPlaceholder') || 'e.g., Item not available, Out of service area, Cannot meet delivery date...'}
+            placeholder={
+              t('seller.inbox.declineReasonPlaceholder') ||
+              'e.g., Item not available, Out of service area, Cannot meet delivery date...'
+            }
             rows={3}
             className="w-full px-3 py-2 rounded-lg border text-sm outline-none resize-none"
             style={{
@@ -1551,9 +1912,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
       )}
 
       {/* Keyboard Shortcuts Help */}
-      {showKeyboardHelp && (
-        <KeyboardShortcutsHelp onClose={() => setShowKeyboardHelp(false)} styles={styles} />
-      )}
+      {showKeyboardHelp && <KeyboardShortcutsHelp onClose={() => setShowKeyboardHelp(false)} styles={styles} />}
 
       {/* Counter-Offer Response Dialog */}
       {selectedCounterOffer && selectedQuoteForCounter && (
@@ -1579,11 +1938,8 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ onNavigate }) => {
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-100"
           style={{
-            backgroundColor: toast.type === 'success'
-              ? styles.success
-              : toast.type === 'error'
-              ? styles.error
-              : styles.info,
+            backgroundColor:
+              toast.type === 'success' ? styles.success : toast.type === 'error' ? styles.error : styles.info,
             color: '#fff',
           }}
         >
@@ -1615,23 +1971,18 @@ const SmartTabButton: React.FC<{
     className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-100"
     style={{
       backgroundColor: isActive ? styles.bgCard : 'transparent',
-      color: isActive ? (color || styles.textPrimary) : styles.textMuted,
+      color: isActive ? color || styles.textPrimary : styles.textMuted,
       boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
     }}
   >
     {icon}
-    {color && !icon && (
-      <span
-        className="w-2 h-2 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-    )}
+    {color && !icon && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />}
     {label}
     <span
       className="px-1.5 py-0.5 rounded text-xs font-semibold tabular-nums"
       style={{
         backgroundColor: isActive ? (color ? `${color}15` : styles.bgSecondary) : 'transparent',
-        color: isActive ? (color || styles.textSecondary) : styles.textMuted,
+        color: isActive ? color || styles.textSecondary : styles.textMuted,
       }}
     >
       {count}
@@ -1644,12 +1995,29 @@ const StatusBadge: React.FC<{ status: Stage2RFQStatus }> = ({ status }) => {
   const { styles } = usePortal();
   const config = getStage2StatusConfig(status);
 
-  const IconComponent = {
+  // Defensive check for undefined config (unknown status)
+  if (!config) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
+        style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}
+      >
+        {status || 'Unknown'}
+      </span>
+    );
+  }
+
+  const iconMap: Record<string, React.ComponentType<{ size: number; weight: string }>> = {
     envelope: EnvelopeSimple,
     eye: Eye,
     'magnifying-glass': MagnifyingGlassPlus,
     'x-circle': XCircle,
-  }[config.icon];
+    'check-circle': CheckCircle,
+    'paper-plane': PaperPlaneTilt,
+    clock: ClockAfternoon,
+  };
+
+  const IconComponent = iconMap[config.icon] || EnvelopeSimple;
 
   return (
     <span
@@ -1731,7 +2099,9 @@ const ShortcutRow: React.FC<{
         </React.Fragment>
       ))}
     </div>
-    <span className="text-sm" style={{ color: styles.textSecondary }}>{description}</span>
+    <span className="text-sm" style={{ color: styles.textSecondary }}>
+      {description}
+    </span>
   </div>
 );
 
@@ -1843,19 +2213,45 @@ const RFQDetailPanel: React.FC<{
   onAddNote: () => void;
   onCreateQuote: () => void;
   onDeclineRFQ?: () => void;
-}> = ({ rfq, isRtl, onClose, onMarkUnderReview, onMarkIgnored, onAddNote, onCreateQuote, onDeclineRFQ }) => {
+}> = ({ rfq, isRtl, onClose, onMarkUnderReview, onMarkIgnored, onAddNote, onCreateQuote, _onDeclineRFQ }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t } = usePortal();
   const { getToken } = useAuth();
   const [history, setHistory] = useState<RFQEvent[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const canMarkUnderReview = rfq.status === 'new' || rfq.status === 'viewed';
-  const canMarkIgnored = rfq.status !== 'ignored';
+  const canMarkIgnored = rfq.status !== 'ignored' && rfq.status !== 'accepted' && rfq.status !== 'quoted';
   const canCreateQuote = rfq.status === 'under_review' || rfq.status === 'new' || rfq.status === 'viewed';
-  const isReadOnly = rfq.status === 'ignored' || rfq.status === 'expired' || rfq.status === 'rejected';
-  const timeInfo = getTimeSinceReceived(rfq.createdAt);
+  const isReadOnly =
+    rfq.status === 'ignored' ||
+    rfq.status === 'expired' ||
+    rfq.status === 'rejected' ||
+    rfq.status === 'accepted' ||
+    rfq.status === 'quoted';
+  const _timeInfo = getTimeSinceReceived(rfq.createdAt);
   const sla = formatSLACountdown(rfq.createdAt);
   const urgency = getUrgencyBadge(rfq);
+
+  // Handle animation states
+  useEffect(() => {
+    setIsVisible(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsAnimating(true);
+      });
+    });
+  }, []);
+
+  const handleClose = () => {
+    setIsAnimating(false);
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose();
+    }, 300);
+  };
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -1874,23 +2270,30 @@ const RFQDetailPanel: React.FC<{
     loadHistory();
   }, [getToken, rfq.id]);
 
+  if (!isVisible) return null;
+
   return (
     <>
+      {/* Transparent Backdrop */}
+      <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={handleClose} />
+      {/* Panel */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-        onClick={onClose}
-      />
-      <div
-        className={`fixed top-0 bottom-0 w-full max-w-xl z-50 shadow-2xl flex flex-col ${
-          isRtl ? 'left-0' : 'right-0'
-        }`}
-        style={{ backgroundColor: styles.bgPrimary }}
+        className="fixed w-full max-w-xl z-50 flex flex-col overflow-hidden"
+        style={{
+          top: '64px',
+          bottom: 0,
+          backgroundColor: styles.bgPrimary,
+          right: isRtl ? 'auto' : 0,
+          left: isRtl ? 0 : 'auto',
+          borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
+          borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
+          boxShadow: styles.isDark ? '-12px 0 40px rgba(0, 0, 0, 0.6)' : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
+          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: styles.border }}>
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -1900,7 +2303,7 @@ const RFQDetailPanel: React.FC<{
             </div>
             <div>
               <h2 className="text-lg font-semibold" style={{ color: styles.textPrimary }}>
-                {rfq.rfqNumber || `RFQ-${rfq.id.slice(0, 8).toUpperCase()}`}
+                {rfq.rfqNumber || `RFQ-${rfq.id?.slice(0, 8).toUpperCase() || 'N/A'}`}
               </h2>
               <div className="flex items-center gap-2">
                 <StatusBadge status={rfq.status as Stage2RFQStatus} />
@@ -1915,7 +2318,7 @@ const RFQDetailPanel: React.FC<{
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-lg transition-colors"
             style={{ color: styles.textMuted }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgSecondary)}
@@ -1954,7 +2357,15 @@ const RFQDetailPanel: React.FC<{
               <Archive size={20} style={{ color: styles.textMuted }} />
               <div>
                 <p className="font-medium text-sm" style={{ color: styles.textSecondary }}>
-                  {rfq.status === 'expired' ? 'RFQ Expired' : rfq.status === 'rejected' ? 'RFQ Declined' : 'RFQ Ignored'}
+                  {rfq.status === 'expired'
+                    ? 'RFQ Expired'
+                    : rfq.status === 'rejected'
+                      ? 'RFQ Declined'
+                      : rfq.status === 'accepted'
+                        ? 'RFQ Accepted'
+                        : rfq.status === 'quoted'
+                          ? 'Quote Sent'
+                          : 'RFQ Ignored'}
                 </p>
                 <p className="text-xs" style={{ color: styles.textMuted }}>
                   This RFQ is read-only
@@ -2019,7 +2430,7 @@ const RFQDetailPanel: React.FC<{
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold" style={{ color: styles.textPrimary }}>
-                  {rfq.item?.name || 'General RFQ'}
+                  {rfq.item?.name || 'General Request'}
                 </p>
                 {rfq.item?.sku && (
                   <p className="text-sm flex items-center gap-1 mt-0.5" style={{ color: styles.textMuted }}>
@@ -2102,7 +2513,11 @@ const RFQDetailPanel: React.FC<{
             {/* Priority */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Lightning size={18} weight="fill" style={{ color: getPriorityLevelConfig(rfq.priorityLevel).textColor.replace('text-', '') }} />
+                <Lightning
+                  size={18}
+                  weight="fill"
+                  style={{ color: getPriorityLevelConfig(rfq.priorityLevel).textColor.replace('text-', '') }}
+                />
                 <span className="font-medium text-sm" style={{ color: styles.textPrimary }}>
                   {getPriorityLevelConfig(rfq.priorityLevel).label} Priority
                 </span>
@@ -2166,8 +2581,13 @@ const RFQDetailPanel: React.FC<{
           >
             {loadingHistory ? (
               <div className="flex items-center gap-2">
-                <div className="animate-spin w-4 h-4 border-2 rounded-full" style={{ borderColor: styles.border, borderTopColor: styles.info }} />
-                <span className="text-sm" style={{ color: styles.textMuted }}>Loading...</span>
+                <div
+                  className="animate-spin w-4 h-4 border-2 rounded-full"
+                  style={{ borderColor: styles.border, borderTopColor: styles.info }}
+                />
+                <span className="text-sm" style={{ color: styles.textMuted }}>
+                  Loading...
+                </span>
               </div>
             ) : history.length === 0 ? (
               <p className="text-sm" style={{ color: styles.textMuted }}>
@@ -2202,10 +2622,19 @@ const RFQDetailPanel: React.FC<{
         </div>
 
         {/* Footer Actions */}
-        <div
-          className="px-6 py-4 border-t"
-          style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
-        >
+        <div className="px-6 py-4 border-t" style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}>
+          {isReadOnly && (
+            <div
+              className="text-center py-2 px-4 rounded-lg text-sm"
+              style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}
+            >
+              {rfq.status === 'quoted' && 'Quote already sent for this RFQ'}
+              {rfq.status === 'accepted' && 'This RFQ has been accepted'}
+              {rfq.status === 'ignored' && 'This RFQ was declined'}
+              {rfq.status === 'rejected' && 'This RFQ was rejected'}
+              {rfq.status === 'expired' && 'This RFQ has expired'}
+            </div>
+          )}
           {!isReadOnly && (
             <div className="space-y-2">
               {/* Primary Action: Send Quote */}
@@ -2268,13 +2697,6 @@ const RFQDetailPanel: React.FC<{
                 )}
               </div>
             </div>
-          )}
-
-          {/* Read-only state message */}
-          {isReadOnly && (
-            <p className="text-center text-sm" style={{ color: styles.textMuted }}>
-              No actions available for this RFQ
-            </p>
           )}
         </div>
       </div>

@@ -5,7 +5,18 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowsClockwise, Trophy, Play, Pause, ArrowsOut, ArrowsIn, X, SpeakerHigh, SpeakerSlash } from 'phosphor-react';
+import {
+  ArrowLeft,
+  ArrowsClockwise,
+  Trophy,
+  Play,
+  Pause,
+  ArrowsOut,
+  ArrowsIn,
+  X,
+  SpeakerHigh,
+  SpeakerSlash,
+} from 'phosphor-react';
 import { getGameAudio } from '../utils/GameAudio';
 
 interface BreakoutGameProps {
@@ -132,13 +143,15 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
     };
 
     // Initialize ball
-    ballsRef.current = [{
-      x: width / 2,
-      y: height - 60,
-      dx: INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1),
-      dy: -INITIAL_BALL_SPEED,
-      radius: BALL_RADIUS,
-    }];
+    ballsRef.current = [
+      {
+        x: width / 2,
+        y: height - 60,
+        dx: INITIAL_BALL_SPEED * (Math.random() > 0.5 ? 1 : -1),
+        dy: -INITIAL_BALL_SPEED,
+        radius: BALL_RADIUS,
+      },
+    ];
 
     // Initialize bricks with power-ups
     const brickWidth = (width - 40) / BRICK_COLS;
@@ -187,11 +200,12 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
     switch (type) {
       case 'multiball':
         // Add 2 more balls
+        // eslint-disable-next-line no-case-declarations
         const currentBalls = ballsRef.current;
         if (currentBalls.length > 0) {
           const mainBall = currentBalls[0];
           for (let i = 0; i < 2; i++) {
-            const angle = (Math.random() - 0.5) * Math.PI / 2;
+            const angle = ((Math.random() - 0.5) * Math.PI) / 2;
             const speed = Math.sqrt(mainBall.dx * mainBall.dx + mainBall.dy * mainBall.dy);
             ballsRef.current.push({
               x: mainBall.x,
@@ -210,7 +224,7 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
         break;
 
       case 'slow':
-        ballsRef.current.forEach(ball => {
+        ballsRef.current.forEach((ball) => {
           ball.dx *= 0.6;
           ball.dy *= 0.6;
         });
@@ -223,7 +237,7 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
         break;
 
       case 'fireball':
-        ballsRef.current.forEach(ball => {
+        ballsRef.current.forEach((ball) => {
           ball.fireball = true;
         });
         activePowerUpsRef.current.set('fireball', Date.now() + duration);
@@ -231,10 +245,11 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
 
       case 'laser':
         // Instant laser that destroys a column
+        // eslint-disable-next-line no-case-declarations
         const balls = ballsRef.current;
         if (balls.length > 0) {
           const laserX = paddle.x + paddle.width / 2;
-          bricksRef.current.forEach(brick => {
+          bricksRef.current.forEach((brick) => {
             if (brick.active && laserX > brick.x && laserX < brick.x + brick.width) {
               brick.active = false;
               scoreRef.current += 10;
@@ -273,10 +288,10 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
           paddle.width = paddle.baseWidth;
         }
         if (type === 'fireball') {
-          balls.forEach(ball => ball.fireball = false);
+          balls.forEach((ball) => (ball.fireball = false));
         }
         if (type === 'slow') {
-          balls.forEach(ball => {
+          balls.forEach((ball) => {
             const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
             const targetSpeed = INITIAL_BALL_SPEED;
             if (speed < targetSpeed * 0.9) {
@@ -307,7 +322,7 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
     ctx.strokeRect(1, 1, width - 2, height - 2);
 
     // Draw bricks
-    bricks.forEach(brick => {
+    bricks.forEach((brick) => {
       if (brick.active) {
         // Brick shadow
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -450,7 +465,7 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
           }
 
           // Check win
-          if (bricks.every(b => !b.active)) {
+          if (bricks.every((b) => !b.active)) {
             setWon(true);
             setIsPlaying(false);
             getGameAudio().play('win');
@@ -604,7 +619,10 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
       } else if (e.key === ' ') {
         e.preventDefault();
         if (!isPlaying && !gameOver && !won) setIsPlaying(true);
-        else if (gameOver || won) { initGame(); setIsPlaying(true); }
+        else if (gameOver || won) {
+          initGame();
+          setIsPlaying(true);
+        }
       }
     };
 
@@ -619,7 +637,7 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
+    setIsFullscreen((prev) => !prev);
   }, []);
 
   // Sound toggle
@@ -643,7 +661,10 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
     <div className={`h-full w-full flex flex-col bg-gray-900 ${isFullscreen ? 'fixed inset-0 z-[9999]' : ''}`}>
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2 flex items-center justify-between border-b border-gray-800">
-        <button onClick={isFullscreen ? () => setIsFullscreen(false) : onBack} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm">
+        <button
+          onClick={isFullscreen ? () => setIsFullscreen(false) : onBack}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+        >
           {isFullscreen ? <X size={18} /> : <ArrowLeft size={18} />}
           <span className="hidden sm:inline">{isFullscreen ? 'Exit' : 'Back'}</span>
         </button>
@@ -652,7 +673,7 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
           {/* Active power-ups */}
           {activePowerUps.length > 0 && (
             <div className="flex items-center gap-1">
-              {activePowerUps.map(type => (
+              {activePowerUps.map((type) => (
                 <div
                   key={type}
                   className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white"
@@ -677,17 +698,36 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
             <Trophy size={16} weight="fill" />
             <span className="font-bold">{highScore}</span>
           </div>
-          <button onClick={() => gameOver || won ? resetGame() : setIsPlaying(p => !p)} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700">
+          <button
+            onClick={() => (gameOver || won ? resetGame() : setIsPlaying((p) => !p))}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700"
+          >
             {isPlaying ? <Pause size={18} className="text-white" /> : <Play size={18} className="text-white" />}
           </button>
           <button onClick={resetGame} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700">
             <ArrowsClockwise size={18} className="text-gray-400" />
           </button>
-          <button onClick={toggleFullscreen} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
-            {isFullscreen ? <ArrowsIn size={18} className="text-white" /> : <ArrowsOut size={18} className="text-white" />}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <ArrowsIn size={18} className="text-white" />
+            ) : (
+              <ArrowsOut size={18} className="text-white" />
+            )}
           </button>
-          <button onClick={toggleSound} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700" title={soundEnabled ? 'Mute' : 'Unmute'}>
-            {soundEnabled ? <SpeakerHigh size={18} className="text-white" /> : <SpeakerSlash size={18} className="text-gray-500" />}
+          <button
+            onClick={toggleSound}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700"
+            title={soundEnabled ? 'Mute' : 'Unmute'}
+          >
+            {soundEnabled ? (
+              <SpeakerHigh size={18} className="text-white" />
+            ) : (
+              <SpeakerSlash size={18} className="text-gray-500" />
+            )}
           </button>
         </div>
       </div>
@@ -710,7 +750,13 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
                 <>
                   <div className="text-3xl font-bold text-green-500 mb-2">You Win!</div>
                   <div className="text-gray-300 mb-4">Score: {score}</div>
-                  <button onClick={() => { initGame(); setIsPlaying(true); }} className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold">
+                  <button
+                    onClick={() => {
+                      initGame();
+                      setIsPlaying(true);
+                    }}
+                    className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold"
+                  >
                     Play Again
                   </button>
                 </>
@@ -718,14 +764,23 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
                 <>
                   <div className="text-3xl font-bold text-red-500 mb-2">Game Over!</div>
                   <div className="text-gray-300 mb-4">Score: {score}</div>
-                  <button onClick={() => { initGame(); setIsPlaying(true); }} className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold">
+                  <button
+                    onClick={() => {
+                      initGame();
+                      setIsPlaying(true);
+                    }}
+                    className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold"
+                  >
                     Play Again
                   </button>
                 </>
               ) : (
                 <>
                   <div className="text-3xl font-bold text-orange-500 mb-4">BREAKOUT</div>
-                  <button onClick={() => setIsPlaying(true)} className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center gap-2">
+                  <button
+                    onClick={() => setIsPlaying(true)}
+                    className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center gap-2"
+                  >
                     <Play size={20} weight="fill" /> Start
                   </button>
                   <div className="mt-4 text-gray-400 text-xs text-center">
@@ -733,7 +788,12 @@ export const BreakoutGame: React.FC<BreakoutGameProps> = ({ onBack }) => {
                     <div className="flex flex-wrap justify-center gap-2 mt-2">
                       {Object.entries(POWERUP_ICONS).map(([type, icon]) => (
                         <div key={type} className="flex items-center gap-1">
-                          <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-white" style={{ backgroundColor: POWERUP_COLORS[type as PowerUpType] }}>{icon}</span>
+                          <span
+                            className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-white"
+                            style={{ backgroundColor: POWERUP_COLORS[type as PowerUpType] }}
+                          >
+                            {icon}
+                          </span>
                           <span className="text-[10px]">{type}</span>
                         </div>
                       ))}

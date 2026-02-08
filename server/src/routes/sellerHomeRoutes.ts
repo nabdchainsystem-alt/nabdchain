@@ -2,7 +2,7 @@
 // Seller Home Routes - Dashboard Aggregation API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import sellerHomeService from '../services/sellerHomeService';
 import { apiLogger } from '../utils/logger';

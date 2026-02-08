@@ -5,9 +5,8 @@
 // Manages permission resolution, role assignment, and row-level access filtering.
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -275,7 +274,7 @@ export const permissionService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error assigning role:', error);
+      apiLogger.error('Error assigning role:', error);
       return { success: false, error: 'Failed to assign role' };
     }
   },
@@ -313,7 +312,7 @@ export const permissionService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error revoking role:', error);
+      apiLogger.error('Error revoking role:', error);
       return { success: false, error: 'Failed to revoke role' };
     }
   },

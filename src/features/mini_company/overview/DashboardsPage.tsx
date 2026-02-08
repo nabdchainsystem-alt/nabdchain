@@ -1,62 +1,62 @@
 import React, { useState } from 'react';
 import { BoardView } from '../../board/BoardView';
-import { Board } from '../../../types';
+import { Board, Task } from '../../../types';
 
 import { useAppContext } from '../../../contexts/AppContext';
 
 const INITIAL_BOARD: Board = {
-    id: 'dept-dashboards',
-    name: 'Dashboards',
-    description: 'Centralized view of all department dashboards',
-    columns: [
-        { id: 'name', title: 'Dashboard Name', type: 'text' },
-        { id: 'owner', title: 'Owner', type: 'person' },
-        { id: 'status', title: 'Status', type: 'status' },
-        { id: 'updated', title: 'Last Updated', type: 'date' }
-    ],
-    tasks: [],
-    availableViews: ['datatable'],
-    defaultView: 'overview'
+  id: 'dept-dashboards',
+  name: 'Dashboards',
+  description: 'Centralized view of all department dashboards',
+  columns: [
+    { id: 'name', title: 'Dashboard Name', type: 'text' },
+    { id: 'owner', title: 'Owner', type: 'person' },
+    { id: 'status', title: 'Status', type: 'status' },
+    { id: 'updated', title: 'Last Updated', type: 'date' },
+  ],
+  tasks: [],
+  availableViews: ['datatable'],
+  defaultView: 'overview',
 };
 
 const DashboardsPage: React.FC = () => {
-    const { t } = useAppContext();
-    const [board, setBoard] = useState<Board>(() => {
-        const saved = localStorage.getItem('dept-dashboards-data');
-        return saved ? JSON.parse(saved) : INITIAL_BOARD;
+  const { t } = useAppContext();
+  const [board, setBoard] = useState<Board>(() => {
+    const saved = localStorage.getItem('dept-dashboards-data');
+    return saved ? JSON.parse(saved) : INITIAL_BOARD;
+  });
+
+  const handleUpdateBoard = (boardId: string, updates: Partial<Board>) => {
+    setBoard((prev) => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('dept-dashboards-data', JSON.stringify(updated));
+      return updated;
     });
+  };
 
-    const handleUpdateBoard = (boardId: string, updates: Partial<Board>) => {
-        setBoard(prev => {
-            const updated = { ...prev, ...updates };
-            localStorage.setItem('dept-dashboards-data', JSON.stringify(updated));
-            return updated;
-        });
-    };
+  const handleUpdateTasks = (tasks: Task[]) => {
+    setBoard((prev) => {
+      const updated = { ...prev, tasks };
+      localStorage.setItem(`board-tasks-${prev.id}`, JSON.stringify(tasks));
+      return updated;
+    });
+  };
 
-    const handleUpdateTasks = (tasks: any[]) => {
-        setBoard(prev => {
-            const updated = { ...prev, tasks };
-            localStorage.setItem(`board-tasks-${prev.id}`, JSON.stringify(tasks));
-            return updated;
-        });
-    };
+  // Create a localized board object for display
+  const localizedBoard = {
+    ...board,
+    name: t('dashboards_page_title'),
+    description: t('dashboards_page_desc'),
+  };
 
-    // Create a localized board object for display
-    const localizedBoard = {
-        ...board,
-        name: t('dashboards_page_title'),
-        description: t('dashboards_page_desc')
-    };
-
-    return (
-        <BoardView
-            board={localizedBoard}
-            onUpdateBoard={handleUpdateBoard}
-            onUpdateTasks={handleUpdateTasks}
-            isDepartmentLayout={true}
-        />
-    );
+  return (
+    <BoardView
+      board={localizedBoard}
+      onUpdateBoard={handleUpdateBoard}
+      onUpdateTasks={handleUpdateTasks}
+      isDepartmentLayout={true}
+    />
+  );
 };
 
 export default DashboardsPage;

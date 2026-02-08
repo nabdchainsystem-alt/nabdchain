@@ -20,7 +20,7 @@ export const GuestList: React.FC<GuestListProps> = ({
   guests,
   invites = [],
   showInvites = false,
-  onRemoveGuest,
+  _onRemoveGuest,
   onResendInvite,
   onCancelInvite,
 }) => {
@@ -41,9 +41,7 @@ export const GuestList: React.FC<GuestListProps> = ({
       <div className="text-center py-12">
         <EnvelopeSimple size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
         <p className="text-stone-500 mb-2">No pending invites</p>
-        <p className="text-sm text-stone-400">
-          Invite guests to collaborate on your workspace
-        </p>
+        <p className="text-sm text-stone-400">Invite guests to collaborate on your workspace</p>
       </div>
     );
   }
@@ -53,9 +51,7 @@ export const GuestList: React.FC<GuestListProps> = ({
       <div className="text-center py-12">
         <User size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
         <p className="text-stone-500 mb-2">No guests yet</p>
-        <p className="text-sm text-stone-400">
-          Invite external collaborators to work with your team
-        </p>
+        <p className="text-sm text-stone-400">Invite external collaborators to work with your team</p>
       </div>
     );
   }
@@ -76,9 +72,7 @@ export const GuestList: React.FC<GuestListProps> = ({
                     <EnvelopeSimple size={20} className="text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-stone-800 dark:text-stone-200">
-                      {invite.email}
-                    </p>
+                    <p className="font-medium text-stone-800 dark:text-stone-200">{invite.email}</p>
                     <div className="flex items-center gap-2 text-sm text-stone-500">
                       <span>Sent {new Date(invite.createdAt).toLocaleDateString()}</span>
                       {invite.expiresAt && (
@@ -91,7 +85,9 @@ export const GuestList: React.FC<GuestListProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${accessLevelColors[invite.accessLevel]}`}>
+                  <span
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${accessLevelColors[invite.accessLevel]}`}
+                  >
                     <Icon size={12} />
                     {invite.accessLevel}
                   </span>
@@ -110,9 +106,7 @@ export const GuestList: React.FC<GuestListProps> = ({
                 </div>
               </div>
               {invite.boards.length > 0 && (
-                <div className="mt-2 text-xs text-stone-500">
-                  Access to {invite.boards.length} board(s)
-                </div>
+                <div className="mt-2 text-xs text-stone-500">Access to {invite.boards.length} board(s)</div>
               )}
             </div>
           );
@@ -140,11 +134,7 @@ export const GuestList: React.FC<GuestListProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {guest.avatar ? (
-                  <img
-                    src={guest.avatar}
-                    alt={guest.name || guest.email}
-                    className="w-10 h-10 rounded-full"
-                  />
+                  <img src={guest.avatar} alt={guest.name || guest.email} className="w-10 h-10 rounded-full" />
                 ) : (
                   <div className="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center">
                     <User size={20} className="text-cyan-600" />
@@ -152,16 +142,18 @@ export const GuestList: React.FC<GuestListProps> = ({
                 )}
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-stone-800 dark:text-stone-200">
-                      {guest.name || guest.email}
-                    </p>
-                    <span className={`w-2 h-2 rounded-full ${statusColors[guest.status]} ${guest.status === 'active' ? 'animate-pulse' : ''}`} />
+                    <p className="font-medium text-stone-800 dark:text-stone-200">{guest.name || guest.email}</p>
+                    <span
+                      className={`w-2 h-2 rounded-full ${statusColors[guest.status]} ${guest.status === 'active' ? 'animate-pulse' : ''}`}
+                    />
                   </div>
                   <p className="text-sm text-stone-500">{guest.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${accessLevelColors[guest.accessLevel]}`}>
+                <span
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${accessLevelColors[guest.accessLevel]}`}
+                >
                   <Icon size={12} />
                   {guest.accessLevel}
                 </span>

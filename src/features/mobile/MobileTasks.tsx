@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check, Trash, Circle, CheckCircle, Clock, Star } from 'phosphor-react';
+import { Plus, Check, Trash, CheckCircle, Star } from 'phosphor-react';
 
 interface Task {
   id: string;
@@ -47,40 +47,44 @@ export const MobileTasks: React.FC = () => {
   };
 
   const toggleTask = (id: string) => {
-    setTasks(tasks.map(t =>
-      t.id === id ? { ...t, completed: !t.completed } : t
-    ));
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
   };
 
   const deleteTask = (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
+    setTasks(tasks.filter((t) => t.id !== id));
   };
 
   const togglePriority = (id: string) => {
-    setTasks(tasks.map(t => {
-      if (t.id !== id) return t;
-      const priorities: (Task['priority'])[] = [null, 'low', 'medium', 'high'];
-      const currentIndex = priorities.indexOf(t.priority);
-      const nextPriority = priorities[(currentIndex + 1) % priorities.length];
-      return { ...t, priority: nextPriority };
-    }));
+    setTasks(
+      tasks.map((t) => {
+        if (t.id !== id) return t;
+        const priorities: Task['priority'][] = [null, 'low', 'medium', 'high'];
+        const currentIndex = priorities.indexOf(t.priority);
+        const nextPriority = priorities[(currentIndex + 1) % priorities.length];
+        return { ...t, priority: nextPriority };
+      }),
+    );
   };
 
-  const filteredTasks = tasks.filter(t => {
+  const filteredTasks = tasks.filter((t) => {
     if (filter === 'active') return !t.completed;
     if (filter === 'completed') return t.completed;
     return true;
   });
 
-  const activeTasks = tasks.filter(t => !t.completed).length;
-  const completedTasks = tasks.filter(t => t.completed).length;
+  const activeTasks = tasks.filter((t) => !t.completed).length;
+  const completedTasks = tasks.filter((t) => t.completed).length;
 
   const getPriorityColor = (priority: Task['priority']) => {
     switch (priority) {
-      case 'high': return 'text-red-500';
-      case 'medium': return 'text-yellow-500';
-      case 'low': return 'text-blue-500';
-      default: return 'text-gray-300';
+      case 'high':
+        return 'text-red-500';
+      case 'medium':
+        return 'text-yellow-500';
+      case 'low':
+        return 'text-blue-500';
+      default:
+        return 'text-gray-300';
     }
   };
 
@@ -125,9 +129,7 @@ export const MobileTasks: React.FC = () => {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              filter === f
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+              filter === f ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -141,9 +143,11 @@ export const MobileTasks: React.FC = () => {
           <div className="flex flex-col items-center justify-center h-48 text-gray-400">
             <CheckCircle size={48} className="mb-2 opacity-50" />
             <p className="text-sm">
-              {filter === 'completed' ? 'No completed tasks' :
-               filter === 'active' ? 'All tasks completed!' :
-               'No tasks yet. Add one above!'}
+              {filter === 'completed'
+                ? 'No completed tasks'
+                : filter === 'active'
+                  ? 'All tasks completed!'
+                  : 'No tasks yet. Add one above!'}
             </p>
           </div>
         ) : (
@@ -166,11 +170,7 @@ export const MobileTasks: React.FC = () => {
                 </button>
 
                 {/* Task Text */}
-                <span
-                  className={`flex-1 text-base ${
-                    task.completed ? 'text-gray-400 line-through' : 'text-gray-800'
-                  }`}
-                >
+                <span className={`flex-1 text-base ${task.completed ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                   {task.title}
                 </span>
 
@@ -199,7 +199,7 @@ export const MobileTasks: React.FC = () => {
       {completedTasks > 0 && (
         <div className="p-4 bg-white border-t border-gray-200">
           <button
-            onClick={() => setTasks(tasks.filter(t => !t.completed))}
+            onClick={() => setTasks(tasks.filter((t) => !t.completed))}
             className="w-full py-2.5 text-sm text-gray-500 hover:text-red-600 font-medium transition-colors"
           >
             Clear {completedTasks} completed task{completedTasks !== 1 ? 's' : ''}

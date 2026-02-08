@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ChartBar, CaretLeft, CaretRight, User, Warning } from 'phosphor-react';
-import type { Resource, WorkloadData } from '../types';
+import { CaretLeft, CaretRight, User, Warning } from 'phosphor-react';
+import type { Resource } from '../types';
 
 // =============================================================================
 // WORKLOAD VIEW - PLACEHOLDER
@@ -32,7 +32,7 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
   const weekDates = getWeekDates();
 
   // Mock workload data
-  const getWorkload = (resourceId: string, date: Date): number => {
+  const getWorkload = (_resourceId: string, _date: Date): number => {
     // Random mock utilization between 40-120%
     return Math.floor(Math.random() * 80) + 40;
   };
@@ -56,7 +56,7 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
             <CaretLeft size={20} className="text-stone-500" />
           </button>
           <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
-            {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {' '}
+            {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
             {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </span>
           <button
@@ -66,10 +66,7 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
             <CaretRight size={20} className="text-stone-500" />
           </button>
           {weekOffset !== 0 && (
-            <button
-              onClick={() => setWeekOffset(0)}
-              className="text-sm text-indigo-600 hover:text-indigo-700 ml-2"
-            >
+            <button onClick={() => setWeekOffset(0)} className="text-sm text-indigo-600 hover:text-indigo-700 ml-2">
               Today
             </button>
           )}
@@ -95,29 +92,20 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
         <table className="w-full">
           <thead>
             <tr className="bg-stone-50 dark:bg-stone-800">
-              <th className="text-left text-sm font-medium text-stone-500 px-4 py-3 w-48">
-                Resource
-              </th>
+              <th className="text-left text-sm font-medium text-stone-500 px-4 py-3 w-48">Resource</th>
               {weekDates.map((date) => (
-                <th
-                  key={date.toISOString()}
-                  className="text-center text-sm font-medium text-stone-500 px-4 py-3"
-                >
+                <th key={date.toISOString()} className="text-center text-sm font-medium text-stone-500 px-4 py-3">
                   <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                   <div className="text-xs">{date.getDate()}</div>
                 </th>
               ))}
-              <th className="text-center text-sm font-medium text-stone-500 px-4 py-3">
-                Avg
-              </th>
+              <th className="text-center text-sm font-medium text-stone-500 px-4 py-3">Avg</th>
             </tr>
           </thead>
           <tbody>
             {resources.map((resource) => {
               const weekWorkloads = weekDates.map((date) => getWorkload(resource.id, date));
-              const avgWorkload = Math.round(
-                weekWorkloads.reduce((a, b) => a + b, 0) / weekWorkloads.length
-              );
+              const avgWorkload = Math.round(weekWorkloads.reduce((a, b) => a + b, 0) / weekWorkloads.length);
 
               return (
                 <tr
@@ -127,20 +115,14 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {resource.avatar ? (
-                        <img
-                          src={resource.avatar}
-                          alt={resource.name}
-                          className="w-8 h-8 rounded-full"
-                        />
+                        <img src={resource.avatar} alt={resource.name} className="w-8 h-8 rounded-full" />
                       ) : (
                         <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
                           <User size={16} className="text-indigo-600" />
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-stone-800 dark:text-stone-200">
-                          {resource.name}
-                        </p>
+                        <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{resource.name}</p>
                         <p className="text-xs text-stone-500">{resource.role}</p>
                       </div>
                     </div>
@@ -153,9 +135,7 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
                         >
                           {workload}%
                         </div>
-                        {workload > 100 && (
-                          <Warning size={12} className="text-red-500" />
-                        )}
+                        {workload > 100 && <Warning size={12} className="text-red-500" />}
                       </div>
                     </td>
                   ))}
@@ -165,8 +145,8 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
                         avgWorkload > 100
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           : avgWorkload > 80
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                       }`}
                     >
                       {avgWorkload}%
@@ -181,9 +161,7 @@ export const WorkloadView: React.FC<WorkloadViewProps> = ({ resources }) => {
 
       {/* Placeholder Notice */}
       <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-center">
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Workload View - Interactive features coming soon
-        </p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">Workload View - Interactive features coming soon</p>
       </div>
     </div>
   );

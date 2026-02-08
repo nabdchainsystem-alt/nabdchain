@@ -341,7 +341,7 @@ export async function buildOrderTimeline(orderId: string): Promise<OrderTimeline
       key: 'processing_started',
       label: STEP_LABELS.processing_started,
       status: 'completed',
-      actualAt: order.processingAt || order.confirmedAt,
+      actualAt: order.processingAt || order.confirmedAt || undefined,
     });
   } else {
     steps.push({
@@ -453,7 +453,7 @@ export async function buildOrderTimeline(orderId: string): Promise<OrderTimeline
       key: 'completed',
       label: STEP_LABELS.completed,
       status: 'completed',
-      actualAt: order.closedAt || order.deliveredAt,
+      actualAt: order.closedAt || order.deliveredAt || undefined,
     });
   } else if (order.status === 'delivered') {
     steps.push({

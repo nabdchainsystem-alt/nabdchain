@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, User, Clock } from 'phosphor-react';
+import { Target, User } from 'phosphor-react';
 import type { Sprint, SprintTask } from '../types';
 
 // =============================================================================
@@ -24,9 +24,7 @@ export const SprintBoard: React.FC<SprintBoardProps> = ({ sprint }) => {
         <div className="text-center">
           <Target size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
           <p className="text-stone-500 mb-2">No active sprint</p>
-          <p className="text-sm text-stone-400">
-            Start a new sprint to see the board
-          </p>
+          <p className="text-sm text-stone-400">Start a new sprint to see the board</p>
         </div>
       </div>
     );
@@ -44,16 +42,11 @@ export const SprintBoard: React.FC<SprintBoardProps> = ({ sprint }) => {
           const totalPoints = tasks.reduce((sum, t) => sum + t.storyPoints, 0);
 
           return (
-            <div
-              key={column.id}
-              className="flex flex-col bg-stone-100 dark:bg-stone-900 rounded-xl"
-            >
+            <div key={column.id} className="flex flex-col bg-stone-100 dark:bg-stone-900 rounded-xl">
               {/* Column Header */}
               <div className="px-4 py-3 border-b border-stone-200 dark:border-stone-700">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-stone-700 dark:text-stone-300">
-                    {column.label}
-                  </h3>
+                  <h3 className="font-semibold text-stone-700 dark:text-stone-300">{column.label}</h3>
                   <span className="text-sm text-stone-500">
                     {tasks.length} tasks • {totalPoints} pts
                   </span>

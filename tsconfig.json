@@ -21,6 +21,14 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "noEmit": true,
+    "strict": false,
+    "alwaysStrict": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitThis": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "server", "e2e", "k6"]
 }

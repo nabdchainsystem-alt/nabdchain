@@ -5,13 +5,7 @@
 
 import { appLogger } from '../../../../utils/logger';
 
-export type SoundType =
-  | 'shoot'
-  | 'explosion'
-  | 'hit'
-  | 'powerup'
-  | 'gameOver'
-  | 'levelUp';
+export type SoundType = 'shoot' | 'explosion' | 'hit' | 'powerup' | 'gameOver' | 'levelUp';
 
 interface SoundConfig {
   frequency: number;
@@ -29,43 +23,43 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
     type: 'square',
     duration: 0.1,
     volume: 0.15,
-    sweep: -400
+    sweep: -400,
   },
   explosion: {
     frequency: 100,
     type: 'sawtooth',
     duration: 0.3,
     volume: 0.25,
-    decay: 0.3
+    decay: 0.3,
   },
   hit: {
     frequency: 300,
     type: 'square',
     duration: 0.08,
     volume: 0.12,
-    sweep: -100
+    sweep: -100,
   },
   powerup: {
     frequency: 400,
     type: 'sine',
     duration: 0.2,
     volume: 0.2,
-    sweep: 400
+    sweep: 400,
   },
   gameOver: {
     frequency: 200,
     type: 'sawtooth',
     duration: 0.5,
     volume: 0.2,
-    sweep: -150
+    sweep: -150,
   },
   levelUp: {
     frequency: 500,
     type: 'sine',
     duration: 0.3,
     volume: 0.2,
-    sweep: 300
-  }
+    sweep: 300,
+  },
 };
 
 export class AudioManager {
@@ -87,7 +81,9 @@ export class AudioManager {
     if (this.initialized) return;
 
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (
+        window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext
+      )();
       this.masterGain = this.audioContext.createGain();
       this.masterGain.connect(this.audioContext.destination);
       this.masterGain.gain.value = 0.5;
@@ -126,7 +122,7 @@ export class AudioManager {
       if (config.sweep) {
         oscillator.frequency.exponentialRampToValueAtTime(
           Math.max(20, config.frequency + config.sweep),
-          this.audioContext.currentTime + config.duration
+          this.audioContext.currentTime + config.duration,
         );
       }
 
@@ -134,15 +130,9 @@ export class AudioManager {
       gainNode.gain.setValueAtTime(config.volume, this.audioContext.currentTime);
 
       if (config.decay) {
-        gainNode.gain.exponentialRampToValueAtTime(
-          0.01,
-          this.audioContext.currentTime + config.decay
-        );
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + config.decay);
       } else {
-        gainNode.gain.exponentialRampToValueAtTime(
-          0.01,
-          this.audioContext.currentTime + config.duration
-        );
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + config.duration);
       }
 
       oscillator.start(this.audioContext.currentTime);
@@ -153,7 +143,7 @@ export class AudioManager {
         oscillator.disconnect();
         gainNode.disconnect();
       };
-    } catch (e) {
+    } catch (_e) {
       // Silently fail - audio is not critical
     }
   }
@@ -202,7 +192,7 @@ export class AudioManager {
         filter.disconnect();
         gainNode.disconnect();
       };
-    } catch (e) {
+    } catch (_e) {
       // Fallback to simple explosion
       this.play('explosion');
     }

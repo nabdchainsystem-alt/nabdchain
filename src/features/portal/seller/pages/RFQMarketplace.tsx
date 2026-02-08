@@ -1,118 +1,52 @@
 // =============================================================================
-// RFQ Marketplace Page - Master-Detail Layout
+// RFQ Marketplace Page - Professional Table Layout (Matching Listings)
 // =============================================================================
-// Side-by-side list + details panel for calm, professional UX
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   MagnifyingGlass,
-  FunnelSimple,
-  SortAscending,
+  Funnel,
+  CaretRight,
+  CaretDown,
+  CaretUp,
   BookmarkSimple,
   PaperPlaneTilt,
+  Package,
+  Timer,
   X,
-  CaretDown,
-  Spinner,
   ArrowsClockwise,
+  CheckCircle,
+  Warning,
   FileText,
 } from 'phosphor-react';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  createColumnHelper,
+  SortingState,
+  RowSelectionState,
+} from '@tanstack/react-table';
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
-import { EmptyState } from '../../components/EmptyState';
+import { Button, Select, EmptyState, SkeletonTableRow } from '../../components';
+import { rfqMarketplaceService } from '../../services/rfqMarketplaceService';
 import {
   MarketplaceRFQ,
   MarketplaceFilters,
   MarketplaceStats,
   MarketplaceSortBy,
-  DeadlineFilter,
-  BuyerBadgeType,
-  ActiveFilter,
+  getDeadlineUrgency,
+  getCompetitionLevel,
+  getCompetitionLevelConfig,
+  formatQuantity,
+  formatCurrencyValue,
+  computeEstimatedValue,
   RFQ_CATEGORIES,
 } from '../../types/rfq-marketplace.types';
-import { rfqMarketplaceService } from '../../services/rfqMarketplaceService';
-import { RFQMarketplaceList } from '../components/RFQMarketplaceList';
-import { RFQMarketplaceDetailsPanel } from '../components/RFQMarketplaceDetailsPanel';
 import { SubmitMarketplaceQuoteModal } from '../components/SubmitMarketplaceQuoteModal';
-
-// =============================================================================
-// Memoized List Wrapper - Prevents re-render when drawer state changes
-// =============================================================================
-
-const StableListWrapper = memo<{
-  loadingState: 'loading' | 'success' | 'error' | 'empty';
-  filterViewMode: 'browse' | 'saved';
-  rfqs: MarketplaceRFQ[];
-  selectedRFQId: string | null;
-  onSelectRFQ: (rfq: MarketplaceRFQ) => void;
-  onToggleSave: (rfq: MarketplaceRFQ) => void;
-  totalRFQs: number;
-  page: number;
-  onPageChange: (page: number) => void;
-  onRetry: () => void;
-}>(({
-  loadingState,
-  filterViewMode,
-  rfqs,
-  selectedRFQId,
-  onSelectRFQ,
-  onToggleSave,
-  totalRFQs,
-  page,
-  onPageChange,
-  onRetry,
-}) => {
-  if (loadingState === 'loading') {
-    return (
-      <div className="flex-1 flex items-center justify-center h-full">
-        <Spinner size={32} className="animate-spin text-gray-400" />
-      </div>
-    );
-  }
-
-  if (loadingState === 'error') {
-    return (
-      <EmptyState
-        title="Error Loading Requests"
-        description="Unable to load marketplace data. Please try again."
-        action={
-          <button
-            onClick={onRetry}
-            className="px-4 py-2 rounded-md text-sm font-medium bg-gray-900 text-white hover:bg-gray-800"
-          >
-            Retry
-          </button>
-        }
-      />
-    );
-  }
-
-  if (loadingState === 'empty') {
-    return (
-      <EmptyState
-        title={filterViewMode === 'saved' ? 'No Saved Requests' : 'No Open Requests'}
-        description={
-          filterViewMode === 'saved'
-            ? 'Save RFQs you want to quote on later.'
-            : 'No open requests right now. Check back soon.'
-        }
-      />
-    );
-  }
-
-  return (
-    <RFQMarketplaceList
-      rfqs={rfqs}
-      selectedId={selectedRFQId || undefined}
-      onSelect={onSelectRFQ}
-      onToggleSave={onToggleSave}
-      totalCount={totalRFQs}
-      page={page}
-      onPageChange={onPageChange}
-    />
-  );
-});
-
-StableListWrapper.displayName = 'StableListWrapper';
 
 // =============================================================================
 // Types
@@ -122,47 +56,44 @@ interface RFQMarketplaceProps {
   onNavigate: (page: string) => void;
 }
 
-type FilterViewMode = 'browse' | 'saved';
+// =============================================================================
+// Column Helper
+// =============================================================================
+
+const columnHelper = createColumnHelper<MarketplaceRFQ>();
 
 // =============================================================================
 // Component
 // =============================================================================
 
 export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
-  // Prevent double loading
-  const isInitialMount = useRef(true);
-
   // Data state
   const [rfqs, setRfqs] = useState<MarketplaceRFQ[]>([]);
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
-  const [selectedRFQId, setSelectedRFQId] = useState<string | null>(null);
-  const [loadingState, setLoadingState] = useState<'loading' | 'success' | 'error' | 'empty'>('loading');
-  const [totalRFQs, setTotalRFQs] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Table state
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   // Filter state
-  const [filterViewMode, setFilterViewMode] = useState<FilterViewMode>('browse');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<MarketplaceFilters>({
-    sortBy: 'newest',
-    page: 1,
-    limit: 20,
-  });
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [deadlineFilter, setDeadlineFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<MarketplaceSortBy>('newest');
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [viewMode, setViewMode] = useState<'browse' | 'saved'>('browse');
 
   // Modal state
   const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [quoteRFQ, setQuoteRFQ] = useState<MarketplaceRFQ | null>(null);
-
-  // Selected RFQ - computed from selectedRFQId
-  const selectedRFQ = useMemo(
-    () => rfqs.find(r => r.id === selectedRFQId) || null,
-    [rfqs, selectedRFQId]
-  );
+  const [selectedRFQ, setSelectedRFQ] = useState<MarketplaceRFQ | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -172,457 +103,727 @@ export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) =>
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Load RFQs - FIXED: removed selectedRFQ from dependencies to prevent refetch on selection
+  // Load RFQs
   const loadRFQs = useCallback(async () => {
-    setLoadingState('loading');
+    setIsLoading(true);
+    setError(null);
     try {
       const token = await getToken();
       if (!token) {
-        setLoadingState('error');
+        setError('Not authenticated');
+        setIsLoading(false);
         return;
       }
 
-      const appliedFilters: MarketplaceFilters = {
-        ...filters,
+      const filters: MarketplaceFilters = {
         search: debouncedSearch || undefined,
-        savedOnly: filterViewMode === 'saved',
+        category: categoryFilter !== 'all' ? categoryFilter : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        deadline: deadlineFilter !== 'all' ? (deadlineFilter as any) : undefined,
+        sortBy,
+        savedOnly: viewMode === 'saved',
+        page: 1,
+        limit: 50,
       };
 
-      const response = await rfqMarketplaceService.getMarketplaceRFQs(token, appliedFilters);
+      const response = await rfqMarketplaceService.getMarketplaceRFQs(token, filters);
       setRfqs(response.rfqs);
       setStats(response.stats);
-      setTotalRFQs(response.pagination.total);
-      setLoadingState(response.rfqs.length === 0 ? 'empty' : 'success');
-    } catch (error) {
-      console.error('Failed to load marketplace RFQs:', error);
-      setLoadingState('error');
+    } catch (err) {
+      console.error('Failed to load RFQs:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load marketplace data');
+    } finally {
+      setIsLoading(false);
     }
-  }, [getToken, filters, debouncedSearch, filterViewMode]);
+  }, [getToken, debouncedSearch, categoryFilter, deadlineFilter, sortBy, viewMode]);
 
-  // Initial load and filter changes
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-    }
     loadRFQs();
   }, [loadRFQs]);
 
-  // Handle filter changes
-  const handleFilterChange = useCallback((key: keyof MarketplaceFilters, value: unknown) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-      page: key !== 'page' ? 1 : (value as number),
-    }));
-  }, []);
+  // Toggle save
+  const handleToggleSave = useCallback(
+    async (rfq: MarketplaceRFQ) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
 
-  // Clear specific filter
-  const clearFilter = useCallback((key: keyof MarketplaceFilters) => {
-    setFilters(prev => {
-      const updated = { ...prev, page: 1 };
-      delete updated[key];
-      return updated;
-    });
-  }, []);
+        if (rfq.isSaved) {
+          await rfqMarketplaceService.unsaveRFQ(token, rfq.id);
+        } else {
+          await rfqMarketplaceService.saveRFQ(token, rfq.id);
+        }
 
-  // Clear all filters
-  const clearAllFilters = useCallback(() => {
-    setFilters({ sortBy: 'newest', page: 1, limit: 20 });
-    setSearchQuery('');
-  }, []);
-
-  // Active filters for display
-  const activeFilters = useMemo((): ActiveFilter[] => {
-    const list: ActiveFilter[] = [];
-    if (filters.category) {
-      const cat = RFQ_CATEGORIES.find(c => c.value === filters.category);
-      list.push({ key: 'category', label: 'Category', value: cat?.label || filters.category });
-    }
-    if (filters.quantityMin || filters.quantityMax) {
-      const min = filters.quantityMin || 0;
-      const max = filters.quantityMax;
-      list.push({ key: 'quantity', label: 'Quantity', value: max ? `${min}-${max}` : `${min}+` });
-    }
-    if (filters.deadline && filters.deadline !== 'all') {
-      list.push({ key: 'deadline', label: 'Deadline', value: filters.deadline === 'urgent' ? 'Urgent' : 'Expiring Today' });
-    }
-    if (filters.buyerBadge) {
-      list.push({ key: 'buyerBadge', label: 'Buyer', value: filters.buyerBadge === 'enterprise' ? 'Enterprise' : 'Verified' });
-    }
-    return list;
-  }, [filters]);
-
-  // Handle RFQ selection - just update the ID, drawer reads from rfqs array
-  const handleSelectRFQ = useCallback((rfq: MarketplaceRFQ) => {
-    setSelectedRFQId(rfq.id);
-  }, []);
-
-  // Close drawer
-  const handleCloseDrawer = useCallback(() => {
-    setSelectedRFQId(null);
-  }, []);
-
-  // Handle save/unsave - update local state without refetch
-  const handleToggleSave = useCallback(async (rfq: MarketplaceRFQ) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-
-      if (rfq.isSaved) {
-        await rfqMarketplaceService.unsaveRFQ(token, rfq.id);
-      } else {
-        await rfqMarketplaceService.saveRFQ(token, rfq.id);
+        setRfqs((prev) => prev.map((r) => (r.id === rfq.id ? { ...r, isSaved: !r.isSaved } : r)));
+      } catch (err) {
+        console.error('Failed to toggle save:', err);
       }
+    },
+    [getToken],
+  );
 
-      // Update local state optimistically
-      setRfqs(prev =>
-        prev.map(r => (r.id === rfq.id ? { ...r, isSaved: !r.isSaved } : r))
-      );
-    } catch (error) {
-      console.error('Failed to toggle save:', error);
-    }
-  }, [getToken]);
-
-  // Handle quote submission
-  const handleOpenQuoteModal = useCallback((rfq: MarketplaceRFQ) => {
-    setQuoteRFQ(rfq);
+  // Open quote modal
+  const handleQuote = useCallback((rfq: MarketplaceRFQ) => {
+    setSelectedRFQ(rfq);
     setShowQuoteModal(true);
   }, []);
 
+  // Handle quote submitted
   const handleQuoteSubmitted = useCallback(() => {
     setShowQuoteModal(false);
-    setQuoteRFQ(null);
+    setSelectedRFQ(null);
     loadRFQs();
   }, [loadRFQs]);
 
-  // Sort options
-  const sortOptions: { value: MarketplaceSortBy; label: string }[] = useMemo(() => [
-    { value: 'newest', label: t('seller.rfqMarketplace.sortNewest') || 'Newest' },
-    { value: 'expiring_soon', label: t('seller.rfqMarketplace.sortExpiring') || 'Expiring Soon' },
-    { value: 'highest_quantity', label: t('seller.rfqMarketplace.sortQuantity') || 'Highest Quantity' },
-    { value: 'best_match', label: t('seller.rfqMarketplace.sortBestMatch') || 'Best Match' },
-  ], [t]);
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || categoryFilter !== 'all' || deadlineFilter !== 'all';
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setDeadlineFilter('all');
+  };
+
+  // Format relative time
+  const formatRelativeTime = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Table columns
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        id: 'select',
+        meta: { align: 'center' as const },
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+            className="w-4 h-4 rounded border-2 cursor-pointer accent-blue-600"
+            style={{ borderColor: styles.border }}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            className="w-4 h-4 rounded border-2 cursor-pointer accent-blue-600"
+            style={{ borderColor: styles.border }}
+          />
+        ),
+        size: 40,
+      }),
+      columnHelper.accessor('partName', {
+        meta: { align: 'start' as const },
+        header: 'Request',
+        cell: ({ row }) => {
+          const rfq = row.original;
+
+          return (
+            <div className="flex items-center gap-3 whitespace-nowrap">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.85rem' }}>
+                    {rfq.partName}
+                  </p>
+                  {rfq.hasQuoted && (
+                    <span
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}
+                    >
+                      <CheckCircle size={10} weight="fill" />
+                      Quoted
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs whitespace-nowrap" style={{ color: styles.textMuted }}>
+                  {rfq.rfqNumber} · {rfq.category}
+                </span>
+              </div>
+            </div>
+          );
+        },
+        size: 280,
+      }),
+      columnHelper.accessor('quantity', {
+        meta: { align: 'center' as const },
+        header: 'Quantity',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          return (
+            <span className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.8rem' }}>
+              {formatQuantity(rfq.quantity, rfq.unit)}
+            </span>
+          );
+        },
+        size: 100,
+      }),
+      columnHelper.display({
+        id: 'value',
+        meta: { align: 'center' as const },
+        header: 'Est. Value',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const value = computeEstimatedValue(rfq);
+
+          return (
+            <span className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.8rem' }}>
+              {formatCurrencyValue(value.min, value.currency)} - {formatCurrencyValue(value.max, value.currency)}
+            </span>
+          );
+        },
+        size: 150,
+      }),
+      columnHelper.accessor('buyer', {
+        meta: { align: 'center' as const },
+        header: 'Buyer',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const buyer = rfq.buyer;
+
+          return (
+            <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {buyer.companyName}
+            </span>
+          );
+        },
+        size: 120,
+      }),
+      columnHelper.accessor('deliveryLocation', {
+        meta: { align: 'center' as const },
+        header: 'Delivery',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          return (
+            <span className="text-sm" style={{ color: styles.textSecondary }}>
+              {rfq.deliveryCity || rfq.deliveryLocation || 'SA'}
+            </span>
+          );
+        },
+        size: 90,
+      }),
+      columnHelper.display({
+        id: 'competition',
+        meta: { align: 'center' as const },
+        header: 'Competition',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const level = getCompetitionLevel(rfq.totalQuotes);
+          const config = getCompetitionLevelConfig(level);
+
+          return (
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: config.color }} />
+              <span style={{ color: styles.textSecondary, fontSize: '0.8rem' }}>{rfq.totalQuotes} quotes</span>
+            </div>
+          );
+        },
+        size: 100,
+      }),
+      columnHelper.accessor('deadline', {
+        meta: { align: 'center' as const },
+        header: 'Deadline',
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const urgency = getDeadlineUrgency(rfq.deadline);
+
+          const urgencyColors = {
+            normal: styles.success,
+            urgent: '#F59E0B',
+            critical: styles.error,
+            expired: styles.textMuted,
+          };
+
+          return (
+            <div className="flex items-center justify-center gap-1">
+              <Timer size={12} style={{ color: urgencyColors[urgency.urgency] }} className="flex-shrink-0" />
+              <span className="font-medium" style={{ color: urgencyColors[urgency.urgency], fontSize: '0.8rem' }}>
+                {urgency.text}
+              </span>
+            </div>
+          );
+        },
+        size: 100,
+      }),
+      columnHelper.accessor('createdAt', {
+        meta: { align: 'center' as const },
+        header: 'Posted',
+        cell: ({ row }) => (
+          <span style={{ color: styles.textMuted, fontSize: '0.8rem' }}>
+            {formatRelativeTime(row.original.createdAt)}
+          </span>
+        ),
+        size: 90,
+      }),
+      columnHelper.display({
+        id: 'actions',
+        meta: { align: 'center' as const },
+        header: 'Actions',
+        cell: ({ row }) => {
+          const rfq = row.original;
+
+          // If already quoted, show Quoted status
+          if (rfq.hasQuoted) {
+            return (
+              <div className="flex items-center justify-center">
+                <span
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}
+                >
+                  <CheckCircle size={14} weight="fill" />
+                  Quoted
+                </span>
+              </div>
+            );
+          }
+
+          // Not quoted - show bookmark and Quote button
+          return (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => handleToggleSave(rfq)}
+                className="p-1.5 rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                style={{ color: rfq.isSaved ? '#F59E0B' : styles.textMuted }}
+                title={rfq.isSaved ? 'Unsave' : 'Save for later'}
+              >
+                <BookmarkSimple size={16} weight={rfq.isSaved ? 'fill' : 'regular'} />
+              </button>
+              <button
+                onClick={() => handleQuote(rfq)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
+                style={{ backgroundColor: styles.info, color: '#fff' }}
+              >
+                <PaperPlaneTilt size={12} weight="fill" />
+                Quote
+              </button>
+            </div>
+          );
+        },
+        size: 140,
+      }),
+    ],
+    [styles, handleToggleSave, handleQuote],
+  );
+
+  // Table instance
+  const table = useReactTable({
+    data: rfqs,
+    columns,
+    state: { sorting, rowSelection },
+    onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection: true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getRowId: (row: any) => row.id,
+  });
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: '#fafafa' }}>
-      {/* Page Header - Calm, professional */}
-      <div className="flex-shrink-0 px-6 pt-5 pb-4 bg-white border-b border-gray-100">
-        <div className="flex items-start justify-between mb-4">
+    <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
+      <div className="px-6 py-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <h1
-              className="text-lg font-semibold text-gray-900"
-              style={{ fontFamily: styles.fontHeading }}
-            >
-              {t('seller.rfqMarketplace.title') || 'RFQ Marketplace'}
+            <h1 className="text-2xl font-semibold" style={{ color: styles.textPrimary }}>
+              RFQ Marketplace
             </h1>
-            <p className="text-[13px] text-gray-400 mt-0.5">
-              {t('seller.rfqMarketplace.subtitle') || 'Browse open buyer requests and submit quotes'}
+            <p className="text-sm mt-1" style={{ color: styles.textMuted }}>
+              Browse open buyer requests and submit competitive quotes
             </p>
           </div>
-
-          {/* Header Actions - Subtle */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => onNavigate('rfqs')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+              style={{ borderColor: styles.border, color: styles.textPrimary, backgroundColor: styles.bgCard }}
             >
-              <PaperPlaneTilt size={15} />
+              <FileText size={16} />
               My Quotes
             </button>
-            <button
-              onClick={() => setFilterViewMode(filterViewMode === 'saved' ? 'browse' : 'saved')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors"
-              style={{
-                backgroundColor: filterViewMode === 'saved' ? '#f3f4f6' : '#fff',
-                color: filterViewMode === 'saved' ? '#374151' : '#6b7280',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              <BookmarkSimple size={15} weight={filterViewMode === 'saved' ? 'fill' : 'regular'} />
-              Saved
-              {stats?.savedCount ? (
-                <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">
-                  {stats.savedCount}
-                </span>
-              ) : null}
-            </button>
+            <Button onClick={loadRFQs}>
+              <ArrowsClockwise size={16} className={isLoading ? 'animate-spin' : ''} />
+            </Button>
           </div>
         </div>
 
-        {/* Stats - Minimal inline */}
+        {/* Quick Stats */}
         {stats && (
-          <div className="flex items-center gap-5 mb-4 text-[13px]">
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-400">Open</span>
-              <span className="font-medium text-gray-700">{stats.totalOpen}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-400">New today</span>
-              <span className="font-medium text-gray-700">{stats.newToday}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-400">Expiring</span>
-              <span className="font-medium text-amber-600">{stats.expiringToday}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-400">Quoted</span>
-              <span className="font-medium text-gray-700">{stats.quotedCount}</span>
-            </div>
+          <div className={`flex items-center gap-6 mb-6 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
+            <QuickStat label="Open Requests" value={stats.totalOpen} styles={styles} />
+            <QuickStat label="New Today" value={stats.newToday} color={styles.success} styles={styles} />
+            {stats.expiringToday > 0 && (
+              <QuickStat
+                label="Expiring Today"
+                value={stats.expiringToday}
+                color={styles.error}
+                styles={styles}
+                warning
+              />
+            )}
+            <QuickStat label="Saved" value={stats.savedCount} styles={styles} />
+            <QuickStat label="My Quotes" value={stats.quotedCount} color={styles.info} styles={styles} />
           </div>
         )}
 
-        {/* Filter Bar - Clean */}
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <MagnifyingGlass
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by part name, SKU, or company..."
-              className="w-full pl-9 pr-4 py-2 rounded-md text-[13px] bg-gray-50 border border-gray-200 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300"
-            />
-          </div>
-
-          {/* Filter Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-[13px] transition-colors"
-              style={{
-                backgroundColor: activeFilters.length > 0 ? '#f3f4f6' : '#fff',
-                color: activeFilters.length > 0 ? '#374151' : '#6b7280',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              <FunnelSimple size={15} />
-              Filters
-              {activeFilters.length > 0 && (
-                <span className="w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-medium bg-gray-600 text-white">
-                  {activeFilters.length}
-                </span>
-              )}
-              <CaretDown size={12} />
-            </button>
-
-            {/* Filter Dropdown Panel */}
-            {showFilters && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowFilters(false)} />
-                <div
-                  className="absolute z-50 top-full mt-2 w-72 rounded-lg shadow-lg bg-white border border-gray-200 overflow-hidden"
-                  style={{ right: isRtl ? 'auto' : 0, left: isRtl ? 0 : 'auto' }}
-                >
-                  <div className="p-4 space-y-4">
-                    {/* Category */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 block mb-1.5">Category</label>
-                      <select
-                        value={filters.category || ''}
-                        onChange={e => handleFilterChange('category', e.target.value || undefined)}
-                        className="w-full px-3 py-2 rounded-md text-sm bg-gray-50 border border-gray-200 text-gray-900"
-                      >
-                        <option value="">All Categories</option>
-                        {RFQ_CATEGORIES.map(cat => (
-                          <option key={cat.value} value={cat.value}>{cat.label}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Quantity */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 block mb-1.5">Quantity Range</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          placeholder="Min"
-                          value={filters.quantityMin || ''}
-                          onChange={e => handleFilterChange('quantityMin', e.target.value ? parseInt(e.target.value) : undefined)}
-                          className="flex-1 px-3 py-2 rounded-md text-sm bg-gray-50 border border-gray-200 text-gray-900"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Max"
-                          value={filters.quantityMax || ''}
-                          onChange={e => handleFilterChange('quantityMax', e.target.value ? parseInt(e.target.value) : undefined)}
-                          className="flex-1 px-3 py-2 rounded-md text-sm bg-gray-50 border border-gray-200 text-gray-900"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Deadline */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 block mb-1.5">Deadline</label>
-                      <select
-                        value={filters.deadline || 'all'}
-                        onChange={e => handleFilterChange('deadline', e.target.value as DeadlineFilter)}
-                        className="w-full px-3 py-2 rounded-md text-sm bg-gray-50 border border-gray-200 text-gray-900"
-                      >
-                        <option value="all">All</option>
-                        <option value="urgent">Urgent Only</option>
-                        <option value="expiring_today">Expiring Today</option>
-                      </select>
-                    </div>
-
-                    {/* Buyer Type */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 block mb-1.5">Buyer Type</label>
-                      <select
-                        value={filters.buyerBadge || ''}
-                        onChange={e => handleFilterChange('buyerBadge', e.target.value as BuyerBadgeType || undefined)}
-                        className="w-full px-3 py-2 rounded-md text-sm bg-gray-50 border border-gray-200 text-gray-900"
-                      >
-                        <option value="">All Buyers</option>
-                        <option value="verified">Verified</option>
-                        <option value="enterprise">Enterprise</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
-                    <button onClick={clearAllFilters} className="text-sm text-gray-500 hover:text-gray-700">
-                      Clear All
-                    </button>
-                    <button
-                      onClick={() => setShowFilters(false)}
-                      className="px-4 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Sort */}
-          <div className="flex items-center gap-2">
-            <SortAscending size={14} className="text-gray-300" />
-            <select
-              value={filters.sortBy || 'newest'}
-              onChange={e => handleFilterChange('sortBy', e.target.value as MarketplaceSortBy)}
-              className="px-3 py-2 rounded-md text-[13px] bg-white border border-gray-200 text-gray-600"
-            >
-              {sortOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Refresh */}
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-2 mb-4">
           <button
-            onClick={loadRFQs}
-            className="p-2 rounded-md bg-white border border-gray-200 text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
+            onClick={() => setViewMode('browse')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: viewMode === 'browse' ? styles.bgCard : 'transparent',
+              color: viewMode === 'browse' ? styles.textPrimary : styles.textMuted,
+              border: `1px solid ${viewMode === 'browse' ? styles.border : 'transparent'}`,
+            }}
           >
-            <ArrowsClockwise
-              size={15}
-              className={loadingState === 'loading' ? 'animate-spin' : ''}
-            />
+            <Package size={14} />
+            Browse All
+          </button>
+          <button
+            onClick={() => setViewMode('saved')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: viewMode === 'saved' ? styles.bgCard : 'transparent',
+              color: viewMode === 'saved' ? styles.textPrimary : styles.textMuted,
+              border: `1px solid ${viewMode === 'saved' ? styles.border : 'transparent'}`,
+            }}
+          >
+            <BookmarkSimple size={14} weight={viewMode === 'saved' ? 'fill' : 'regular'} />
+            Saved
+            {stats?.savedCount ? (
+              <span
+                className="px-1.5 py-0.5 rounded text-xs"
+                style={{ backgroundColor: styles.bgSecondary, color: styles.textMuted }}
+              >
+                {stats.savedCount}
+              </span>
+            ) : null}
           </button>
         </div>
 
-        {/* Active Filter Chips - Subtle */}
-        {activeFilters.length > 0 && (
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            {activeFilters.map(filter => (
-              <span
-                key={filter.key}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs bg-gray-100 text-gray-600"
-              >
-                <span className="font-medium">{filter.label}:</span>
-                <span>{filter.value}</span>
-                <button
-                  onClick={() => clearFilter(filter.key as keyof MarketplaceFilters)}
-                  className="ml-0.5 hover:text-gray-800"
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
+        {/* Filter Bar */}
+        <div className="rounded-xl border mb-4" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
             <button
-              onClick={clearAllFilters}
-              className="text-xs text-gray-400 hover:text-gray-600"
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className="flex items-center gap-2 text-sm font-medium"
+              style={{ color: styles.textPrimary }}
             >
-              Clear all
+              <Funnel size={16} />
+              Filters
+              <CaretRight
+                size={14}
+                className={`transition-transform ${filtersExpanded ? 'rotate-90' : ''}`}
+                style={{ color: styles.textMuted }}
+              />
+              {hasActiveFilters && (
+                <span className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: styles.info, color: '#fff' }}>
+                  Active
+                </span>
+              )}
             </button>
+            <div className="flex items-center gap-3">
+              <Select
+                value={sortBy}
+                onChange={(v) => setSortBy(v as MarketplaceSortBy)}
+                options={[
+                  { value: 'newest', label: 'Newest First' },
+                  { value: 'expiring_soon', label: 'Expiring Soon' },
+                  { value: 'highest_quantity', label: 'Highest Quantity' },
+                  { value: 'best_match', label: 'Best Match' },
+                ]}
+              />
+            </div>
+          </div>
+
+          {filtersExpanded && (
+            <div className="px-4 py-3 flex flex-wrap items-center gap-3">
+              {/* Search */}
+              <div
+                className="flex items-center gap-2 px-3 h-9 rounded-lg border flex-1 min-w-[200px] max-w-[300px]"
+                style={{ borderColor: styles.border, backgroundColor: styles.bgPrimary }}
+              >
+                <MagnifyingGlass size={16} style={{ color: styles.textMuted }} />
+                <input
+                  type="text"
+                  placeholder="Search by part name, RFQ number..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="outline-none text-sm bg-transparent flex-1"
+                  style={{ color: styles.textPrimary }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} style={{ color: styles.textMuted }}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Category */}
+              <Select
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                placeholder="Category"
+                options={[
+                  { value: 'all', label: 'All Categories' },
+                  ...RFQ_CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                ]}
+              />
+
+              {/* Deadline */}
+              <Select
+                value={deadlineFilter}
+                onChange={setDeadlineFilter}
+                placeholder="Deadline"
+                options={[
+                  { value: 'all', label: 'All Deadlines' },
+                  { value: 'urgent', label: 'Urgent (< 3 days)' },
+                  { value: 'expiring_today', label: 'Expiring Today' },
+                ]}
+              />
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded"
+                  style={{ color: styles.error }}
+                >
+                  <X size={12} /> Clear All
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Table */}
+        {isLoading ? (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+          >
+            <div className="p-4">
+              {[...Array(5)].map((_, i) => (
+                <SkeletonTableRow key={i} columns={8} />
+              ))}
+            </div>
+          </div>
+        ) : error ? (
+          <div
+            className="rounded-xl border py-16"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <EmptyState
+              icon={Warning}
+              title="Error Loading Requests"
+              description={error}
+              action={
+                <Button onClick={loadRFQs}>
+                  <ArrowsClockwise size={16} className="mr-2" />
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        ) : rfqs.length === 0 ? (
+          <div
+            className="rounded-xl border py-16"
+            style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+          >
+            <EmptyState
+              icon={viewMode === 'saved' ? BookmarkSimple : Package}
+              title={viewMode === 'saved' ? 'No Saved Requests' : 'No Open Requests'}
+              description={
+                viewMode === 'saved'
+                  ? 'Save RFQs you want to quote on later.'
+                  : 'No open buyer requests right now. Check back soon!'
+              }
+            />
+          </div>
+        ) : (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full" style={{ tableLayout: 'fixed' }}>
+                <thead className="sticky top-0 z-10">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr
+                      key={headerGroup.id}
+                      style={{
+                        backgroundColor: styles.tableHeader,
+                        borderBottom: `1px solid ${styles.tableBorder}`,
+                      }}
+                    >
+                      {headerGroup.headers.map((header) => {
+                        const align =
+                          (header.column.columnDef.meta as { align?: 'start' | 'center' | 'end' })?.align || 'start';
+                        return (
+                          <th
+                            key={header.id}
+                            className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
+                            style={{
+                              color: styles.textMuted,
+                              width: header.getSize(),
+                              textAlign: align === 'end' ? 'right' : align,
+                            }}
+                          >
+                            {header.isPlaceholder ? null : (
+                              <div
+                                className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : align === 'end' ? 'justify-end' : ''} ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
+                                onClick={header.column.getToggleSortingHandler()}
+                              >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                {header.column.getCanSort() && (
+                                  <span className="flex flex-col -space-y-1 ml-0.5">
+                                    {header.column.getIsSorted() === 'asc' ? (
+                                      <CaretUp size={12} weight="bold" style={{ color: styles.textPrimary }} />
+                                    ) : header.column.getIsSorted() === 'desc' ? (
+                                      <CaretDown size={12} weight="bold" style={{ color: styles.textPrimary }} />
+                                    ) : (
+                                      <>
+                                        <CaretUp size={10} style={{ color: styles.textMuted, opacity: 0.4 }} />
+                                        <CaretDown size={10} style={{ color: styles.textMuted, opacity: 0.4 }} />
+                                      </>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row, index) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const rfq = row.original as any;
+                    const urgency = getDeadlineUrgency(rfq.deadline);
+                    const isUrgent = urgency.urgency === 'critical' || urgency.urgency === 'urgent';
+
+                    return (
+                      <tr
+                        key={row.id}
+                        className="group transition-colors"
+                        style={{
+                          borderBottom:
+                            index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
+                          backgroundColor: row.getIsSelected()
+                            ? 'rgba(59,130,246,0.05)'
+                            : isUrgent
+                              ? 'rgba(245,158,11,0.03)'
+                              : 'transparent',
+                          borderLeft: isUrgent ? `3px solid #F59E0B` : 'none',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!row.getIsSelected()) {
+                            e.currentTarget.style.backgroundColor = styles.tableRowHover;
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!row.getIsSelected()) {
+                            e.currentTarget.style.backgroundColor = isUrgent ? 'rgba(245,158,11,0.03)' : 'transparent';
+                          }
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const align =
+                            (cell.column.columnDef.meta as { align?: 'start' | 'center' | 'end' })?.align || 'start';
+                          return (
+                            <td
+                              key={cell.id}
+                              className="px-4 py-3"
+                              style={{
+                                width: cell.column.getSize(),
+                                verticalAlign: 'middle',
+                                textAlign: align === 'end' ? 'right' : align,
+                              }}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-4 py-3 flex items-center justify-between text-sm"
+              style={{
+                borderTop: `1px solid ${styles.tableBorder}`,
+                backgroundColor: styles.tableHeader,
+                color: styles.textMuted,
+              }}
+            >
+              <span>Showing {rfqs.length} requests</span>
+              {Object.keys(rowSelection).length > 0 && (
+                <span className="font-medium" style={{ color: styles.textPrimary }}>
+                  {Object.keys(rowSelection).length} selected
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Main Content - Master-Detail Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* List Panel - Flexible width based on selection */}
-        <div
-          className="overflow-hidden bg-gray-50 transition-all duration-300 ease-out"
-          style={{
-            width: selectedRFQ ? 'calc(100% - 440px)' : '100%',
-            minWidth: selectedRFQ ? '400px' : undefined,
-          }}
-        >
-          <StableListWrapper
-            loadingState={loadingState}
-            filterViewMode={filterViewMode}
-            rfqs={rfqs}
-            selectedRFQId={selectedRFQId}
-            onSelectRFQ={handleSelectRFQ}
-            onToggleSave={handleToggleSave}
-            totalRFQs={totalRFQs}
-            page={filters.page || 1}
-            onPageChange={page => handleFilterChange('page', page)}
-            onRetry={loadRFQs}
-          />
-        </div>
-
-        {/* Details Panel - Inline, slides in from right */}
-        <div
-          className="flex-shrink-0 overflow-hidden transition-all duration-300 ease-out"
-          style={{
-            width: selectedRFQ ? '440px' : '0px',
-            opacity: selectedRFQ ? 1 : 0,
-            borderLeft: selectedRFQ ? '1px solid #e5e7eb' : 'none',
-          }}
-        >
-          {selectedRFQ ? (
-            <RFQMarketplaceDetailsPanel
-              rfq={selectedRFQ}
-              onClose={handleCloseDrawer}
-              onToggleSave={handleToggleSave}
-              onSubmitQuote={handleOpenQuoteModal}
-            />
-          ) : (
-            // Empty state placeholder - shown briefly during close animation
-            <div className="w-[440px] h-full flex items-center justify-center bg-gray-50">
-              <div className="text-center px-8">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-gray-100">
-                  <FileText size={28} className="text-gray-300" />
-                </div>
-                <p className="text-sm text-gray-400">
-                  {t('seller.rfqMarketplace.selectToView') || 'Select an RFQ to view details'}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Quote Modal */}
-      {showQuoteModal && quoteRFQ && (
+      {showQuoteModal && selectedRFQ && (
         <SubmitMarketplaceQuoteModal
           isOpen={showQuoteModal}
           onClose={() => {
             setShowQuoteModal(false);
-            setQuoteRFQ(null);
+            setSelectedRFQ(null);
           }}
-          rfq={quoteRFQ}
+          rfq={selectedRFQ}
           onSuccess={handleQuoteSubmitted}
         />
       )}
     </div>
   );
 };
+
+// =============================================================================
+// Quick Stat Component
+// =============================================================================
+
+const QuickStat: React.FC<{
+  label: string;
+  value: number;
+  color?: string;
+  styles: ReturnType<typeof usePortal>['styles'];
+  warning?: boolean;
+}> = ({ label, value, color, styles, warning }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-sm" style={{ color: styles.textMuted }}>
+      {label}:
+    </span>
+    <span
+      className={`text-sm font-semibold ${warning ? 'flex items-center gap-1' : ''}`}
+      style={{ color: color || styles.textPrimary }}
+    >
+      {warning && <Warning size={12} />}
+      {value}
+    </span>
+  </div>
+);
 
 export default RFQMarketplace;

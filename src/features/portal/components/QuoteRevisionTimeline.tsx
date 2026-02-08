@@ -9,7 +9,6 @@ import {
   CurrencyDollar,
   Truck,
   FileText,
-  User,
   ArrowRight,
 } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
@@ -141,15 +140,9 @@ const VersionEntry: React.FC<VersionEntryProps> = ({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span
-              className={`font-medium ${compact ? 'text-sm' : ''}`}
-              style={{ color: styles.textPrimary }}
-            >
+            <span className={`font-medium ${compact ? 'text-sm' : ''}`} style={{ color: styles.textPrimary }}>
               Version {version.version}
-              <span
-                className="ml-2 px-1.5 py-0.5 rounded text-xs"
-                style={{ backgroundColor: `${color}20`, color }}
-              >
+              <span className="ml-2 px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: `${color}20`, color }}>
                 {version.status}
               </span>
             </span>
@@ -159,10 +152,7 @@ const VersionEntry: React.FC<VersionEntryProps> = ({
           </div>
 
           {version.changeReason && (
-            <p
-              className={`mt-1 ${compact ? 'text-xs' : 'text-sm'}`}
-              style={{ color: styles.textSecondary }}
-            >
+            <p className={`mt-1 ${compact ? 'text-xs' : 'text-sm'}`} style={{ color: styles.textSecondary }}>
               {version.changeReason}
             </p>
           )}
@@ -172,24 +162,14 @@ const VersionEntry: React.FC<VersionEntryProps> = ({
               {priceChanged && prevVersion && (
                 <div className="flex items-center gap-1.5 text-xs">
                   <CurrencyDollar size={12} style={{ color: styles.textMuted }} />
-                  <span style={{ color: styles.textMuted }}>
-                    {formatPrice(prevVersion.totalPrice, currency)}
-                  </span>
+                  <span style={{ color: styles.textMuted }}>{formatPrice(prevVersion.totalPrice, currency)}</span>
                   <ArrowRight size={10} style={{ color: styles.textMuted }} />
-                  <span style={{ color: styles.textPrimary }}>
-                    {formatPrice(version.totalPrice, currency)}
-                  </span>
+                  <span style={{ color: styles.textPrimary }}>{formatPrice(version.totalPrice, currency)}</span>
                   <span
                     className="px-1 py-0.5 rounded text-[10px]"
                     style={{
-                      backgroundColor:
-                        version.totalPrice < prevVersion.totalPrice
-                          ? '#dcfce7'
-                          : '#fee2e2',
-                      color:
-                        version.totalPrice < prevVersion.totalPrice
-                          ? '#15803d'
-                          : '#dc2626',
+                      backgroundColor: version.totalPrice < prevVersion.totalPrice ? '#dcfce7' : '#fee2e2',
+                      color: version.totalPrice < prevVersion.totalPrice ? '#15803d' : '#dc2626',
                     }}
                   >
                     {getPriceChangePercent(prevVersion.totalPrice, version.totalPrice)}
@@ -199,13 +179,9 @@ const VersionEntry: React.FC<VersionEntryProps> = ({
               {deliveryChanged && prevVersion && (
                 <div className="flex items-center gap-1.5 text-xs">
                   <Truck size={12} style={{ color: styles.textMuted }} />
-                  <span style={{ color: styles.textMuted }}>
-                    {prevVersion.deliveryDays}d
-                  </span>
+                  <span style={{ color: styles.textMuted }}>{prevVersion.deliveryDays}d</span>
                   <ArrowRight size={10} style={{ color: styles.textMuted }} />
-                  <span style={{ color: styles.textPrimary }}>
-                    {version.deliveryDays}d
-                  </span>
+                  <span style={{ color: styles.textPrimary }}>{version.deliveryDays}d</span>
                 </div>
               )}
             </div>
@@ -259,10 +235,7 @@ const CounterOfferEntry: React.FC<CounterOfferEntryProps> = ({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span
-              className={`font-medium ${compact ? 'text-sm' : ''}`}
-              style={{ color: styles.textPrimary }}
-            >
+            <span className={`font-medium ${compact ? 'text-sm' : ''}`} style={{ color: styles.textPrimary }}>
               Counter-Offer
               <span
                 className="ml-2 px-1.5 py-0.5 rounded text-xs"
@@ -279,9 +252,7 @@ const CounterOfferEntry: React.FC<CounterOfferEntryProps> = ({
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1.5 text-xs">
               <CurrencyDollar size={12} style={{ color: '#8b5cf6' }} />
-              <span style={{ color: styles.textPrimary }}>
-                {formatPrice(counterOffer.proposedPrice, currency)}
-              </span>
+              <span style={{ color: styles.textPrimary }}>{formatPrice(counterOffer.proposedPrice, currency)}</span>
               {originalPrice && (
                 <span
                   className="px-1 py-0.5 rounded text-[10px]"
@@ -303,19 +274,13 @@ const CounterOfferEntry: React.FC<CounterOfferEntryProps> = ({
           </div>
 
           {counterOffer.message && (
-            <p
-              className={`mt-2 ${compact ? 'text-xs' : 'text-sm'} italic`}
-              style={{ color: styles.textSecondary }}
-            >
+            <p className={`mt-2 ${compact ? 'text-xs' : 'text-sm'} italic`} style={{ color: styles.textSecondary }}>
               "{counterOffer.message}"
             </p>
           )}
 
           {counterOffer.sellerResponse && (
-            <div
-              className="mt-2 p-2 rounded text-xs"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: styles.bgSecondary }}>
               <span className="font-medium" style={{ color: styles.textSecondary }}>
                 Seller response:
               </span>
@@ -471,10 +436,7 @@ export const QuoteRevisionTimeline: React.FC<QuoteRevisionTimelineProps> = ({
 
   if (timelineEntries.length === 0) {
     return (
-      <div
-        className={`text-center py-8 ${className}`}
-        style={{ color: styles.textMuted }}
-      >
+      <div className={`text-center py-8 ${className}`} style={{ color: styles.textMuted }}>
         <Clock size={32} className="mx-auto mb-2" />
         <p className="text-sm">No history available</p>
       </div>
@@ -485,17 +447,13 @@ export const QuoteRevisionTimeline: React.FC<QuoteRevisionTimelineProps> = ({
     <div className={className}>
       {/* Timeline line */}
       <div className="relative">
-        <div
-          className="absolute left-4 top-0 bottom-0 w-0.5"
-          style={{ backgroundColor: styles.border }}
-        />
+        <div className="absolute left-4 top-0 bottom-0 w-0.5" style={{ backgroundColor: styles.border }} />
 
         <div className="space-y-0">
           {timelineEntries.map((entry) => {
             if (entry.type === 'version') {
               const version = entry.data as QuoteVersion;
-              const prevVersion =
-                version.version > 1 ? versionMap.get(version.version - 1) : undefined;
+              const prevVersion = version.version > 1 ? versionMap.get(version.version - 1) : undefined;
               return (
                 <VersionEntry
                   key={entry.id}
@@ -522,14 +480,7 @@ export const QuoteRevisionTimeline: React.FC<QuoteRevisionTimelineProps> = ({
               );
             }
 
-            return (
-              <EventEntry
-                key={entry.id}
-                event={entry.data as QuoteEvent}
-                compact={compact}
-                styles={styles}
-              />
-            );
+            return <EventEntry key={entry.id} event={entry.data as QuoteEvent} compact={compact} styles={styles} />;
           })}
         </div>
       </div>

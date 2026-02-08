@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   useReactTable,
@@ -20,15 +21,12 @@ import {
   Clock,
   Fire,
   Bed,
-  Lightning,
   Info,
   CheckCircle,
   WarningCircle,
   CurrencyDollar,
   Package,
   ChartLine,
-  ArrowRight,
-  Funnel,
   X,
   Export,
   DotsThreeVertical,
@@ -36,14 +34,11 @@ import {
   Pause,
   Play,
   Tag,
-  ShoppingCart,
   ArrowClockwise,
-  Percent,
-  Target,
   Graph,
-  CaretRight,
 } from 'phosphor-react';
 import { Container, PageHeader, Button, EmptyState, Select, SkeletonKPICard, SkeletonTableRow } from '../../components';
+import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
 import { useAuth } from '../../../../auth-adapter';
 
@@ -111,7 +106,7 @@ interface InventoryFilters {
   showPaused: boolean;
 }
 
-interface BulkActionResult {
+interface _BulkActionResult {
   success: boolean;
   message: string;
   affectedItems: number;
@@ -121,134 +116,8 @@ interface SellerInventoryProps {
   onNavigate: (page: string) => void;
 }
 
-// =============================================================================
-// Mock Data Generator
-// =============================================================================
-
-const generateMockInventory = (): InventoryItem[] => {
-  const products = [
-    { name: 'Hydraulic Pump HP-5000', sku: 'HP-5000', category: 'Hydraulics', cost: 1800, price: 2500 },
-    { name: 'Ball Bearing 6205-2RS', sku: 'BRG-6205', category: 'Bearings', cost: 28, price: 45 },
-    { name: 'Three-Phase Motor 5HP', sku: 'MTR-5HP', category: 'Motors', cost: 1200, price: 1850 },
-    { name: 'Pneumatic Cylinder PC-100', sku: 'PC-100', category: 'Pneumatics', cost: 580, price: 890 },
-    { name: 'Control Valve DN50', sku: 'VLV-DN50', category: 'Valves', cost: 2100, price: 3200 },
-    { name: 'Industrial PLC S7-1200', sku: 'PLC-S7', category: 'Automation', cost: 3200, price: 4500 },
-    { name: 'Pressure Sensor PS-100', sku: 'PS-100', category: 'Sensors', cost: 180, price: 320 },
-    { name: 'Seal Kit SK-200', sku: 'SK-200', category: 'Spare Parts', cost: 45, price: 85 },
-    { name: 'Gear Reducer GR-50', sku: 'GR-50', category: 'Power Transmission', cost: 850, price: 1280 },
-    { name: 'Coupling Assembly CA-75', sku: 'CA-75', category: 'Power Transmission', cost: 120, price: 195 },
-    { name: 'Filter Element FE-500', sku: 'FE-500', category: 'Filtration', cost: 35, price: 65 },
-    { name: 'Solenoid Valve SV-24V', sku: 'SV-24V', category: 'Valves', cost: 95, price: 165 },
-  ];
-
-  return products.map((product, i) => {
-    const currentStock = Math.floor(Math.random() * 200) + 1;
-    const reservedStock = Math.floor(Math.random() * (currentStock * 0.3));
-    const salesLast30Days = Math.floor(Math.random() * 50);
-    const salesLast90Days = salesLast30Days * 3 + Math.floor(Math.random() * 30);
-    const rfqsLast30Days = Math.floor(Math.random() * 20);
-    const viewsLast30Days = Math.floor(Math.random() * 500) + 50;
-    const turnoverRate = salesLast30Days;
-    const daysOfStock = turnoverRate > 0 ? Math.round((currentStock - reservedStock) / (turnoverRate / 30)) : 999;
-
-    // Determine stock health
-    let stockHealth: StockHealth;
-    let demandSignal: DemandSignal;
-    let suggestedAction: PricingAction;
-    let actionReason: string;
-    let riskScore: number;
-
-    // Stock health logic
-    if (daysOfStock < 7 && turnoverRate > 5) {
-      stockHealth = 'stockout_risk';
-      riskScore = 85;
-    } else if (daysOfStock > 120) {
-      stockHealth = 'dead_stock';
-      riskScore = 75;
-    } else if (daysOfStock > 90) {
-      stockHealth = 'low_turnover';
-      riskScore = 55;
-    } else if (daysOfStock > 60 && currentStock > 50) {
-      stockHealth = 'overstock';
-      riskScore = 45;
-    } else {
-      stockHealth = 'healthy';
-      riskScore = 15;
-    }
-
-    // Demand signal logic
-    const viewToRfqRate = viewsLast30Days > 0 ? (rfqsLast30Days / viewsLast30Days) * 100 : 0;
-    if (rfqsLast30Days > 10 || (salesLast30Days > 20 && rfqsLast30Days > 5)) {
-      demandSignal = 'hot';
-    } else if (rfqsLast30Days > salesLast30Days * 0.5) {
-      demandSignal = 'rising';
-    } else if (salesLast30Days > 0 || rfqsLast30Days > 0) {
-      demandSignal = 'stable';
-    } else if (salesLast90Days > 0) {
-      demandSignal = 'declining';
-    } else {
-      demandSignal = 'dormant';
-    }
-
-    // Pricing action logic
-    if (stockHealth === 'dead_stock') {
-      suggestedAction = 'clearance';
-      actionReason = 'No sales in 90+ days, consider clearance pricing';
-    } else if (stockHealth === 'overstock' && demandSignal === 'declining') {
-      suggestedAction = 'decrease';
-      actionReason = `${daysOfStock} days of stock with declining demand`;
-    } else if (demandSignal === 'hot' && stockHealth === 'healthy') {
-      suggestedAction = 'increase';
-      actionReason = 'High demand allows for price optimization';
-    } else if (stockHealth === 'low_turnover') {
-      suggestedAction = 'bundle';
-      actionReason = 'Bundle with fast-moving items to increase turnover';
-    } else {
-      suggestedAction = 'hold';
-      actionReason = 'Current pricing is optimal for market conditions';
-    }
-
-    const margin = ((product.price - product.cost) / product.price) * 100;
-    const inventoryValue = currentStock * product.cost;
-    const potentialRevenue = currentStock * product.price;
-
-    const daysAgo = (days: number) => new Date(Date.now() - days * 86400000).toISOString();
-
-    return {
-      id: `inv-${i + 1}`,
-      name: product.name,
-      sku: product.sku,
-      partNumber: `PN-${product.sku}`,
-      category: product.category,
-      image: `https://images.unsplash.com/photo-${1581092160562 + i}?w=100&h=100&fit=crop`,
-      currentStock,
-      reservedStock,
-      availableStock: currentStock - reservedStock,
-      reorderPoint: Math.max(10, Math.floor(turnoverRate * 1.5)),
-      unitCost: product.cost,
-      sellingPrice: product.price,
-      currency: 'SAR',
-      margin,
-      salesLast30Days,
-      salesLast90Days,
-      rfqsLast30Days,
-      viewsLast30Days,
-      turnoverRate,
-      daysOfStock,
-      inventoryValue,
-      potentialRevenue,
-      stockHealth,
-      demandSignal,
-      suggestedAction,
-      actionReason,
-      riskScore,
-      lastSaleDate: salesLast30Days > 0 ? daysAgo(Math.floor(Math.random() * 30)) : undefined,
-      lastRFQDate: rfqsLast30Days > 0 ? daysAgo(Math.floor(Math.random() * 30)) : undefined,
-      lastRestockDate: daysAgo(Math.floor(Math.random() * 60) + 30),
-      isPaused: i % 10 === 0,
-    };
-  });
-};
+// NOTE: Mock data (generateMockInventory) removed - see MOCK_REMOVAL_REPORT.md
+// All inventory data must come from API. Frontend handles empty states gracefully.
 
 // =============================================================================
 // Configuration
@@ -301,25 +170,33 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
     category: 'all',
     showPaused: true,
   });
-  const [showFilters, setShowFilters] = useState(false);
+  const [_showFilters, _setShowFilters] = useState(false);
   const [snackbar, setSnackbar] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     show: false,
     message: '',
     type: 'info',
   });
 
-  // Fetch inventory
+  // Fetch inventory from API
   const fetchInventory = useCallback(async () => {
     try {
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 600));
-      setInventory(generateMockInventory());
+      const token = await getToken();
+      if (!token) {
+        setInventory([]);
+        return;
+      }
+      // Inventory API endpoint not yet available; returns empty state
+      // Future: const response = await inventoryService.getSellerInventory(token);
+      // Future: setInventory(response);
+      setInventory([]);
     } catch (err) {
-      console.error('Failed to fetch inventory:', err);
+      console.error('[SellerInventory] Failed to fetch inventory:', err);
+      setInventory([]); // Empty array on error
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     fetchInventory();
@@ -327,7 +204,7 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
 
   // Filter inventory
   const filteredInventory = useMemo(() => {
-    return inventory.filter(item => {
+    return inventory.filter((item) => {
       if (!filters.showPaused && item.isPaused) return false;
       if (filters.stockHealth !== 'all' && item.stockHealth !== filters.stockHealth) return false;
       if (filters.demandSignal !== 'all' && item.demandSignal !== filters.demandSignal) return false;
@@ -347,18 +224,22 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
   // Summary statistics
   const summaryStats = useMemo(() => {
     const total = inventory.length;
-    const atRisk = inventory.filter(i => ['overstock', 'dead_stock', 'stockout_risk', 'low_turnover'].includes(i.stockHealth)).length;
+    const atRisk = inventory.filter((i) =>
+      ['overstock', 'dead_stock', 'stockout_risk', 'low_turnover'].includes(i.stockHealth),
+    ).length;
     const totalValue = inventory.reduce((sum, i) => sum + i.inventoryValue, 0);
-    const atRiskValue = inventory.filter(i => ['overstock', 'dead_stock'].includes(i.stockHealth)).reduce((sum, i) => sum + i.inventoryValue, 0);
-    const hotItems = inventory.filter(i => i.demandSignal === 'hot').length;
-    const dormantItems = inventory.filter(i => i.demandSignal === 'dormant').length;
+    const atRiskValue = inventory
+      .filter((i) => ['overstock', 'dead_stock'].includes(i.stockHealth))
+      .reduce((sum, i) => sum + i.inventoryValue, 0);
+    const hotItems = inventory.filter((i) => i.demandSignal === 'hot').length;
+    const dormantItems = inventory.filter((i) => i.demandSignal === 'dormant').length;
 
     return { total, atRisk, totalValue, atRiskValue, hotItems, dormantItems };
   }, [inventory]);
 
   // Categories
   const categories = useMemo(() => {
-    const cats = [...new Set(inventory.map(i => i.category))];
+    const cats = [...new Set(inventory.map((i) => i.category))];
     return cats.sort();
   }, [inventory]);
 
@@ -376,285 +257,298 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
     setRowSelection({});
 
     // Auto-hide snackbar
-    setTimeout(() => setSnackbar(prev => ({ ...prev, show: false })), 3000);
+    setTimeout(() => setSnackbar((prev) => ({ ...prev, show: false })), 3000);
   };
 
   // Table columns
-  const columns = useMemo(() => [
-    columnHelper.display({
-      id: 'select',
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllRowsSelected()}
-          onChange={table.getToggleAllRowsSelectedHandler()}
-          className="w-4 h-4 rounded"
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={row.getIsSelected()}
-          onChange={row.getToggleSelectedHandler()}
-          className="w-4 h-4 rounded"
-        />
-      ),
-      size: 40,
-    }),
-    columnHelper.accessor('name', {
-      header: 'Product',
-      cell: ({ row }) => {
-        const item = row.original;
-        const healthConfig = stockHealthConfig[item.stockHealth];
-        const HealthIcon = healthConfig.icon;
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            onChange={table.getToggleAllRowsSelectedHandler()}
+            className="w-4 h-4 rounded"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            className="w-4 h-4 rounded"
+          />
+        ),
+        size: 40,
+      }),
+      columnHelper.accessor('name', {
+        header: 'Product',
+        cell: ({ row }) => {
+          const item = row.original;
+          const healthConfig = stockHealthConfig[item.stockHealth];
+          const HealthIcon = healthConfig.icon;
 
-        return (
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 relative"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
-              {item.image ? (
-                <img src={item.image} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Cube size={18} style={{ color: styles.textMuted }} />
-                </div>
-              )}
-              {item.isPaused && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <Pause size={12} weight="fill" className="text-white" />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="font-medium text-sm truncate" style={{ color: styles.textPrimary }}>
-                  {item.name}
-                </p>
-                <HealthIcon size={12} weight="fill" style={{ color: healthConfig.color }} />
+          return (
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 relative"
+                style={{ backgroundColor: styles.bgSecondary }}
+              >
+                {item.image ? (
+                  <img src={item.image} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Cube size={18} style={{ color: styles.textMuted }} />
+                  </div>
+                )}
+                {item.isPaused && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Pause size={12} weight="fill" className="text-white" />
+                  </div>
+                )}
               </div>
-              <p className="text-xs truncate" style={{ color: styles.textMuted }}>
-                {item.sku} · {item.category}
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-medium text-sm truncate" style={{ color: styles.textPrimary }}>
+                    {item.name}
+                  </p>
+                  <HealthIcon size={12} weight="fill" style={{ color: healthConfig.color }} />
+                </div>
+                <p className="text-xs truncate" style={{ color: styles.textMuted }}>
+                  {item.sku} · {item.category}
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      },
-      size: 280,
-    }),
-    columnHelper.accessor('stockHealth', {
-      header: 'Stock Health',
-      cell: ({ row }) => {
-        const item = row.original;
-        const config = stockHealthConfig[item.stockHealth];
-        const Icon = config.icon;
+          );
+        },
+        size: 280,
+      }),
+      columnHelper.accessor('stockHealth', {
+        header: 'Stock Health',
+        cell: ({ row }) => {
+          const item = row.original;
+          const config = stockHealthConfig[item.stockHealth];
+          const Icon = config.icon;
 
-        return (
-          <div className="flex flex-col gap-1">
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium w-fit"
-              style={{ backgroundColor: config.bg, color: config.color }}
-            >
-              <Icon size={10} weight="fill" />
-              {config.label}
-            </span>
-            <span className="text-xs" style={{ color: styles.textMuted }}>
-              {item.daysOfStock < 999 ? `${item.daysOfStock}d stock left` : 'No sales data'}
-            </span>
-          </div>
-        );
-      },
-      size: 130,
-    }),
-    columnHelper.accessor('currentStock', {
-      header: 'Stock',
-      cell: ({ row }) => {
-        const item = row.original;
-        const isLow = item.currentStock <= item.reorderPoint;
-
-        return (
-          <div>
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-sm" style={{ color: isLow ? styles.error : styles.textPrimary }}>
-                {item.availableStock}
+          return (
+            <div className="flex flex-col gap-1">
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium w-fit"
+                style={{ backgroundColor: config.bg, color: config.color }}
+              >
+                <Icon size={10} weight="fill" />
+                {config.label}
               </span>
-              {item.reservedStock > 0 && (
-                <span className="text-xs" style={{ color: styles.textMuted }}>
-                  ({item.reservedStock} reserved)
+              <span className="text-xs" style={{ color: styles.textMuted }}>
+                {item.daysOfStock < 999 ? `${item.daysOfStock}d stock left` : 'No sales data'}
+              </span>
+            </div>
+          );
+        },
+        size: 130,
+      }),
+      columnHelper.accessor('currentStock', {
+        header: 'Stock',
+        cell: ({ row }) => {
+          const item = row.original;
+          const isLow = item.currentStock <= item.reorderPoint;
+
+          return (
+            <div>
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-sm" style={{ color: isLow ? styles.error : styles.textPrimary }}>
+                  {item.availableStock}
+                </span>
+                {item.reservedStock > 0 && (
+                  <span className="text-xs" style={{ color: styles.textMuted }}>
+                    ({item.reservedStock} reserved)
+                  </span>
+                )}
+              </div>
+              {isLow && (
+                <span className="text-xs" style={{ color: styles.error }}>
+                  Below reorder point ({item.reorderPoint})
                 </span>
               )}
             </div>
-            {isLow && (
-              <span className="text-xs" style={{ color: styles.error }}>
-                Below reorder point ({item.reorderPoint})
+          );
+        },
+        size: 120,
+      }),
+      columnHelper.accessor('demandSignal', {
+        header: 'Demand',
+        cell: ({ row }) => {
+          const item = row.original;
+          const config = demandSignalConfig[item.demandSignal];
+          const Icon = config.icon;
+
+          return (
+            <div className="flex flex-col gap-1">
+              <span className="flex items-center gap-1 text-xs font-medium" style={{ color: config.color }}>
+                <Icon size={12} weight="fill" />
+                {config.label}
               </span>
-            )}
-          </div>
-        );
-      },
-      size: 120,
-    }),
-    columnHelper.accessor('demandSignal', {
-      header: 'Demand',
-      cell: ({ row }) => {
-        const item = row.original;
-        const config = demandSignalConfig[item.demandSignal];
-        const Icon = config.icon;
-
-        return (
-          <div className="flex flex-col gap-1">
-            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: config.color }}>
-              <Icon size={12} weight="fill" />
-              {config.label}
-            </span>
-            <span className="text-xs" style={{ color: styles.textMuted }}>
-              {item.rfqsLast30Days} RFQs · {item.salesLast30Days} sales
-            </span>
-          </div>
-        );
-      },
-      size: 120,
-    }),
-    columnHelper.accessor('inventoryValue', {
-      header: 'Value',
-      cell: ({ row }) => {
-        const item = row.original;
-        return (
-          <div>
-            <div className="font-medium text-sm" style={{ color: styles.textPrimary }}>
-              {item.currency} {item.inventoryValue.toLocaleString()}
+              <span className="text-xs" style={{ color: styles.textMuted }}>
+                {item.rfqsLast30Days} RFQs · {item.salesLast30Days} sales
+              </span>
             </div>
-            <div className="text-xs" style={{ color: styles.textMuted }}>
-              {item.margin.toFixed(1)}% margin
-            </div>
-          </div>
-        );
-      },
-      size: 110,
-    }),
-    columnHelper.accessor('suggestedAction', {
-      header: 'Suggested Action',
-      cell: ({ row }) => {
-        const item = row.original;
-        const config = pricingActionConfig[item.suggestedAction];
-        const Icon = config.icon;
-        const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
-        const buttonRef = React.useRef<HTMLButtonElement>(null);
-
-        const handleMouseEnter = () => {
-          if (buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setTooltip({ show: true, x: rect.left, y: rect.bottom + 4 });
-          }
-        };
-
-        return (
-          <div className="relative">
-            <button
-              ref={buttonRef}
-              className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors"
-              style={{ backgroundColor: `${config.color}15`, color: config.color }}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={() => setTooltip(prev => ({ ...prev, show: false }))}
-            >
-              <Icon size={12} />
-              {config.label}
-            </button>
-            {tooltip.show && (
-              <div
-                className="fixed z-50 p-3 rounded-lg shadow-lg text-xs w-56"
-                style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: tooltip.x, top: tooltip.y }}
-              >
-                <div className="font-semibold mb-1" style={{ color: styles.textPrimary }}>
-                  Recommendation
-                </div>
-                <p style={{ color: styles.textSecondary }}>{item.actionReason}</p>
+          );
+        },
+        size: 120,
+      }),
+      columnHelper.accessor('inventoryValue', {
+        header: 'Value',
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <div>
+              <div className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                {item.currency} {item.inventoryValue.toLocaleString()}
               </div>
-            )}
-          </div>
-        );
-      },
-      size: 160,
-    }),
-    columnHelper.accessor('riskScore', {
-      header: 'Risk',
-      cell: ({ row }) => {
-        const item = row.original;
-        const color = item.riskScore >= 70 ? styles.error : item.riskScore >= 40 ? '#f59e0b' : styles.success;
-
-        return (
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: `${color}15`, color }}
-            >
-              {item.riskScore}
+              <div className="text-xs" style={{ color: styles.textMuted }}>
+                {item.margin.toFixed(1)}% margin
+              </div>
             </div>
-          </div>
-        );
-      },
-      size: 70,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      cell: ({ row }) => {
-        const item = row.original;
-        const [menu, setMenu] = useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
-        const buttonRef = React.useRef<HTMLButtonElement>(null);
+          );
+        },
+        size: 110,
+      }),
+      columnHelper.accessor('suggestedAction', {
+        header: 'Suggested Action',
+        cell: ({ row }) => {
+          const item = row.original;
+          const config = pricingActionConfig[item.suggestedAction];
+          const Icon = config.icon;
+          const [tooltip, setTooltip] = useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+          const buttonRef = React.useRef<HTMLButtonElement>(null);
 
-        const handleToggleMenu = () => {
-          if (menu.show) {
-            setMenu(prev => ({ ...prev, show: false }));
-          } else if (buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setMenu({
-              show: true,
-              x: isRtl ? rect.left : rect.right - 160,
-              y: rect.bottom + 4,
-            });
-          }
-        };
+          const handleMouseEnter = () => {
+            if (buttonRef.current) {
+              const rect = buttonRef.current.getBoundingClientRect();
+              setTooltip({ show: true, x: rect.left, y: rect.bottom + 4 });
+            }
+          };
 
-        return (
-          <div className="relative">
-            <button
-              ref={buttonRef}
-              onClick={handleToggleMenu}
-              className="p-1.5 rounded transition-colors"
-              style={{ color: styles.textMuted }}
-            >
-              <DotsThreeVertical size={16} weight="bold" />
-            </button>
-            {menu.show && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setMenu(prev => ({ ...prev, show: false }))} />
+          return (
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors"
+                style={{ backgroundColor: `${config.color}15`, color: config.color }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={() => setTooltip((prev) => ({ ...prev, show: false }))}
+              >
+                <Icon size={12} />
+                {config.label}
+              </button>
+              {tooltip.show && (
                 <div
-                  className="fixed z-50 py-1 rounded-lg shadow-lg min-w-[160px]"
-                  style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}`, left: menu.x, top: menu.y }}
+                  className="fixed z-50 p-3 rounded-lg shadow-lg text-xs w-56"
+                  style={{
+                    backgroundColor: styles.bgCard,
+                    border: `1px solid ${styles.border}`,
+                    left: tooltip.x,
+                    top: tooltip.y,
+                  }}
                 >
-                  <MenuItem icon={PencilSimple} label="Edit Item" styles={styles} onClick={() => {}} />
-                  <MenuItem icon={ChartLine} label="View Analytics" styles={styles} onClick={() => {}} />
-                  <MenuItem
-                    icon={item.isPaused ? Play : Pause}
-                    label={item.isPaused ? 'Resume' : 'Pause'}
-                    styles={styles}
-                    onClick={() => {}}
-                  />
-                  <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
-                  <MenuItem icon={ArrowClockwise} label="Restock" styles={styles} onClick={() => {}} />
-                  {item.stockHealth === 'dead_stock' && (
-                    <MenuItem icon={Tag} label="Mark for Clearance" styles={styles} onClick={() => {}} danger />
-                  )}
+                  <div className="font-semibold mb-1" style={{ color: styles.textPrimary }}>
+                    Recommendation
+                  </div>
+                  <p style={{ color: styles.textSecondary }}>{item.actionReason}</p>
                 </div>
-              </>
-            )}
-          </div>
-        );
-      },
-      size: 50,
-    }),
-  ], [styles, isRtl]);
+              )}
+            </div>
+          );
+        },
+        size: 160,
+      }),
+      columnHelper.accessor('riskScore', {
+        header: 'Risk',
+        cell: ({ row }) => {
+          const item = row.original;
+          const color = item.riskScore >= 70 ? styles.error : item.riskScore >= 40 ? '#f59e0b' : styles.success;
+
+          return (
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ backgroundColor: `${color}15`, color }}
+              >
+                {item.riskScore}
+              </div>
+            </div>
+          );
+        },
+        size: 70,
+      }),
+      columnHelper.display({
+        id: 'actions',
+        cell: ({ row }) => {
+          const item = row.original;
+          const [menu, setMenu] = useState<{ show: boolean; x: number; y: number }>({ show: false, x: 0, y: 0 });
+          const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+          const handleToggleMenu = () => {
+            if (menu.show) {
+              setMenu((prev) => ({ ...prev, show: false }));
+            } else if (buttonRef.current) {
+              const rect = buttonRef.current.getBoundingClientRect();
+              setMenu({
+                show: true,
+                x: isRtl ? rect.left : rect.right - 160,
+                y: rect.bottom + 4,
+              });
+            }
+          };
+
+          return (
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                onClick={handleToggleMenu}
+                className="p-1.5 rounded transition-colors"
+                style={{ color: styles.textMuted }}
+              >
+                <DotsThreeVertical size={16} weight="bold" />
+              </button>
+              {menu.show && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setMenu((prev) => ({ ...prev, show: false }))} />
+                  <div
+                    className="fixed z-50 py-1 rounded-lg shadow-lg min-w-[160px]"
+                    style={{
+                      backgroundColor: styles.bgCard,
+                      border: `1px solid ${styles.border}`,
+                      left: menu.x,
+                      top: menu.y,
+                    }}
+                  >
+                    <MenuItem icon={PencilSimple} label="Edit Item" styles={styles} onClick={() => {}} />
+                    <MenuItem icon={ChartLine} label="View Analytics" styles={styles} onClick={() => {}} />
+                    <MenuItem
+                      icon={item.isPaused ? Play : Pause}
+                      label={item.isPaused ? 'Resume' : 'Pause'}
+                      styles={styles}
+                      onClick={() => {}}
+                    />
+                    <div className="h-px my-1" style={{ backgroundColor: styles.border }} />
+                    <MenuItem icon={ArrowClockwise} label="Restock" styles={styles} onClick={() => {}} />
+                    {item.stockHealth === 'dead_stock' && (
+                      <MenuItem icon={Tag} label="Mark for Clearance" styles={styles} onClick={() => {}} danger />
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        },
+        size: 50,
+      }),
+    ],
+    [styles, isRtl],
+  );
 
   // Table instance
   const table = useReactTable({
@@ -746,54 +640,65 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
         />
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-          <SummaryCard
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <KPICard
+            id="totalItems"
             label="Total Items"
             value={summaryStats.total.toString()}
-            icon={Package}
-            styles={styles}
+            change=""
+            trend="neutral"
+            icon={<Package size={18} />}
+            color="blue"
           />
-          <SummaryCard
+          <KPICard
+            id="atRisk"
             label="Items at Risk"
             value={summaryStats.atRisk.toString()}
-            icon={Warning}
-            color="#f59e0b"
-            styles={styles}
+            change=""
+            trend="neutral"
+            icon={<Warning size={18} />}
+            color="amber"
           />
-          <SummaryCard
+          <KPICard
+            id="totalValue"
             label="Total Value"
             value={`SAR ${(summaryStats.totalValue / 1000).toFixed(0)}K`}
-            icon={CurrencyDollar}
-            styles={styles}
+            change=""
+            trend="neutral"
+            icon={<CurrencyDollar size={18} />}
+            color="emerald"
           />
-          <SummaryCard
+          <KPICard
+            id="valueAtRisk"
             label="Value at Risk"
             value={`SAR ${(summaryStats.atRiskValue / 1000).toFixed(0)}K`}
-            icon={WarningCircle}
-            color="#ef4444"
-            styles={styles}
+            change=""
+            trend="neutral"
+            icon={<WarningCircle size={18} />}
+            color="red"
           />
-          <SummaryCard
+          <KPICard
+            id="hotItems"
             label="Hot Items"
             value={summaryStats.hotItems.toString()}
-            icon={Fire}
-            color="#ef4444"
-            styles={styles}
+            change=""
+            trend="neutral"
+            icon={<Fire size={18} />}
+            color="red"
           />
-          <SummaryCard
+          <KPICard
+            id="dormantItems"
             label="Dormant Items"
             value={summaryStats.dormantItems.toString()}
-            icon={Bed}
-            color="#9ca3af"
-            styles={styles}
+            change=""
+            trend="neutral"
+            icon={<Bed size={18} />}
+            color="zinc"
           />
         </div>
 
         {/* Filters & Search */}
-        <div
-          className="rounded-xl border mb-4"
-          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-        >
+        <div className="rounded-xl border mb-4" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
           <div className="p-4 flex items-center justify-between gap-4 flex-wrap">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px] max-w-md">
@@ -847,7 +752,7 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
                 onChange={(value) => setFilters({ ...filters, category: value })}
                 options={[
                   { value: 'all', label: 'All Categories' },
-                  ...categories.map(cat => ({ value: cat, label: cat })),
+                  ...categories.map((cat) => ({ value: cat, label: cat })),
                 ]}
               />
             </div>
@@ -866,7 +771,11 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
                 <button
                   onClick={() => handleBulkAction('pause')}
                   className="px-3 py-1.5 rounded text-xs font-medium"
-                  style={{ backgroundColor: styles.bgCard, color: styles.textSecondary, border: `1px solid ${styles.border}` }}
+                  style={{
+                    backgroundColor: styles.bgCard,
+                    color: styles.textSecondary,
+                    border: `1px solid ${styles.border}`,
+                  }}
                 >
                   Pause Selected
                 </button>
@@ -925,7 +834,7 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
                 </thead>
                 <tbody>
                   {table.getRowModel().rows.map((row, index) => {
-                    const item = row.original;
+                    const item = row.original as any;
                     const isHighRisk = item.riskScore >= 70;
                     const isMediumRisk = item.riskScore >= 40 && item.riskScore < 70;
 
@@ -934,13 +843,22 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
                         key={row.id}
                         className="group transition-colors"
                         style={{
-                          borderBottom: index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.border}`,
+                          borderBottom:
+                            index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.border}`,
                           backgroundColor: row.getIsSelected()
-                            ? styles.isDark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)'
+                            ? styles.isDark
+                              ? 'rgba(59,130,246,0.1)'
+                              : 'rgba(59,130,246,0.05)'
                             : isHighRisk
-                            ? styles.isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)'
-                            : 'transparent',
-                          borderLeft: isHighRisk ? `3px solid ${styles.error}` : isMediumRisk ? `3px solid #f59e0b` : 'none',
+                              ? styles.isDark
+                                ? 'rgba(239,68,68,0.08)'
+                                : 'rgba(239,68,68,0.04)'
+                              : 'transparent',
+                          borderLeft: isHighRisk
+                            ? `3px solid ${styles.error}`
+                            : isMediumRisk
+                              ? `3px solid #f59e0b`
+                              : 'none',
                         }}
                       >
                         {row.getVisibleCells().map((cell) => (
@@ -967,7 +885,8 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg"
           style={{
-            backgroundColor: snackbar.type === 'success' ? styles.success : snackbar.type === 'error' ? styles.error : styles.info,
+            backgroundColor:
+              snackbar.type === 'success' ? styles.success : snackbar.type === 'error' ? styles.error : styles.info,
             color: '#fff',
           }}
         >
@@ -975,7 +894,7 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
           {snackbar.type === 'error' && <WarningCircle size={18} weight="fill" />}
           {snackbar.type === 'info' && <Info size={18} weight="fill" />}
           <span className="text-sm font-medium">{snackbar.message}</span>
-          <button onClick={() => setSnackbar(prev => ({ ...prev, show: false }))} className="ml-2">
+          <button onClick={() => setSnackbar((prev) => ({ ...prev, show: false }))} className="ml-2">
             <X size={16} />
           </button>
         </div>
@@ -987,27 +906,6 @@ export const SellerInventory: React.FC<SellerInventoryProps> = ({ onNavigate }) 
 // =============================================================================
 // Sub-Components
 // =============================================================================
-
-const SummaryCard: React.FC<{
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  color?: string;
-  styles: any;
-}> = ({ label, value, icon: Icon, color, styles }) => (
-  <div
-    className="rounded-xl p-4"
-    style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
-  >
-    <div className="flex items-center gap-2 mb-2">
-      <Icon size={16} style={{ color: color || styles.textMuted }} />
-      <span className="text-xs" style={{ color: styles.textMuted }}>{label}</span>
-    </div>
-    <div className="text-xl font-bold" style={{ color: color || styles.textPrimary }}>
-      {value}
-    </div>
-  </div>
-);
 
 const MenuItem: React.FC<{
   icon: React.ElementType;

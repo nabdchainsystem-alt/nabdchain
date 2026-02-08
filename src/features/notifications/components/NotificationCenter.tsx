@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Bell, Check, CheckCircle, Trash, Gear, X,
-  At, UserCircle, ChatCircle, Calendar, Warning
-} from 'phosphor-react';
+import { Bell, Check, CheckCircle, Gear, X, At, UserCircle, ChatCircle, Calendar } from 'phosphor-react';
 import type { Notification, NotificationType } from '../types';
 
 // =============================================================================
@@ -63,14 +60,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   notifications = [],
   onMarkAsRead,
   onMarkAllAsRead,
-  onDelete,
+  _onDelete,
   onNotificationClick,
 }) => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const filteredNotifications = filter === 'unread'
-    ? notifications.filter((n) => !n.read)
-    : notifications;
+  const filteredNotifications = filter === 'unread' ? notifications.filter((n) => !n.read) : notifications;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -86,9 +81,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             <Bell size={20} className="text-stone-600 dark:text-stone-400" />
             <h3 className="font-semibold text-stone-800 dark:text-stone-200">Notifications</h3>
             {unreadCount > 0 && (
-              <span className="px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full">
-                {unreadCount}
-              </span>
+              <span className="px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full">{unreadCount}</span>
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -165,25 +158,21 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     }`}
                   >
                     <div className="flex gap-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}
+                      >
                         <Icon size={18} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-stone-700 dark:text-stone-300">
-                          {notification.title}
-                        </p>
+                        <p className="text-sm text-stone-700 dark:text-stone-300">{notification.title}</p>
                         {notification.body && (
-                          <p className="text-xs text-stone-500 mt-0.5 line-clamp-2">
-                            {notification.body}
-                          </p>
+                          <p className="text-xs text-stone-500 mt-0.5 line-clamp-2">{notification.body}</p>
                         )}
                         <p className="text-xs text-stone-400 mt-1">
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>
                       </div>
-                      {!notification.read && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
-                      )}
+                      {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />}
                     </div>
                   </div>
                 );
@@ -194,9 +183,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
         {/* Footer */}
         <div className="px-4 py-2 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50">
-          <p className="text-xs text-center text-stone-400">
-            Notification center - Feature coming soon
-          </p>
+          <p className="text-xs text-center text-stone-400">Notification center - Feature coming soon</p>
         </div>
       </div>
     </>

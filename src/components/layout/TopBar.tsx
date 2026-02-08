@@ -1,5 +1,21 @@
 import React, { Suspense } from 'react';
-import { Bell, MagnifyingGlass, Question, SquaresFour, DownloadSimple, Moon, Sun, Play, Pause, ArrowCounterClockwise, X, SignOut, Gear, EyeClosed, User as UserIcon, Kanban, CheckSquare, GameController, Note, VideoCamera, ChatCircleText, Lock, ListChecks } from 'phosphor-react';
+import {
+  Bell,
+  MagnifyingGlass,
+  SquaresFour,
+  X,
+  SignOut,
+  Gear,
+  EyeClosed,
+  Kanban,
+  CheckSquare,
+  GameController,
+  Note,
+  VideoCamera,
+  ChatCircleText,
+  Lock,
+  ListChecks,
+} from 'phosphor-react';
 import { useAppContext } from '../../contexts/AppContext';
 // import { useAuth } from '../../contexts/AuthContext';
 import { useUser, useClerk, useAuth } from '../../auth-adapter';
@@ -16,30 +32,40 @@ import { NabdSmartBar } from '../ui/NabdSmartBar';
 import { QuickNotesPanel } from './QuickNotesPanel';
 import { GTDQuickCapturePanel } from './GTDQuickCapturePanel';
 import { useGTDCapture } from '../../hooks/useGTDCapture';
-import { Board } from '../../types';
+import { Board, Task } from '../../types';
 import { AICreditsDisplay } from '../AICreditsDisplay';
 
 // Lazy load LiveSessionPage for the modal
-const LiveSessionPage = React.lazy(() => import('../../features/collaboration/LiveSessionPage').then(m => ({ default: m.LiveSessionPage })));
+const LiveSessionPage = React.lazy(() =>
+  import('../../features/collaboration/LiveSessionPage').then((m) => ({ default: m.LiveSessionPage })),
+);
 
 interface TopBarProps {
   onNavigate: (view: string, boardId?: string) => void;
   boards?: Board[];
-  onCreateTask?: (boardId: string, task: any) => void;
+  onCreateTask?: (boardId: string, task: Partial<Task>) => void;
   activeBoardId?: string | null;
   activeView?: string;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreateTask = () => { }, activeBoardId, activeView }) => {
-  const { theme, toggleTheme, language, toggleLanguage, t } = useAppContext();
+export const TopBar: React.FC<TopBarProps> = ({
+  onNavigate,
+  boards = [],
+  onCreateTask = () => {},
+  activeBoardId,
+  activeView,
+}) => {
+  const { _theme, _toggleTheme, language, toggleLanguage, t } = useAppContext();
   // const { user, logout } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
   const { getToken } = useAuth();
 
-  const { isActive, isSessionActive, timeLeft, toggleFocus, resetFocus, cancelFocus, formatTime } = useFocus();
+  const { _isActive, isSessionActive, _timeLeft, _toggleFocus, _resetFocus, _cancelFocus, _formatTime } = useFocus();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(() => localStorage.getItem('user_profile_image') || user?.imageUrl || '');
+  const [profileImage, setProfileImage] = useState(
+    () => localStorage.getItem('user_profile_image') || user?.imageUrl || '',
+  );
   const [isSleepMode, setIsSleepMode] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +94,6 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   // Live Session modal state
   const [isLiveSessionOpen, setIsLiveSessionOpen] = useState(false);
 
-
   // Search results
   const searchResults = React.useMemo(() => {
     if (!searchQuery.trim()) return { boards: [], tasks: [] };
@@ -76,19 +101,15 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
     const query = searchQuery.toLowerCase();
 
     // Search boards
-    const matchedBoards = boards.filter(board =>
-      board.name.toLowerCase().includes(query) ||
-      board.description?.toLowerCase().includes(query)
-    ).slice(0, 5);
+    const matchedBoards = boards
+      .filter((board) => board.name.toLowerCase().includes(query) || board.description?.toLowerCase().includes(query))
+      .slice(0, 5);
 
     // Search tasks within boards
     const matchedTasks: { task: Board['tasks'][0]; boardId: string; boardName: string }[] = [];
-    boards.forEach(board => {
-      board.tasks?.forEach(task => {
-        if (
-          task.name?.toLowerCase().includes(query) ||
-          task.description?.toLowerCase().includes(query)
-        ) {
+    boards.forEach((board) => {
+      board.tasks?.forEach((task) => {
+        if (task.name?.toLowerCase().includes(query) || task.description?.toLowerCase().includes(query)) {
           matchedTasks.push({ task, boardId: board.id, boardName: board.name });
         }
       });
@@ -97,8 +118,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
     return { boards: matchedBoards, tasks: matchedTasks.slice(0, 10) };
   }, [searchQuery, boards]);
 
-  const showSearchResults = isSearchFocused && searchQuery.trim() &&
-    (searchResults.boards.length > 0 || searchResults.tasks.length > 0);
+  const showSearchResults =
+    isSearchFocused && searchQuery.trim() && (searchResults.boards.length > 0 || searchResults.tasks.length > 0);
 
   const handleSearchResultClick = (boardId: string) => {
     onNavigate('board', boardId);
@@ -144,7 +165,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
 
       const [assignmentCount, requests] = await Promise.all([
         assignmentService.getUnreadCount(token),
-        teamService.getPendingRequests(token)
+        teamService.getPendingRequests(token),
       ]);
 
       setUnreadCount(assignmentCount + requests.length);
@@ -176,12 +197,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       // Fetch both assignments and connection requests
       const [allAssignments, requests] = await Promise.all([
         assignmentService.getAllAssignments(token),
-        teamService.getPendingRequests(token)
+        teamService.getPendingRequests(token),
       ]);
 
       setAssignments(allAssignments);
       setPendingRequests(requests);
-      setUnreadCount((allAssignments.filter(a => !a.isViewed).length) + requests.length);
+      setUnreadCount(allAssignments.filter((a) => !a.isViewed).length + requests.length);
     } catch (error) {
       appLogger.error('Failed to fetch notifications:', error);
     } finally {
@@ -202,18 +223,22 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       boardIdToNavigate = updatedAssignment.copiedBoardId;
 
       // Update local state with the updated assignment
-      setAssignments(prev => prev.map(a =>
-        a.id === assignment.id ? {
-          ...a,
-          isViewed: true,
-          viewedAt: new Date().toISOString(),
-          copiedBoardId: updatedAssignment.copiedBoardId,
-          copiedRowId: updatedAssignment.copiedRowId
-        } : a
-      ));
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === assignment.id
+            ? {
+                ...a,
+                isViewed: true,
+                viewedAt: new Date().toISOString(),
+                copiedBoardId: updatedAssignment.copiedBoardId,
+                copiedRowId: updatedAssignment.copiedRowId,
+              }
+            : a,
+        ),
+      );
 
       if (!assignment.isViewed) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       }
 
       // Close panel and navigate to the "Assigned to me" board
@@ -229,21 +254,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
   };
 
   const handleRespondToRequest = (connectionId: string) => {
-    setPendingRequests(prev => prev.filter(r => r.id !== connectionId));
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    setPendingRequests((prev) => prev.filter((r) => r.id !== connectionId));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
   return (
     <>
       {isSleepMode && <SleepOverlay onCheck={() => setIsSleepMode(false)} />}
       <div className="h-12 bg-gradient-to-b from-white to-[#F7F8FA] dark:bg-monday-dark-surface flex items-center justify-between px-4 rtl:pe-3 flex-shrink-0 z-20 shadow-sm transition-colors duration-200 relative">
-
         {/* Start: Logo Section */}
         <div className="flex items-center min-w-[200px] rtl:justify-end">
-          <div
-            className="flex items-center cursor-pointer group"
-            onClick={() => onNavigate('dashboard')}
-          >
+          <div className="flex items-center cursor-pointer group" onClick={() => onNavigate('dashboard')}>
             <img
               src="/top-bar-logo.png"
               alt="NABD Logo"
@@ -261,9 +282,16 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
         </div>
 
         {/* Center: Search Bar */}
-        <div ref={searchRef} className={`absolute top-1/2 transform -translate-y-1/2 hidden md:block z-10 transition-all duration-300 ${isSessionActive ? 'left-[40%] -translate-x-1/2 w-full max-w-[200px]' : 'left-1/2 -translate-x-1/2 w-full max-w-xs'}`}>
+        <div
+          ref={searchRef}
+          className={`absolute top-1/2 transform -translate-y-1/2 hidden md:block z-10 transition-all duration-300 ${isSessionActive ? 'left-[40%] -translate-x-1/2 w-full max-w-[200px]' : 'left-1/2 -translate-x-1/2 w-full max-w-xs'}`}
+        >
           <div className="relative w-full group">
-            <MagnifyingGlass className="absolute ms-3 top-2 text-gray-400 dark:text-monday-dark-text-secondary group-focus-within:text-monday-blue transition-colors" size={16} weight="light" />
+            <MagnifyingGlass
+              className="absolute ms-3 top-2 text-gray-400 dark:text-monday-dark-text-secondary group-focus-within:text-monday-blue transition-colors"
+              size={16}
+              weight="light"
+            />
             <input
               type="text"
               placeholder={t('search')}
@@ -351,7 +379,6 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
 
         {/* End: Icons Section */}
         <div className="flex items-center gap-2 min-w-[200px] justify-end">
-
           {/* Focus Mode (Expanding) */}
           <FocusMode />
 
@@ -446,10 +473,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             >
               <Note size={21} weight={isQuickNotesOpen ? 'duotone' : 'light'} />
             </button>
-            <QuickNotesPanel
-              isOpen={isQuickNotesOpen}
-              onClose={() => setIsQuickNotesOpen(false)}
-            />
+            <QuickNotesPanel isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} />
           </div>
 
           {/* GTD Quick Capture */}
@@ -514,11 +538,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
               className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-xs cursor-pointer hover:scale-105 hover:shadow-md transition-all ms-2 border-2 border-white dark:border-monday-dark-border overflow-hidden"
             >
               {profileImage ? (
-                <img
-                  src={profileImage}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
+                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 user?.fullName?.charAt(0) || user?.firstName?.charAt(0) || 'U'
               )}
@@ -527,8 +547,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
             {isProfileOpen && (
               <div className="absolute top-full right-0 rtl:right-auto rtl:left-0 mt-2 w-56 bg-white dark:bg-monday-dark-surface rounded-xl shadow-2xl border border-gray-100 dark:border-monday-dark-border py-2 z-50 animate-fadeIn">
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-monday-dark-border">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-monday-dark-text truncate">{user?.fullName || user?.firstName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.primaryEmailAddress?.emailAddress}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-monday-dark-text truncate">
+                    {user?.fullName || user?.firstName}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {user?.primaryEmailAddress?.emailAddress}
+                  </p>
                 </div>
                 <div className="py-1">
                   <button
@@ -545,12 +569,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
                     onClick={() => {
                       // Clear all user data before sign out
                       const keysToRemove = [
-                        'app-active-workspace', 'app-active-board', 'app-active-view',
-                        'app-workspaces', 'app-boards', 'app-recently-visited',
-                        'app-page-visibility', 'app-deleted-boards', 'app-unsynced-boards',
+                        'app-active-workspace',
+                        'app-active-board',
+                        'app-active-view',
+                        'app-workspaces',
+                        'app-boards',
+                        'app-recently-visited',
+                        'app-page-visibility',
+                        'app-deleted-boards',
+                        'app-unsynced-boards',
                       ];
-                      keysToRemove.forEach(key => localStorage.removeItem(key));
-                      Object.keys(localStorage).forEach(key => {
+                      keysToRemove.forEach((key) => localStorage.removeItem(key));
+                      Object.keys(localStorage).forEach((key) => {
                         if (key.startsWith('room-') || key.startsWith('board-')) {
                           localStorage.removeItem(key);
                         }
@@ -583,16 +613,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onNavigate, boards = [], onCreat
       {/* Live Session Modal */}
       {isLiveSessionOpen && (
         <div className="fixed inset-0 z-[9999] bg-gray-900">
-          <Suspense fallback={
-            <div className="h-full w-full flex items-center justify-center bg-gray-900">
-              <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          }>
+          <Suspense
+            fallback={
+              <div className="h-full w-full flex items-center justify-center bg-gray-900">
+                <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
             <LiveSessionPage onClose={() => setIsLiveSessionOpen(false)} />
           </Suspense>
         </div>
       )}
-
     </>
   );
 };

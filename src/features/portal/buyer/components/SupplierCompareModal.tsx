@@ -13,15 +13,10 @@ import {
   CheckCircle,
   TrendUp,
   TrendDown,
-  Minus,
 } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import type { Supplier } from '../../types/supplier.types';
-import {
-  getRiskLevelConfig,
-  formatDeliveryDeviation,
-  formatResponseTime,
-} from '../../types/supplier.types';
+import { getRiskLevelConfig, formatDeliveryDeviation, formatResponseTime } from '../../types/supplier.types';
 
 interface SupplierCompareModalProps {
   isOpen: boolean;
@@ -34,15 +29,15 @@ interface SupplierCompareModalProps {
 // Country flag emoji mapping
 const COUNTRY_FLAGS: Record<string, string> = {
   'United States': '🇺🇸',
-  'Germany': '🇩🇪',
-  'China': '🇨🇳',
-  'Japan': '🇯🇵',
+  Germany: '🇩🇪',
+  China: '🇨🇳',
+  Japan: '🇯🇵',
   'United Kingdom': '🇬🇧',
-  'India': '🇮🇳',
+  India: '🇮🇳',
   'South Korea': '🇰🇷',
-  'Italy': '🇮🇹',
-  'France': '🇫🇷',
-  'Canada': '🇨🇦',
+  Italy: '🇮🇹',
+  France: '🇫🇷',
+  Canada: '🇨🇦',
 };
 
 interface ComparisonMetric {
@@ -68,7 +63,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Reliability Score',
       key: 'reliability',
-      format: s => s.reliabilityScore,
+      format: (s) => s.reliabilityScore,
       compare: (a, b) => a.reliabilityScore - b.reliabilityScore,
       higherIsBetter: true,
       icon: <ShieldCheck size={14} />,
@@ -76,7 +71,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Risk Level',
       key: 'risk',
-      format: s => getRiskLevelConfig(s.riskLevel).label.replace(' Risk', ''),
+      format: (s) => getRiskLevelConfig(s.riskLevel).label.replace(' Risk', ''),
       compare: (a, b) => {
         const order = { low: 3, medium: 2, high: 1, critical: 0 };
         return order[a.riskLevel] - order[b.riskLevel];
@@ -87,17 +82,16 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'On-Time Delivery',
       key: 'ontime',
-      format: s => `${Math.round((s.metrics.onTimeDeliveries / s.metrics.totalOrders) * 100)}%`,
+      format: (s) => `${Math.round((s.metrics.onTimeDeliveries / s.metrics.totalOrders) * 100)}%`,
       compare: (a, b) =>
-        (a.metrics.onTimeDeliveries / a.metrics.totalOrders) -
-        (b.metrics.onTimeDeliveries / b.metrics.totalOrders),
+        a.metrics.onTimeDeliveries / a.metrics.totalOrders - b.metrics.onTimeDeliveries / b.metrics.totalOrders,
       higherIsBetter: true,
       icon: <Clock size={14} />,
     },
     {
       label: 'Delivery Time',
       key: 'delivery',
-      format: s => formatDeliveryDeviation(s.metrics.averageDeliveryDeviation).label,
+      format: (s) => formatDeliveryDeviation(s.metrics.averageDeliveryDeviation).label,
       compare: (a, b) => b.metrics.averageDeliveryDeviation - a.metrics.averageDeliveryDeviation,
       higherIsBetter: true, // lower deviation is better
       icon: <Package size={14} />,
@@ -105,7 +99,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Avg Response Time',
       key: 'response',
-      format: s => formatResponseTime(s.metrics.averageResponseTimeHours),
+      format: (s) => formatResponseTime(s.metrics.averageResponseTimeHours),
       compare: (a, b) => b.metrics.averageResponseTimeHours - a.metrics.averageResponseTimeHours,
       higherIsBetter: true, // faster is better
       icon: <Timer size={14} />,
@@ -113,7 +107,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Lead Time',
       key: 'leadtime',
-      format: s => `${s.leadTimeDays} days`,
+      format: (s) => `${s.leadTimeDays} days`,
       compare: (a, b) => b.leadTimeDays - a.leadTimeDays,
       higherIsBetter: true, // shorter is better
       icon: <Clock size={14} />,
@@ -121,7 +115,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Quality Score',
       key: 'quality',
-      format: s => `${s.metrics.qualityScore}%`,
+      format: (s) => `${s.metrics.qualityScore}%`,
       compare: (a, b) => a.metrics.qualityScore - b.metrics.qualityScore,
       higherIsBetter: true,
       icon: <CheckCircle size={14} />,
@@ -129,7 +123,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Communication',
       key: 'communication',
-      format: s => s.metrics.communicationScore,
+      format: (s) => s.metrics.communicationScore,
       compare: (a, b) => a.metrics.communicationScore - b.metrics.communicationScore,
       higherIsBetter: true,
       icon: <Timer size={14} />,
@@ -137,7 +131,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Dependency',
       key: 'dependency',
-      format: s => `${s.metrics.dependencyPercentage.toFixed(1)}%`,
+      format: (s) => `${s.metrics.dependencyPercentage.toFixed(1)}%`,
       compare: (a, b) => b.metrics.dependencyPercentage - a.metrics.dependencyPercentage,
       higherIsBetter: true, // lower dependency is better
       icon: <Warning size={14} />,
@@ -145,7 +139,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Total Spend',
       key: 'spend',
-      format: s => `$${(s.metrics.totalSpend / 1000).toFixed(0)}K`,
+      format: (s) => `$${(s.metrics.totalSpend / 1000).toFixed(0)}K`,
       compare: (a, b) => a.metrics.totalSpend - b.metrics.totalSpend,
       higherIsBetter: false, // just info, no preference
       icon: <Package size={14} />,
@@ -153,7 +147,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Total Orders',
       key: 'orders',
-      format: s => s.metrics.totalOrders,
+      format: (s) => s.metrics.totalOrders,
       compare: (a, b) => a.metrics.totalOrders - b.metrics.totalOrders,
       higherIsBetter: true,
       icon: <Package size={14} />,
@@ -161,7 +155,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     {
       label: 'Payment Terms',
       key: 'payment',
-      format: s => s.paymentTerms,
+      format: (s) => s.paymentTerms,
       compare: () => 0, // No comparison
       higherIsBetter: false,
       icon: <Clock size={14} />,
@@ -173,12 +167,13 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
     if (suppliers.length < 2) return null;
 
     // Simple scoring: weighted sum of key metrics
-    const scores = suppliers.map(s => {
+    const scores = suppliers.map((s) => {
       let score = 0;
       score += s.reliabilityScore * 0.35;
-      score += (100 - (s.riskLevel === 'low' ? 0 : s.riskLevel === 'medium' ? 25 : s.riskLevel === 'high' ? 50 : 75)) * 0.25;
+      score +=
+        (100 - (s.riskLevel === 'low' ? 0 : s.riskLevel === 'medium' ? 25 : s.riskLevel === 'high' ? 50 : 75)) * 0.25;
       score += (s.metrics.onTimeDeliveries / s.metrics.totalOrders) * 100 * 0.2;
-      score += (100 - Math.min(s.metrics.averageResponseTimeHours, 48) / 48 * 100) * 0.1;
+      score += (100 - (Math.min(s.metrics.averageResponseTimeHours, 48) / 48) * 100) * 0.1;
       score += (100 - Math.min(s.metrics.dependencyPercentage, 100)) * 0.1;
       return { supplier: s, score };
     });
@@ -203,16 +198,10 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50 transition-opacity"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-50 bg-black/50 transition-opacity" onClick={onClose} />
 
       {/* Modal */}
-      <div
-        className="fixed inset-4 z-50 flex items-center justify-center"
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="fixed inset-4 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <div
           className="w-full max-w-5xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden"
           style={{
@@ -266,8 +255,8 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
                 onClick={onClose}
                 className="p-2 rounded-md transition-colors ml-2"
                 style={{ color: styles.textMuted }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <X size={18} />
               </button>
@@ -282,7 +271,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
               <div className="w-40 flex-shrink-0" />
 
               {/* Supplier columns */}
-              {suppliers.map(supplier => {
+              {suppliers.map((supplier) => {
                 const isRecommended = recommendedSupplier?.id === supplier.id;
                 const riskConfig = getRiskLevelConfig(supplier.riskLevel);
                 const riskColorMap = {
@@ -321,10 +310,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
                         <Buildings size={16} style={{ color: styles.textSecondary }} />
                       </div>
                       <div className="min-w-0">
-                        <h3
-                          className="font-semibold text-sm truncate"
-                          style={{ color: styles.textPrimary }}
-                        >
+                        <h3 className="font-semibold text-sm truncate" style={{ color: styles.textPrimary }}>
                           {supplier.name}
                         </h3>
                         <div className="flex items-center gap-1.5 text-xs" style={{ color: styles.textMuted }}>
@@ -349,10 +335,7 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
             </div>
 
             {/* Comparison Table */}
-            <div
-              className="rounded-lg overflow-hidden border"
-              style={{ borderColor: styles.border }}
-            >
+            <div className="rounded-lg overflow-hidden border" style={{ borderColor: styles.border }}>
               {metrics.map((metric, idx) => {
                 const { bestId, worstId } = getBestWorst(metric);
                 const canCompare = metric.compare(suppliers[0], suppliers[0]) !== undefined;
@@ -377,10 +360,11 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
                     </div>
 
                     {/* Values */}
-                    {suppliers.map(supplier => {
+                    {suppliers.map((supplier) => {
                       const value = metric.format(supplier);
                       const isBest = metric.higherIsBetter && bestId === supplier.id && canCompare;
-                      const isWorst = metric.higherIsBetter && worstId === supplier.id && canCompare && suppliers.length > 1;
+                      const isWorst =
+                        metric.higherIsBetter && worstId === supplier.id && canCompare && suppliers.length > 1;
 
                       return (
                         <div
@@ -390,19 +374,15 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
                             backgroundColor: isBest
                               ? `${styles.success}08`
                               : isWorst
-                              ? `${styles.error}05`
-                              : 'transparent',
+                                ? `${styles.error}05`
+                                : 'transparent',
                           }}
                         >
                           <div className="flex items-center gap-2">
                             <span
                               className="text-sm font-medium"
                               style={{
-                                color: isBest
-                                  ? styles.success
-                                  : isWorst
-                                  ? styles.error
-                                  : styles.textPrimary,
+                                color: isBest ? styles.success : isWorst ? styles.error : styles.textPrimary,
                               }}
                             >
                               {value}
@@ -444,12 +424,13 @@ export const SupplierCompareModal: React.FC<SupplierCompareModalProps> = ({
                     </h4>
                     <p className="text-xs" style={{ color: styles.textSecondary }}>
                       Based on overall reliability score ({recommendedSupplier.reliabilityScore}), risk level (
-                      {getRiskLevelConfig(recommendedSupplier.riskLevel).label.replace(' Risk', '')}), on-time delivery rate (
+                      {getRiskLevelConfig(recommendedSupplier.riskLevel).label.replace(' Risk', '')}), on-time delivery
+                      rate (
                       {Math.round(
-                        (recommendedSupplier.metrics.onTimeDeliveries / recommendedSupplier.metrics.totalOrders) * 100
+                        (recommendedSupplier.metrics.onTimeDeliveries / recommendedSupplier.metrics.totalOrders) * 100,
                       )}
-                      %), and response time ({formatResponseTime(recommendedSupplier.metrics.averageResponseTimeHours)}),
-                      this supplier offers the best overall value.
+                      %), and response time ({formatResponseTime(recommendedSupplier.metrics.averageResponseTimeHours)}
+                      ), this supplier offers the best overall value.
                     </p>
                   </div>
                 </div>

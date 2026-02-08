@@ -22,6 +22,8 @@ const envConfig: EnvConfig = {
         'CLERK_SECRET_KEY',
         // Encryption - MUST be set in production
         'ENCRYPTION_KEY',
+        // Portal JWT - MUST be set in production
+        'PORTAL_JWT_SECRET',
         // OAuth providers (if email features are used)
         'GOOGLE_CLIENT_ID',
         'GOOGLE_CLIENT_SECRET',
@@ -35,6 +37,10 @@ const envConfig: EnvConfig = {
         'PORT': '3001',
         'CORS_ORIGIN': 'http://localhost:5173',
         'FRONTEND_URL': 'http://localhost:3000',
+        // Background job flags - defaults differ by environment
+        'ENABLE_WORKERS': '', // Will be set based on environment
+        'ENABLE_SCHEDULER': '', // Will be set based on environment
+        'ENABLE_OUTBOX': '', // Will be set based on environment
     }
 };
 
@@ -88,10 +94,40 @@ export function validateEnv(): void {
         }
     }
 
-    // Security warnings
+    // Security checks and warnings
     if (isProduction) {
         if (process.env.CORS_ORIGIN === '*') {
             console.warn('[ENV] Security Warning: CORS_ORIGIN is set to "*" in production');
+        }
+
+        // CRITICAL: Block dangerous flags in production
+        if (process.env.ALLOW_DEV_TOKENS === 'true') {
+            throw new Error(
+                'SECURITY VIOLATION: ALLOW_DEV_TOKENS=true is not allowed in production. ' +
+                'This would enable authentication bypass. Remove this setting immediately.'
+            );
+        }
+
+        if (process.env.PORTAL_ALLOW_SEED_ENDPOINT === 'true') {
+            throw new Error(
+                'SECURITY VIOLATION: PORTAL_ALLOW_SEED_ENDPOINT=true is not allowed in production. ' +
+                'This would expose admin creation endpoint. Remove this setting immediately.'
+            );
+        }
+
+        if (process.env.ALLOW_LEGACY_PORTAL_AUTH === 'true') {
+            console.warn(
+                '[ENV] Security Warning: ALLOW_LEGACY_PORTAL_AUTH=true is set in production. ' +
+                'This allows deprecated x-user-id header authentication. Plan migration to JWT.'
+            );
+        }
+
+        // Require PORTAL_JWT_SECRET in production
+        if (!process.env.PORTAL_JWT_SECRET) {
+            console.warn(
+                '[ENV] Security Warning: PORTAL_JWT_SECRET is not set. ' +
+                'Portal authentication will use a fallback secret which is insecure.'
+            );
         }
     }
 
@@ -119,3 +155,50 @@ export function getEnvOrThrow(key: string): string {
 
 export const isProduction = process.env.NODE_ENV === 'production';
 export const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// =============================================================================
+// Background Job Flags
+// =============================================================================
+// In production, default to enabled; in development, default to disabled
+// This prevents noisy logs and DB spam when DB is down in local dev
+
+/**
+ * Check if a feature flag is enabled.
+ * Supports 'true', '1', 'yes' as truthy values.
+ * In development, defaults to false unless explicitly set.
+ * In production, defaults to true unless explicitly disabled.
+ */
+function isFeatureEnabled(key: string): boolean {
+    const value = process.env[key]?.toLowerCase();
+
+    // Explicit true
+    if (value === 'true' || value === '1' || value === 'yes') {
+        return true;
+    }
+
+    // Explicit false
+    if (value === 'false' || value === '0' || value === 'no') {
+        return false;
+    }
+
+    // Default behavior: production = enabled, development = disabled
+    return isProduction;
+}
+
+/** Whether background workers (job queue, event outbox) should run */
+export const isWorkersEnabled = (): boolean => isFeatureEnabled('ENABLE_WORKERS');
+
+/** Whether the cron scheduler should run */
+export const isSchedulerEnabled = (): boolean => isFeatureEnabled('ENABLE_SCHEDULER');
+
+/** Whether the event outbox worker should run */
+export const isOutboxEnabled = (): boolean => isFeatureEnabled('ENABLE_OUTBOX');
+
+/** Get a summary of enabled features for logging */
+export function getFeatureFlags(): Record<string, boolean> {
+    return {
+        workers: isWorkersEnabled(),
+        scheduler: isSchedulerEnabled(),
+        outbox: isOutboxEnabled(),
+    };
+}

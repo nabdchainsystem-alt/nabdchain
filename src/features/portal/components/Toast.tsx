@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useCallback, createContext, useContext } from 'react';
 import { CheckCircle, Warning, WarningCircle, Info, X } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 
@@ -53,32 +53,31 @@ interface ToastProviderProps {
   maxToasts?: number;
 }
 
-export const ToastProvider: React.FC<ToastProviderProps> = ({
-  children,
-  position = 'bottom-right',
-  maxToasts = 5,
-}) => {
+export const ToastProvider: React.FC<ToastProviderProps> = ({ children, position = 'bottom-right', maxToasts = 5 }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((toast: Omit<Toast, 'id'>): string => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    const newToast: Toast = { ...toast, id };
+  const addToast = useCallback(
+    (toast: Omit<Toast, 'id'>): string => {
+      const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const newToast: Toast = { ...toast, id };
 
-    setToasts((prev) => {
-      const updated = [newToast, ...prev];
-      return updated.slice(0, maxToasts);
-    });
+      setToasts((prev) => {
+        const updated = [newToast, ...prev];
+        return updated.slice(0, maxToasts);
+      });
 
-    // Auto-remove after duration
-    const duration = toast.duration ?? (toast.type === 'error' ? 6000 : 4000);
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
+      // Auto-remove after duration
+      const duration = toast.duration ?? (toast.type === 'error' ? 6000 : 4000);
+      if (duration > 0) {
+        setTimeout(() => {
+          removeToast(id);
+        }, duration);
+      }
 
-    return id;
-  }, [maxToasts]);
+      return id;
+    },
+    [maxToasts],
+  );
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -103,11 +102,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
         style={{ maxWidth: '400px', width: '100%' }}
       >
         {toasts.map((toast) => (
-          <ToastItem
-            key={toast.id}
-            toast={toast}
-            onDismiss={() => removeToast(toast.id)}
-          />
+          <ToastItem key={toast.id} toast={toast} onDismiss={() => removeToast(toast.id)} />
         ))}
       </div>
     </ToastContext.Provider>
@@ -139,10 +134,13 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
     handleDismiss();
   }, [toast, handleDismiss]);
 
-  const typeConfig: Record<ToastType, {
-    icon: typeof CheckCircle;
-    color: string;
-  }> = {
+  const typeConfig: Record<
+    ToastType,
+    {
+      icon: typeof CheckCircle;
+      color: string;
+    }
+  > = {
     success: {
       icon: CheckCircle,
       color: styles.success,
@@ -186,17 +184,11 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h4
-            className="text-sm font-semibold"
-            style={{ color: styles.textPrimary }}
-          >
+          <h4 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
             {toast.title}
           </h4>
           {toast.message && (
-            <p
-              className="mt-1 text-xs"
-              style={{ color: styles.textSecondary }}
-            >
+            <p className="mt-1 text-xs" style={{ color: styles.textSecondary }}>
               {toast.message}
             </p>
           )}
@@ -220,7 +212,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
                 <button
                   onClick={handleUndo}
                   className="text-xs font-medium hover:underline"
-                  style={{ color: styles.primary }}
+                  style={{ color: styles.info }}
                 >
                   Undo
                 </button>

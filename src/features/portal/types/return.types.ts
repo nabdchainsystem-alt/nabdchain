@@ -12,30 +12,26 @@
  * approved -> in_transit -> received -> refund_processed -> closed
  */
 export type ReturnStatus =
-  | 'requested'         // Initial state - return requested
-  | 'approved'          // Seller approved, awaiting shipment
-  | 'rejected'          // Seller rejected return
-  | 'in_transit'        // Buyer shipped the return
-  | 'received'          // Seller received the return
-  | 'refund_processed'  // Refund has been processed
-  | 'closed';           // Terminal state
+  | 'requested' // Initial state - return requested
+  | 'approved' // Seller approved, awaiting shipment
+  | 'rejected' // Seller rejected return
+  | 'in_transit' // Buyer shipped the return
+  | 'received' // Seller received the return
+  | 'refund_processed' // Refund has been processed
+  | 'closed'; // Terminal state
 
 /**
  * Return Type - What kind of return
  */
-export type ReturnType =
-  | 'full_return'       // Full return of all items
-  | 'partial_return'    // Partial return
+export type ReturnKind =
+  | 'full_return' // Full return of all items
+  | 'partial_return' // Partial return
   | 'replacement_only'; // Exchange for replacement
 
 /**
  * Received Condition - State of returned items
  */
-export type ReceivedCondition =
-  | 'as_expected'
-  | 'damaged_in_transit'
-  | 'partial_received'
-  | 'other';
+export type ReceivedCondition = 'as_expected' | 'damaged_in_transit' | 'partial_received' | 'other';
 
 // =============================================================================
 // Core Return Interface
@@ -73,7 +69,7 @@ export interface MarketplaceReturn {
   sellerId: string;
 
   // Return Details
-  returnType: ReturnType;
+  returnType: ReturnKind;
   returnReason: string;
   returnItems: ReturnItem[];
 
@@ -146,7 +142,7 @@ export interface ReturnEvent {
 
 export interface CreateReturnData {
   disputeId: string;
-  returnType: ReturnType;
+  returnType: ReturnKind;
   returnItems: ReturnItem[];
 }
 
@@ -334,11 +330,11 @@ export function getReturnStatusConfig(status: ReturnStatus): {
 /**
  * Get return type label
  */
-export function getReturnTypeLabel(type: ReturnType): {
+export function getReturnTypeLabel(type: ReturnKind): {
   label: string;
   labelKey: string;
 } {
-  const labels: Record<ReturnType, ReturnType<typeof getReturnTypeLabel>> = {
+  const labels: Record<ReturnKind, ReturnType<typeof getReturnTypeLabel>> = {
     full_return: { label: 'Full Return', labelKey: 'returns.type.fullReturn' },
     partial_return: { label: 'Partial Return', labelKey: 'returns.type.partialReturn' },
     replacement_only: { label: 'Replacement', labelKey: 'returns.type.replacementOnly' },

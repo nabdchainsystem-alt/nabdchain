@@ -2,11 +2,12 @@
 // Buyer Workspace Routes - Purchases, Suppliers, Inventory, Expenses
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
+import { resolveBuyerId } from '../utils/resolveBuyerId';
 
 const router = Router();
 
@@ -55,207 +56,10 @@ const expenseSchema = z.object({
 });
 
 // =============================================================================
-// Mock Data for Demo
+// Empty State Constants (No mock data - production mode)
 // =============================================================================
-
-const MOCK_PURCHASES = [
-  {
-    id: 'po-1',
-    poNumber: 'PO-2025-0001',
-    buyerId: 'buyer-1',
-    supplierId: 'sup-1',
-    supplierName: 'Industrial Parts Co.',
-    totalAmount: 15000,
-    currency: 'SAR',
-    status: 'approved',
-    orderDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    expectedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'po-2',
-    poNumber: 'PO-2025-0002',
-    buyerId: 'buyer-1',
-    supplierId: 'sup-2',
-    supplierName: 'Gulf Suppliers LLC',
-    totalAmount: 8500,
-    currency: 'SAR',
-    status: 'sent',
-    orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    expectedDelivery: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'po-3',
-    poNumber: 'PO-2025-0003',
-    buyerId: 'buyer-1',
-    supplierId: 'sup-3',
-    supplierName: 'Saudi Steel Works',
-    totalAmount: 32000,
-    currency: 'SAR',
-    status: 'delivered',
-    orderDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    expectedDelivery: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    deliveredAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'po-4',
-    poNumber: 'PO-2025-0004',
-    buyerId: 'buyer-1',
-    supplierId: null,
-    supplierName: 'New Vendor Inc.',
-    totalAmount: 5200,
-    currency: 'SAR',
-    status: 'draft',
-    orderDate: new Date(),
-    expectedDelivery: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
-const MOCK_SUPPLIERS = [
-  {
-    id: 'sup-1',
-    buyerId: 'buyer-1',
-    name: 'Industrial Parts Co.',
-    country: 'Saudi Arabia',
-    email: 'sales@industrialparts.sa',
-    phone: '+966 11 234 5678',
-    rating: 4.5,
-    totalOrders: 15,
-    totalSpend: 125000,
-    lastOrderDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'sup-2',
-    buyerId: 'buyer-1',
-    name: 'Gulf Suppliers LLC',
-    country: 'UAE',
-    email: 'info@gulfsuppliers.ae',
-    phone: '+971 4 567 8901',
-    rating: 4.2,
-    totalOrders: 8,
-    totalSpend: 68000,
-    lastOrderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'sup-3',
-    buyerId: 'buyer-1',
-    name: 'Saudi Steel Works',
-    country: 'Saudi Arabia',
-    email: 'orders@saudisteel.sa',
-    phone: '+966 12 345 6789',
-    rating: 4.8,
-    totalOrders: 22,
-    totalSpend: 245000,
-    lastOrderDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const MOCK_INVENTORY = [
-  {
-    id: 'inv-1',
-    buyerId: 'buyer-1',
-    productName: 'Hydraulic Pump Unit',
-    sku: 'HYD-PUMP-001',
-    quantity: 25,
-    reorderLevel: 10,
-    status: 'ok',
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'inv-2',
-    buyerId: 'buyer-1',
-    productName: 'Steel Bearings Set',
-    sku: 'BRG-STL-100',
-    quantity: 8,
-    reorderLevel: 15,
-    status: 'low',
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'inv-3',
-    buyerId: 'buyer-1',
-    productName: 'Electric Motor 15KW',
-    sku: 'MTR-ELC-15K',
-    quantity: 2,
-    reorderLevel: 5,
-    status: 'critical',
-    createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'inv-4',
-    buyerId: 'buyer-1',
-    productName: 'Valve Assembly Kit',
-    sku: 'VLV-KIT-200',
-    quantity: 45,
-    reorderLevel: 20,
-    status: 'ok',
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-  },
-];
-
-const MOCK_EXPENSES = [
-  {
-    id: 'exp-1',
-    buyerId: 'buyer-1',
-    category: 'shipping',
-    amount: 2500,
-    currency: 'SAR',
-    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    notes: 'Express shipping for urgent order',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'exp-2',
-    buyerId: 'buyer-1',
-    category: 'customs',
-    amount: 4800,
-    currency: 'SAR',
-    date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    notes: 'Import duties for equipment',
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'exp-3',
-    buyerId: 'buyer-1',
-    category: 'storage',
-    amount: 1500,
-    currency: 'SAR',
-    date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    notes: 'Monthly warehouse rental',
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'exp-4',
-    buyerId: 'buyer-1',
-    category: 'other',
-    amount: 350,
-    currency: 'SAR',
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    notes: 'Quality inspection fees',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  },
-];
+// NOTE: Mock data removed - see MOCK_REMOVAL_REPORT.md
+// All data must come from database. Frontend handles empty states gracefully.
 
 // =============================================================================
 // PO Number Generator
@@ -279,9 +83,11 @@ async function generatePONumber(): Promise<string> {
     }
 
     return `${prefix}${String(nextNumber).padStart(4, '0')}`;
-  } catch {
-    // Fallback for mock mode
-    return `${prefix}${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
+  } catch (error) {
+    // Fallback using timestamp for uniqueness (no random)
+    apiLogger.error('[BuyerWorkspace] Error generating PO number:', error);
+    const timestamp = Date.now().toString().slice(-4);
+    return `${prefix}${timestamp}`;
   }
 }
 
@@ -295,7 +101,10 @@ async function generatePONumber(): Promise<string> {
  */
 router.get('/purchases', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const { status, supplierId, search, dateFrom, dateTo } = req.query;
 
     const where: any = { buyerId };
@@ -319,14 +128,11 @@ router.get('/purchases', requireAuth, async (req, res: Response) => {
       include: { items: true },
     });
 
-    if (purchases.length === 0) {
-      return res.json(MOCK_PURCHASES);
-    }
-
+    // Return actual data - frontend handles empty states
     res.json(purchases);
   } catch (error) {
-    apiLogger.error('Error fetching purchases:', error);
-    res.json(MOCK_PURCHASES);
+    apiLogger.error('[BuyerWorkspace] Error fetching purchases:', error);
+    res.json([]); // Empty array, not mock data
   }
 });
 
@@ -336,7 +142,10 @@ router.get('/purchases', requireAuth, async (req, res: Response) => {
  */
 router.post('/purchases', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const data = purchaseOrderSchema.parse(req.body);
 
     const poNumber = await generatePONumber();
@@ -380,8 +189,11 @@ router.post('/purchases', requireAuth, async (req, res: Response) => {
  */
 router.patch('/purchases/:id/status', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { id } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
     const { status } = req.body;
 
     const validStatuses = ['draft', 'sent', 'approved', 'delivered', 'cancelled'];
@@ -436,7 +248,10 @@ router.patch('/purchases/:id/status', requireAuth, async (req, res: Response) =>
  */
 router.get('/suppliers', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const { search, country } = req.query;
 
     const where: any = { buyerId };
@@ -453,14 +268,11 @@ router.get('/suppliers', requireAuth, async (req, res: Response) => {
       orderBy: { totalSpend: 'desc' },
     });
 
-    if (suppliers.length === 0) {
-      return res.json(MOCK_SUPPLIERS);
-    }
-
+    // Return actual data - frontend handles empty states
     res.json(suppliers);
   } catch (error) {
-    apiLogger.error('Error fetching suppliers:', error);
-    res.json(MOCK_SUPPLIERS);
+    apiLogger.error('[BuyerWorkspace] Error fetching suppliers:', error);
+    res.json([]); // Empty array, not mock data
   }
 });
 
@@ -470,7 +282,10 @@ router.get('/suppliers', requireAuth, async (req, res: Response) => {
  */
 router.post('/suppliers', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const data = supplierSchema.parse(req.body);
 
     const supplier = await prisma.buyerSupplier.create({
@@ -500,7 +315,10 @@ router.post('/suppliers', requireAuth, async (req, res: Response) => {
  */
 router.get('/inventory', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const { status, search } = req.query;
 
     const where: any = { buyerId };
@@ -517,14 +335,11 @@ router.get('/inventory', requireAuth, async (req, res: Response) => {
       orderBy: { productName: 'asc' },
     });
 
-    if (inventory.length === 0) {
-      return res.json(MOCK_INVENTORY);
-    }
-
+    // Return actual data - frontend handles empty states
     res.json(inventory);
   } catch (error) {
-    apiLogger.error('Error fetching inventory:', error);
-    res.json(MOCK_INVENTORY);
+    apiLogger.error('[BuyerWorkspace] Error fetching inventory:', error);
+    res.json([]); // Empty array, not mock data
   }
 });
 
@@ -534,7 +349,10 @@ router.get('/inventory', requireAuth, async (req, res: Response) => {
  */
 router.post('/inventory', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const data = inventorySchema.parse(req.body);
 
     // Calculate status based on quantity vs reorder level
@@ -569,8 +387,11 @@ router.post('/inventory', requireAuth, async (req, res: Response) => {
  */
 router.patch('/inventory/:id', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const { id } = req.params;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
     const { quantity, reorderLevel } = req.body;
 
     const existing = await prisma.buyerInventory.findFirst({
@@ -614,7 +435,10 @@ router.patch('/inventory/:id', requireAuth, async (req, res: Response) => {
  */
 router.get('/expenses', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const { category, dateFrom, dateTo } = req.query;
 
     const where: any = { buyerId };
@@ -630,14 +454,11 @@ router.get('/expenses', requireAuth, async (req, res: Response) => {
       orderBy: { date: 'desc' },
     });
 
-    if (expenses.length === 0) {
-      return res.json(MOCK_EXPENSES);
-    }
-
+    // Return actual data - frontend handles empty states
     res.json(expenses);
   } catch (error) {
-    apiLogger.error('Error fetching expenses:', error);
-    res.json(MOCK_EXPENSES);
+    apiLogger.error('[BuyerWorkspace] Error fetching expenses:', error);
+    res.json([]); // Empty array, not mock data
   }
 });
 
@@ -647,7 +468,10 @@ router.get('/expenses', requireAuth, async (req, res: Response) => {
  */
 router.get('/expenses/summary', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -672,16 +496,11 @@ router.get('/expenses/summary', requireAuth, async (req, res: Response) => {
       })),
     });
   } catch (error) {
-    apiLogger.error('Error fetching expense summary:', error);
-    // Return mock summary
+    apiLogger.error('[BuyerWorkspace] Error fetching expense summary:', error);
+    // Return empty summary - frontend handles empty states
     res.json({
-      monthlyTotal: 9150,
-      byCategory: [
-        { category: 'shipping', amount: 2500 },
-        { category: 'customs', amount: 4800 },
-        { category: 'storage', amount: 1500 },
-        { category: 'other', amount: 350 },
-      ],
+      monthlyTotal: 0,
+      byCategory: [],
     });
   }
 });
@@ -692,7 +511,10 @@ router.get('/expenses/summary', requireAuth, async (req, res: Response) => {
  */
 router.post('/expenses', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const data = expenseSchema.parse(req.body);
 
     const expense = await prisma.buyerExpense.create({
@@ -715,6 +537,260 @@ router.post('/expenses', requireAuth, async (req, res: Response) => {
     apiLogger.error('Error creating expense:', error);
     res.status(500).json({ error: 'Failed to create expense' });
   }
+});
+
+// =============================================================================
+// Predictive Intelligence - Stub Endpoints (Feature pending implementation)
+// These endpoints prevent 404 errors and return empty data structures
+// =============================================================================
+
+/**
+ * GET /api/buyer/inventory/forecast
+ * Get inventory with forecast data (stub - returns basic inventory)
+ */
+router.get('/inventory/forecast', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const { status, search } = req.query;
+
+    const where: any = { buyerId };
+    if (status) where.status = status as string;
+    if (search) {
+      where.OR = [
+        { productName: { contains: search as string, mode: 'insensitive' } },
+        { sku: { contains: search as string, mode: 'insensitive' } },
+      ];
+    }
+
+    const inventory = await prisma.buyerInventory.findMany({
+      where,
+      orderBy: { productName: 'asc' },
+    });
+
+    // Return inventory with empty forecast data - feature pending
+    const withForecast = inventory.map(item => ({
+      ...item,
+      forecast: {
+        daysUntilStockout: null,
+        depletionRatePerDay: 0,
+        suggestedReorderDate: null,
+        confidenceLevel: 'low' as const,
+        basedOnDays: 0,
+      },
+      supplierOptions: [],
+      costSimulation: null,
+      avgDailyUsage: 0,
+      lastRestockDate: null,
+      pendingOrderQty: 0,
+    }));
+
+    res.json(withForecast);
+  } catch (error) {
+    apiLogger.error('[BuyerWorkspace] Error fetching inventory forecast:', error);
+    res.json([]);
+  }
+});
+
+/**
+ * GET /api/buyer/inventory/alerts
+ * Get inventory alerts (stub - returns empty array)
+ */
+router.get('/inventory/alerts', requireAuth, async (req, res: Response) => {
+  // Feature pending implementation - return empty array
+  res.json([]);
+});
+
+/**
+ * POST /api/buyer/inventory/:id/simulate
+ * Simulate cost impact for reorder (stub)
+ */
+router.post('/inventory/:id/simulate', requireAuth, async (req, res: Response) => {
+  // Feature pending implementation - return empty simulation
+  res.json({
+    currentUnitCost: 0,
+    projectedUnitCost: 0,
+    recommendedQty: 0,
+    totalCost: 0,
+    potentialSavings: 0,
+    savingsPercent: 0,
+    bestSupplier: null,
+  });
+});
+
+/**
+ * GET /api/buyer/expenses/enhanced-summary
+ * Get enhanced expense summary with analytics (stub - returns basic summary)
+ */
+router.get('/expenses/enhanced-summary', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [monthlyTotal, byCategory] = await Promise.all([
+      prisma.buyerExpense.aggregate({
+        where: { buyerId, date: { gte: startOfMonth } },
+        _sum: { amount: true },
+      }),
+      prisma.buyerExpense.groupBy({
+        by: ['category'],
+        where: { buyerId, date: { gte: startOfMonth } },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    // Return basic summary with empty analytics - feature pending
+    res.json({
+      monthlyTotal: monthlyTotal._sum.amount || 0,
+      byCategory: byCategory.map(c => ({
+        category: c.category,
+        amount: c._sum.amount || 0,
+      })),
+      leakages: [],
+      priceDriftAlerts: [],
+      budgetComparison: [],
+      categoryInefficiencies: [],
+      totalPotentialSavings: 0,
+      healthScore: 100,
+    });
+  } catch (error) {
+    apiLogger.error('[BuyerWorkspace] Error fetching enhanced summary:', error);
+    res.json({
+      monthlyTotal: 0,
+      byCategory: [],
+      leakages: [],
+      priceDriftAlerts: [],
+      budgetComparison: [],
+      categoryInefficiencies: [],
+      totalPotentialSavings: 0,
+      healthScore: 100,
+    });
+  }
+});
+
+/**
+ * GET /api/buyer/expenses/analytics/dashboard
+ * Get complete expense analytics dashboard (aggregates summary, leakages, price drifts)
+ */
+router.get('/expenses/analytics/dashboard', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [monthlyTotal, byCategory, recentExpenses] = await Promise.all([
+      prisma.buyerExpense.aggregate({
+        where: { buyerId, date: { gte: startOfMonth } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.buyerExpense.groupBy({
+        by: ['category'],
+        where: { buyerId, date: { gte: startOfMonth } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.buyerExpense.findMany({
+        where: { buyerId },
+        orderBy: { date: 'desc' },
+        take: 20,
+      }),
+    ]);
+
+    const totalSpend = monthlyTotal._sum.amount || 0;
+    const transactionCount = monthlyTotal._count || 0;
+
+    res.json({
+      summary: {
+        totalSpend,
+        totalBudget: 0,
+        budgetUtilization: 0,
+        avgTransactionSize: transactionCount > 0 ? totalSpend / transactionCount : 0,
+        transactionCount,
+        suppliersUsed: 0,
+        leakageAmount: 0,
+        leakageCount: 0,
+        priceDriftImpact: 0,
+        currency: 'SAR',
+        periodComparison: {
+          previousPeriod: 0,
+          change: 0,
+          changePercent: 0,
+        },
+      },
+      budgetTrend: [],
+      categoryBreakdown: byCategory.map(c => ({
+        id: c.category,
+        name: c.category,
+        budget: 0,
+        actual: c._sum.amount || 0,
+        variance: c._sum.amount || 0,
+        variancePercent: 0,
+        trend: 'stable' as const,
+        itemCount: c._count || 0,
+      })),
+      leakages: [],
+      priceDrifts: [],
+      inefficiencies: [],
+      recentTransactions: recentExpenses.map(e => ({
+        id: e.id,
+        date: e.date.toISOString(),
+        category: e.category,
+        supplierId: '',
+        supplierName: '',
+        description: e.notes || e.category,
+        amount: e.amount,
+        currency: e.currency,
+        paymentStatus: 'paid' as const,
+      })),
+    });
+  } catch (error) {
+    apiLogger.error('[BuyerWorkspace] Error fetching expense analytics dashboard:', error);
+    res.json({
+      summary: {
+        totalSpend: 0, totalBudget: 0, budgetUtilization: 0,
+        avgTransactionSize: 0, transactionCount: 0, suppliersUsed: 0,
+        leakageAmount: 0, leakageCount: 0, priceDriftImpact: 0,
+        currency: 'SAR',
+        periodComparison: { previousPeriod: 0, change: 0, changePercent: 0 },
+      },
+      budgetTrend: [],
+      categoryBreakdown: [],
+      leakages: [],
+      priceDrifts: [],
+      inefficiencies: [],
+      recentTransactions: [],
+    });
+  }
+});
+
+/**
+ * GET /api/buyer/expenses/leakages
+ * Get spend leakages (stub - returns empty array)
+ */
+router.get('/expenses/leakages', requireAuth, async (req, res: Response) => {
+  // Feature pending implementation - return empty array
+  res.json([]);
+});
+
+/**
+ * GET /api/buyer/expenses/price-drift (or /price-drifts)
+ * Get price drift alerts (stub - returns empty array)
+ */
+router.get(['/expenses/price-drift', '/expenses/price-drifts'], requireAuth, async (req, res: Response) => {
+  // Feature pending implementation - return empty array
+  res.json([]);
 });
 
 export default router;

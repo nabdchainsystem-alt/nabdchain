@@ -2,9 +2,8 @@
 // Scale Safety Service - Stage 8: Automation, Payouts & Scale
 // =============================================================================
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { apiLogger } from '../utils/logger';
 
 // =============================================================================
 // Types
@@ -144,7 +143,7 @@ async function getSellerTier(sellerId: string): Promise<SellerTier> {
     where: { userId: sellerId },
   });
 
-  if (trustScore && trustScore.overallScore >= 90) {
+  if (trustScore && trustScore.score >= 90) {
     return SELLER_TIERS.premium;
   }
 
@@ -154,7 +153,7 @@ async function getSellerTier(sellerId: string): Promise<SellerTier> {
     const accountAgeDays = Math.floor(
       (Date.now() - new Date(seller.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     );
-    if (accountAgeDays >= 90 && (!trustScore || trustScore.overallScore >= 70)) {
+    if (accountAgeDays >= 90 && (!trustScore || trustScore.score >= 70)) {
       return SELLER_TIERS.established;
     }
   }
@@ -336,6 +335,8 @@ export const scaleSafetyService = {
     disputeScore: number;
     riskLevel: RiskLevel;
     riskReasons: string[];
+    softCapActive?: boolean;
+    softCapReason?: string | null;
   }> {
     const riskReasons: string[] = [];
 
@@ -374,15 +375,15 @@ export const scaleSafetyService = {
     let disputeScore = 80; // Default
     if (profile) {
       // Base on dispute resolution rate
-      if (profile.totalDisputes > 0) {
-        disputeScore = profile.disputeResolution;
+      if (profile.disputeResolution < 0.8) {
+        disputeScore = Math.round(profile.disputeResolution * 100);
         if (disputeScore < 60) {
           riskReasons.push('Poor dispute resolution');
         }
       }
 
       // Check recent disputes
-      const recentDisputes = await prisma.dispute.count({
+      const recentDisputes = await prisma.marketplaceDispute.count({
         where: {
           sellerId,
           createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
@@ -491,7 +492,7 @@ export const scaleSafetyService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error applying soft cap:', error);
+      apiLogger.error('Error applying soft cap:', error);
       return { success: false };
     }
   },
@@ -508,7 +509,7 @@ export const scaleSafetyService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error removing soft cap:', error);
+      apiLogger.error('Error removing soft cap:', error);
       return { success: false };
     }
   },
@@ -535,7 +536,7 @@ export const scaleSafetyService = {
 
       return { success: true, alert };
     } catch (error) {
-      console.error('Error creating alert:', error);
+      apiLogger.error('Error creating alert:', error);
       return { success: false };
     }
   },
@@ -553,7 +554,7 @@ export const scaleSafetyService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error acknowledging alert:', error);
+      apiLogger.error('Error acknowledging alert:', error);
       return { success: false };
     }
   },
@@ -578,7 +579,7 @@ export const scaleSafetyService = {
 
       return { success: true };
     } catch (error) {
-      console.error('Error resolving alert:', error);
+      apiLogger.error('Error resolving alert:', error);
       return { success: false };
     }
   },
@@ -629,7 +630,7 @@ export const scaleSafetyService = {
         },
       };
     } catch (error) {
-      console.error('Error fetching alerts:', error);
+      apiLogger.error('Error fetching alerts:', error);
       return { alerts: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
     }
   },
@@ -672,7 +673,7 @@ export const scaleSafetyService = {
         }, {} as Record<AlertType, number>),
       };
     } catch (error) {
-      console.error('Error fetching alert stats:', error);
+      apiLogger.error('Error fetching alert stats:', error);
       return {
         total: 0,
         new: 0,
@@ -705,7 +706,7 @@ export const scaleSafetyService = {
 
       // Check RFQ volume (last 24 hours vs average)
       const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const rfqCount = await prisma.rFQ.count({
+      const rfqCount = await prisma.itemRFQ.count({
         where: {
           sellerId,
           createdAt: { gte: last24Hours },
@@ -714,7 +715,7 @@ export const scaleSafetyService = {
 
       // Get historical daily average (last 30 days)
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const historicalRfqCount = await prisma.rFQ.count({
+      const historicalRfqCount = await prisma.itemRFQ.count({
         where: {
           sellerId,
           createdAt: { gte: thirtyDaysAgo, lt: last24Hours },
@@ -758,7 +759,7 @@ export const scaleSafetyService = {
       }
 
       // Check dispute surge
-      const disputeCount = await prisma.dispute.count({
+      const disputeCount = await prisma.marketplaceDispute.count({
         where: {
           sellerId,
           createdAt: { gte: last24Hours },
@@ -766,7 +767,7 @@ export const scaleSafetyService = {
       });
 
       // Any disputes in a day is a spike if historical average is low
-      const historicalDisputeCount = await prisma.dispute.count({
+      const historicalDisputeCount = await prisma.marketplaceDispute.count({
         where: {
           sellerId,
           createdAt: { gte: thirtyDaysAgo, lt: last24Hours },
@@ -800,7 +801,7 @@ export const scaleSafetyService = {
 
       return { hasAnomaly: anomalies.length > 0, anomalies };
     } catch (error) {
-      console.error('Error detecting anomalies:', error);
+      apiLogger.error('Error detecting anomalies:', error);
       return { hasAnomaly: false, anomalies };
     }
   },
@@ -836,7 +837,7 @@ export const scaleSafetyService = {
         sellerAnomalies,
       };
     } catch (error) {
-      console.error('Error running anomaly detection:', error);
+      apiLogger.error('Error running anomaly detection:', error);
       return { sellersChecked: 0, anomaliesDetected: 0, sellerAnomalies: [] };
     }
   },

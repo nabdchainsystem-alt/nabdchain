@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { API_URL } from '../../../config/api';
+import { portalApiLogger } from '../../../utils/logger';
 import {
   MarketplaceOrder,
   OrderAuditEvent,
@@ -30,38 +31,53 @@ export const marketplaceOrderService = {
   /**
    * Accept a quote and create an order (Buyer action)
    * Entry conditions: Quote.status = SENT, Quote.validUntil > now, RFQ.status = QUOTED
+   * Note: This endpoint requires an idempotency key to prevent duplicate orders
    */
-  async acceptQuote(
-    token: string,
-    quoteId: string,
-    data: AcceptQuoteData = {}
-  ): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/accept`, {
+  async acceptQuote(token: string, quoteId: string, data: AcceptQuoteData = {}): Promise<MarketplaceOrder> {
+    // Generate idempotency key for this quote acceptance (prevents duplicate orders)
+    const idempotencyKey = `accept-quote-${quoteId}-${Date.now()}`;
+    const url = `${API_URL}/items/quotes/${quoteId}/accept`;
+
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[MarketplaceOrder] POST ${url}`, { quoteId, data });
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      if (import.meta.env.DEV) {
+        console.error(`[MarketplaceOrder] Accept quote failed:`, response.status, error);
+      }
       throw new Error(error.error || 'Failed to accept quote');
     }
 
-    return response.json();
+    const order = await response.json();
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[MarketplaceOrder] Order created:`, order);
+    }
+    return order;
   },
 
   /**
    * Reject a quote (Buyer action)
    */
-  async rejectQuote(
-    token: string,
-    quoteId: string,
-    data: RejectQuoteData
-  ): Promise<void> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/reject`, {
+  async rejectQuote(token: string, quoteId: string, data: RejectQuoteData): Promise<void> {
+    const url = `${API_URL}/items/quotes/${quoteId}/reject`;
+
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[MarketplaceOrder] POST ${url}`, { quoteId, data });
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +88,14 @@ export const marketplaceOrderService = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      if (import.meta.env.DEV) {
+        console.error(`[MarketplaceOrder] Reject quote failed:`, response.status, error);
+      }
       throw new Error(error.error || 'Failed to reject quote');
+    }
+
+    if (import.meta.env.DEV) {
+      portalApiLogger.debug(`[MarketplaceOrder] Quote rejected successfully`);
     }
   },
 
@@ -224,11 +247,7 @@ export const marketplaceOrderService = {
   /**
    * Seller rejects an order (pending_confirmation -> cancelled)
    */
-  async rejectOrder(
-    token: string,
-    orderId: string,
-    data: RejectOrderData
-  ): Promise<MarketplaceOrder> {
+  async rejectOrder(token: string, orderId: string, data: RejectOrderData): Promise<MarketplaceOrder> {
     const response = await fetch(`${API_URL}/items/orders/${orderId}/reject`, {
       method: 'POST',
       headers: {
@@ -249,11 +268,7 @@ export const marketplaceOrderService = {
   /**
    * Seller starts processing an order (confirmed -> processing)
    */
-  async startProcessing(
-    token: string,
-    orderId: string,
-    data: StartProcessingData = {}
-  ): Promise<MarketplaceOrder> {
+  async startProcessing(token: string, orderId: string, data: StartProcessingData = {}): Promise<MarketplaceOrder> {
     const response = await fetch(`${API_URL}/items/orders/${orderId}/process`, {
       method: 'POST',
       headers: {
@@ -274,11 +289,7 @@ export const marketplaceOrderService = {
   /**
    * Seller ships an order (processing -> shipped)
    */
-  async shipOrder(
-    token: string,
-    orderId: string,
-    data: ShipOrderData
-  ): Promise<MarketplaceOrder> {
+  async shipOrder(token: string, orderId: string, data: ShipOrderData): Promise<MarketplaceOrder> {
     const response = await fetch(`${API_URL}/items/orders/${orderId}/ship`, {
       method: 'POST',
       headers: {
@@ -299,11 +310,7 @@ export const marketplaceOrderService = {
   /**
    * Buyer confirms delivery (shipped -> delivered)
    */
-  async markDelivered(
-    token: string,
-    orderId: string,
-    data: MarkDeliveredData = {}
-  ): Promise<MarketplaceOrder> {
+  async markDelivered(token: string, orderId: string, data: MarkDeliveredData = {}): Promise<MarketplaceOrder> {
     const response = await fetch(`${API_URL}/items/orders/${orderId}/deliver`, {
       method: 'POST',
       headers: {
@@ -343,11 +350,7 @@ export const marketplaceOrderService = {
   /**
    * Cancel an order (before shipping)
    */
-  async cancelOrder(
-    token: string,
-    orderId: string,
-    data: CancelOrderData
-  ): Promise<MarketplaceOrder> {
+  async cancelOrder(token: string, orderId: string, data: CancelOrderData): Promise<MarketplaceOrder> {
     const response = await fetch(`${API_URL}/items/orders/${orderId}/cancel`, {
       method: 'POST',
       headers: {
@@ -368,11 +371,7 @@ export const marketplaceOrderService = {
   /**
    * Update tracking information
    */
-  async updateTracking(
-    token: string,
-    orderId: string,
-    data: UpdateTrackingData
-  ): Promise<MarketplaceOrder> {
+  async updateTracking(token: string, orderId: string, data: UpdateTrackingData): Promise<MarketplaceOrder> {
     const response = await fetch(`${API_URL}/items/orders/${orderId}/tracking`, {
       method: 'PATCH',
       headers: {

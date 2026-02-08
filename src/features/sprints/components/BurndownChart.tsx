@@ -1,6 +1,6 @@
 import React from 'react';
-import { ChartLine, TrendDown, Info } from 'phosphor-react';
-import type { Sprint, BurndownDataPoint } from '../types';
+import { ChartLine, Info } from 'phosphor-react';
+import type { Sprint } from '../types';
 
 // =============================================================================
 // BURNDOWN CHART - PLACEHOLDER
@@ -18,9 +18,7 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint }) => {
         <div className="text-center">
           <ChartLine size={48} className="mx-auto text-stone-300 dark:text-stone-600 mb-3" />
           <p className="text-stone-500 mb-2">No active sprint</p>
-          <p className="text-sm text-stone-400">
-            Start a sprint to see the burndown chart
-          </p>
+          <p className="text-sm text-stone-400">Start a sprint to see the burndown chart</p>
         </div>
       </div>
     );
@@ -28,9 +26,7 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint }) => {
 
   // Generate mock burndown data
   const totalPoints = sprint.tasks.reduce((sum, t) => sum + t.storyPoints, 0);
-  const completedPoints = sprint.tasks
-    .filter((t) => t.status === 'done')
-    .reduce((sum, t) => sum + t.storyPoints, 0);
+  const completedPoints = sprint.tasks.filter((t) => t.status === 'done').reduce((sum, t) => sum + t.storyPoints, 0);
   const remainingPoints = totalPoints - completedPoints;
 
   const startDate = new Date(sprint.startDate);
@@ -42,7 +38,7 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint }) => {
 
   // Calculate ideal burn rate
   const idealDailyBurn = totalPoints / totalDays;
-  const idealRemaining = totalPoints - (idealDailyBurn * daysPassed);
+  const idealRemaining = totalPoints - idealDailyBurn * daysPassed;
 
   return (
     <div className="space-y-6">
@@ -50,36 +46,26 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint }) => {
       <div className="grid grid-cols-4 gap-4">
         <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
           <p className="text-sm text-stone-500 mb-1">Total Points</p>
-          <p className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-            {totalPoints}
-          </p>
+          <p className="text-2xl font-bold text-stone-800 dark:text-stone-200">{totalPoints}</p>
         </div>
         <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
           <p className="text-sm text-stone-500 mb-1">Completed</p>
-          <p className="text-2xl font-bold text-green-600">
-            {completedPoints}
-          </p>
+          <p className="text-2xl font-bold text-green-600">{completedPoints}</p>
         </div>
         <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
           <p className="text-sm text-stone-500 mb-1">Remaining</p>
-          <p className="text-2xl font-bold text-amber-600">
-            {remainingPoints}
-          </p>
+          <p className="text-2xl font-bold text-amber-600">{remainingPoints}</p>
         </div>
         <div className="p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700">
           <p className="text-sm text-stone-500 mb-1">Days Left</p>
-          <p className="text-2xl font-bold text-violet-600">
-            {daysRemaining}
-          </p>
+          <p className="text-2xl font-bold text-violet-600">{daysRemaining}</p>
         </div>
       </div>
 
       {/* Chart Placeholder */}
       <div className="bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-            Burndown Chart
-          </h3>
+          <h3 className="font-semibold text-stone-800 dark:text-stone-200">Burndown Chart</h3>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-stone-400 rounded-full" />
@@ -118,7 +104,7 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint }) => {
               />
               {/* Actual Line (mock - slightly above ideal) */}
               <polyline
-                points={`0,16 ${daysPassed * (100 / totalDays)}%,${((remainingPoints / totalPoints) * 100)}%`}
+                points={`0,16 ${daysPassed * (100 / totalDays)}%,${(remainingPoints / totalPoints) * 100}%`}
                 fill="none"
                 stroke="#8b5cf6"
                 strokeWidth="3"
@@ -169,9 +155,7 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint }) => {
 
       {/* Placeholder Notice */}
       <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-center">
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Burndown Chart - Interactive chart coming soon
-        </p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">Burndown Chart - Interactive chart coming soon</p>
       </div>
     </div>
   );

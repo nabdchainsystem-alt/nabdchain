@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, Suspense, memo, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SignedIn, SignedOut, SignIn, useUser, useAuth, useClerk } from './auth-adapter';
@@ -11,7 +12,14 @@ import { AIProvider, useAI } from './contexts/AIContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { RedirectToSignIn } from './auth-adapter';
 import { boardService } from './services/boardService';
-import { cleanupBoardStorage, cleanupWorkspaceBoardsStorage, getStorageItem, getStorageString, setStorageItem, setStorageString } from './utils/storage';
+import {
+  cleanupBoardStorage,
+  cleanupWorkspaceBoardsStorage,
+  getStorageItem,
+  getStorageString,
+  setStorageItem,
+  setStorageString,
+} from './utils/storage';
 import { appLogger, boardLogger } from './utils/logger';
 import { FeatureErrorBoundary } from './components/common/FeatureErrorBoundary';
 import { API_URL } from './config/api';
@@ -20,7 +28,7 @@ import { useUserPreferences } from './hooks/useUserPreferences';
 import { MorphingLoader } from './components/common/MorphingLoader';
 
 // Toast Provider (must be regular import - it's a wrapper)
-import { ToastProvider } from './features/marketplace/components/Toast';
+import { ToastProvider } from './components/common/Toast';
 
 // Board Templates - Type import (not a component)
 import type { BoardTemplate } from './features/board/data/templates';
@@ -36,10 +44,11 @@ import {
   LandingPage,
   AcceptInvitePage,
   SignUpPage,
-  SignInPage,
   // Portal
   PortalMarketplacePage,
   SellerProfilePage,
+  BuyerPortalPage,
+  SellerPortalPage,
   // Mobile
   MobileApp,
   // Speed Insights
@@ -78,10 +87,6 @@ import {
   ExpensesPage,
   CustomersPage,
   SuppliersPage,
-  // Marketplace
-  LocalMarketplacePage,
-  ForeignMarketplacePage,
-  MarketplacePage,
   // Business Support
   ITPage,
   HRPage,
@@ -106,8 +111,10 @@ const DelayedSpinner = memo(({ delay = 150, size = 6 }: { delay?: number; size?:
   if (!show) return null;
 
   return (
-    <div className={`w-${size} h-${size} border-2 border-blue-500 border-t-transparent rounded-full animate-spin`}
-      style={{ width: size * 4, height: size * 4 }} />
+    <div
+      className={`w-${size} h-${size} border-2 border-blue-500 border-t-transparent rounded-full animate-spin`}
+      style={{ width: size * 4, height: size * 4 }}
+    />
   );
 });
 DelayedSpinner.displayName = 'DelayedSpinner';
@@ -183,7 +190,7 @@ const AppContent: React.FC = () => {
 
   const { getToken, isSignedIn } = useAuth();
   const { user } = useUser();
-  const { updateUserDisplayName } = useAppContext();
+  const { _updateUserDisplayName } = useAppContext();
 
   // Track if workspaces have been loaded from API (needed to prevent board fetch race condition)
   const [isWorkspacesLoaded, setIsWorkspacesLoaded] = useState(false);
@@ -203,7 +210,7 @@ const AppContent: React.FC = () => {
         appLogger.info('[App] Fresh sign-in detected, clearing ALL cached data', {
           lastUserId,
           currentUserId,
-          isFreshSession: !lastUserId
+          isFreshSession: !lastUserId,
         });
 
         // Clear ALL user-specific data to force fresh fetch from server
@@ -211,17 +218,17 @@ const AppContent: React.FC = () => {
           'app-active-view',
           'app-active-board',
           'app-recently-visited',
-          'app-workspaces',      // Clear cached workspaces
-          'app-boards',          // Clear cached boards
+          'app-workspaces', // Clear cached workspaces
+          'app-boards', // Clear cached boards
           'app-deleted-boards',
           'app-unsynced-boards',
         ];
 
-        keysToReset.forEach(key => localStorage.removeItem(key));
+        keysToReset.forEach((key) => localStorage.removeItem(key));
 
         // Clear board-specific data
         const allKeys = Object.keys(localStorage);
-        allKeys.forEach(key => {
+        allKeys.forEach((key) => {
           if (key.startsWith('room-') || key.startsWith('board-')) {
             localStorage.removeItem(key);
           }
@@ -254,11 +261,11 @@ const AppContent: React.FC = () => {
         'app-deleted-boards',
         'app-unsynced-boards',
       ];
-      keysToRemove.forEach(key => localStorage.removeItem(key));
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
 
       // Clear board-specific data
       const allKeys = Object.keys(localStorage);
-      allKeys.forEach(key => {
+      allKeys.forEach((key) => {
         if (key.startsWith('room-') || key.startsWith('board-')) {
           localStorage.removeItem(key);
         }
@@ -299,11 +306,9 @@ const AppContent: React.FC = () => {
     return saved || 'dashboard';
   });
 
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(() =>
-    getStorageItem<Workspace[]>('app-workspaces', [])
-  );
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => getStorageItem<Workspace[]>('app-workspaces', []));
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() =>
-    getStorageString('app-active-workspace', '')
+    getStorageString('app-active-workspace', ''),
   );
 
   // Fetch Workspaces from API
@@ -315,7 +320,7 @@ const AppContent: React.FC = () => {
         if (token) {
           appLogger.info('[App] Fetching workspaces...');
           const response = await fetch(`${API_URL}/workspaces`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
             const data = await response.json();
@@ -350,7 +355,7 @@ const AppContent: React.FC = () => {
           setIsWorkspacesLoaded(true);
         }
       } catch (error) {
-        appLogger.error("Failed to fetch workspaces", error);
+        appLogger.error('Failed to fetch workspaces', error);
         // Still mark as loaded on error to prevent infinite blocking
         setIsWorkspacesLoaded(true);
       }
@@ -359,28 +364,23 @@ const AppContent: React.FC = () => {
   }, [isSignedIn, getToken]); // Only runs once on sign-in
 
   // Switch to standard state, fetched from API OR local storage
-  const [boards, setBoards] = useState<Board[]>(() =>
-    getStorageItem<Board[]>('app-boards', [])
-  );
+  const [boards, setBoards] = useState<Board[]>(() => getStorageItem<Board[]>('app-boards', []));
 
   // Track if we're still loading boards from API
   const [isBoardsLoading, setIsBoardsLoading] = useState(true);
 
   // Track boards that haven't been synced to server yet
-  const [unsyncedBoardIds, setUnsyncedBoardIds] = useState<Set<string>>(() =>
-    new Set(getStorageItem<string[]>('app-unsynced-boards', []))
+  const [unsyncedBoardIds, setUnsyncedBoardIds] = useState<Set<string>>(
+    () => new Set(getStorageItem<string[]>('app-unsynced-boards', [])),
   );
 
   // Track boards that have been deleted locally but might still be on server
-  const [deletedBoardIds, setDeletedBoardIds] = useState<Set<string>>(() =>
-    new Set(getStorageItem<string[]>('app-deleted-boards', []))
+  const [deletedBoardIds, setDeletedBoardIds] = useState<Set<string>>(
+    () => new Set(getStorageItem<string[]>('app-deleted-boards', [])),
   );
 
   // Track visited department pages for lazy keep-alive (only mount once visited)
   const [visitedDeptPages, setVisitedDeptPages] = useState<Set<string>>(() => new Set());
-
-  // Marketplace params
-  const [marketplaceInitialSearch, setMarketplaceInitialSearch] = useState('');
 
   // Startup cleanup: Remove deleted boards AND orphaned boards from localStorage
   useEffect(() => {
@@ -397,14 +397,20 @@ const AppContent: React.FC = () => {
       // Filter out:
       // 1. Boards that are in deletedBoardIds
       // 2. Boards that belong to non-existent workspaces (orphaned)
-      const cleanedBoards = boardsArray.filter(b => {
+      const cleanedBoards = boardsArray.filter((b) => {
         if (deletedSet.has(b.id)) {
           boardLogger.info('[Startup Cleanup] Removing deleted board:', b.id, b.name);
           return false;
         }
         // If board has a workspaceId but that workspace doesn't exist, it's orphaned
         if (b.workspaceId && !workspaceIds.has(b.workspaceId)) {
-          boardLogger.info('[Startup Cleanup] Removing orphaned board (workspace deleted):', b.id, b.name, 'workspaceId:', b.workspaceId);
+          boardLogger.info(
+            '[Startup Cleanup] Removing orphaned board (workspace deleted):',
+            b.id,
+            b.name,
+            'workspaceId:',
+            b.workspaceId,
+          );
           cleanupBoardStorage(b.id);
           return false;
         }
@@ -415,22 +421,22 @@ const AppContent: React.FC = () => {
         boardLogger.info('[Startup Cleanup] Cleaned boards:', {
           before: boardsArray.length,
           after: cleanedBoards.length,
-          removed: boardsArray.length - cleanedBoards.length
+          removed: boardsArray.length - cleanedBoards.length,
         });
         localStorage.setItem('app-boards', JSON.stringify(cleanedBoards));
         setBoards(cleanedBoards);
 
         // Clean up board data for removed boards
         const removedIds = boardsArray
-          .filter(b => deletedSet.has(b.id) || (b.workspaceId && !workspaceIds.has(b.workspaceId)))
-          .map(b => b.id);
-        removedIds.forEach(id => cleanupBoardStorage(id));
+          .filter((b) => deletedSet.has(b.id) || (b.workspaceId && !workspaceIds.has(b.workspaceId)))
+          .map((b) => b.id);
+        removedIds.forEach((id) => cleanupBoardStorage(id));
       }
 
       // Also clear deletedBoardIds for boards that no longer exist
       if (deletedSet.size > 0) {
-        const existingBoardIds = new Set(cleanedBoards.map(b => b.id));
-        const updatedDeleted = Array.from(deletedSet).filter(id => !existingBoardIds.has(id as string));
+        const existingBoardIds = new Set(cleanedBoards.map((b) => b.id));
+        const updatedDeleted = Array.from(deletedSet).filter((id) => !existingBoardIds.has(id as string));
         if (updatedDeleted.length !== deletedSet.size) {
           localStorage.setItem('app-deleted-boards', JSON.stringify(updatedDeleted));
         }
@@ -480,7 +486,7 @@ const AppContent: React.FC = () => {
                 boardLogger.info('[Boards Fetch] Board belongs to different workspace, switching:', {
                   boardId: boardIdFromPath,
                   boardWorkspaceId: targetBoard.workspaceId,
-                  currentWorkspaceId: activeWorkspaceId
+                  currentWorkspaceId: activeWorkspaceId,
                 });
                 workspaceIdToUse = targetBoard.workspaceId;
                 setActiveWorkspaceId(targetBoard.workspaceId);
@@ -492,19 +498,15 @@ const AppContent: React.FC = () => {
 
           // CRITICAL: Read deletedBoardIds directly from localStorage to avoid stale closure issues
           const savedDeletedIds = localStorage.getItem('app-deleted-boards');
-          const currentDeletedIds: Set<string> = savedDeletedIds
-            ? new Set(JSON.parse(savedDeletedIds))
-            : new Set();
+          const currentDeletedIds: Set<string> = savedDeletedIds ? new Set(JSON.parse(savedDeletedIds)) : new Set();
 
           // Read unsyncedBoardIds directly from localStorage too for consistency
           const savedUnsyncedIds = localStorage.getItem('app-unsynced-boards');
-          const currentUnsyncedIds: Set<string> = savedUnsyncedIds
-            ? new Set(JSON.parse(savedUnsyncedIds))
-            : new Set();
+          const currentUnsyncedIds: Set<string> = savedUnsyncedIds ? new Set(JSON.parse(savedUnsyncedIds)) : new Set();
 
           // CRITICAL: Merge Strategy V2 - Unsynced Tracking
           // 1. Mark fetched boards as synced (remove from unsynced list)
-          setUnsyncedBoardIds(prev => {
+          setUnsyncedBoardIds((prev) => {
             const next = new Set(prev);
             fetchedBoards.forEach((b: Board) => next.delete(b.id));
             return next;
@@ -512,9 +514,9 @@ const AppContent: React.FC = () => {
 
           // 2. Clean up deletedBoardIds - if board is NOT in fetched list, server confirmed deletion
           const fetchedBoardIds = new Set(fetchedBoards.map((b: Board) => b.id));
-          setDeletedBoardIds(prev => {
+          setDeletedBoardIds((prev) => {
             const next = new Set(prev);
-            prev.forEach(deletedId => {
+            prev.forEach((deletedId) => {
               // If server no longer has this board, deletion is confirmed - stop tracking
               if (!fetchedBoardIds.has(deletedId)) {
                 next.delete(deletedId);
@@ -525,7 +527,7 @@ const AppContent: React.FC = () => {
 
           // 3. Merge: Keep Server Boards + Keep Unsynced Local Boards - Exclude Deleted Boards
           // Drop local boards that are NOT on server AND NOT in unsynced list (confirmed deletions)
-          setBoards(prev => {
+          setBoards((prev) => {
             const boardMap = new Map();
             const orphanedBoardIds: string[] = [];
 
@@ -537,7 +539,7 @@ const AppContent: React.FC = () => {
             });
 
             // Restore local boards ONLY if they are pending sync
-            prev.forEach(localBoard => {
+            prev.forEach((localBoard) => {
               // If we haven't seen this board active on server yet...
               if (!boardMap.has(localBoard.id)) {
                 // ...check if it's marked as unsynced (use fresh localStorage value)
@@ -557,7 +559,7 @@ const AppContent: React.FC = () => {
             // Clean up orphaned boards' localStorage data
             if (orphanedBoardIds.length > 0) {
               boardLogger.info('[Boards Merge] Cleaning up orphaned boards:', orphanedBoardIds);
-              orphanedBoardIds.forEach(id => cleanupBoardStorage(id));
+              orphanedBoardIds.forEach((id) => cleanupBoardStorage(id));
             }
 
             return Array.from(boardMap.values());
@@ -573,7 +575,7 @@ const AppContent: React.FC = () => {
         }
         setIsBoardsLoading(false);
       } catch (error) {
-        appLogger.error("Failed to fetch boards", error);
+        appLogger.error('Failed to fetch boards', error);
         setIsBoardsLoading(false);
       }
     };
@@ -602,7 +604,7 @@ const AppContent: React.FC = () => {
   });
   // isSidebarCollapsed state moved to UIContext
 
-  const activeBoard = boards.find(b => b.id === activeBoardId) || boards[0];
+  const activeBoard = boards.find((b) => b.id === activeBoardId) || boards[0];
 
   // Sync workspace when viewing a board that belongs to a different workspace
   useEffect(() => {
@@ -610,7 +612,7 @@ const AppContent: React.FC = () => {
       boardLogger.info('[Workspace Sync] Syncing workspace to match active board:', {
         boardId: activeBoard.id,
         boardWorkspaceId: activeBoard.workspaceId,
-        currentWorkspaceId: activeWorkspaceId
+        currentWorkspaceId: activeWorkspaceId,
       });
       setActiveWorkspaceId(activeBoard.workspaceId);
     }
@@ -619,11 +621,11 @@ const AppContent: React.FC = () => {
   // Filter boards by active workspace - this ensures components only see relevant data
   const workspaceBoards = React.useMemo(() => {
     if (!activeWorkspaceId) return boards;
-    return boards.filter(b => b.workspaceId === activeWorkspaceId);
+    return boards.filter((b) => b.workspaceId === activeWorkspaceId);
   }, [boards, activeWorkspaceId]);
 
   const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>(() =>
-    getStorageItem<Record<string, boolean>>('app-page-visibility', {})
+    getStorageItem<Record<string, boolean>>('app-page-visibility', {}),
   );
 
   // Admin and Feature Flags state
@@ -686,13 +688,33 @@ const AppContent: React.FC = () => {
 
   // All known page keys that can be toggled in the sidebar
   const ALL_PAGE_KEYS = [
-    'inbox', 'teams', 'test_tools', 'mini_company',
-    'sales', 'purchases', 'inventory', 'expenses', 'customers', 'suppliers',
-    'supply_chain', 'procurement', 'warehouse', 'fleet', 'vendors', 'planning',
-    'operations', 'maintenance', 'production', 'quality',
-    'business', 'sales_listing', 'sales_factory',
-    'business_support', 'it_support', 'hr', 'marketing',
-    'local_marketplace', 'foreign_marketplace'
+    'inbox',
+    'teams',
+    'test_tools',
+    'mini_company',
+    'sales',
+    'purchases',
+    'inventory',
+    'expenses',
+    'customers',
+    'suppliers',
+    'supply_chain',
+    'procurement',
+    'warehouse',
+    'fleet',
+    'vendors',
+    'planning',
+    'operations',
+    'maintenance',
+    'production',
+    'quality',
+    'business',
+    'sales_listing',
+    'sales_factory',
+    'business_support',
+    'it_support',
+    'hr',
+    'marketing',
   ];
 
   // Combine server feature flags with local visibility
@@ -717,10 +739,7 @@ const AppContent: React.FC = () => {
     const combined: Record<string, boolean> = {};
 
     // Get all unique keys from both sources
-    const allKeys = new Set([
-      ...Object.keys(pageVisibility),
-      ...Object.keys(normalizedServerFlags)
-    ]);
+    const allKeys = new Set([...Object.keys(pageVisibility), ...Object.keys(normalizedServerFlags)]);
 
     for (const key of allKeys) {
       const serverAllows = normalizedServerFlags[key] !== false; // undefined = allowed
@@ -734,7 +753,7 @@ const AppContent: React.FC = () => {
   }, [pageVisibility, normalizedServerFlags, isPermissionsLoaded]);
 
   const [recentlyVisited, setRecentlyVisited] = useState<RecentlyVisitedItem[]>(() =>
-    getStorageItem<RecentlyVisitedItem[]>('app-recently-visited', [])
+    getStorageItem<RecentlyVisitedItem[]>('app-recently-visited', []),
   );
 
   // --- Persistence Effects ---
@@ -753,7 +772,27 @@ const AppContent: React.FC = () => {
   const { setCurrentPageContext } = useAI();
   useEffect(() => {
     // Define department pages that should provide context to AI
-    const departmentPages = ['sales', 'purchases', 'inventory', 'expenses', 'customers', 'suppliers', 'procurement', 'warehouse', 'shipping', 'fleet', 'vendors', 'planning', 'maintenance', 'production', 'quality', 'hr', 'it_support', 'marketing', 'finance'];
+    const departmentPages = [
+      'sales',
+      'purchases',
+      'inventory',
+      'expenses',
+      'customers',
+      'suppliers',
+      'procurement',
+      'warehouse',
+      'shipping',
+      'fleet',
+      'vendors',
+      'planning',
+      'maintenance',
+      'production',
+      'quality',
+      'hr',
+      'it_support',
+      'marketing',
+      'finance',
+    ];
 
     // Only set context for department pages and board views
     if (activeView === 'board' && activeBoard) {
@@ -777,7 +816,7 @@ const AppContent: React.FC = () => {
   const DEPT_PAGES = ['sales', 'purchases', 'inventory', 'expenses', 'customers', 'suppliers'];
   useEffect(() => {
     if (DEPT_PAGES.includes(activeView)) {
-      setVisitedDeptPages(prev => {
+      setVisitedDeptPages((prev) => {
         if (prev.has(activeView)) return prev;
         return new Set([...prev, activeView]);
       });
@@ -802,7 +841,7 @@ const AppContent: React.FC = () => {
       boardLogger.info('[Boards Persistence] Immediate save after count change', {
         before: prevLength,
         after: currentLength,
-        action: currentLength > prevLength ? 'addition' : 'deletion'
+        action: currentLength > prevLength ? 'addition' : 'deletion',
       });
       return;
     }
@@ -841,61 +880,80 @@ const AppContent: React.FC = () => {
     setStorageItem('app-recently-visited', recentlyVisited);
   }, [recentlyVisited]);
 
-  const logActivity = React.useCallback(async (type: string, content: string, metadata?: Record<string, unknown>, specificWorkspaceId?: string, specificBoardId?: string) => {
-    try {
-      const token = await getToken();
-      if (token) {
-        await fetch(`${API_URL}/activities`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type,
-            content,
-            metadata,
-            workspaceId: specificWorkspaceId || activeWorkspaceId,
-            boardId: specificBoardId || activeBoardId
-          })
-        });
-      }
-    } catch (e) {
-      appLogger.error("Failed to log activity", e);
-    }
-  }, [getToken, activeWorkspaceId, activeBoardId]);
-
-  const handleBoardCreated = React.useCallback(async (newBoard: Board) => {
-    // API Call first to get the real board object (with DB ID and workspaceId)
-    try {
-      const token = await getToken();
-      if (token) {
-        const createdBoard = await boardService.createBoard(token, newBoard);
-
-        // Update local state with the board returned from server
-        setBoards(prev => [...prev, createdBoard]);
-        setActiveBoardId(createdBoard.id);
-        setActiveView('board');
-
-        // Log activity - MOVED TO BACKEND
-        // const ws = workspaces.find(w => w.id === createdBoard.workspaceId);
-        // logActivity('BOARD_CREATED', `Created board: ${createdBoard.name}${ws ? ` in ${ws.name}` : ''}`, { boardId: createdBoard.id }, createdBoard.workspaceId, createdBoard.id);
-
-        // Ensure activeWorkspaceId stays in sync if user was on a mock one
-        if (createdBoard.workspaceId && activeWorkspaceId !== createdBoard.workspaceId) {
-          setActiveWorkspaceId(createdBoard.workspaceId);
+  const logActivity = React.useCallback(
+    async (
+      type: string,
+      content: string,
+      metadata?: Record<string, unknown>,
+      specificWorkspaceId?: string,
+      specificBoardId?: string,
+    ) => {
+      try {
+        const token = await getToken();
+        if (token) {
+          await fetch(`${API_URL}/activities`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type,
+              content,
+              metadata,
+              workspaceId: specificWorkspaceId || activeWorkspaceId,
+              boardId: specificBoardId || activeBoardId,
+            }),
+          });
         }
+      } catch (e) {
+        appLogger.error('Failed to log activity', e);
       }
-    } catch (e) {
-      boardLogger.error("Failed to create board backend", e);
-      // Fallback
-      setBoards(prev => [...prev, newBoard]);
-      setActiveBoardId(newBoard.id);
-      setActiveView('board');
-    }
-  }, [getToken, activeWorkspaceId, logActivity]);
+    },
+    [getToken, activeWorkspaceId, activeBoardId],
+  );
 
-  const handleQuickAddBoard = (name: string, icon?: string, template?: BoardTemplate, defaultView: BoardViewType = 'table', parentId?: string, nameDirection?: 'rtl' | 'ltr' | 'auto') => {
+  const handleBoardCreated = React.useCallback(
+    async (newBoard: Board) => {
+      // API Call first to get the real board object (with DB ID and workspaceId)
+      try {
+        const token = await getToken();
+        if (token) {
+          const createdBoard = await boardService.createBoard(token, newBoard);
+
+          // Update local state with the board returned from server
+          setBoards((prev) => [...prev, createdBoard]);
+          setActiveBoardId(createdBoard.id);
+          setActiveView('board');
+
+          // Log activity - MOVED TO BACKEND
+          // const ws = workspaces.find(w => w.id === createdBoard.workspaceId);
+          // logActivity('BOARD_CREATED', `Created board: ${createdBoard.name}${ws ? ` in ${ws.name}` : ''}`, { boardId: createdBoard.id }, createdBoard.workspaceId, createdBoard.id);
+
+          // Ensure activeWorkspaceId stays in sync if user was on a mock one
+          if (createdBoard.workspaceId && activeWorkspaceId !== createdBoard.workspaceId) {
+            setActiveWorkspaceId(createdBoard.workspaceId);
+          }
+        }
+      } catch (e) {
+        boardLogger.error('Failed to create board backend', e);
+        // Fallback
+        setBoards((prev) => [...prev, newBoard]);
+        setActiveBoardId(newBoard.id);
+        setActiveView('board');
+      }
+    },
+    [getToken, activeWorkspaceId, logActivity],
+  );
+
+  const handleQuickAddBoard = (
+    name: string,
+    icon?: string,
+    template?: BoardTemplate,
+    defaultView: BoardViewType = 'table',
+    parentId?: string,
+    nameDirection?: 'rtl' | 'ltr' | 'auto',
+  ) => {
     const newBoardId = Date.now().toString();
 
     // Determine columns based on template or default
@@ -903,19 +961,19 @@ const AppContent: React.FC = () => {
       { id: 'name', title: 'Name', type: 'text' },
       { id: 'status', title: 'Status', type: 'status' },
       { id: 'dueDate', title: 'Due date', type: 'date' },
-      { id: 'priority', title: 'Priority', type: 'priority' }
+      { id: 'priority', title: 'Priority', type: 'priority' },
     ];
 
     if (template) {
-      initialColumns = template.columns.map(col => ({
+      initialColumns = template.columns.map((col) => ({
         id: col.id,
         title: col.label,
-        type: col.type as any
+        type: col.type as any,
       }));
 
       // Initialize localStorage for RoomTable
       try {
-        const mappedColumns = template.columns.map(col => ({
+        const mappedColumns = template.columns.map((col) => ({
           id: col.id,
           label: col.label,
           type: col.type,
@@ -923,7 +981,7 @@ const AppContent: React.FC = () => {
           minWidth: 100,
           resizable: true,
           pinned: col.id === 'name' || col.id === 'select',
-          options: col.options
+          options: col.options,
         }));
         // Save columns for RoomTable (v4 keys matching RoomTable.tsx)
         const v4ColsKey = `room-table-columns-v4-${newBoardId}-table-main`;
@@ -936,14 +994,17 @@ const AppContent: React.FC = () => {
           { id: 'In Progress', label: 'In Progress', color: '#e59935' },
           { id: 'Stuck', label: 'Stuck', color: '#cb3d52' },
           { id: 'Done', label: 'Done', color: '#00b369' },
-          { id: 'Rejected', label: 'Rejected', color: '#2d2d2d' }
+          { id: 'Rejected', label: 'Rejected', color: '#2d2d2d' },
         ];
         // If template has specific groups use them, otherwise use defaults
-        const statusGroups = (template.groups && template.groups.length > 1) ? template.groups.map(g => ({
-          id: g.id,
-          label: g.title,
-          color: g.color || '#aeaeae'
-        })) : defaultGroups;
+        const statusGroups =
+          template.groups && template.groups.length > 1
+            ? template.groups.map((g) => ({
+                id: g.id,
+                label: g.title,
+                color: g.color || '#aeaeae',
+              }))
+            : defaultGroups;
 
         localStorage.setItem(`board-statuses-${newBoardId}`, JSON.stringify(statusGroups));
 
@@ -955,17 +1016,17 @@ const AppContent: React.FC = () => {
             const task: any = {
               id: `t-${Date.now()}-${index}`,
               name: item['Name'] || 'Untitled Task',
-              groupId: 'To Do' // Default to first group
+              groupId: 'To Do', // Default to first group
             };
 
             // Map other dynamic fields
-            Object.keys(item).forEach(key => {
+            Object.keys(item).forEach((key) => {
               if (key === 'Name') return;
 
               if (key === 'Status') {
                 task['status'] = item[key];
                 // Set groupId based on status if possible
-                const group = statusGroups.find(g => g.label === item[key]);
+                const group = statusGroups.find((g) => g.label === item[key]);
                 if (group) task.groupId = group.id;
               } else if (key === 'Owner') {
                 // For demo purposes, we can't easily map string "Alex" to a user ID without a user db.
@@ -985,11 +1046,14 @@ const AppContent: React.FC = () => {
             });
             return task;
           });
-          appLogger.info("App: Saving tasks for board", { boardId: newBoardId, taskCount: initialTasks.length, firstTask: initialTasks[0]?.name });
+          appLogger.info('App: Saving tasks for board', {
+            boardId: newBoardId,
+            taskCount: initialTasks.length,
+            firstTask: initialTasks[0]?.name,
+          });
           localStorage.setItem(`room-items-v3-${newBoardId}`, JSON.stringify(initialTasks));
           localStorage.setItem(`board-tasks-${newBoardId}`, JSON.stringify(initialTasks));
         }
-
       } catch (e) {
         appLogger.error('Failed to initialize template storage', e);
       }
@@ -1005,11 +1069,11 @@ const AppContent: React.FC = () => {
       availableViews: ['overview', defaultView], // Overview + Selected Tool
       icon: icon,
       parentId: parentId,
-      nameDirection: nameDirection
+      nameDirection: nameDirection,
     };
 
     // Mark as unsynced immediately
-    setUnsyncedBoardIds(prev => new Set(prev).add(newBoardId));
+    setUnsyncedBoardIds((prev) => new Set(prev).add(newBoardId));
 
     handleBoardCreated(newBoard);
   };
@@ -1024,35 +1088,31 @@ const AppContent: React.FC = () => {
     }, 100); // Small delay to ensure workspace switch is processed
   }, []);
 
-  const handleNavigate = React.useCallback((view: ViewState | string, boardId?: string, skipHistoryPush?: boolean, searchQuery?: string) => {
-    setActiveView(view);
-    if (searchQuery !== undefined) {
-      setMarketplaceInitialSearch(searchQuery);
-    } else if (view !== 'local_marketplace') {
-      // Clear search if navigating elsewhere (optional, but keeps it clean)
-      setMarketplaceInitialSearch('');
-    }
-
-    if (boardId) {
-      setActiveBoardId(boardId);
-      const board = boards.find(b => b.id === boardId);
-      if (board) {
-        // Sync active workspace if board belongs to a different one
-        if (board.workspaceId && board.workspaceId !== activeWorkspaceId) {
-          setActiveWorkspaceId(board.workspaceId);
+  const handleNavigate = React.useCallback(
+    (view: ViewState | string, boardId?: string, skipHistoryPush?: boolean, _searchQuery?: string) => {
+      setActiveView(view);
+      if (boardId) {
+        setActiveBoardId(boardId);
+        const board = boards.find((b) => b.id === boardId);
+        if (board) {
+          // Sync active workspace if board belongs to a different one
+          if (board.workspaceId && board.workspaceId !== activeWorkspaceId) {
+            setActiveWorkspaceId(board.workspaceId);
+          }
+          addToHistory(view, board);
         }
-        addToHistory(view, board);
+      } else {
+        addToHistory(view);
       }
-    } else {
-      addToHistory(view);
-    }
 
-    // Push to browser history for back button support (unless restoring from popstate)
-    if (!skipHistoryPush) {
-      const url = boardId ? `/board/${boardId}` : `/${view}`;
-      window.history.pushState({ view, boardId }, '', url);
-    }
-  }, [boards, activeWorkspaceId]);
+      // Push to browser history for back button support (unless restoring from popstate)
+      if (!skipHistoryPush) {
+        const url = boardId ? `/board/${boardId}` : `/${view}`;
+        window.history.pushState({ view, boardId }, '', url);
+      }
+    },
+    [boards, activeWorkspaceId],
+  );
 
   // Handle browser back/forward button
   useEffect(() => {
@@ -1097,11 +1157,11 @@ const AppContent: React.FC = () => {
   const addToHistory = (view: ViewState | string, board?: Board) => {
     if (view === 'dashboard' || view === 'landing' || view === 'signup' || view === 'signin') return;
 
-    let title = view.charAt(0).toUpperCase() + view.slice(1).replace(/_/g, ' ');
+    let _title = view.charAt(0).toUpperCase() + view.slice(1).replace(/_/g, ' ');
     let metadata = 'Feature';
 
     if (board) {
-      title = board.name;
+      _title = board.name;
       metadata = 'Board';
     } else if (view.includes('marketplace')) {
       metadata = 'Marketplace';
@@ -1117,341 +1177,364 @@ const AppContent: React.FC = () => {
       boardId: board?.id,
       metadata: metadata,
       icon: board?.icon,
-      color: board ? 'blue' : 'gray' // Default colors, refined in Dashboard
+      color: board ? 'blue' : 'gray', // Default colors, refined in Dashboard
     };
 
-    setRecentlyVisited(prev => {
-      const filtered = prev.filter(item => item.id !== newItem.id);
+    setRecentlyVisited((prev) => {
+      const filtered = prev.filter((item) => item.id !== newItem.id);
       return [newItem, ...filtered].slice(0, 10); // Keep top 10 for the design
     });
   };
 
-  const handleAddWorkspace = React.useCallback(async (name: string, icon: string, color?: string, nameDirection?: 'rtl' | 'ltr' | 'auto') => {
-    // Optimistic Update
-    const tempId = `ws-${Date.now()}`;
-    const newWorkspaceOptimistic: Workspace = {
-      id: tempId,
-      name,
-      icon: icon as any,
-      color: color || 'from-gray-400 to-gray-500',
-      nameDirection: nameDirection,
-    };
+  const handleAddWorkspace = React.useCallback(
+    async (name: string, icon: string, color?: string, nameDirection?: 'rtl' | 'ltr' | 'auto') => {
+      // Optimistic Update
+      const tempId = `ws-${Date.now()}`;
+      const newWorkspaceOptimistic: Workspace = {
+        id: tempId,
+        name,
+        icon: icon as any,
+        color: color || 'from-gray-400 to-gray-500',
+        nameDirection: nameDirection,
+      };
 
-    setWorkspaces(prev => [...prev, newWorkspaceOptimistic]);
-    setActiveWorkspaceId(tempId);
+      setWorkspaces((prev) => [...prev, newWorkspaceOptimistic]);
+      setActiveWorkspaceId(tempId);
 
-    try {
-      const token = await getToken();
-      if (token) {
-        const response = await fetch(`${API_URL}/workspaces`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ name, icon, color, nameDirection })
-        });
-
-        if (response.ok) {
-          const newWorkspaceReal = await response.json();
-          // Replace optimistic one with real one
-          setWorkspaces(prev => prev.map(w => w.id === tempId ? newWorkspaceReal : w));
-          setActiveWorkspaceId(newWorkspaceReal.id);
-
-          // CRITICAL FIX: Update any boards that were created while workspace was in optimistic state
-          setBoards(prev => prev.map(b => b.workspaceId === tempId ? { ...b, workspaceId: newWorkspaceReal.id } : b));
-
-          // Auto-create a default "Table Plan" board for the new workspace
-          const defaultBoardId = `board-${Date.now()}`;
-          const defaultBoard: Board = {
-            id: defaultBoardId,
-            name: 'Board',
-            workspaceId: newWorkspaceReal.id,
-            columns: [
-              { id: 'name', title: 'Name', type: 'text' },
-              { id: 'status', title: 'Status', type: 'status' },
-              { id: 'dueDate', title: 'Due date', type: 'date' },
-              { id: 'priority', title: 'Priority', type: 'priority' }
-            ],
-            tasks: [],
-            defaultView: 'table',
-            availableViews: ['table'],
-            icon: 'Table'
-          };
-
-          // Create the board via API
-          try {
-            const createdBoard = await boardService.createBoard(token, defaultBoard);
-            setBoards(prev => [...prev, createdBoard]);
-            setActiveBoardId(createdBoard.id);
-            setActiveView('board');
-          } catch (boardErr) {
-            boardLogger.error("Failed to auto-create default board", boardErr);
-            // Still add to local state as fallback
-            setBoards(prev => [...prev, defaultBoard]);
-            setActiveBoardId(defaultBoardId);
-            setActiveView('board');
-
-            // Track as unsynced
-            setUnsyncedBoardIds(prev => new Set(prev).add(defaultBoardId));
-          }
-        } else {
-          appLogger.error("Failed to add workspace backend, keeping local");
-          // Optionally revert or mark as unsynced
-        }
-      }
-    } catch (error) {
-      appLogger.error("Failed to add workspace", error);
-      // Keep optimistic update since we want offline support
-    }
-  }, [getToken]);
-
-  const handleRenameWorkspace = React.useCallback(async (id: string, newName: string, newIcon: string, newColor?: string, nameDirection?: 'rtl' | 'ltr' | 'auto') => {
-    // Optimistic Update
-    setWorkspaces(prev => prev.map(w => w.id === id ? { ...w, name: newName, icon: newIcon as any, color: newColor || w.color, nameDirection: nameDirection } : w));
-
-    try {
-      const token = await getToken();
-      if (token) {
-        const response = await fetch(`${API_URL}/workspaces/${id}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ name: newName, icon: newIcon, color: newColor, nameDirection })
-        });
-
-        if (!response.ok) {
-          appLogger.error("Failed to rename workspace backend");
-        }
-      }
-    } catch (error) {
-      appLogger.error("Failed to rename workspace", error);
-    }
-  }, [getToken]);
-
-  const handleDeleteWorkspace = React.useCallback(async (id: string) => {
-    if (workspaces.length <= 1) return; // Prevent deleting last workspace
-
-    // Get boards to delete for localStorage cleanup
-    const boardsToDelete = boards.filter(b => b.workspaceId === id);
-    const boardIdsToDelete = boardsToDelete.map(b => b.id);
-    const remainingBoards = boards.filter(b => b.workspaceId !== id);
-
-    boardLogger.info('[Delete Workspace] Deleting workspace and boards:', {
-      workspaceId: id,
-      boardCount: boardIdsToDelete.length,
-      boardIds: boardIdsToDelete
-    });
-
-    // Optimistic Update
-    const workspaceToDelete = workspaces.find(w => w.id === id);
-    const newWorkspaces = workspaces.filter(w => w.id !== id);
-
-    setWorkspaces(newWorkspaces);
-    if (activeWorkspaceId === id && newWorkspaces.length > 0) {
-      setActiveWorkspaceId(newWorkspaces[0].id);
-    }
-    setBoards(remainingBoards);
-
-    // CRITICAL: Immediately update ALL localStorage to prevent resurrection
-    localStorage.setItem('app-boards', JSON.stringify(remainingBoards));
-    localStorage.setItem('app-workspaces', JSON.stringify(newWorkspaces));
-
-    // Mark boards as deleted and persist immediately
-    const currentDeleted = localStorage.getItem('app-deleted-boards');
-    const deletedSet = currentDeleted ? new Set(JSON.parse(currentDeleted)) : new Set();
-    boardIdsToDelete.forEach(boardId => deletedSet.add(boardId));
-    localStorage.setItem('app-deleted-boards', JSON.stringify(Array.from(deletedSet)));
-
-    // Remove from unsynced
-    const currentUnsynced = localStorage.getItem('app-unsynced-boards');
-    if (currentUnsynced) {
-      const unsyncedSet = new Set(JSON.parse(currentUnsynced));
-      boardIdsToDelete.forEach(boardId => unsyncedSet.delete(boardId));
-      localStorage.setItem('app-unsynced-boards', JSON.stringify(Array.from(unsyncedSet)));
-    }
-
-    // Clean up localStorage for all boards in this workspace
-    cleanupWorkspaceBoardsStorage(boardIdsToDelete);
-
-    // Update state for deleted boards
-    setDeletedBoardIds(prev => {
-      const next = new Set(prev);
-      boardIdsToDelete.forEach(boardId => next.add(boardId));
-      return next;
-    });
-
-    setUnsyncedBoardIds(prev => {
-      const next = new Set(prev);
-      boardIdsToDelete.forEach(boardId => next.delete(boardId));
-      return next;
-    });
-
-    boardLogger.info('[Delete Workspace] localStorage updated immediately');
-
-    try {
-      const token = await getToken();
-      if (token) {
-        const response = await fetch(`${API_URL}/workspaces/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-          appLogger.error("Failed to delete workspace backend, reverting");
-          // Revert optimistic update
-          if (workspaceToDelete) {
-            setWorkspaces(prev => [...prev, workspaceToDelete]);
-            setBoards(prev => [...prev, ...boardsToDelete]);
-            localStorage.setItem('app-boards', JSON.stringify([...remainingBoards, ...boardsToDelete]));
-            localStorage.setItem('app-workspaces', JSON.stringify([...newWorkspaces, workspaceToDelete]));
-          }
-        } else {
-          boardLogger.info('[Delete Workspace] Backend delete successful');
-          // Backend succeeded, clean up deletedBoardIds
-          setDeletedBoardIds(prev => {
-            const next = new Set(prev);
-            boardIdsToDelete.forEach(boardId => next.delete(boardId));
-            return next;
+      try {
+        const token = await getToken();
+        if (token) {
+          const response = await fetch(`${API_URL}/workspaces`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, icon, color, nameDirection }),
           });
-          // Update localStorage for deleted boards
-          const updatedDeleted = localStorage.getItem('app-deleted-boards');
-          if (updatedDeleted) {
-            const set = new Set(JSON.parse(updatedDeleted));
-            boardIdsToDelete.forEach(boardId => set.delete(boardId));
-            localStorage.setItem('app-deleted-boards', JSON.stringify(Array.from(set)));
+
+          if (response.ok) {
+            const newWorkspaceReal = await response.json();
+            // Replace optimistic one with real one
+            setWorkspaces((prev) => prev.map((w) => (w.id === tempId ? newWorkspaceReal : w)));
+            setActiveWorkspaceId(newWorkspaceReal.id);
+
+            // CRITICAL FIX: Update any boards that were created while workspace was in optimistic state
+            setBoards((prev) =>
+              prev.map((b) => (b.workspaceId === tempId ? { ...b, workspaceId: newWorkspaceReal.id } : b)),
+            );
+
+            // Auto-create a default "Table Plan" board for the new workspace
+            const defaultBoardId = `board-${Date.now()}`;
+            const defaultBoard: Board = {
+              id: defaultBoardId,
+              name: 'Board',
+              workspaceId: newWorkspaceReal.id,
+              columns: [
+                { id: 'name', title: 'Name', type: 'text' },
+                { id: 'status', title: 'Status', type: 'status' },
+                { id: 'dueDate', title: 'Due date', type: 'date' },
+                { id: 'priority', title: 'Priority', type: 'priority' },
+              ],
+              tasks: [],
+              defaultView: 'table',
+              availableViews: ['table'],
+              icon: 'Table',
+            };
+
+            // Create the board via API
+            try {
+              const createdBoard = await boardService.createBoard(token, defaultBoard);
+              setBoards((prev) => [...prev, createdBoard]);
+              setActiveBoardId(createdBoard.id);
+              setActiveView('board');
+            } catch (boardErr) {
+              boardLogger.error('Failed to auto-create default board', boardErr);
+              // Still add to local state as fallback
+              setBoards((prev) => [...prev, defaultBoard]);
+              setActiveBoardId(defaultBoardId);
+              setActiveView('board');
+
+              // Track as unsynced
+              setUnsyncedBoardIds((prev) => new Set(prev).add(defaultBoardId));
+            }
+          } else {
+            appLogger.error('Failed to add workspace backend, keeping local');
+            // Optionally revert or mark as unsynced
           }
         }
+      } catch (error) {
+        appLogger.error('Failed to add workspace', error);
+        // Keep optimistic update since we want offline support
       }
-    } catch (error) {
-      appLogger.error("Failed to delete workspace", error);
-    }
-  }, [workspaces, boards, activeWorkspaceId, getToken]);
+    },
+    [getToken],
+  );
 
-  const handleDeleteBoard = React.useCallback(async (boardId: string, deleteMode: 'single' | 'recursive' = 'single') => {
-    const board = boards.find(b => b.id === boardId);
-    if (!board) {
-      boardLogger.info('[Delete Board] Board not found in local state:', boardId);
-      return;
-    }
+  const handleRenameWorkspace = React.useCallback(
+    async (id: string, newName: string, newIcon: string, newColor?: string, nameDirection?: 'rtl' | 'ltr' | 'auto') => {
+      // Optimistic Update
+      setWorkspaces((prev) =>
+        prev.map((w) =>
+          w.id === id
+            ? { ...w, name: newName, icon: newIcon as any, color: newColor || w.color, nameDirection: nameDirection }
+            : w,
+        ),
+      );
 
-    boardLogger.info('[Delete Board] Attempting to delete:', { boardId, boardName: board.name, deleteMode });
+      try {
+        const token = await getToken();
+        if (token) {
+          const response = await fetch(`${API_URL}/workspaces/${id}`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: newName, icon: newIcon, color: newColor, nameDirection }),
+          });
 
-    // Identify all boards involved (recursive finding of descendants)
-    const getDescendants = (id: string, allBoards: Board[]): string[] => {
-      const directChildren = allBoards.filter(b => b.parentId === id);
-      let descendants = directChildren.map(c => c.id);
-      directChildren.forEach(child => {
-        descendants = [...descendants, ...getDescendants(child.id, allBoards)];
-      });
-      return descendants;
-    };
-
-    const descendants = getDescendants(boardId, boards);
-    const boardsToDeleteIds = deleteMode === 'recursive' ? [boardId, ...descendants] : [boardId];
-
-    boardLogger.info('[Delete Board] Strategy:', {
-      mode: deleteMode,
-      targetId: boardId,
-      descendantsFound: descendants.length,
-      totalToDelete: boardsToDeleteIds.length,
-      ids: boardsToDeleteIds
-    });
-
-    // If 'single' mode, sub-boards need reparenting.
-    // We'll move them to the deleted board's parent (or root if null).
-    const newParentId = board.parentId || undefined;
-
-    // Optimistic Update
-    let newBoards = boards.filter(b => !boardsToDeleteIds.includes(b.id));
-
-    if (deleteMode === 'single') {
-      // Reparent direct children
-      newBoards = newBoards.map(b => {
-        if (b.parentId === boardId) {
-          return { ...b, parentId: newParentId };
+          if (!response.ok) {
+            appLogger.error('Failed to rename workspace backend');
+          }
         }
-        return b;
-      });
-    }
-
-    setBoards(newBoards);
-
-    // Update LocalStorage Persistence
-    localStorage.setItem('app-boards', JSON.stringify(newBoards));
-
-    // Cleanup Unsynced & Deleted sets
-    setUnsyncedBoardIds(prev => {
-      const next = new Set(prev);
-      boardsToDeleteIds.forEach(id => next.delete(id));
-      return next;
-    });
-
-    setDeletedBoardIds(prev => {
-      const next = new Set(prev);
-      boardsToDeleteIds.forEach(id => next.add(id));
-      return next;
-    });
-
-    const deletedSetArr = [...(JSON.parse(localStorage.getItem('app-deleted-boards') || '[]')), ...boardsToDeleteIds];
-    localStorage.setItem('app-deleted-boards', JSON.stringify([...new Set(deletedSetArr)]));
-
-    // Cleanup local storage for deleted boards
-    boardsToDeleteIds.forEach(id => cleanupBoardStorage(id));
-
-
-    if (activeBoardId && boardsToDeleteIds.includes(activeBoardId)) {
-      setActiveBoardId(null);
-      setActiveView('dashboard');
-    }
-
-    // Backend Sync
-    try {
-      const token = await getToken();
-      if (token) {
-        if (deleteMode === 'recursive') {
-          // If recursive, backend might support recursive delete or we delete one by one.
-          // Assuming backend deletes children automatically or we loop.
-          // Safest to delete all in loop or Promise.all, order matters (children then parent usually, or parent cascades).
-          // If backend has cascade delete on FK, deleting parent is enough.
-          // Let's safe bet: call delete for all.
-          await Promise.all(boardsToDeleteIds.map(id => boardService.deleteBoard(token, id)));
-        } else {
-          // Single delete + Reparenting
-          // 1. Delete target board
-          await boardService.deleteBoard(token, boardId);
-          // 2. Update children (backend should handle this? OR we manually update children first)
-          // If we delete parent first, children might get deleted on cascade or orphaned.
-          // Better execution: Update children to new parent, then delete target.
-          const directChildren = boards.filter(b => b.parentId === boardId);
-          await Promise.all(directChildren.map(child =>
-            boardService.updateBoard(token, child.id, { parentId: newParentId })
-          ));
-        }
+      } catch (error) {
+        appLogger.error('Failed to rename workspace', error);
       }
-    } catch (e) {
-      boardLogger.error("[Delete Board] Backend sync failed", e);
-    }
+    },
+    [getToken],
+  );
 
-  }, [activeBoardId, getToken, boards]);
+  const handleDeleteWorkspace = React.useCallback(
+    async (id: string) => {
+      if (workspaces.length <= 1) return; // Prevent deleting last workspace
+
+      // Get boards to delete for localStorage cleanup
+      const boardsToDelete = boards.filter((b) => b.workspaceId === id);
+      const boardIdsToDelete = boardsToDelete.map((b) => b.id);
+      const remainingBoards = boards.filter((b) => b.workspaceId !== id);
+
+      boardLogger.info('[Delete Workspace] Deleting workspace and boards:', {
+        workspaceId: id,
+        boardCount: boardIdsToDelete.length,
+        boardIds: boardIdsToDelete,
+      });
+
+      // Optimistic Update
+      const workspaceToDelete = workspaces.find((w) => w.id === id);
+      const newWorkspaces = workspaces.filter((w) => w.id !== id);
+
+      setWorkspaces(newWorkspaces);
+      if (activeWorkspaceId === id && newWorkspaces.length > 0) {
+        setActiveWorkspaceId(newWorkspaces[0].id);
+      }
+      setBoards(remainingBoards);
+
+      // CRITICAL: Immediately update ALL localStorage to prevent resurrection
+      localStorage.setItem('app-boards', JSON.stringify(remainingBoards));
+      localStorage.setItem('app-workspaces', JSON.stringify(newWorkspaces));
+
+      // Mark boards as deleted and persist immediately
+      const currentDeleted = localStorage.getItem('app-deleted-boards');
+      const deletedSet = currentDeleted ? new Set(JSON.parse(currentDeleted)) : new Set();
+      boardIdsToDelete.forEach((boardId) => deletedSet.add(boardId));
+      localStorage.setItem('app-deleted-boards', JSON.stringify(Array.from(deletedSet)));
+
+      // Remove from unsynced
+      const currentUnsynced = localStorage.getItem('app-unsynced-boards');
+      if (currentUnsynced) {
+        const unsyncedSet = new Set(JSON.parse(currentUnsynced));
+        boardIdsToDelete.forEach((boardId) => unsyncedSet.delete(boardId));
+        localStorage.setItem('app-unsynced-boards', JSON.stringify(Array.from(unsyncedSet)));
+      }
+
+      // Clean up localStorage for all boards in this workspace
+      cleanupWorkspaceBoardsStorage(boardIdsToDelete);
+
+      // Update state for deleted boards
+      setDeletedBoardIds((prev) => {
+        const next = new Set(prev);
+        boardIdsToDelete.forEach((boardId) => next.add(boardId));
+        return next;
+      });
+
+      setUnsyncedBoardIds((prev) => {
+        const next = new Set(prev);
+        boardIdsToDelete.forEach((boardId) => next.delete(boardId));
+        return next;
+      });
+
+      boardLogger.info('[Delete Workspace] localStorage updated immediately');
+
+      try {
+        const token = await getToken();
+        if (token) {
+          const response = await fetch(`${API_URL}/workspaces/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!response.ok) {
+            appLogger.error('Failed to delete workspace backend, reverting');
+            // Revert optimistic update
+            if (workspaceToDelete) {
+              setWorkspaces((prev) => [...prev, workspaceToDelete]);
+              setBoards((prev) => [...prev, ...boardsToDelete]);
+              localStorage.setItem('app-boards', JSON.stringify([...remainingBoards, ...boardsToDelete]));
+              localStorage.setItem('app-workspaces', JSON.stringify([...newWorkspaces, workspaceToDelete]));
+            }
+          } else {
+            boardLogger.info('[Delete Workspace] Backend delete successful');
+            // Backend succeeded, clean up deletedBoardIds
+            setDeletedBoardIds((prev) => {
+              const next = new Set(prev);
+              boardIdsToDelete.forEach((boardId) => next.delete(boardId));
+              return next;
+            });
+            // Update localStorage for deleted boards
+            const updatedDeleted = localStorage.getItem('app-deleted-boards');
+            if (updatedDeleted) {
+              const set = new Set(JSON.parse(updatedDeleted));
+              boardIdsToDelete.forEach((boardId) => set.delete(boardId));
+              localStorage.setItem('app-deleted-boards', JSON.stringify(Array.from(set)));
+            }
+          }
+        }
+      } catch (error) {
+        appLogger.error('Failed to delete workspace', error);
+      }
+    },
+    [workspaces, boards, activeWorkspaceId, getToken],
+  );
+
+  const handleDeleteBoard = React.useCallback(
+    async (boardId: string, deleteMode: 'single' | 'recursive' = 'single') => {
+      const board = boards.find((b) => b.id === boardId);
+      if (!board) {
+        boardLogger.info('[Delete Board] Board not found in local state:', boardId);
+        return;
+      }
+
+      boardLogger.info('[Delete Board] Attempting to delete:', { boardId, boardName: board.name, deleteMode });
+
+      // Identify all boards involved (recursive finding of descendants)
+      const getDescendants = (id: string, allBoards: Board[]): string[] => {
+        const directChildren = allBoards.filter((b) => b.parentId === id);
+        let descendants = directChildren.map((c) => c.id);
+        directChildren.forEach((child) => {
+          descendants = [...descendants, ...getDescendants(child.id, allBoards)];
+        });
+        return descendants;
+      };
+
+      const descendants = getDescendants(boardId, boards);
+      const boardsToDeleteIds = deleteMode === 'recursive' ? [boardId, ...descendants] : [boardId];
+
+      boardLogger.info('[Delete Board] Strategy:', {
+        mode: deleteMode,
+        targetId: boardId,
+        descendantsFound: descendants.length,
+        totalToDelete: boardsToDeleteIds.length,
+        ids: boardsToDeleteIds,
+      });
+
+      // If 'single' mode, sub-boards need reparenting.
+      // We'll move them to the deleted board's parent (or root if null).
+      const newParentId = board.parentId || undefined;
+
+      // Optimistic Update
+      let newBoards = boards.filter((b) => !boardsToDeleteIds.includes(b.id));
+
+      if (deleteMode === 'single') {
+        // Reparent direct children
+        newBoards = newBoards.map((b) => {
+          if (b.parentId === boardId) {
+            return { ...b, parentId: newParentId };
+          }
+          return b;
+        });
+      }
+
+      setBoards(newBoards);
+
+      // Update LocalStorage Persistence
+      localStorage.setItem('app-boards', JSON.stringify(newBoards));
+
+      // Cleanup Unsynced & Deleted sets
+      setUnsyncedBoardIds((prev) => {
+        const next = new Set(prev);
+        boardsToDeleteIds.forEach((id) => next.delete(id));
+        return next;
+      });
+
+      setDeletedBoardIds((prev) => {
+        const next = new Set(prev);
+        boardsToDeleteIds.forEach((id) => next.add(id));
+        return next;
+      });
+
+      const deletedSetArr = [...JSON.parse(localStorage.getItem('app-deleted-boards') || '[]'), ...boardsToDeleteIds];
+      localStorage.setItem('app-deleted-boards', JSON.stringify([...new Set(deletedSetArr)]));
+
+      // Cleanup local storage for deleted boards
+      boardsToDeleteIds.forEach((id) => cleanupBoardStorage(id));
+
+      if (activeBoardId && boardsToDeleteIds.includes(activeBoardId)) {
+        setActiveBoardId(null);
+        setActiveView('dashboard');
+      }
+
+      // Backend Sync
+      try {
+        const token = await getToken();
+        if (token) {
+          if (deleteMode === 'recursive') {
+            // If recursive, backend might support recursive delete or we delete one by one.
+            // Assuming backend deletes children automatically or we loop.
+            // Safest to delete all in loop or Promise.all, order matters (children then parent usually, or parent cascades).
+            // If backend has cascade delete on FK, deleting parent is enough.
+            // Let's safe bet: call delete for all.
+            await Promise.all(boardsToDeleteIds.map((id) => boardService.deleteBoard(token, id)));
+          } else {
+            // Single delete + Reparenting
+            // 1. Delete target board
+            await boardService.deleteBoard(token, boardId);
+            // 2. Update children (backend should handle this? OR we manually update children first)
+            // If we delete parent first, children might get deleted on cascade or orphaned.
+            // Better execution: Update children to new parent, then delete target.
+            const directChildren = boards.filter((b) => b.parentId === boardId);
+            await Promise.all(
+              directChildren.map((child) => boardService.updateBoard(token, child.id, { parentId: newParentId })),
+            );
+          }
+        }
+      } catch (e) {
+        boardLogger.error('[Delete Board] Backend sync failed', e);
+      }
+    },
+    [activeBoardId, getToken, boards],
+  );
 
   const handleToggleFavorite = (id: string) => {
     // Favorites not yet persisted in backend schema
-    setBoards(boards.map(b => b.id === id ? { ...b, isFavorite: !b.isFavorite } : b));
+    setBoards(boards.map((b) => (b.id === id ? { ...b, isFavorite: !b.isFavorite } : b)));
   };
 
-  const handleUpdateBoard = React.useCallback(async (boardId: string, updates: Partial<Board>) => {
-    setBoards(prev => prev.map(b => b.id === boardId ? { ...b, ...updates } : b));
+  const handleUpdateBoard = React.useCallback(
+    async (boardId: string, updates: Partial<Board>) => {
+      setBoards((prev) => prev.map((b) => (b.id === boardId ? { ...b, ...updates } : b)));
 
-    try {
-      const token = await getToken();
-      if (token) {
-        await boardService.updateBoard(token, boardId, updates);
+      try {
+        const token = await getToken();
+        if (token) {
+          await boardService.updateBoard(token, boardId, updates);
+        }
+      } catch (e) {
+        boardLogger.error('Failed to update board', e);
       }
-    } catch (e) { boardLogger.error('Failed to update board', e); }
-  }, [getToken]);
+    },
+    [getToken],
+  );
 
   const FullScreenLoader = () => (
     <div className="h-full w-full flex items-center justify-center">
@@ -1459,121 +1542,164 @@ const AppContent: React.FC = () => {
     </div>
   );
 
-  const handleUpdateTasks = React.useCallback(async (tasks: Task[]) => {
-    if (activeBoardId) {
-      const currentBoard = boards.find(b => b.id === activeBoardId);
-      if (!currentBoard) return;
+  const handleUpdateTasks = React.useCallback(
+    async (tasks: Task[]) => {
+      if (activeBoardId) {
+        const currentBoard = boards.find((b) => b.id === activeBoardId);
+        if (!currentBoard) return;
 
-      const oldTasks = currentBoard.tasks || [];
-      const currentWorkspace = workspaces.find(w => w.id === currentBoard.workspaceId);
-      const contextName = `${currentBoard.name}${currentWorkspace ? ` (${currentWorkspace.name})` : ''}`;
+        const oldTasks = currentBoard.tasks || [];
+        const currentWorkspace = workspaces.find((w) => w.id === currentBoard.workspaceId);
+        const contextName = `${currentBoard.name}${currentWorkspace ? ` (${currentWorkspace.name})` : ''}`;
 
-      // Basic deep equality check for tasks to avoid redundant updates/logging
-      const tasksHash = JSON.stringify(tasks);
-      const currentHash = JSON.stringify(oldTasks);
+        // Basic deep equality check for tasks to avoid redundant updates/logging
+        const tasksHash = JSON.stringify(tasks);
+        const currentHash = JSON.stringify(oldTasks);
 
-      if (tasksHash === currentHash) return;
+        if (tasksHash === currentHash) return;
 
-      setBoards(prevBoards => prevBoards.map(b => b.id === activeBoardId ? { ...b, tasks } : b));
+        setBoards((prevBoards) => prevBoards.map((b) => (b.id === activeBoardId ? { ...b, tasks } : b)));
 
-      try {
-        const token = await getToken();
-        if (token) {
-          await boardService.updateBoard(token, activeBoardId, { tasks });
+        try {
+          const token = await getToken();
+          if (token) {
+            await boardService.updateBoard(token, activeBoardId, { tasks });
 
-          // 1. Detect Task Additions
-          if (tasks.length > oldTasks.length) {
-            const addedTask = tasks.find(t => !oldTasks.some(ot => ot.id === t.id));
-            if (addedTask) {
-              const updateKey = `add-${addedTask.id}`;
-              if (lastLoggedUpdate.current !== updateKey) {
-                logActivity('TASK_CREATED', `Created task "${addedTask.name}" in ${contextName}`, { boardId: activeBoardId, taskId: addedTask.id });
-                lastLoggedUpdate.current = updateKey;
-              }
-            }
-          }
-          // 2. Detect Task Deletions
-          else if (tasks.length < oldTasks.length) {
-            const removedTask = oldTasks.find(ot => !tasks.some(t => t.id === ot.id));
-            if (removedTask) {
-              const updateKey = `remove-${removedTask.id}`;
-              if (lastLoggedUpdate.current !== updateKey) {
-                logActivity('TASK_DELETED', `Deleted task "${removedTask.name}" from ${contextName}`, { boardId: activeBoardId, taskId: removedTask.id });
-                lastLoggedUpdate.current = updateKey;
-              }
-            }
-          }
-          // 3. Detect Task Edits
-          else {
-            tasks.forEach((task) => {
-              const oldTask = oldTasks.find(ot => ot.id === task.id);
-              if (oldTask) {
-                // Check multiple fields
-                if (oldTask.status !== task.status) {
-                  const updateKey = `status-${task.id}-${task.status}`;
-                  if (lastLoggedUpdate.current !== updateKey) {
-                    logActivity('TASK_UPDATED', `Updated "${task.name}" status to ${task.status || 'None'} in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
-                    lastLoggedUpdate.current = updateKey;
-                  }
-                } else if (oldTask.name !== task.name) {
-                  const updateKey = `name-${task.id}-${task.name}`;
-                  if (lastLoggedUpdate.current !== updateKey) {
-                    logActivity('TASK_UPDATED', `Renamed task to "${task.name}" in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
-                    lastLoggedUpdate.current = updateKey;
-                  }
-                } else if (oldTask.priority !== task.priority) {
-                  const updateKey = `priority-${task.id}-${task.priority}`;
-                  if (lastLoggedUpdate.current !== updateKey) {
-                    logActivity('TASK_UPDATED', `Changed priority of "${task.name}" to ${task.priority || 'None'} in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
-                    lastLoggedUpdate.current = updateKey;
-                  }
-                } else if (oldTask.date !== task.date) {
-                  const updateKey = `date-${task.id}-${task.date}`;
-                  if (lastLoggedUpdate.current !== updateKey) {
-                    logActivity('TASK_UPDATED', `Changed date for "${task.name}" to ${task.date || 'unscheduled'} in ${contextName}`, { boardId: activeBoardId, taskId: task.id });
-                    lastLoggedUpdate.current = updateKey;
-                  }
+            // 1. Detect Task Additions
+            if (tasks.length > oldTasks.length) {
+              const addedTask = tasks.find((t) => !oldTasks.some((ot) => ot.id === t.id));
+              if (addedTask) {
+                const updateKey = `add-${addedTask.id}`;
+                if (lastLoggedUpdate.current !== updateKey) {
+                  logActivity('TASK_CREATED', `Created task "${addedTask.name}" in ${contextName}`, {
+                    boardId: activeBoardId,
+                    taskId: addedTask.id,
+                  });
+                  lastLoggedUpdate.current = updateKey;
                 }
               }
-            });
+            }
+            // 2. Detect Task Deletions
+            else if (tasks.length < oldTasks.length) {
+              const removedTask = oldTasks.find((ot) => !tasks.some((t) => t.id === ot.id));
+              if (removedTask) {
+                const updateKey = `remove-${removedTask.id}`;
+                if (lastLoggedUpdate.current !== updateKey) {
+                  logActivity('TASK_DELETED', `Deleted task "${removedTask.name}" from ${contextName}`, {
+                    boardId: activeBoardId,
+                    taskId: removedTask.id,
+                  });
+                  lastLoggedUpdate.current = updateKey;
+                }
+              }
+            }
+            // 3. Detect Task Edits
+            else {
+              tasks.forEach((task) => {
+                const oldTask = oldTasks.find((ot) => ot.id === task.id);
+                if (oldTask) {
+                  // Check multiple fields
+                  if (oldTask.status !== task.status) {
+                    const updateKey = `status-${task.id}-${task.status}`;
+                    if (lastLoggedUpdate.current !== updateKey) {
+                      logActivity(
+                        'TASK_UPDATED',
+                        `Updated "${task.name}" status to ${task.status || 'None'} in ${contextName}`,
+                        { boardId: activeBoardId, taskId: task.id },
+                      );
+                      lastLoggedUpdate.current = updateKey;
+                    }
+                  } else if (oldTask.name !== task.name) {
+                    const updateKey = `name-${task.id}-${task.name}`;
+                    if (lastLoggedUpdate.current !== updateKey) {
+                      logActivity('TASK_UPDATED', `Renamed task to "${task.name}" in ${contextName}`, {
+                        boardId: activeBoardId,
+                        taskId: task.id,
+                      });
+                      lastLoggedUpdate.current = updateKey;
+                    }
+                  } else if (oldTask.priority !== task.priority) {
+                    const updateKey = `priority-${task.id}-${task.priority}`;
+                    if (lastLoggedUpdate.current !== updateKey) {
+                      logActivity(
+                        'TASK_UPDATED',
+                        `Changed priority of "${task.name}" to ${task.priority || 'None'} in ${contextName}`,
+                        { boardId: activeBoardId, taskId: task.id },
+                      );
+                      lastLoggedUpdate.current = updateKey;
+                    }
+                  } else if (oldTask.date !== task.date) {
+                    const updateKey = `date-${task.id}-${task.date}`;
+                    if (lastLoggedUpdate.current !== updateKey) {
+                      logActivity(
+                        'TASK_UPDATED',
+                        `Changed date for "${task.name}" to ${task.date || 'unscheduled'} in ${contextName}`,
+                        { boardId: activeBoardId, taskId: task.id },
+                      );
+                      lastLoggedUpdate.current = updateKey;
+                    }
+                  }
+                }
+              });
+            }
           }
+        } catch (e) {
+          boardLogger.error('Failed to update tasks backend', e);
         }
-      } catch (e) {
-        boardLogger.error("Failed to update tasks backend", e);
       }
-    }
-  }, [activeBoardId, getToken, boards, workspaces, logActivity]);
+    },
+    [activeBoardId, getToken, boards, workspaces, logActivity],
+  );
 
   // Generic task creator that can be used from My Work
-  const handleCreateTaskOnBoard = React.useCallback(async (boardId: string, task: Task) => {
-    let updatedTasks: Task[] = [];
-    setBoards(prevBoards => prevBoards.map(b => {
-      if (b.id === boardId) {
-        updatedTasks = [...(b.tasks || []), task];
-        return { ...b, tasks: updatedTasks };
-      }
-      return b;
-    }));
+  const handleCreateTaskOnBoard = React.useCallback(
+    async (boardId: string, task: Task) => {
+      let updatedTasks: Task[] = [];
+      setBoards((prevBoards) =>
+        prevBoards.map((b) => {
+          if (b.id === boardId) {
+            updatedTasks = [...(b.tasks || []), task];
+            return { ...b, tasks: updatedTasks };
+          }
+          return b;
+        }),
+      );
 
-    // Perform side effects OUTSIDE of the state updater
-    try {
-      const token = await getToken();
-      if (token && updatedTasks.length > 0) {
-        await boardService.updateBoard(token, boardId, { tasks: updatedTasks });
-        const board = boards.find(b => b.id === boardId);
-        const ws = workspaces.find(w => w.id === board?.workspaceId);
-        const contextString = board ? `${board.name}${ws ? ` (${ws.name})` : ''}` : 'Board';
-        logActivity('TASK_CREATED', `Created task: "${task.name}" in ${contextString}`, { boardId, taskId: task.id }, board?.workspaceId, boardId);
+      // Perform side effects OUTSIDE of the state updater
+      try {
+        const token = await getToken();
+        if (token && updatedTasks.length > 0) {
+          await boardService.updateBoard(token, boardId, { tasks: updatedTasks });
+          const board = boards.find((b) => b.id === boardId);
+          const ws = workspaces.find((w) => w.id === board?.workspaceId);
+          const contextString = board ? `${board.name}${ws ? ` (${ws.name})` : ''}` : 'Board';
+          logActivity(
+            'TASK_CREATED',
+            `Created task: "${task.name}" in ${contextString}`,
+            { boardId, taskId: task.id },
+            board?.workspaceId,
+            boardId,
+          );
+        }
+      } catch (e) {
+        boardLogger.error('Failed to create task backend', e);
       }
-    } catch (e) {
-      boardLogger.error("Failed to create task backend", e);
-    }
-  }, [getToken, logActivity]);
+    },
+    [getToken, logActivity],
+  );
 
   return (
     <div className="flex flex-col h-full w-full bg-[#FCFCFD] dark:bg-monday-dark-bg font-sans text-[#323338] dark:text-monday-dark-text transition-colors duration-200">
-      <Suspense fallback={<div className="h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700" />}>
-        <TopBar onNavigate={handleNavigate} boards={workspaceBoards} onCreateTask={handleCreateTaskOnBoard} activeBoardId={activeBoardId} activeView={activeView} />
+      <Suspense
+        fallback={<div className="h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700" />}
+      >
+        <TopBar
+          onNavigate={handleNavigate}
+          boards={workspaceBoards}
+          onCreateTask={handleCreateTaskOnBoard}
+          activeBoardId={activeBoardId}
+          activeView={activeView}
+        />
       </Suspense>
       <div className="flex flex-1 min-h-0 relative overflow-hidden">
         <SidebarWrapper
@@ -1591,12 +1717,16 @@ const AppContent: React.FC = () => {
           boards={workspaceBoards}
           onDeleteBoard={handleDeleteBoard}
           onToggleFavorite={handleToggleFavorite}
-          onAddBoard={(name, icon, template, defaultView, parentId, nameDirection) => handleQuickAddBoard(name, icon, template, defaultView as any, parentId, nameDirection)}
+          onAddBoard={(name, icon, template, defaultView, parentId, nameDirection) =>
+            handleQuickAddBoard(name, icon, template, defaultView as any, parentId, nameDirection)
+          }
           pageVisibility={effectivePageVisibility}
         />
 
         {/* Main Content Area */}
-        <main className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ltr:shadow-[-4px_0_24px_rgba(0,0,0,0.08)] rtl:shadow-[4px_0_24px_rgba(0,0,0,0.08)] ms-0.5`}>
+        <main
+          className={`flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#FCFCFD] dark:bg-monday-dark-bg z-10 ltr:shadow-[-4px_0_24px_rgba(0,0,0,0.08)] rtl:shadow-[4px_0_24px_rgba(0,0,0,0.08)] ms-0.5`}
+        >
           <React.Suspense fallback={<FullScreenLoader />}>
             {/* Dashboard - Always mounted, hidden when not active (CSS keep-alive) */}
             <div className={activeView === 'dashboard' ? 'contents' : 'hidden'}>
@@ -1632,7 +1762,10 @@ const AppContent: React.FC = () => {
                 <FullScreenLoader />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400 font-light text-xl">
-                  Board not found. <button onClick={() => handleNavigate('dashboard')} className="ml-2 text-blue-500 hover:underline">Go to Dashboard</button>
+                  Board not found.{' '}
+                  <button onClick={() => handleNavigate('dashboard')} className="ml-2 text-blue-500 hover:underline">
+                    Go to Dashboard
+                  </button>
                 </div>
               )
             ) : activeView === 'inbox' ? (
@@ -1714,45 +1847,40 @@ const AppContent: React.FC = () => {
               </div>
             )}
 
-            {activeView === 'reports' ? (
-              <ReportsPage />
-            ) : activeView === 'it_support' ? (
-              <ITPage />
-            ) : activeView === 'hr' ? (
-              <HRPage />
-            ) : activeView === 'marketing' ? (
-              <MarketingPage />
-            ) : activeView === 'local_marketplace' ? (
-              <LocalMarketplacePage initialSearchQuery={marketplaceInitialSearch} />
-            ) : activeView === 'foreign_marketplace' ? (
-              <ForeignMarketplacePage />
-            ) : activeView === 'marketplace' ? (
-              <MarketplacePage onNavigate={handleNavigate} />
-            ) : activeView === 'cornell_notes' ? (
-              <CornellNotesPage />
-            ) : activeView === 'quick_notes' ? (
-              <QuickNotesPage />
-            ) : activeView === 'settings' ? (
-              <SettingsPage
-                visibility={pageVisibility}
-                onVisibilityChange={setPageVisibility}
-                isAdmin={isAdmin}
-                onFeatureFlagsChange={fetchAdminData}
-                serverAllowedPages={normalizedServerFlags}
-              />
-            ) : activeView === 'talk' ? (
-              <TalkPage onNavigate={handleNavigate} />
-            ) : activeView === 'test' ? (
-              <TestPage />
-            ) : activeView === 'arcade' ? (
-              <ArcadePage />
-            ) : activeView === 'live_session' ? (
-              <LiveSessionPage />
-            ) : null /* Unknown view - Dashboard is always mounted above */}
+            {
+              activeView === 'reports' ? (
+                <ReportsPage />
+              ) : activeView === 'it_support' ? (
+                <ITPage />
+              ) : activeView === 'hr' ? (
+                <HRPage />
+              ) : activeView === 'marketing' ? (
+                <MarketingPage />
+              ) : activeView === 'cornell_notes' ? (
+                <CornellNotesPage />
+              ) : activeView === 'quick_notes' ? (
+                <QuickNotesPage />
+              ) : activeView === 'settings' ? (
+                <SettingsPage
+                  visibility={pageVisibility}
+                  onVisibilityChange={setPageVisibility}
+                  isAdmin={isAdmin}
+                  onFeatureFlagsChange={fetchAdminData}
+                  serverAllowedPages={normalizedServerFlags}
+                />
+              ) : activeView === 'talk' ? (
+                <TalkPage onNavigate={handleNavigate} />
+              ) : activeView === 'test' ? (
+                <TestPage />
+              ) : activeView === 'arcade' ? (
+                <ArcadePage />
+              ) : activeView === 'live_session' ? (
+                <LiveSessionPage />
+              ) : null /* Unknown view - Dashboard is always mounted above */
+            }
           </React.Suspense>
         </main>
       </div>
-
     </div>
   );
 };
@@ -1780,7 +1908,7 @@ class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>
 
   render() {
     const { hasError, error } = this.state;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { children } = (this as any).props as ErrorBoundaryProps;
     if (hasError) {
       return (
@@ -1801,7 +1929,10 @@ class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>
 }
 
 // Component to handle signed-in users - redirects to app subdomain if on main domain
-const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain: boolean }> = ({ isMainDomain, isMarketplaceSubdomain }) => {
+const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain: boolean }> = ({
+  isMainDomain,
+  isMarketplaceSubdomain,
+}) => {
   const { signOut } = useClerk();
   const [portalType, setPortalType] = useState<'buyer' | 'seller' | null>(() => {
     const stored = localStorage.getItem('portal_type');
@@ -1842,6 +1973,12 @@ const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain:
     }
   };
 
+  const handleRoleSwitch = () => {
+    const newType = portalType === 'buyer' ? 'seller' : 'buyer';
+    localStorage.setItem('portal_type', newType);
+    setPortalType(newType);
+  };
+
   // If just signed out on main domain, show loading while signOut completes
   if (isMainDomain && justSignedOut) {
     return (
@@ -1868,13 +2005,25 @@ const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain:
     );
   }
 
-  // Portal users on app subdomain see the marketplace
-  if (portalType) {
-    return (
-      <Suspense fallback={<PageLoadingFallback />}>
-        <PortalMarketplacePage portalType={portalType} onLogout={handlePortalLogout} />
-      </Suspense>
-    );
+  // Check if user has portal auth tokens (not just portal_type)
+  const hasPortalAuthToken = localStorage.getItem('portal_access_token');
+
+  // Portal users go directly to their portal (no intermediate selection page)
+  if (portalType && hasPortalAuthToken) {
+    if (portalType === 'buyer') {
+      return (
+        <Suspense fallback={<PageLoadingFallback />}>
+          <BuyerPortalPage onLogout={handlePortalLogout} onRoleSwitch={handleRoleSwitch} />
+        </Suspense>
+      );
+    }
+    if (portalType === 'seller') {
+      return (
+        <Suspense fallback={<PageLoadingFallback />}>
+          <SellerPortalPage onLogout={handlePortalLogout} onRoleSwitch={handleRoleSwitch} />
+        </Suspense>
+      );
+    }
   }
 
   return (
@@ -1885,6 +2034,7 @@ const SignedInContent: React.FC<{ isMainDomain: boolean; isMarketplaceSubdomain:
 };
 
 const AppRoutes: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isLoaded, isSignedIn } = useUser();
 
   // Detect hostname
@@ -2020,9 +2170,7 @@ const AppRoutes: React.FC = () => {
       <SignedOut>
         {/* If signed out on app or marketplace subdomain, redirect to main domain */}
         {/* But NOT if user has mock auth (portal login) */}
-        {(isAppSubdomain || isMarketplaceSubdomain) && !hasMockAuth && (
-          <RedirectToMainDomain />
-        )}
+        {(isAppSubdomain || isMarketplaceSubdomain) && !hasMockAuth && <RedirectToMainDomain />}
         {/* Mock auth users on marketplace see the portal */}
         {isMarketplaceSubdomain && hasMockAuth && (
           <Suspense fallback={<PageLoadingFallback />}>
@@ -2080,37 +2228,32 @@ const AppRoutes: React.FC = () => {
                   colorInputText: '#000000',
                 },
                 elements: {
-                  footer: "hidden",
-                  formButtonPrimary: "bg-black hover:bg-zinc-800 text-white",
-                  formButtonReset: "text-black hover:text-zinc-700",
-                  card: "shadow-xl",
-                  headerTitle: "text-black",
-                  headerSubtitle: "text-zinc-500",
+                  footer: 'hidden',
+                  formButtonPrimary: 'bg-black hover:bg-zinc-800 text-white',
+                  formButtonReset: 'text-black hover:text-zinc-700',
+                  card: 'shadow-xl',
+                  headerTitle: 'text-black',
+                  headerSubtitle: 'text-zinc-500',
                   // Hide Google/social sign-in buttons
-                  socialButtons: "hidden",
-                  socialButtonsBlockButton: "hidden",
-                  dividerRow: "hidden",
-                  formFieldLabel: "text-zinc-700",
-                  formFieldInput: "border-zinc-300 focus:border-black focus:ring-black",
-                  footerActionLink: "text-black hover:text-zinc-700",
-                }
+                  socialButtons: 'hidden',
+                  socialButtonsBlockButton: 'hidden',
+                  dividerRow: 'hidden',
+                  formFieldLabel: 'text-zinc-700',
+                  formFieldInput: 'border-zinc-300 focus:border-black focus:ring-black',
+                  footerActionLink: 'text-black hover:text-zinc-700',
+                },
               }}
             />
             <div className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <button
-                onClick={() => setAuthView('signup')}
-                className="text-black font-medium hover:underline"
-              >
+              <button onClick={() => setAuthView('signup')} className="text-black font-medium hover:underline">
                 Sign up
               </button>
             </div>
           </div>
         )}
 
-        {!isAppSubdomain && authView === 'signup' && (
-          <SignUpPage onNavigateToLogin={() => setAuthView('signin')} />
-        )}
+        {!isAppSubdomain && authView === 'signup' && <SignUpPage onNavigateToLogin={() => setAuthView('signin')} />}
       </SignedOut>
       <SignedIn>
         <SignedInContent isMainDomain={isMainDomain} isMarketplaceSubdomain={isMarketplaceSubdomain} />
@@ -2122,7 +2265,8 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
   // Check for mobile subdomain
   const hostname = window.location.hostname;
-  const isMobileSubdomain = hostname === 'mobile.nabdchain.com' ||
+  const isMobileSubdomain =
+    hostname === 'mobile.nabdchain.com' ||
     hostname === 'mobile.app.nabdchain.com' ||
     hostname.startsWith('mobile.localhost') ||
     // For local testing: use ?mobile=true query param
@@ -2170,7 +2314,13 @@ const App: React.FC = () => {
                           element={
                             <>
                               <SignedIn>
-                                <React.Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                                <React.Suspense
+                                  fallback={
+                                    <div className="h-screen w-full flex items-center justify-center">
+                                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                  }
+                                >
                                   <LiveSessionPage />
                                 </React.Suspense>
                               </SignedIn>
@@ -2184,7 +2334,13 @@ const App: React.FC = () => {
                         <Route
                           path="/seller/:slug"
                           element={
-                            <React.Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                            <React.Suspense
+                              fallback={
+                                <div className="h-screen w-full flex items-center justify-center">
+                                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                              }
+                            >
                               <SellerProfilePage />
                             </React.Suspense>
                           }
@@ -2204,7 +2360,7 @@ const App: React.FC = () => {
         </LanguageProvider>
       </UIProvider>
     </AppProvider>
-  )
-}
+  );
+};
 
 export default App;

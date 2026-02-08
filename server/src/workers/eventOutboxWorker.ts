@@ -7,8 +7,10 @@
 
 import { prisma } from '../lib/prisma';
 import { serverLogger } from '../utils/logger';
+import { dbCircuitBreaker, isDbConnectionError } from '../lib/circuitBreaker';
+import { getWorkerBackoffConfig } from '../config/runtimeFlags';
 
-// Configuration
+// Configuration (static values)
 const BATCH_SIZE = 50;
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
@@ -16,6 +18,9 @@ const MAX_RETRY_DELAY_MS = 300000; // 5 minutes
 const BACKOFF_MULTIPLIER = 2;
 const DEFAULT_MAX_ATTEMPTS = 5;
 const WEBHOOK_TIMEOUT_MS = 30000; // 30 seconds
+
+// Configurable backoff (from environment)
+const getMaxPollInterval = () => getWorkerBackoffConfig().maxMs;
 
 interface DeliveryResult {
   success: boolean;
@@ -74,19 +79,43 @@ export class EventOutboxWorker {
   }
 
   /**
-   * Main polling loop
+   * Main polling loop with circuit breaker
    */
   private async poll(): Promise<void> {
     if (!this.isRunning) return;
 
-    try {
-      await this.processEvents();
-    } catch (error) {
-      serverLogger.error('[EventOutboxWorker] Poll error:', error);
+    let nextPollInterval = POLL_INTERVAL_MS;
+    const maxPollInterval = getMaxPollInterval();
+
+    // Check circuit breaker before attempting DB operations
+    if (!dbCircuitBreaker.canExecute()) {
+      const backoff = dbCircuitBreaker.getBackoffMs();
+      nextPollInterval = Math.min(backoff || maxPollInterval, maxPollInterval);
+      // Only log occasionally to avoid spam (every 60 seconds)
+      const status = dbCircuitBreaker.getStatus();
+      if (status.consecutiveFailures % 12 === 1) {
+        serverLogger.warn(
+          `[EventOutboxWorker] Circuit breaker OPEN, skipping poll. Will retry in ${Math.round(nextPollInterval / 1000)}s`
+        );
+      }
+    } else {
+      try {
+        await this.processEvents();
+        dbCircuitBreaker.recordSuccess();
+      } catch (error) {
+        // Record DB connection errors in circuit breaker
+        if (isDbConnectionError(error)) {
+          dbCircuitBreaker.recordFailure(error as Error);
+          nextPollInterval = Math.min(dbCircuitBreaker.getBackoffMs(), maxPollInterval);
+          serverLogger.error('[EventOutboxWorker] Database connection error, backing off:', error);
+        } else {
+          serverLogger.error('[EventOutboxWorker] Poll error:', error);
+        }
+      }
     }
 
     // Schedule next poll
-    this.pollTimer = setTimeout(() => this.poll(), POLL_INTERVAL_MS);
+    this.pollTimer = setTimeout(() => this.poll(), nextPollInterval);
   }
 
   /**
@@ -295,7 +324,7 @@ export class EventOutboxWorker {
 
   /**
    * Deliver via email
-   * TODO: Integrate with email service (SendGrid, SES, etc.)
+   * Stub: integrate with an email service (SendGrid, SES, etc.) for production
    */
   private async deliverEmail(
     to: string | null,
@@ -306,41 +335,41 @@ export class EventOutboxWorker {
       return { success: false, error: 'No email address configured', permanent: true };
     }
 
-    // TODO: Implement actual email delivery
+    // Stub: logs instead of sending real email
     serverLogger.info(`[EventOutboxWorker] Email delivery stub: ${eventType} -> ${to}`);
     return { success: true };
   }
 
   /**
    * Deliver via SMS
-   * TODO: Integrate with SMS service (Twilio, etc.)
+   * Stub: integrate with an SMS service (Twilio, etc.) for production
    */
   private async deliverSMS(phone: string | null, payload: any): Promise<DeliveryResult> {
     if (!phone) {
       return { success: false, error: 'No phone number configured', permanent: true };
     }
 
-    // TODO: Implement actual SMS delivery
+    // Stub: logs instead of sending real SMS
     serverLogger.info(`[EventOutboxWorker] SMS delivery stub: -> ${phone}`);
     return { success: true };
   }
 
   /**
    * Deliver to payment gateway
-   * TODO: Integrate with payment gateway
+   * Stub: integrate with a payment gateway for production
    */
   private async deliverPaymentGateway(eventType: string, payload: any): Promise<DeliveryResult> {
-    // TODO: Implement payment gateway integration
+    // Stub: logs instead of calling real payment gateway
     serverLogger.info(`[EventOutboxWorker] Payment gateway stub: ${eventType}`);
     return { success: true };
   }
 
   /**
    * Deliver to analytics service
-   * TODO: Integrate with analytics (Mixpanel, Amplitude, etc.)
+   * Stub: integrate with analytics (Mixpanel, Amplitude, etc.) for production
    */
   private async deliverAnalytics(eventType: string, payload: any): Promise<DeliveryResult> {
-    // TODO: Implement analytics integration
+    // Stub: logs instead of sending to real analytics service
     serverLogger.info(`[EventOutboxWorker] Analytics stub: ${eventType}`);
     return { success: true };
   }
@@ -351,7 +380,7 @@ export class EventOutboxWorker {
    */
   private async deliverNotification(eventType: string, payload: any): Promise<DeliveryResult> {
     try {
-      // TODO: Integrate with portalNotificationService
+      // Future: integrate with portalNotificationService for in-app notifications
       serverLogger.info(`[EventOutboxWorker] Notification delivery: ${eventType}`);
       return { success: true };
     } catch (error) {

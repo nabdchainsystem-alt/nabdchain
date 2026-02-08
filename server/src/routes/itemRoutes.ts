@@ -2,23 +2,124 @@
 // Item Routes - Universal Marketplace Item API
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { idempotency } from '../middleware/idempotencyMiddleware';
 import { itemService, ItemStatus, ItemVisibility, ItemType } from '../services/itemService';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 import rfqScoringService, { PriorityTier } from '../services/rfqScoringService';
 import { sellerRfqInboxService } from '../services/sellerRfqInboxService';
 import { quoteService } from '../services/quoteService';
 import { marketplaceOrderService } from '../services/marketplaceOrderService';
 import { portalNotificationService } from '../services/portalNotificationService';
 import { apiLogger } from '../utils/logger';
+import { resolveBuyerId } from '../utils/resolveBuyerId';
 
 const router = Router();
 
+// =============================================================================
+// Helper: Resolve seller's userId (User.id) for Item queries
+// NOTE: Item model uses userId (User.id), not sellerId (SellerProfile.id)
+// =============================================================================
+async function resolveSellerId(req: Request): Promise<string | null> {
+  const portalAuth = (req as any).portalAuth;
+  const authUserId = (req as AuthRequest).auth?.userId;
+
+  // Get the userId - prefer portalAuth.userId, fall back to auth.userId
+  const userId = portalAuth?.userId || authUserId;
+
+  if (!userId) {
+    apiLogger.warn('[resolveSellerId] No userId found in auth context');
+    return null;
+  }
+
+  apiLogger.debug('[resolveSellerId] Checking SellerProfile exists for userId:', userId);
+
+  // Verify user has a seller profile
+  const seller = await prisma.sellerProfile.findFirst({
+    where: { userId },
+    select: { id: true, status: true },
+  });
+
+  if (!seller) {
+    apiLogger.warn('[resolveSellerId] No SellerProfile found for userId:', userId);
+    return null;
+  }
+
+  // Return the USER's ID (not the seller profile ID) because Item.userId = User.id
+  apiLogger.debug('[resolveSellerId] Seller verified, returning userId:', userId);
+  return userId;
+}
+
+// =============================================================================
+// Helper: Resolve seller IDs for RFQ inbox queries
+// NOTE: ItemRFQ.sellerId may store either SellerProfile.id OR User.id depending on how the RFQ was created
+// =============================================================================
+async function resolveSellerProfileId(req: Request): Promise<string | null> {
+  const portalAuth = (req as any).portalAuth;
+  const authUserId = (req as AuthRequest).auth?.userId;
+
+  // First try: direct sellerId from portal token
+  if (portalAuth?.sellerId) {
+    apiLogger.debug('[resolveSellerProfileId] Using sellerId from portalAuth:', portalAuth.sellerId);
+    return portalAuth.sellerId;
+  }
+
+  // Second try: lookup SellerProfile by userId
+  const userId = portalAuth?.userId || authUserId;
+  if (userId) {
+    const sellerProfile = await prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (sellerProfile) {
+      apiLogger.debug('[resolveSellerProfileId] Found SellerProfile.id:', sellerProfile.id);
+      return sellerProfile.id;
+    }
+  }
+
+  apiLogger.warn('[resolveSellerProfileId] Could not resolve SellerProfile.id');
+  return null;
+}
+
+// Helper: Get all possible seller IDs for inbox query (both SellerProfile.id and User.id)
+async function resolveAllSellerIds(req: Request): Promise<string[]> {
+  const portalAuth = (req as any).portalAuth;
+  const authUserId = (req as AuthRequest).auth?.userId;
+  const sellerIds: string[] = [];
+
+  // Add userId from auth
+  const userId = portalAuth?.userId || authUserId;
+  if (userId) {
+    sellerIds.push(userId);
+  }
+
+  // Add direct sellerId from portal token
+  if (portalAuth?.sellerId && !sellerIds.includes(portalAuth.sellerId)) {
+    sellerIds.push(portalAuth.sellerId);
+  }
+
+  // Lookup SellerProfile.id by userId
+  if (userId) {
+    const sellerProfile = await prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (sellerProfile && !sellerIds.includes(sellerProfile.id)) {
+      sellerIds.push(sellerProfile.id);
+    }
+  }
+
+  apiLogger.debug('[resolveAllSellerIds] Resolved seller IDs:', sellerIds);
+  return sellerIds;
+}
+
+// =============================================================================
+// Helper: Resolve buyerId from portal auth or database lookup
+// =============================================================================
 // =============================================================================
 // Validation Schemas
 // =============================================================================
@@ -64,12 +165,50 @@ const createItemSchema = z.object({
   })).optional(),
 });
 
-const updateItemSchema = createItemSchema.partial();
+// For updates: strip defaults so undefined fields don't overwrite existing values
+const updateItemSchema = z.object({
+  name: z.string().min(1).max(200),
+  nameAr: z.string().max(200),
+  sku: z.string().min(1).max(50),
+  partNumber: z.string().max(50),
+  description: z.string().max(5000),
+  descriptionAr: z.string().max(5000),
+  itemType: itemTypeEnum,
+  category: z.string().min(1),
+  subcategory: z.string(),
+  visibility: visibilityEnum,
+  status: statusEnum,
+  price: z.number().min(0),
+  currency: z.string(),
+  priceUnit: z.string(),
+  stock: z.number().int().min(0),
+  minOrderQty: z.number().int().min(1),
+  maxOrderQty: z.number().int().min(1),
+  leadTimeDays: z.number().int().min(0),
+  manufacturer: z.string().max(100),
+  brand: z.string().max(100),
+  origin: z.string().max(100),
+  specifications: z.record(z.string(), z.unknown()),
+  compatibility: z.array(z.object({
+    make: z.string(),
+    model: z.string(),
+    years: z.string().optional(),
+  })),
+  packaging: z.record(z.string(), z.unknown()),
+  images: z.array(z.string()),
+  documents: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    url: z.string(),
+  })),
+}).partial();
 
 // Stage 1 RFQ Creation Schema - supports three entry points
+// sellerId is optional for broadcast RFQs (visible to all sellers)
+// Note: IDs can be UUIDs or portal auth IDs (like "user_seller_portal")
 const rfqCreateSchema = z.object({
-  itemId: z.string().uuid().nullable().optional(),  // Nullable for profile-level RFQs
-  sellerId: z.string().uuid(),                       // Required when itemId is null
+  itemId: z.string().nullable().optional(),          // Nullable for profile-level RFQs
+  sellerId: z.string().nullable().optional(),        // Nullable for broadcast RFQs (visible to all sellers)
   quantity: z.number().int().min(1),
   deliveryLocation: z.string().min(3).max(500),      // Required
   deliveryCity: z.string().max(100).optional(),
@@ -198,9 +337,10 @@ const quoteListQuerySchema = z.object({
 const orderStatusEnum = z.enum([
   'pending_confirmation',
   'confirmed',
-  'in_progress',
+  'processing',
   'shipped',
   'delivered',
+  'closed',
   'cancelled',
   'failed',
   'refunded',
@@ -232,10 +372,35 @@ const orderListQuerySchema = z.object({
  */
 router.get('/', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
+    const authUserId = (req as AuthRequest).auth?.userId;
+    const portalAuth = (req as any).portalAuth;
+
+    apiLogger.info('[GET /items] Auth context:', {
+      authUserId,
+      hasPortalAuth: !!portalAuth,
+      portalUserId: portalAuth?.userId,
+      portalSellerId: portalAuth?.sellerId,
+    });
+
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      apiLogger.warn('[GET /items] No sellerId resolved for userId:', authUserId);
+      return res.status(401).json({
+        error: 'Unauthorized - no seller profile found',
+        hint: 'Ensure you are logged in as a seller and your seller profile exists',
+        debug: {
+          authUserId,
+          hasPortalAuth: !!portalAuth,
+          portalSellerId: portalAuth?.sellerId,
+          suggestion: 'Try clearing browser localStorage and logging in again'
+        }
+      });
+    }
+
+    apiLogger.debug('[GET /items] Fetching items for sellerId:', sellerId);
     const { status, visibility, itemType, category, search, minPrice, maxPrice, inStock } = req.query;
 
-    const items = await itemService.getSellerItems(userId, {
+    const items = await itemService.getSellerItems(sellerId, {
       status: status as ItemStatus | undefined,
       visibility: visibility as ItemVisibility | undefined,
       itemType: itemType as ItemType | undefined,
@@ -262,8 +427,11 @@ router.get('/', requireAuth, async (req, res: Response) => {
  */
 router.get('/stats', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const stats = await itemService.getSellerStats(userId);
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
+    const stats = await itemService.getSellerStats(sellerId);
     res.json(stats);
   } catch (error) {
     apiLogger.error('Error fetching item stats:', error);
@@ -277,10 +445,13 @@ router.get('/stats', requireAuth, async (req, res: Response) => {
  */
 router.get('/:id', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
+    const id = req.params.id as string as string;
 
-    const item = await itemService.getSellerItem(userId, id);
+    const item = await itemService.getSellerItem(sellerId, id);
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
@@ -299,18 +470,34 @@ router.get('/:id', requireAuth, async (req, res: Response) => {
  */
 router.post('/', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      apiLogger.warn('[POST /items] No sellerId resolved, returning 401');
+      return res.status(401).json({
+        error: 'Unauthorized - no seller profile found',
+        hint: 'Ensure you are logged in as a seller and your seller profile exists'
+      });
+    }
     const data = createItemSchema.parse(req.body);
 
-    const item = await itemService.createItem(userId, data);
+    apiLogger.debug('[POST /items] Creating item for sellerId:', sellerId);
+    const item = await itemService.createItem(sellerId, data);
+    apiLogger.info('[POST /items] Created item:', { id: item.id, sellerId, name: data.name });
 
     res.status(201).json(parseItemJsonFields(item));
   } catch (error) {
     if (error instanceof z.ZodError) {
+      apiLogger.warn('[POST /items] Validation error:', error.issues);
       return res.status(400).json({ error: 'Invalid input', details: error.issues });
     }
-    apiLogger.error('Error creating item:', error);
-    res.status(500).json({ error: 'Failed to create item' });
+    apiLogger.error('[POST /items] Error creating item:', error);
+    // Return more detailed error info for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      error: 'Failed to create item',
+      details: errorMessage,
+      hint: 'Check server logs for more details'
+    });
   }
 });
 
@@ -320,11 +507,14 @@ router.post('/', requireAuth, async (req, res: Response) => {
  */
 router.put('/:id', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
+    const id = req.params.id as string as string;
     const data = updateItemSchema.parse(req.body);
 
-    const item = await itemService.updateItem(userId, id, data);
+    const item = await itemService.updateItem(sellerId, id, data);
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
@@ -346,10 +536,13 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
  */
 router.delete('/:id', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
+    const id = req.params.id as string as string;
 
-    const success = await itemService.deleteItem(userId, id);
+    const success = await itemService.deleteItem(sellerId, id);
 
     if (!success) {
       return res.status(404).json({ error: 'Item not found' });
@@ -368,10 +561,13 @@ router.delete('/:id', requireAuth, async (req, res: Response) => {
  */
 router.post('/:id/archive', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const id = req.params.id as string;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
+    const id = req.params.id as string as string;
 
-    const item = await itemService.archiveItem(userId, id);
+    const item = await itemService.archiveItem(sellerId, id);
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
@@ -474,6 +670,7 @@ router.get('/marketplace/browse', async (req, res: Response) => {
       sortBy,
       page,
       limit,
+      inStockOnly,
     } = req.query;
 
     const result = await itemService.getMarketplaceItems({
@@ -488,6 +685,7 @@ router.get('/marketplace/browse', async (req, res: Response) => {
       sortBy: sortBy as 'price_asc' | 'price_desc' | 'newest' | 'popular' | undefined,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
+      inStockOnly: inStockOnly === 'true',
     });
 
     res.json({
@@ -506,7 +704,7 @@ router.get('/marketplace/browse', async (req, res: Response) => {
  */
 router.get('/marketplace/:id', async (req, res: Response) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const item = await itemService.getMarketplaceItem(id);
 
     if (!item) {
@@ -558,7 +756,10 @@ router.get('/marketplace/seller/:sellerId', async (req, res: Response) => {
  */
 router.post('/rfq', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const data = rfqCreateSchema.parse(req.body);
 
     // Convert datetime string to Date if provided
@@ -621,7 +822,10 @@ router.post('/rfq', requireAuth, async (req, res: Response) => {
  */
 router.get('/rfq/seller', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const { status } = req.query;
 
     const rfqs = await itemService.getSellerRFQs(
@@ -642,7 +846,10 @@ router.get('/rfq/seller', requireAuth, async (req, res: Response) => {
  */
 router.get('/rfq/buyer', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const { status } = req.query;
 
     const rfqs = await itemService.getBuyerRFQs(
@@ -663,8 +870,11 @@ router.get('/rfq/buyer', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq/:id/respond', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.id as string;
+    const sellerId = await resolveSellerId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
+    const rfqId = req.params.id as string as string;
     const data = rfqResponseSchema.parse(req.body);
 
     const rfq = await itemService.respondToRFQ(sellerId, rfqId, {
@@ -693,8 +903,11 @@ router.post('/rfq/:id/respond', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq/:id/accept', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.id as string;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const rfqId = req.params.id as string as string;
 
     const rfq = await itemService.updateRFQStatus(buyerId, rfqId, 'accepted');
 
@@ -714,7 +927,10 @@ router.post('/rfq/:id/accept', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq/:id/reject', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const rfqId = req.params.id as string;
 
     const rfq = await itemService.updateRFQStatus(buyerId, rfqId, 'rejected');
@@ -729,6 +945,123 @@ router.post('/rfq/:id/reject', requireAuth, async (req, res: Response) => {
   }
 });
 
+/**
+ * POST /api/items/rfq/:id/cancel
+ * Cancel RFQ (buyer) - only allowed for pending/under_review RFQs
+ */
+router.post('/rfq/:id/cancel', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    const rfqId = req.params.id as string;
+
+    apiLogger.info(`[RFQ Cancel] Attempting to cancel RFQ ${rfqId}, resolved buyerId: ${buyerId}`);
+
+    if (!buyerId) {
+      apiLogger.warn(`[RFQ Cancel] No buyer profile found for request`);
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+
+    // First find RFQ without buyerId filter to debug
+    const rfqAny = await prisma.itemRFQ.findUnique({
+      where: { id: rfqId },
+      select: { id: true, buyerId: true, status: true },
+    });
+    apiLogger.info(`[RFQ Cancel] RFQ in DB:`, rfqAny);
+
+    // Find the RFQ and verify ownership
+    const rfq = await prisma.itemRFQ.findFirst({
+      where: { id: rfqId, buyerId },
+    });
+
+    if (!rfq) {
+      apiLogger.warn(`[RFQ Cancel] RFQ not found for id=${rfqId}, buyerId=${buyerId}. DB buyerId=${rfqAny?.buyerId}`);
+      return res.status(404).json({
+        error: 'RFQ not found',
+        details: rfqAny ? `RFQ exists but belongs to different buyer (expected: ${buyerId}, actual: ${rfqAny.buyerId})` : 'RFQ does not exist'
+      });
+    }
+
+    // Only allow cancellation of pending/new/under_review RFQs (case-insensitive)
+    const cancellableStatuses = ['PENDING', 'UNDER_REVIEW', 'NEW'];
+    if (!cancellableStatuses.includes(rfq.status.toUpperCase())) {
+      apiLogger.warn(`[RFQ Cancel] Cannot cancel - status is ${rfq.status}`);
+      return res.status(400).json({
+        error: 'Cannot cancel RFQ',
+        details: `RFQ is in ${rfq.status} status and cannot be cancelled`
+      });
+    }
+
+    // Update status to CANCELLED
+    const updatedRfq = await prisma.itemRFQ.update({
+      where: { id: rfqId },
+      data: { status: 'CANCELLED' },
+      include: {
+        item: true,
+        quotes: true,
+      },
+    });
+
+    apiLogger.info(`[RFQ Cancel] RFQ ${rfqId} cancelled by buyer ${buyerId}`);
+    res.json(updatedRfq);
+  } catch (error) {
+    apiLogger.error('Error cancelling RFQ:', error);
+    res.status(500).json({ error: 'Failed to cancel RFQ' });
+  }
+});
+
+/**
+ * POST /api/items/rfq/:id/reactivate
+ * Reactivate a cancelled RFQ (buyer) - only allowed for CANCELLED RFQs
+ */
+router.post('/rfq/:id/reactivate', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    const rfqId = req.params.id as string;
+
+    apiLogger.info(`[RFQ Reactivate] Attempting to reactivate RFQ ${rfqId}, resolved buyerId: ${buyerId}`);
+
+    if (!buyerId) {
+      apiLogger.warn(`[RFQ Reactivate] No buyer profile found for request`);
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+
+    // Find the RFQ and verify ownership
+    const rfq = await prisma.itemRFQ.findFirst({
+      where: { id: rfqId, buyerId },
+    });
+
+    if (!rfq) {
+      apiLogger.warn(`[RFQ Reactivate] RFQ not found for id=${rfqId}, buyerId=${buyerId}`);
+      return res.status(404).json({ error: 'RFQ not found' });
+    }
+
+    // Only allow reactivation of cancelled RFQs
+    if (rfq.status.toUpperCase() !== 'CANCELLED') {
+      apiLogger.warn(`[RFQ Reactivate] Cannot reactivate - status is ${rfq.status}`);
+      return res.status(400).json({
+        error: 'Cannot reactivate RFQ',
+        details: `RFQ is in ${rfq.status} status. Only cancelled RFQs can be reactivated.`
+      });
+    }
+
+    // Update status back to 'new' (matches marketplace filter: new/viewed/under_review)
+    const updatedRfq = await prisma.itemRFQ.update({
+      where: { id: rfqId },
+      data: { status: 'new' },
+      include: {
+        item: true,
+        quotes: true,
+      },
+    });
+
+    apiLogger.info(`[RFQ Reactivate] RFQ ${rfqId} reactivated by buyer ${buyerId}. rfqType=${updatedRfq.rfqType}, status=${updatedRfq.status}`);
+    res.json(updatedRfq);
+  } catch (error) {
+    apiLogger.error('Error reactivating RFQ:', error);
+    res.status(500).json({ error: 'Failed to reactivate RFQ' });
+  }
+});
+
 // =============================================================================
 // Stage 2: Seller RFQ Inbox Routes
 // =============================================================================
@@ -739,10 +1072,15 @@ router.post('/rfq/:id/reject', requireAuth, async (req, res: Response) => {
  */
 router.get('/rfq/seller/inbox', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    // Resolve all possible seller IDs (both User.id and SellerProfile.id)
+    // RFQs may be stored with either ID format depending on how they were created
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const query = inboxQuerySchema.parse(req.query);
 
-    const result = await sellerRfqInboxService.getInbox(sellerId, {
+    const result = await sellerRfqInboxService.getInbox(sellerIds, {
       status: query.status,
       priorityLevel: query.priorityLevel,
       dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
@@ -774,10 +1112,13 @@ router.get('/rfq/seller/inbox', requireAuth, async (req, res: Response) => {
  */
 router.get('/rfq/seller/inbox/:id', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const rfqId = req.params.id as string;
 
-    const rfq = await sellerRfqInboxService.getRFQDetail(rfqId, sellerId);
+    const rfq = await sellerRfqInboxService.getRFQDetail(sellerIds, rfqId);
 
     if (!rfq) {
       return res.status(404).json({ error: 'RFQ not found' });
@@ -796,7 +1137,10 @@ router.get('/rfq/seller/inbox/:id', requireAuth, async (req, res: Response) => {
  */
 router.patch('/rfq/seller/inbox/:id/status', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const rfqId = req.params.id as string;
     const data = statusUpdateSchema.parse(req.body);
 
@@ -806,10 +1150,10 @@ router.patch('/rfq/seller/inbox/:id/status', requireAuth, async (req, res: Respo
     }
 
     const rfq = await sellerRfqInboxService.updateStatus(
+      sellerIds,
       rfqId,
-      sellerId,
       data.status,
-      data.ignoredReason
+      data.ignoredReason ? { reason: data.ignoredReason } : undefined
     );
 
     if (!rfq) {
@@ -835,11 +1179,14 @@ router.patch('/rfq/seller/inbox/:id/status', requireAuth, async (req, res: Respo
  */
 router.post('/rfq/seller/inbox/:id/notes', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const rfqId = req.params.id as string;
     const data = internalNoteSchema.parse(req.body);
 
-    const rfq = await sellerRfqInboxService.addInternalNote(rfqId, sellerId, data.note);
+    const rfq = await sellerRfqInboxService.addInternalNote(sellerIds, rfqId, data.note);
 
     if (!rfq) {
       return res.status(404).json({ error: 'RFQ not found' });
@@ -861,10 +1208,13 @@ router.post('/rfq/seller/inbox/:id/notes', requireAuth, async (req, res: Respons
  */
 router.get('/rfq/seller/inbox/:id/history', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const rfqId = req.params.id as string;
 
-    const history = await sellerRfqInboxService.getHistory(rfqId, sellerId);
+    const history = await sellerRfqInboxService.getHistory(sellerIds, rfqId);
 
     if (!history) {
       return res.status(404).json({ error: 'RFQ not found' });
@@ -887,7 +1237,10 @@ router.get('/rfq/seller/inbox/:id/history', requireAuth, async (req, res: Respon
  */
 router.get('/rfq/seller/labels', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const labels = await sellerRfqInboxService.getLabels(sellerId);
     res.json(labels);
   } catch (error) {
@@ -902,7 +1255,10 @@ router.get('/rfq/seller/labels', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq/seller/labels', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = labelSchema.parse(req.body);
     const label = await sellerRfqInboxService.createLabel(sellerId, data);
     res.status(201).json(label);
@@ -921,8 +1277,11 @@ router.post('/rfq/seller/labels', requireAuth, async (req, res: Response) => {
  */
 router.patch('/rfq/seller/labels/:labelId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const labelId = req.params.labelId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const labelId = req.params.labelId as string;
     const data = labelSchema.partial().parse(req.body);
     const label = await sellerRfqInboxService.updateLabel(sellerId, labelId, data);
     res.json(label);
@@ -944,8 +1303,11 @@ router.patch('/rfq/seller/labels/:labelId', requireAuth, async (req, res: Respon
  */
 router.delete('/rfq/seller/labels/:labelId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const labelId = req.params.labelId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const labelId = req.params.labelId as string;
     await sellerRfqInboxService.deleteLabel(sellerId, labelId);
     res.status(204).send();
   } catch (error) {
@@ -967,8 +1329,12 @@ router.delete('/rfq/seller/labels/:labelId', requireAuth, async (req, res: Respo
  */
 router.post('/rfq/seller/inbox/:rfqId/labels/:labelId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const { rfqId, labelId } = req.params;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
+    const labelId = req.params.labelId as string;
     await sellerRfqInboxService.addLabelToRFQ(sellerId, rfqId, labelId);
     res.status(201).json({ success: true });
   } catch (error) {
@@ -986,8 +1352,12 @@ router.post('/rfq/seller/inbox/:rfqId/labels/:labelId', requireAuth, async (req,
  */
 router.delete('/rfq/seller/inbox/:rfqId/labels/:labelId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const { rfqId, labelId } = req.params;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
+    const labelId = req.params.labelId as string;
     await sellerRfqInboxService.removeLabelFromRFQ(sellerId, rfqId, labelId);
     res.status(204).send();
   } catch (error) {
@@ -1005,7 +1375,10 @@ router.delete('/rfq/seller/inbox/:rfqId/labels/:labelId', requireAuth, async (re
  */
 router.post('/rfq/seller/inbox/bulk/labels', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = bulkLabelSchema.parse(req.body);
 
     let result;
@@ -1038,8 +1411,11 @@ router.post('/rfq/seller/inbox/bulk/labels', requireAuth, async (req, res: Respo
  */
 router.get('/rfq/seller/inbox/:rfqId/notes', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     const notes = await sellerRfqInboxService.getNotes(sellerId, rfqId);
     res.json(notes);
   } catch (error) {
@@ -1057,8 +1433,11 @@ router.get('/rfq/seller/inbox/:rfqId/notes', requireAuth, async (req, res: Respo
  */
 router.post('/rfq/seller/inbox/:rfqId/notes', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     const data = noteSchema.parse(req.body);
     const note = await sellerRfqInboxService.addNote(sellerId, rfqId, data.content, data.parentId);
     res.status(201).json(note);
@@ -1080,8 +1459,11 @@ router.post('/rfq/seller/inbox/:rfqId/notes', requireAuth, async (req, res: Resp
  */
 router.patch('/rfq/seller/inbox/notes/:noteId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const noteId = req.params.noteId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const noteId = req.params.noteId as string;
     const { content } = noteSchema.pick({ content: true }).parse(req.body);
     const note = await sellerRfqInboxService.updateNote(sellerId, noteId, content);
     res.json(note);
@@ -1103,8 +1485,11 @@ router.patch('/rfq/seller/inbox/notes/:noteId', requireAuth, async (req, res: Re
  */
 router.delete('/rfq/seller/inbox/notes/:noteId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const noteId = req.params.noteId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const noteId = req.params.noteId as string;
     await sellerRfqInboxService.deleteNote(sellerId, noteId);
     res.status(204).send();
   } catch (error) {
@@ -1126,7 +1511,10 @@ router.delete('/rfq/seller/inbox/notes/:noteId', requireAuth, async (req, res: R
  */
 router.get('/rfq/seller/saved-replies', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const category = req.query.category as string | undefined;
     const replies = await sellerRfqInboxService.getSavedReplies(sellerId, category);
     res.json(replies);
@@ -1142,7 +1530,10 @@ router.get('/rfq/seller/saved-replies', requireAuth, async (req, res: Response) 
  */
 router.post('/rfq/seller/saved-replies', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = savedReplySchema.parse(req.body);
     const reply = await sellerRfqInboxService.createSavedReply(sellerId, data);
     res.status(201).json(reply);
@@ -1161,8 +1552,11 @@ router.post('/rfq/seller/saved-replies', requireAuth, async (req, res: Response)
  */
 router.patch('/rfq/seller/saved-replies/:replyId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const replyId = req.params.replyId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const replyId = req.params.replyId as string;
     const data = savedReplySchema.partial().parse(req.body);
     const reply = await sellerRfqInboxService.updateSavedReply(sellerId, replyId, data);
     res.json(reply);
@@ -1184,8 +1578,11 @@ router.patch('/rfq/seller/saved-replies/:replyId', requireAuth, async (req, res:
  */
 router.delete('/rfq/seller/saved-replies/:replyId', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const replyId = req.params.replyId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const replyId = req.params.replyId as string;
     await sellerRfqInboxService.deleteSavedReply(sellerId, replyId);
     res.status(204).send();
   } catch (error) {
@@ -1203,8 +1600,11 @@ router.delete('/rfq/seller/saved-replies/:replyId', requireAuth, async (req, res
  */
 router.post('/rfq/seller/saved-replies/:replyId/expand', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const replyId = req.params.replyId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const replyId = req.params.replyId as string;
     const { rfqId } = z.object({ rfqId: z.string().uuid() }).parse(req.body);
     const expandedContent = await sellerRfqInboxService.expandTemplate(sellerId, replyId, rfqId);
     res.json({ content: expandedContent });
@@ -1230,8 +1630,11 @@ router.post('/rfq/seller/saved-replies/:replyId/expand', requireAuth, async (req
  */
 router.post('/rfq/seller/inbox/:rfqId/snooze', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     const data = snoozeSchema.parse(req.body);
     await sellerRfqInboxService.snoozeRFQ(sellerId, rfqId, new Date(data.until), data.reason);
     res.json({ success: true });
@@ -1253,8 +1656,11 @@ router.post('/rfq/seller/inbox/:rfqId/snooze', requireAuth, async (req, res: Res
  */
 router.delete('/rfq/seller/inbox/:rfqId/snooze', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     await sellerRfqInboxService.unsnoozeRFQ(sellerId, rfqId);
     res.status(204).send();
   } catch (error) {
@@ -1272,7 +1678,10 @@ router.delete('/rfq/seller/inbox/:rfqId/snooze', requireAuth, async (req, res: R
  */
 router.post('/rfq/seller/inbox/bulk/snooze', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = bulkSnoozeSchema.parse(req.body);
     const result = await sellerRfqInboxService.bulkSnooze(sellerId, data.rfqIds, new Date(data.until), data.reason);
     res.json(result);
@@ -1295,8 +1704,11 @@ router.post('/rfq/seller/inbox/bulk/snooze', requireAuth, async (req, res: Respo
  */
 router.post('/rfq/seller/inbox/:rfqId/read', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     await sellerRfqInboxService.markRead(sellerId, rfqId);
     res.json({ success: true });
   } catch (error) {
@@ -1314,8 +1726,11 @@ router.post('/rfq/seller/inbox/:rfqId/read', requireAuth, async (req, res: Respo
  */
 router.delete('/rfq/seller/inbox/:rfqId/read', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     await sellerRfqInboxService.markUnread(sellerId, rfqId);
     res.status(204).send();
   } catch (error) {
@@ -1333,7 +1748,10 @@ router.delete('/rfq/seller/inbox/:rfqId/read', requireAuth, async (req, res: Res
  */
 router.post('/rfq/seller/inbox/bulk/read', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = bulkIdsSchema.parse(req.body);
     const result = await sellerRfqInboxService.bulkMarkRead(sellerId, data.rfqIds);
     res.json(result);
@@ -1352,7 +1770,10 @@ router.post('/rfq/seller/inbox/bulk/read', requireAuth, async (req, res: Respons
  */
 router.post('/rfq/seller/inbox/bulk/unread', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = bulkIdsSchema.parse(req.body);
     const result = await sellerRfqInboxService.bulkMarkUnread(sellerId, data.rfqIds);
     res.json(result);
@@ -1375,8 +1796,11 @@ router.post('/rfq/seller/inbox/bulk/unread', requireAuth, async (req, res: Respo
  */
 router.post('/rfq/seller/inbox/:rfqId/archive', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     await sellerRfqInboxService.archiveRFQ(sellerId, rfqId);
     res.json({ success: true });
   } catch (error) {
@@ -1394,8 +1818,11 @@ router.post('/rfq/seller/inbox/:rfqId/archive', requireAuth, async (req, res: Re
  */
 router.delete('/rfq/seller/inbox/:rfqId/archive', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
+    const rfqId = req.params.rfqId as string;
     await sellerRfqInboxService.unarchiveRFQ(sellerId, rfqId);
     res.status(204).send();
   } catch (error) {
@@ -1413,7 +1840,10 @@ router.delete('/rfq/seller/inbox/:rfqId/archive', requireAuth, async (req, res: 
  */
 router.post('/rfq/seller/inbox/bulk/archive', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = bulkIdsSchema.parse(req.body);
     const result = await sellerRfqInboxService.bulkArchive(sellerId, data.rfqIds);
     res.json(result);
@@ -1432,7 +1862,10 @@ router.post('/rfq/seller/inbox/bulk/archive', requireAuth, async (req, res: Resp
  */
 router.post('/rfq/seller/inbox/bulk/unarchive', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const data = bulkIdsSchema.parse(req.body);
     const result = await sellerRfqInboxService.bulkUnarchive(sellerId, data.rfqIds);
     res.json(result);
@@ -1455,7 +1888,10 @@ router.post('/rfq/seller/inbox/bulk/unarchive', requireAuth, async (req, res: Re
  */
 router.get('/rfq/seller/scored', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const { status, priorityTier } = req.query;
 
     const rfqs = await rfqScoringService.getScoredRFQs(sellerId, {
@@ -1476,7 +1912,10 @@ router.get('/rfq/seller/scored', requireAuth, async (req, res: Response) => {
  */
 router.post('/rfq/seller/:id/calculate-score', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const rfqId = req.params.id as string;
 
     const result = await rfqScoringService.calculateRFQScores(rfqId, sellerId);
@@ -1497,7 +1936,10 @@ router.post('/rfq/seller/:id/calculate-score', requireAuth, async (req, res: Res
  */
 router.post('/rfq/seller/recalculate-all', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
 
     const result = await rfqScoringService.recalculateAllRFQScores(sellerId);
 
@@ -1521,7 +1963,10 @@ const quickRespondSchema = z.object({
  */
 router.post('/rfq/seller/:id/quick-respond', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const rfqId = req.params.id as string;
     const data = quickRespondSchema.parse(req.body);
 
@@ -1555,7 +2000,10 @@ router.post('/rfq/seller/:id/quick-respond', requireAuth, async (req, res: Respo
  */
 router.get('/rfq/seller/timeline', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
     const { view } = req.query;
 
     const data = await rfqScoringService.getRFQTimelineData(
@@ -1576,7 +2024,10 @@ router.get('/rfq/seller/timeline', requireAuth, async (req, res: Response) => {
  */
 router.get('/rfq/seller/scoring-config', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerId = await resolveSellerProfileId(req);
+    if (!sellerId) {
+      return res.status(401).json({ error: 'Seller profile not found' });
+    }
 
     const config = await rfqScoringService.getOrCreateScoringConfig(sellerId);
 
@@ -1598,19 +2049,32 @@ router.get('/rfq/seller/scoring-config', requireAuth, async (req, res: Response)
  */
 router.post('/quotes', requireAuth, async (req, res: Response) => {
   try {
+    // Use User.id (auth.userId) for quote creation - this is how quotes are stored
     const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
     const data = createQuoteSchema.parse(req.body);
 
-    // Get the RFQ to find the buyerId
-    const rfq = await sellerRfqInboxService.getRFQDetail(data.rfqId, sellerId);
-    if (!rfq) {
+    // Get the RFQ to find the buyerId - use all possible seller IDs to find the RFQ
+    const rfqDetail = await sellerRfqInboxService.getRFQDetail(sellerIds, data.rfqId);
+    if (!rfqDetail || !rfqDetail.rfq) {
+      return res.status(404).json({ error: 'RFQ not found' });
+    }
+
+    // Get buyerId from the actual RFQ record (not from SellerInboxRFQ type)
+    const rfqRecord = await prisma.itemRFQ.findUnique({
+      where: { id: data.rfqId },
+      select: { buyerId: true, sellerId: true },
+    });
+
+    if (!rfqRecord) {
       return res.status(404).json({ error: 'RFQ not found' });
     }
 
     const result = await quoteService.createDraft({
       rfqId: data.rfqId,
       sellerId,
-      buyerId: rfq.buyerId,
+      sellerIds, // Pass all seller IDs for authorization check
+      buyerId: rfqRecord.buyerId,
       unitPrice: data.unitPrice,
       quantity: data.quantity,
       currency: data.currency,
@@ -1676,7 +2140,7 @@ router.get('/quotes', requireAuth, async (req, res: Response) => {
 router.get('/quotes/:id', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
 
     const result = await quoteService.getQuote(quoteId, userId);
 
@@ -1704,7 +2168,7 @@ router.get('/quotes/:id', requireAuth, async (req, res: Response) => {
 router.get('/quotes/rfq/:rfqId', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const rfqId = req.params.rfqId as string;
+    const rfqId = req.params.rfqId as string as string;
 
     const result = await quoteService.getQuotesByRFQ(rfqId, userId);
 
@@ -1732,7 +2196,7 @@ router.get('/quotes/rfq/:rfqId', requireAuth, async (req, res: Response) => {
 router.put('/quotes/:id', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
     const data = updateQuoteSchema.parse(req.body);
 
     const result = await quoteService.updateQuote(quoteId, sellerId, {
@@ -1776,9 +2240,10 @@ router.put('/quotes/:id', requireAuth, async (req, res: Response) => {
 router.post('/quotes/:id/send', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
     const quoteId = req.params.id as string;
 
-    const result = await quoteService.sendQuote(quoteId, sellerId);
+    const result = await quoteService.sendQuote(quoteId, sellerId, sellerIds);
 
     if (!result.success) {
       if (result.error === 'Quote not found') {
@@ -1817,7 +2282,7 @@ router.post('/quotes/:id/send', requireAuth, async (req, res: Response) => {
 router.get('/quotes/:id/versions', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
 
     const result = await quoteService.getQuoteVersions(quoteId, userId);
 
@@ -1845,7 +2310,7 @@ router.get('/quotes/:id/versions', requireAuth, async (req, res: Response) => {
 router.get('/quotes/:id/history', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
 
     const result = await quoteService.getQuoteHistory(quoteId, userId);
 
@@ -1873,7 +2338,7 @@ router.get('/quotes/:id/history', requireAuth, async (req, res: Response) => {
 router.delete('/quotes/:id', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
 
     const result = await quoteService.deleteDraft(quoteId, sellerId);
 
@@ -1906,8 +2371,11 @@ router.delete('/quotes/:id', requireAuth, async (req, res: Response) => {
  */
 router.post('/quotes/:id/accept', requireAuth, idempotency({ required: true, entityType: 'order' }), async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const quoteId = req.params.id as string as string;
     const data = acceptQuoteSchema.parse(req.body);
 
     const result = await marketplaceOrderService.acceptQuote({
@@ -1943,8 +2411,11 @@ router.post('/quotes/:id/accept', requireAuth, idempotency({ required: true, ent
  */
 router.post('/quotes/:id/reject', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const quoteId = req.params.id as string as string;
     const data = rejectQuoteSchema.parse(req.body);
 
     const result = await marketplaceOrderService.rejectQuote({
@@ -1999,7 +2470,7 @@ const rejectCounterOfferSchema = z.object({
 router.post('/quotes/:id/counter-offer', requireAuth, async (req, res: Response) => {
   try {
     const buyerId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
     const data = createCounterOfferSchema.parse(req.body);
 
     const { counterOfferService } = await import('../services/counterOfferService');
@@ -2039,7 +2510,7 @@ router.post('/quotes/:id/counter-offer', requireAuth, async (req, res: Response)
 router.get('/quotes/:id/counter-offers', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
 
     const { counterOfferService } = await import('../services/counterOfferService');
     const result = await counterOfferService.getCounterOffers(quoteId, userId);
@@ -2068,7 +2539,7 @@ router.get('/quotes/:id/counter-offers', requireAuth, async (req, res: Response)
 router.post('/counter-offers/:id/accept', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const counterOfferId = req.params.id as string;
+    const counterOfferId = req.params.id as string as string;
     const data = respondCounterOfferSchema.parse(req.body);
 
     const { counterOfferService } = await import('../services/counterOfferService');
@@ -2108,7 +2579,7 @@ router.post('/counter-offers/:id/accept', requireAuth, async (req, res: Response
 router.post('/counter-offers/:id/reject', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const counterOfferId = req.params.id as string;
+    const counterOfferId = req.params.id as string as string;
     const data = rejectCounterOfferSchema.parse(req.body);
 
     const { counterOfferService } = await import('../services/counterOfferService');
@@ -2182,7 +2653,7 @@ const uploadAttachmentSchema = z.object({
 router.post('/quotes/:id/attachments', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
     const data = uploadAttachmentSchema.parse(req.body);
 
     // Verify quote exists and seller owns it
@@ -2235,7 +2706,7 @@ router.post('/quotes/:id/attachments', requireAuth, async (req, res: Response) =
 router.get('/quotes/:id/attachments', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const quoteId = req.params.id as string;
+    const quoteId = req.params.id as string as string;
 
     // Verify quote exists and user has access
     const quote = await prisma.quote.findUnique({
@@ -2269,7 +2740,8 @@ router.get('/quotes/:id/attachments', requireAuth, async (req, res: Response) =>
 router.delete('/quotes/:quoteId/attachments/:attachmentId', requireAuth, async (req, res: Response) => {
   try {
     const sellerId = (req as AuthRequest).auth.userId;
-    const { quoteId, attachmentId } = req.params;
+    const quoteId = req.params.quoteId as string;
+    const attachmentId = req.params.attachmentId as string;
 
     // Verify quote exists and seller owns it
     const quote = await prisma.quote.findUnique({
@@ -2321,7 +2793,10 @@ router.delete('/quotes/:quoteId/attachments/:attachmentId', requireAuth, async (
  */
 router.get('/orders/buyer', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
     const query = orderListQuerySchema.parse(req.query);
 
     const result = await marketplaceOrderService.getBuyerOrders(buyerId, {
@@ -2354,10 +2829,18 @@ router.get('/orders/buyer', requireAuth, async (req, res: Response) => {
  */
 router.get('/orders/seller', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    // Use all possible seller IDs to match orders (both User.id and SellerProfile.id)
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const query = orderListQuerySchema.parse(req.query);
 
-    const result = await marketplaceOrderService.getSellerOrders(sellerId, {
+    if (process.env.NODE_ENV === 'development') {
+      apiLogger.info('[Orders] Fetching seller orders for IDs:', sellerIds);
+    }
+
+    const result = await marketplaceOrderService.getSellerOrders(sellerIds, {
       status: query.status,
       source: query.source,
       page: query.page,
@@ -2387,8 +2870,15 @@ router.get('/orders/seller', requireAuth, async (req, res: Response) => {
  */
 router.get('/orders/:id', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    // User could be either buyer or seller
+    const sellerId = await resolveSellerId(req);
+    const buyerId = await resolveBuyerId(req);
+    const userId = sellerId || buyerId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer or seller profile found' });
+    }
+    const orderId = req.params.id as string as string;
 
     const result = await marketplaceOrderService.getOrder(orderId, userId);
 
@@ -2415,8 +2905,15 @@ router.get('/orders/:id', requireAuth, async (req, res: Response) => {
  */
 router.get('/orders/:id/history', requireAuth, async (req, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    // User could be either buyer or seller
+    const sellerId = await resolveSellerId(req);
+    const buyerId = await resolveBuyerId(req);
+    const userId = sellerId || buyerId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer or seller profile found' });
+    }
+    const orderId = req.params.id as string as string;
 
     const result = await marketplaceOrderService.getOrderHistory(orderId, userId);
 
@@ -2443,10 +2940,13 @@ router.get('/orders/:id/history', requireAuth, async (req, res: Response) => {
  */
 router.post('/orders/:id/confirm', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const orderId = req.params.id as string;
 
-    const result = await marketplaceOrderService.confirmOrder(orderId, sellerId);
+    const result = await marketplaceOrderService.confirmOrder(orderId, sellerIds);
 
     if (!result.success) {
       if (result.error === 'Order not found') {
@@ -2546,17 +3046,21 @@ const updateTrackingSchema = z.object({
  */
 router.post('/orders/:id/reject', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const orderId = req.params.id as string;
 
     const validation = rejectOrderSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res.status(400).json({ error: validation.error.issues[0].message });
     }
 
     const result = await marketplaceOrderService.rejectOrder({
       orderId,
-      sellerId,
+      sellerId: sellerIds[0],
+      sellerIds,
       reason: validation.data.reason,
     });
 
@@ -2583,17 +3087,21 @@ router.post('/orders/:id/reject', requireAuth, async (req, res: Response) => {
  */
 router.post('/orders/:id/process', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const orderId = req.params.id as string;
 
     const validation = startProcessingSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res.status(400).json({ error: validation.error.issues[0].message });
     }
 
     const result = await marketplaceOrderService.startProcessing({
       orderId,
-      sellerId,
+      sellerId: sellerIds[0],
+      sellerIds,
       sellerNotes: validation.data.sellerNotes,
     });
 
@@ -2620,17 +3128,21 @@ router.post('/orders/:id/process', requireAuth, async (req, res: Response) => {
  */
 router.post('/orders/:id/ship', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const orderId = req.params.id as string;
 
     const validation = shipOrderSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res.status(400).json({ error: validation.error.issues[0].message });
     }
 
     const result = await marketplaceOrderService.shipOrder({
       orderId,
-      sellerId,
+      sellerId: sellerIds[0],
+      sellerIds,
       carrier: validation.data.carrier,
       trackingNumber: validation.data.trackingNumber,
       estimatedDelivery: validation.data.estimatedDelivery,
@@ -2656,22 +3168,29 @@ router.post('/orders/:id/ship', requireAuth, async (req, res: Response) => {
 
 /**
  * POST /api/items/orders/:id/deliver
- * Buyer confirms delivery (shipped -> delivered)
+ * Buyer or seller confirms delivery (shipped -> delivered)
  */
 router.post('/orders/:id/deliver', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const validation = markDeliveredSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res.status(400).json({ error: validation.error.issues[0].message });
     }
+
+    // Detect whether caller is buyer or seller for this order
+    const order = await prisma.marketplaceOrder.findUnique({
+      where: { id: orderId },
+      select: { buyerId: true, sellerId: true },
+    });
+    const userRole = order?.sellerId === userId ? 'seller' : 'buyer';
 
     const result = await marketplaceOrderService.markDelivered({
       orderId,
       userId,
-      userRole: 'buyer',
+      userRole,
       buyerNotes: validation.data.buyerNotes,
     });
 
@@ -2699,7 +3218,7 @@ router.post('/orders/:id/deliver', requireAuth, async (req, res: Response) => {
 router.post('/orders/:id/close', requireAuth, async (req, res: Response) => {
   try {
     const userId = (req as AuthRequest).auth.userId;
-    const orderId = req.params.id as string;
+    const orderId = req.params.id as string as string;
 
     const result = await marketplaceOrderService.closeOrder({
       orderId,
@@ -2726,17 +3245,20 @@ router.post('/orders/:id/close', requireAuth, async (req, res: Response) => {
  */
 router.post('/orders/:id/cancel', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const orderId = req.params.id as string;
 
     const validation = cancelOrderSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res.status(400).json({ error: validation.error.issues[0].message });
     }
 
     const result = await marketplaceOrderService.cancelOrder(
       orderId,
-      sellerId,
+      sellerIds,
       validation.data.reason
     );
 
@@ -2763,17 +3285,20 @@ router.post('/orders/:id/cancel', requireAuth, async (req, res: Response) => {
  */
 router.patch('/orders/:id/tracking', requireAuth, async (req, res: Response) => {
   try {
-    const sellerId = (req as AuthRequest).auth.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+    if (sellerIds.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
+    }
     const orderId = req.params.id as string;
 
     const validation = updateTrackingSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: validation.error.errors[0].message });
+      return res.status(400).json({ error: validation.error.issues[0].message });
     }
 
     const result = await marketplaceOrderService.updateTracking(
       orderId,
-      sellerId,
+      sellerIds,
       validation.data.trackingNumber,
       validation.data.carrier
     );
@@ -2792,6 +3317,167 @@ router.patch('/orders/:id/tracking', requireAuth, async (req, res: Response) => 
   } catch (error) {
     apiLogger.error('Error updating tracking:', error);
     res.status(500).json({ error: 'Failed to update tracking' });
+  }
+});
+
+// =============================================================================
+// DEV ONLY: Seed Helper for Testing Portal E2E Flow
+// =============================================================================
+
+/**
+ * POST /api/items/dev/seed-minimal
+ * DEV ONLY: Creates minimal test data for Portal E2E flow testing
+ * - Creates a test seller user (if not exists)
+ * - Creates a test buyer user (if not exists)
+ * - Creates 2 active items visible in marketplace
+ * Returns the created entities for testing
+ */
+router.post('/dev/seed-minimal', async (req, res: Response) => {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Not available in production' });
+  }
+
+  try {
+    apiLogger.info('[DEV SEED] Starting minimal Portal E2E seed...');
+
+    // 1. Create or find test seller
+    let seller = await prisma.user.findFirst({
+      where: { email: 'test-seller@nabd.dev' }
+    });
+
+    if (!seller) {
+      seller = await prisma.user.create({
+        data: {
+          id: `dev_seller_${Date.now()}`,
+          email: 'test-seller@nabd.dev',
+          name: 'Test Seller (Dev)',
+          portalRole: 'seller',
+        }
+      });
+      apiLogger.info('[DEV SEED] Created test seller:', seller.id);
+    }
+
+    // 2. Create or find test buyer
+    let buyer = await prisma.user.findFirst({
+      where: { email: 'test-buyer@nabd.dev' }
+    });
+
+    if (!buyer) {
+      buyer = await prisma.user.create({
+        data: {
+          id: `dev_buyer_${Date.now()}`,
+          email: 'test-buyer@nabd.dev',
+          name: 'Test Buyer (Dev)',
+          portalRole: 'buyer',
+        }
+      });
+      apiLogger.info('[DEV SEED] Created test buyer:', buyer.id);
+    }
+
+    // 3. Create test items (visible in marketplace)
+    const timestamp = Date.now();
+    const items = await Promise.all([
+      prisma.item.create({
+        data: {
+          userId: seller.id,
+          name: 'Test Bearing SKF 6205',
+          sku: `DEV-SKF-${timestamp}-1`,
+          partNumber: '6205-2RS',
+          description: 'High-quality SKF bearing for testing',
+          itemType: 'part',
+          category: 'bearings',
+          visibility: 'public',  // MUST be public
+          status: 'active',      // MUST be active
+          price: 45.00,
+          currency: 'SAR',
+          stock: 100,            // MUST have stock > 0
+          minOrderQty: 1,
+          manufacturer: 'SKF',
+          brand: 'SKF',
+          publishedAt: new Date(),
+        }
+      }),
+      prisma.item.create({
+        data: {
+          userId: seller.id,
+          name: 'Test Hydraulic Pump 20GPM',
+          sku: `DEV-PUMP-${timestamp}-2`,
+          partNumber: 'HP-20-A',
+          description: 'Industrial hydraulic pump for testing',
+          itemType: 'part',
+          category: 'pumps',
+          visibility: 'public',  // MUST be public
+          status: 'active',      // MUST be active
+          price: 850.00,
+          currency: 'SAR',
+          stock: 10,             // MUST have stock > 0
+          minOrderQty: 1,
+          manufacturer: 'Parker',
+          brand: 'Parker Hannifin',
+          publishedAt: new Date(),
+        }
+      }),
+    ]);
+
+    apiLogger.info('[DEV SEED] Created test items:', items.map(i => ({ id: i.id, name: i.name, status: i.status, visibility: i.visibility })));
+
+    // Return created entities
+    res.status(201).json({
+      message: 'DEV seed completed successfully',
+      seller: { id: seller.id, email: seller.email, name: seller.name },
+      buyer: { id: buyer.id, email: buyer.email, name: buyer.name },
+      items: items.map(i => ({
+        id: i.id,
+        name: i.name,
+        sku: i.sku,
+        status: i.status,
+        visibility: i.visibility,
+        price: i.price,
+        stock: i.stock,
+        willShowInMarketplace: i.status === 'active' && i.visibility !== 'hidden',
+      })),
+      testInstructions: [
+        '1. Login as buyer (test-buyer@nabd.dev)',
+        '2. Navigate to Marketplace - should see the 2 test items',
+        '3. Create an RFQ for one of the items',
+        '4. Login as seller (test-seller@nabd.dev)',
+        '5. See RFQ in inbox, create a Quote',
+        '6. As buyer, accept the Quote',
+        '7. Verify Order is created',
+      ],
+    });
+  } catch (error) {
+    apiLogger.error('[DEV SEED] Error:', error);
+    res.status(500).json({ error: 'Failed to seed data' });
+  }
+});
+
+/**
+ * DELETE /api/items/dev/seed-minimal
+ * DEV ONLY: Cleans up test data created by seed-minimal
+ */
+router.delete('/dev/seed-minimal', async (req, res: Response) => {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Not available in production' });
+  }
+
+  try {
+    // Delete test items
+    const deletedItems = await prisma.item.deleteMany({
+      where: { sku: { startsWith: 'DEV-' } }
+    });
+
+    // Note: We don't delete users to avoid cascading issues
+
+    res.json({
+      message: 'DEV seed cleanup completed',
+      deletedItems: deletedItems.count,
+    });
+  } catch (error) {
+    apiLogger.error('[DEV SEED] Cleanup error:', error);
+    res.status(500).json({ error: 'Failed to cleanup' });
   }
 });
 

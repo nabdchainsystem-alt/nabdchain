@@ -65,16 +65,15 @@ const formatDate = (dateStr: string): string => {
 const StatusBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) => {
   const config = getInvoiceStatusConfig(status);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
+    >
       {config.label}
     </span>
   );
 };
 
-export const InvoicesTab: React.FC<InvoicesTabProps> = ({
-  onNavigate,
-  initialStatusFilter = 'all',
-}) => {
+export const InvoicesTab: React.FC<InvoicesTabProps> = ({ _onNavigate, initialStatusFilter = 'all' }) => {
   const { styles, t, direction } = usePortal();
   const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
@@ -131,8 +130,12 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
         ),
         cell: (info) => (
           <div>
-            <div className="font-medium" style={{ color: styles.textPrimary }}>{info.getValue()}</div>
-            <div className="text-xs" style={{ color: styles.textMuted }}>{info.row.original.orderNumber}</div>
+            <div className="font-medium" style={{ color: styles.textPrimary }}>
+              {info.getValue()}
+            </div>
+            <div className="text-xs" style={{ color: styles.textMuted }}>
+              {info.row.original.orderNumber}
+            </div>
           </div>
         ),
       }),
@@ -146,7 +149,9 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
           <div>
             <div style={{ color: styles.textPrimary }}>{info.getValue()}</div>
             {info.row.original.sellerCompany && (
-              <div className="text-xs" style={{ color: styles.textMuted }}>{info.row.original.sellerCompany}</div>
+              <div className="text-xs" style={{ color: styles.textMuted }}>
+                {info.row.original.sellerCompany}
+              </div>
             )}
           </div>
         ),
@@ -189,7 +194,10 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                 {formatDate(dueDate)}
               </div>
               {info.row.original.status === 'issued' && (
-                <div className="text-xs" style={{ color: isOverdue ? styles.error : isUrgent ? '#f59e0b' : styles.textMuted }}>
+                <div
+                  className="text-xs"
+                  style={{ color: isOverdue ? styles.error : isUrgent ? '#f59e0b' : styles.textMuted }}
+                >
                   {isOverdue ? `${Math.abs(daysUntil)} days overdue` : `${daysUntil} days left`}
                 </div>
               )}
@@ -213,8 +221,8 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
             <button
               className="p-1.5 rounded-md transition-colors"
               style={{ color: styles.textMuted }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
               <Eye size={18} />
             </button>
@@ -222,7 +230,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
         ),
       }),
     ],
-    [columnHelper, styles, t, isRTL]
+    [columnHelper, styles, t, isRTL],
   );
 
   // Filter invoices
@@ -355,7 +363,9 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
             <EmptyState
               icon={Receipt}
               title={t('buyer.invoices.noInvoices') || 'No invoices yet'}
-              description={t('buyer.invoices.noInvoicesDesc') || "You'll see invoices here once your orders are delivered."}
+              description={
+                t('buyer.invoices.noInvoicesDesc') || "You'll see invoices here once your orders are delivered."
+              }
             />
           ) : (
             <div>
@@ -376,13 +386,12 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                           >
                             <div className="flex items-center gap-1">
                               {flexRender(header.column.columnDef.header, header.getContext())}
-                              {header.column.getIsSorted() && (
-                                header.column.getIsSorted() === 'asc' ? (
+                              {header.column.getIsSorted() &&
+                                (header.column.getIsSorted() === 'asc' ? (
                                   <CaretUp size={14} />
                                 ) : (
                                   <CaretDown size={14} />
-                                )
-                              )}
+                                ))}
                             </div>
                           </th>
                         ))}
@@ -395,8 +404,8 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                         key={row.id}
                         className="border-t transition-colors cursor-pointer"
                         style={{ borderColor: styles.border }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = styles.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td key={cell.id} className="px-4 py-3 text-sm">
@@ -416,9 +425,13 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                   style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
                 >
                   <span className="text-sm" style={{ color: styles.textMuted }}>
-                    {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
-                    -{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filteredInvoices.length)}
-                    {' '}{t('common.of')} {filteredInvoices.length}
+                    {t('common.showing')}{' '}
+                    {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+                    {Math.min(
+                      (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                      filteredInvoices.length,
+                    )}{' '}
+                    {t('common.of')} {filteredInvoices.length}
                   </span>
 
                   <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>

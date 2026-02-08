@@ -5,6 +5,11 @@
 
 import { Router, Request, Response } from 'express';
 import { featureGatingService, GatedAction } from '../services/featureGatingService';
+import { apiLogger } from '../utils/logger';
+import {
+  requirePortalAuth,
+  PortalAuthRequest,
+} from '../middleware/portalAdminMiddleware';
 
 const router = Router();
 
@@ -15,10 +20,7 @@ const router = Router();
 /**
  * GET /api/gating/features
  *
- * Get all feature access status for a seller
- *
- * Headers:
- *   x-user-id: string (userId)
+ * Get all feature access status for the authenticated user
  *
  * Response:
  * {
@@ -31,19 +33,9 @@ const router = Router();
  *   }
  * }
  */
-router.get('/features', async (req: Request, res: Response) => {
+router.get('/features', requirePortalAuth(), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.headers['x-user-id'] as string || req.query.userId as string;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'User ID is required',
-        },
-      });
-    }
+    const userId = req.portalUser!.id;
 
     const result = await featureGatingService.getFeatureAccess(userId);
 
@@ -52,7 +44,7 @@ router.get('/features', async (req: Request, res: Response) => {
       ...result,
     });
   } catch (error) {
-    console.error('Get feature access error:', error);
+    apiLogger.error('Get feature access error:', error);
     res.status(500).json({
       success: false,
       error: {
@@ -66,10 +58,7 @@ router.get('/features', async (req: Request, res: Response) => {
 /**
  * GET /api/gating/features/:action
  *
- * Check if a specific action is allowed
- *
- * Headers:
- *   x-user-id: string (userId)
+ * Check if a specific action is allowed for the authenticated user
  *
  * Path params:
  *   action: GatedAction
@@ -82,20 +71,10 @@ router.get('/features', async (req: Request, res: Response) => {
  *   "redirectTo": "/portal/seller/onboarding"  // optional
  * }
  */
-router.get('/features/:action', async (req: Request, res: Response) => {
+router.get('/features/:action', requirePortalAuth(), async (req: PortalAuthRequest, res: Response) => {
   try {
-    const userId = req.headers['x-user-id'] as string || req.query.userId as string;
+    const userId = req.portalUser!.id;
     const action = req.params.action as GatedAction;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'User ID is required',
-        },
-      });
-    }
 
     // Validate action
     const validActions: GatedAction[] = [
@@ -138,7 +117,7 @@ router.get('/features/:action', async (req: Request, res: Response) => {
       ...result,
     });
   } catch (error) {
-    console.error('Check feature access error:', error);
+    apiLogger.error('Check feature access error:', error);
     res.status(500).json({
       success: false,
       error: {
@@ -214,7 +193,7 @@ router.get('/matrix', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get gating matrix error:', error);
+    apiLogger.error('Get gating matrix error:', error);
     res.status(500).json({
       success: false,
       error: {

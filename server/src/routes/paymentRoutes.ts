@@ -2,7 +2,7 @@
 // Payment Routes - Marketplace Payment API (Stage 6)
 // =============================================================================
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { idempotency } from '../middleware/idempotencyMiddleware';
@@ -48,9 +48,9 @@ const failPaymentSchema = z.object({
  * GET /api/payments/invoice/:invoiceId
  * Get all payments for an invoice
  */
-router.get('/invoice/:invoiceId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/invoice/:invoiceId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -75,9 +75,9 @@ router.get('/invoice/:invoiceId', requireAuth, async (req: AuthRequest, res: Res
  * GET /api/payments/buyer
  * Get all payments for the authenticated buyer
  */
-router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -100,9 +100,9 @@ router.get('/buyer', requireAuth, async (req: AuthRequest, res: Response) => {
  * Record a payment (buyer provides bank transfer reference)
  * Protected by idempotency to prevent duplicate payment records
  */
-router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'payment' }), async (req: AuthRequest, res: Response) => {
+router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'payment' }), async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -132,9 +132,9 @@ router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'pa
  * GET /api/payments/buyer/:id
  * Get single payment for buyer
  */
-router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/buyer/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -160,9 +160,9 @@ router.get('/buyer/:id', requireAuth, async (req: AuthRequest, res: Response) =>
  * GET /api/payments/seller
  * Get all payments for the authenticated seller
  */
-router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -184,9 +184,9 @@ router.get('/seller', requireAuth, async (req: AuthRequest, res: Response) => {
  * GET /api/payments/seller/:id
  * Get single payment for seller
  */
-router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -208,9 +208,9 @@ router.get('/seller/:id', requireAuth, async (req: AuthRequest, res: Response) =
  * POST /api/payments/seller/:id/confirm
  * Confirm a payment (seller verifies bank transfer received)
  */
-router.post('/seller/:id/confirm', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/confirm', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -241,9 +241,9 @@ router.post('/seller/:id/confirm', requireAuth, async (req: AuthRequest, res: Re
  * POST /api/payments/seller/:id/fail
  * Mark a payment as failed (seller could not verify)
  */
-router.post('/seller/:id/fail', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/seller/:id/fail', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = req.auth?.userId;
+    const userId = (req as AuthRequest).auth?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

@@ -17,13 +17,7 @@ import {
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import { Select } from '../../../components';
-import {
-  SmartFilters as SmartFiltersType,
-  UrgencyLevel,
-  SavingsCategory,
-  getUrgencyColor,
-  getSavingsColor,
-} from '../../../types/purchase.types';
+import { SmartFilters as SmartFiltersType, UrgencyLevel, SavingsCategory } from '../../../types/purchase.types';
 import { OrderHealthStatus } from '../../../types/order.types';
 
 interface SmartFiltersProps {
@@ -40,20 +34,40 @@ interface FilterChip {
   icon?: React.ElementType;
 }
 
-export const SmartFilters: React.FC<SmartFiltersProps> = ({
-  filters,
-  onFiltersChange,
-  statusOptions,
-}) => {
+export const SmartFilters: React.FC<SmartFiltersProps> = ({ filters, onFiltersChange, statusOptions }) => {
   const { styles, t, direction } = usePortal();
-  const isRtl = direction === 'rtl';
+  const _isRtl = direction === 'rtl';
 
   // Risk filter chips
   const riskChips: FilterChip[] = [
-    { id: 'on_track', label: t('buyer.purchases.onTrack') || 'On Track', value: 'on_track', color: styles.success, icon: CheckCircle },
-    { id: 'at_risk', label: t('buyer.purchases.atRisk') || 'At Risk', value: 'at_risk', color: '#f59e0b', icon: Warning },
-    { id: 'delayed', label: t('buyer.purchases.delayed') || 'Delayed', value: 'delayed', color: '#f97316', icon: Clock },
-    { id: 'critical', label: t('buyer.purchases.critical') || 'Critical', value: 'critical', color: styles.error, icon: WarningCircle },
+    {
+      id: 'on_track',
+      label: t('buyer.purchases.onTrack') || 'On Track',
+      value: 'on_track',
+      color: styles.success,
+      icon: CheckCircle,
+    },
+    {
+      id: 'at_risk',
+      label: t('buyer.purchases.atRisk') || 'At Risk',
+      value: 'at_risk',
+      color: '#f59e0b',
+      icon: Warning,
+    },
+    {
+      id: 'delayed',
+      label: t('buyer.purchases.delayed') || 'Delayed',
+      value: 'delayed',
+      color: '#f97316',
+      icon: Clock,
+    },
+    {
+      id: 'critical',
+      label: t('buyer.purchases.critical') || 'Critical',
+      value: 'critical',
+      color: styles.error,
+      icon: WarningCircle,
+    },
   ];
 
   // Urgency filter chips
@@ -61,14 +75,24 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
     { id: 'low', label: t('buyer.purchases.urgencyLow') || 'Low', value: 'low', color: styles.success },
     { id: 'medium', label: t('buyer.purchases.urgencyMedium') || 'Medium', value: 'medium', color: styles.info },
     { id: 'high', label: t('buyer.purchases.urgencyHigh') || 'High', value: 'high', color: '#f59e0b' },
-    { id: 'critical', label: t('buyer.purchases.urgencyCritical') || 'Critical', value: 'critical', color: styles.error },
+    {
+      id: 'critical',
+      label: t('buyer.purchases.urgencyCritical') || 'Critical',
+      value: 'critical',
+      color: styles.error,
+    },
   ];
 
   // Savings filter chips
   const savingsChips: FilterChip[] = [
     { id: 'good_deal', label: t('buyer.purchases.goodDeal') || 'Good Deal', value: 'good_deal', color: styles.success },
     { id: 'average', label: t('buyer.purchases.average') || 'Average', value: 'average', color: styles.textMuted },
-    { id: 'overpaying', label: t('buyer.purchases.overpaying') || 'Overpaying', value: 'overpaying', color: styles.error },
+    {
+      id: 'overpaying',
+      label: t('buyer.purchases.overpaying') || 'Overpaying',
+      value: 'overpaying',
+      color: styles.error,
+    },
   ];
 
   const handleRiskChange = (value: OrderHealthStatus | 'all') => {
@@ -113,15 +137,12 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
     chips: FilterChip[],
     activeValue: string,
     onChange: (value: string) => void,
-    icon: React.ElementType
+    icon: React.ElementType,
   ) => {
     const Icon = icon;
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        <span
-          className="text-xs font-medium flex items-center gap-1"
-          style={{ color: styles.textMuted }}
-        >
+        <span className="text-xs font-medium flex items-center gap-1" style={{ color: styles.textMuted }}>
           <Icon size={12} />
           {label}:
         </span>
@@ -186,11 +207,7 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
         </div>
 
         {/* Status dropdown */}
-        <Select
-          value={filters.status}
-          onChange={handleStatusChange}
-          options={statusOptions}
-        />
+        <Select value={filters.status} onChange={handleStatusChange} options={statusOptions} />
 
         {/* Clear all */}
         {hasActiveFilters && (
@@ -215,7 +232,7 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
           riskChips,
           filters.risk,
           handleRiskChange as (value: string) => void,
-          Warning
+          Warning,
         )}
 
         {/* Urgency filters */}
@@ -224,7 +241,7 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
           urgencyChips,
           filters.urgency,
           handleUrgencyChange as (value: string) => void,
-          Lightning
+          Lightning,
         )}
 
         {/* Savings filters */}
@@ -233,7 +250,7 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
           savingsChips,
           filters.savings,
           handleSavingsChange as (value: string) => void,
-          CurrencyDollar
+          CurrencyDollar,
         )}
       </div>
     </div>

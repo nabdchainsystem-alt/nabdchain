@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, CaretLeft, CaretRight, User } from 'phosphor-react';
+import { CaretLeft, CaretRight, User } from 'phosphor-react';
 import type { Resource, Allocation } from '../types';
 
 // =============================================================================
@@ -90,10 +90,7 @@ export const AllocationTimeline: React.FC<AllocationTimelineProps> = ({ resource
             <CaretRight size={20} className="text-stone-500" />
           </button>
           {monthOffset !== 0 && (
-            <button
-              onClick={() => setMonthOffset(0)}
-              className="text-sm text-indigo-600 hover:text-indigo-700 ml-2"
-            >
+            <button onClick={() => setMonthOffset(0)} className="text-sm text-indigo-600 hover:text-indigo-700 ml-2">
               Today
             </button>
           )}
@@ -128,10 +125,10 @@ export const AllocationTimeline: React.FC<AllocationTimelineProps> = ({ resource
                         isWeekend ? 'bg-stone-50 dark:bg-stone-800' : ''
                       } ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                     >
-                      <div className="text-stone-400">
-                        {date.toLocaleDateString('en-US', { weekday: 'narrow' })}
-                      </div>
-                      <div className={`font-medium ${isToday ? 'text-indigo-600' : 'text-stone-600 dark:text-stone-400'}`}>
+                      <div className="text-stone-400">{date.toLocaleDateString('en-US', { weekday: 'narrow' })}</div>
+                      <div
+                        className={`font-medium ${isToday ? 'text-indigo-600' : 'text-stone-600 dark:text-stone-400'}`}
+                      >
                         {date.getDate()}
                       </div>
                     </div>
@@ -152,11 +149,7 @@ export const AllocationTimeline: React.FC<AllocationTimelineProps> = ({ resource
                   <div className="w-48 flex-shrink-0 px-4 py-3 border-r border-stone-200 dark:border-stone-700">
                     <div className="flex items-center gap-2">
                       {resource.avatar ? (
-                        <img
-                          src={resource.avatar}
-                          alt={resource.name}
-                          className="w-6 h-6 rounded-full"
-                        />
+                        <img src={resource.avatar} alt={resource.name} className="w-6 h-6 rounded-full" />
                       ) : (
                         <div className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
                           <User size={12} className="text-indigo-600" />
@@ -184,11 +177,11 @@ export const AllocationTimeline: React.FC<AllocationTimelineProps> = ({ resource
                     {allocations.map((allocation) => {
                       const startDay = Math.max(
                         0,
-                        Math.floor((allocation.startDate.getTime() - monthDates[0].getTime()) / (24 * 60 * 60 * 1000))
+                        Math.floor((allocation.startDate.getTime() - monthDates[0].getTime()) / (24 * 60 * 60 * 1000)),
                       );
                       const endDay = Math.min(
                         monthDates.length - 1,
-                        Math.floor((allocation.endDate.getTime() - monthDates[0].getTime()) / (24 * 60 * 60 * 1000))
+                        Math.floor((allocation.endDate.getTime() - monthDates[0].getTime()) / (24 * 60 * 60 * 1000)),
                       );
                       const width = ((endDay - startDay + 1) / monthDates.length) * 100;
                       const left = (startDay / monthDates.length) * 100;

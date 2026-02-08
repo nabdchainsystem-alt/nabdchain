@@ -115,9 +115,9 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
   // Handle password change
   const handlePasswordChange = (password: string) => {
     if (activeTab === 'buyer') {
-      setBuyerData(prev => ({ ...prev, password }));
+      setBuyerData((prev) => ({ ...prev, password }));
     } else {
-      setSellerData(prev => ({ ...prev, password }));
+      setSellerData((prev) => ({ ...prev, password }));
     }
     setPasswordStrength(calculatePasswordStrength(password));
   };
@@ -147,7 +147,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
         portalAuthService.storeAuthTokens(
           { accessToken: result.accessToken, refreshToken: result.refreshToken },
           activeTab,
-          result.user.id
+          result.user.id,
         );
       }
 
@@ -158,16 +158,25 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
 
       // Reload page to show portal (routes are internal, not URL-based)
       window.location.reload();
-    } catch (err) {
+    } catch (_err) {
       setError('Network error. Please check your connection and try again.');
       setLoading(false);
     }
   };
 
   const currentPassword = activeTab === 'buyer' ? buyerData.password : sellerData.password;
-  const isFormValid = activeTab === 'buyer'
-    ? buyerData.fullName && buyerData.email && buyerData.password && buyerData.companyName && passwordStrength.score >= 4
-    : sellerData.fullName && sellerData.email && sellerData.password && sellerData.displayName && passwordStrength.score >= 4;
+  const isFormValid =
+    activeTab === 'buyer'
+      ? buyerData.fullName &&
+        buyerData.email &&
+        buyerData.password &&
+        buyerData.companyName &&
+        passwordStrength.score >= 4
+      : sellerData.fullName &&
+        sellerData.email &&
+        sellerData.password &&
+        sellerData.displayName &&
+        passwordStrength.score >= 4;
 
   return (
     <AnimatePresence>
@@ -186,7 +195,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-zinc-900 w-full max-w-[480px] rounded-xl shadow-[0_16px_32px_-8px_rgba(0,0,0,0.08),0_4px_8px_-4px_rgba(0,0,0,0.1)] overflow-hidden relative border border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
             >
               <button
@@ -200,7 +209,11 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                 {/* Header */}
                 <div className="text-center mb-6">
                   <div className="w-10 h-10 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black text-lg font-bold mx-auto mb-4">
-                    {activeTab === 'buyer' ? <ShoppingCart size={20} weight="fill" /> : <Storefront size={20} weight="fill" />}
+                    {activeTab === 'buyer' ? (
+                      <ShoppingCart size={20} weight="fill" />
+                    ) : (
+                      <Storefront size={20} weight="fill" />
+                    )}
                   </div>
                   <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">
                     {activeTab === 'buyer' ? 'Create Buyer Account' : 'Become a Seller'}
@@ -227,11 +240,11 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                     <input
                       type="text"
                       value={activeTab === 'buyer' ? buyerData.fullName : sellerData.fullName}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (activeTab === 'buyer') {
-                          setBuyerData(prev => ({ ...prev, fullName: e.target.value }));
+                          setBuyerData((prev) => ({ ...prev, fullName: e.target.value }));
                         } else {
-                          setSellerData(prev => ({ ...prev, fullName: e.target.value }));
+                          setSellerData((prev) => ({ ...prev, fullName: e.target.value }));
                         }
                       }}
                       className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
@@ -246,11 +259,11 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                       <input
                         type="email"
                         value={activeTab === 'buyer' ? buyerData.email : sellerData.email}
-                        onChange={e => {
+                        onChange={(e) => {
                           if (activeTab === 'buyer') {
-                            setBuyerData(prev => ({ ...prev, email: e.target.value }));
+                            setBuyerData((prev) => ({ ...prev, email: e.target.value }));
                           } else {
-                            setSellerData(prev => ({ ...prev, email: e.target.value }));
+                            setSellerData((prev) => ({ ...prev, email: e.target.value }));
                           }
                         }}
                         className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 pr-10 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
@@ -278,7 +291,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={currentPassword}
-                        onChange={e => handlePasswordChange(e.target.value)}
+                        onChange={(e) => handlePasswordChange(e.target.value)}
                         className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 pr-10 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
                         placeholder="Create a strong password"
                       />
@@ -293,7 +306,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                     {currentPassword && (
                       <div className="space-y-1">
                         <div className="flex gap-1 h-1">
-                          {[1, 2, 3, 4, 5].map(i => (
+                          {[1, 2, 3, 4, 5].map((i) => (
                             <div
                               key={i}
                               className={`flex-1 rounded-full ${i <= passwordStrength.score ? passwordStrength.color : 'bg-zinc-200 dark:bg-zinc-700'}`}
@@ -316,11 +329,11 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                     <input
                       type="text"
                       value={activeTab === 'buyer' ? buyerData.companyName : sellerData.displayName}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (activeTab === 'buyer') {
-                          setBuyerData(prev => ({ ...prev, companyName: e.target.value }));
+                          setBuyerData((prev) => ({ ...prev, companyName: e.target.value }));
                         } else {
-                          setSellerData(prev => ({ ...prev, displayName: e.target.value }));
+                          setSellerData((prev) => ({ ...prev, displayName: e.target.value }));
                         }
                       }}
                       className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
@@ -338,7 +351,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                         <input
                           type="tel"
                           value={buyerData.phoneNumber}
-                          onChange={e => setBuyerData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                          onChange={(e) => setBuyerData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
                           className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
                           placeholder="+966 5XX XXX XXXX"
                         />
@@ -351,7 +364,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                           </label>
                           <select
                             value={buyerData.country}
-                            onChange={e => setBuyerData(prev => ({ ...prev, country: e.target.value }))}
+                            onChange={(e) => setBuyerData((prev) => ({ ...prev, country: e.target.value }))}
                             className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
                           >
                             <option value="">Select</option>
@@ -372,7 +385,7 @@ export const PortalSignupModal: React.FC<PortalSignupModalProps> = ({
                           <input
                             type="text"
                             value={buyerData.city}
-                            onChange={e => setBuyerData(prev => ({ ...prev, city: e.target.value }))}
+                            onChange={(e) => setBuyerData((prev) => ({ ...prev, city: e.target.value }))}
                             className="w-full h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all"
                             placeholder="City"
                           />

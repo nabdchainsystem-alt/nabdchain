@@ -3,7 +3,6 @@ import {
   X,
   User,
   Package,
-  CurrencyDollar,
   Truck,
   FileText,
   Clock,
@@ -130,6 +129,12 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 };
 
 // =============================================================================
+// Constants
+// =============================================================================
+
+const VAT_RATE = 0.15; // 15% VAT (Saudi Arabia standard)
+
+// =============================================================================
 // QuoteDetailPanel Component
 // =============================================================================
 
@@ -201,11 +206,14 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
   }, [isOpen, onClose]);
 
   // Handle backdrop click
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  }, [onClose]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    },
+    [onClose],
+  );
 
   // Quote status checks
   const canAccept = canAcceptQuote(quote);
@@ -221,11 +229,7 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
   return (
     <>
       {/* Backdrop - transparent, below top bar */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ top: '64px' }}
-        onClick={handleBackdropClick}
-      />
+      <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={handleBackdropClick} />
 
       {/* Panel - below top bar with smooth animation */}
       <div
@@ -239,19 +243,12 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
           boxShadow: isAnimating ? '-8px 0 30px rgba(0, 0, 0, 0.1)' : 'none',
           right: isRtl ? 'auto' : 0,
           left: isRtl ? 0 : 'auto',
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-            ? 'translateX(-100%)'
-            : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: styles.border }}>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold" style={{ color: styles.textPrimary }}>
@@ -320,10 +317,7 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
 
           {/* Price & Delivery Summary */}
           <div className="p-4">
-            <div
-              className="p-4 rounded-lg"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="p-4 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs" style={{ color: styles.textMuted }}>
@@ -355,13 +349,27 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
                 </div>
               )}
 
-              <div className="mt-3 pt-3 border-t" style={{ borderColor: styles.border }}>
+              {/* Price Breakdown with VAT */}
+              <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: styles.border }}>
+                {/* Subtotal */}
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color: styles.textMuted }}>Subtotal</span>
+                  <span style={{ color: styles.textPrimary }}>{formatPrice(quote.totalPrice)}</span>
+                </div>
+                {/* VAT */}
+                <div className="flex items-center justify-between text-sm">
+                  <span style={{ color: styles.textMuted }}>VAT (15%)</span>
+                  <span style={{ color: styles.textPrimary }}>{formatPrice(quote.totalPrice * VAT_RATE)}</span>
+                </div>
+                {/* Divider */}
+                <div style={{ borderTop: `1px dashed ${styles.border}`, margin: '8px 0' }} />
+                {/* Total with VAT */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium" style={{ color: styles.textSecondary }}>
-                    Total
+                  <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                    Total (incl. VAT)
                   </span>
                   <span className="text-xl font-bold" style={{ color: styles.success }}>
-                    {formatPrice(quote.totalPrice)}
+                    {formatPrice(quote.totalPrice * (1 + VAT_RATE))}
                   </span>
                 </div>
               </div>
@@ -373,11 +381,7 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
                     {quote.deliveryDays} day{quote.deliveryDays !== 1 ? 's' : ''} lead time
                   </span>
                 </div>
-                <ValidityCountdown
-                  validUntil={quote.validUntil}
-                  size="sm"
-                  variant="badge"
-                />
+                <ValidityCountdown validUntil={quote.validUntil} size="sm" variant="badge" />
               </div>
             </div>
           </div>
@@ -517,10 +521,7 @@ export const QuoteDetailPanel: React.FC<QuoteDetailPanelProps> = ({
           style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
         >
           {validityStatus.isExpired ? (
-            <div
-              className="text-center py-2 rounded-lg"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="text-center py-2 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
               <p className="text-sm" style={{ color: styles.textMuted }}>
                 This quote has expired
               </p>

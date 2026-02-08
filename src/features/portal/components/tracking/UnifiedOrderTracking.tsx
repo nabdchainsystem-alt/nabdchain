@@ -6,107 +6,16 @@
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { featureLogger } from '../../../../utils/logger';
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { orderService } from '../../services/orderService';
-import { orderTimelineApiService, generateMockTimeline } from '../../services/orderTimelineService';
-import { Order, OrderStatus } from '../../types/order.types';
-import { OrderTimeline, RiskLevel } from '../../types/timeline.types';
+import { orderTimelineApiService } from '../../services/orderTimelineService';
+import { Order } from '../../types/order.types';
+import { OrderTimeline } from '../../types/timeline.types';
 
-// =============================================================================
-// Mock Order Generator for Development
-// =============================================================================
-
-function generateMockOrder(orderId: string, role: 'buyer' | 'seller'): Order {
-  // Guard against undefined orderId
-  const safeOrderId = orderId || `MOCK-${Date.now()}`;
-
-  // Extract order number from ID or generate one
-  const orderNum = safeOrderId.startsWith('ORD-')
-    ? safeOrderId.replace('ORD-', '')
-    : safeOrderId.slice(-6).toUpperCase();
-
-  // Randomly select a status to demonstrate different tracking states
-  const statuses: OrderStatus[] = [
-    'pending_confirmation',
-    'confirmed',
-    'in_progress',
-    'shipped',
-    'delivered'
-  ];
-  const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-
-  const now = new Date();
-  const createdAt = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
-  const confirmedAt = ['confirmed', 'in_progress', 'shipped', 'delivered'].includes(randomStatus)
-    ? new Date(createdAt.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString()
-    : undefined;
-  const shippedAt = ['shipped', 'delivered'].includes(randomStatus)
-    ? new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
-    : undefined;
-  const deliveredAt = randomStatus === 'delivered'
-    ? new Date(createdAt.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString()
-    : undefined;
-  const estimatedDelivery = !deliveredAt
-    ? new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
-    : undefined;
-
-  return {
-    id: safeOrderId,
-    orderNumber: `ORD-${orderNum}`,
-    buyerId: role === 'buyer' ? 'current-user' : 'buyer-123',
-    buyerName: role === 'buyer' ? 'You' : 'Ahmed Hassan',
-    buyerEmail: 'buyer@example.com',
-    buyerCompany: 'Buyer Company LLC',
-    sellerId: role === 'seller' ? 'current-user' : 'seller-456',
-    itemId: 'item-001',
-    itemName: 'Industrial Steel Rods (Grade A)',
-    itemSku: 'STL-ROD-A100',
-    itemImage: undefined,
-    rfqId: 'rfq-789',
-    rfqNumber: 'RFQ-2024-789',
-    quantity: 500,
-    unitPrice: 25.50,
-    totalPrice: 12750.00,
-    currency: 'USD',
-    status: randomStatus,
-    paymentStatus: 'paid',
-    fulfillmentStatus: randomStatus === 'delivered'
-      ? 'delivered'
-      : randomStatus === 'shipped'
-        ? 'out_for_delivery'
-        : 'not_started',
-    source: 'rfq',
-    shippingAddress: {
-      name: 'Ahmed Hassan',
-      company: 'Buyer Company LLC',
-      street1: '123 Industrial Zone',
-      city: 'Riyadh',
-      country: 'Saudi Arabia',
-      postalCode: '12345',
-    },
-    trackingNumber: shippedAt ? 'TRK-1234567890' : undefined,
-    carrier: shippedAt ? 'DHL Express' : undefined,
-    estimatedDelivery,
-    buyerNotes: 'Please ensure packaging is suitable for long-term storage.',
-    sellerNotes: 'Quality inspection completed. Ready for dispatch.',
-    internalNotes: role === 'seller' ? 'High-value customer. Priority handling.' : undefined,
-    createdAt: createdAt.toISOString(),
-    confirmedAt,
-    shippedAt,
-    deliveredAt,
-    updatedAt: now.toISOString(),
-    auditLog: [
-      {
-        id: 'audit-1',
-        timestamp: createdAt.toISOString(),
-        action: 'created',
-        actor: 'buyer',
-        actorId: 'buyer-123',
-      },
-    ],
-  };
-}
+// NOTE: Mock order generator removed - see MOCK_REMOVAL_REPORT.md
+// All order data must come from API. Frontend handles empty states gracefully.
 
 import { OrderTrackingHeader } from './OrderTrackingHeader';
 import { DeliveryConfidenceCard } from './DeliveryConfidenceCard';
@@ -123,12 +32,13 @@ import {
   DEFAULT_TRACKING_STAGES,
   getConfidenceMessage,
 } from './tracking.types';
+import { ThemeStyles } from '../../../../theme/portalColors';
 
 // =============================================================================
 // Loading Skeleton
 // =============================================================================
 
-const TrackingSkeleton: React.FC<{ styles: any }> = ({ styles }) => (
+const TrackingSkeleton: React.FC<{ styles: ThemeStyles }> = ({ styles }) => (
   <div className="animate-pulse">
     {/* Header skeleton */}
     <div className="px-6 py-4 border-b" style={{ borderColor: styles.border }}>
@@ -177,7 +87,7 @@ const TrackingSkeleton: React.FC<{ styles: any }> = ({ styles }) => (
 // Error State
 // =============================================================================
 
-const ErrorState: React.FC<{ message: string; styles: any; onRetry?: () => void }> = ({
+const ErrorState: React.FC<{ message: string; styles: ThemeStyles; onRetry?: () => void }> = ({
   message,
   styles,
   onRetry,
@@ -211,27 +121,17 @@ const ErrorState: React.FC<{ message: string; styles: any; onRetry?: () => void 
 // Data Transformation
 // =============================================================================
 
-function transformToTrackingStages(
-  order: Order,
-  timeline?: OrderTimeline
-): TrackingStage[] {
+function transformToTrackingStages(order: Order, timeline?: OrderTimeline): TrackingStage[] {
   // If we have timeline data from API, use it
   if (timeline?.steps) {
     return timeline.steps.map((step) => {
-      const stageConfig = DEFAULT_TRACKING_STAGES.find((s) =>
-        s.key === step.key || step.key.includes(s.key)
-      );
+      const stageConfig = DEFAULT_TRACKING_STAGES.find((s) => s.key === step.key || step.key.includes(s.key));
 
       return {
         key: step.key,
         label: step.label,
         buyerLabel: stageConfig?.buyerLabel || step.label,
-        status:
-          step.status === 'completed'
-            ? 'completed'
-            : step.status === 'active'
-            ? 'current'
-            : 'upcoming',
+        status: step.status === 'completed' ? 'completed' : step.status === 'active' ? 'current' : 'upcoming',
         date: step.actualAt,
         estimatedDate: step.promisedAt,
         note: undefined,
@@ -286,10 +186,7 @@ function transformToTrackingStages(
   });
 }
 
-function calculateDeliveryConfidence(
-  order: Order,
-  timeline?: OrderTimeline
-): DeliveryConfidence {
+function calculateDeliveryConfidence(order: Order, timeline?: OrderTimeline): DeliveryConfidence {
   // If order is delivered, it's on track
   if (order.status === 'delivered') {
     return 'on_track';
@@ -327,12 +224,7 @@ function getCurrentStage(stages: TrackingStage[]): TrackingStage {
 // Main Component
 // =============================================================================
 
-export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
-  orderId,
-  role,
-  onNavigate,
-  onClose,
-}) => {
+export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({ orderId, role, onNavigate, onClose }) => {
   const { styles, t } = usePortal();
   const { getToken } = useAuth();
 
@@ -359,22 +251,24 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
           }
         }
       } catch (apiErr) {
-        console.warn('API fetch failed, falling back to mock data:', apiErr);
+        console.error('[UnifiedOrderTracking] API fetch failed:', apiErr);
       }
 
-      // Fallback to mock order if API fails or returns null
+      // Return error if order not found - no mock fallback
       if (!order) {
-        console.info('Using mock order data for tracking demo');
-        order = generateMockOrder(orderId, role);
+        setError('Order not found');
+        setIsLoading(false);
+        return;
       }
 
-      // Try to fetch timeline data, fallback to mock
+      // Fetch timeline data from API
       let timeline: OrderTimeline | undefined;
       try {
         timeline = await orderTimelineApiService.getOrderTimeline(orderId, order.sellerId);
-      } catch {
-        // Fallback to mock timeline if API fails
-        timeline = generateMockTimeline(order) as OrderTimeline;
+      } catch (err) {
+        // No mock fallback - timeline will be undefined
+        console.error('[UnifiedOrderTracking] Failed to load timeline:', err);
+        timeline = undefined;
       }
 
       // Transform data
@@ -401,11 +295,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
       setTrackingData(data);
     } catch (err) {
       console.error('Failed to load tracking data:', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load order tracking information'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to load order tracking information');
     } finally {
       setIsLoading(false);
     }
@@ -416,10 +306,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
   }, [loadTrackingData]);
 
   // Generate automation signals for sellers
-  function getAutomationSignals(
-    timeline?: OrderTimeline,
-    order?: Order
-  ): string[] {
+  function getAutomationSignals(timeline?: OrderTimeline, order?: Order): string[] {
     const signals: string[] = [];
 
     if (!timeline || !order) return signals;
@@ -452,7 +339,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
 
   const handleDownloadSummary = () => {
     // Trigger PDF download
-    console.log('Download summary for order:', orderId);
+    featureLogger.info('Download summary for order:', orderId);
   };
 
   const handleUpdateShipment = () => {
@@ -501,10 +388,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
   // Render loading state
   if (isLoading) {
     return (
-      <div
-        className="h-full overflow-auto"
-        style={{ backgroundColor: styles.bgPrimary }}
-      >
+      <div className="h-full overflow-auto" style={{ backgroundColor: styles.bgPrimary }}>
         <TrackingSkeleton styles={styles} />
       </div>
     );
@@ -513,15 +397,8 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
   // Render error state
   if (error || !trackingData) {
     return (
-      <div
-        className="h-full overflow-auto"
-        style={{ backgroundColor: styles.bgPrimary }}
-      >
-        <ErrorState
-          message={error || 'Unable to load order tracking'}
-          styles={styles}
-          onRetry={loadTrackingData}
-        />
+      <div className="h-full overflow-auto" style={{ backgroundColor: styles.bgPrimary }}>
+        <ErrorState message={error || 'Unable to load order tracking'} styles={styles} onRetry={loadTrackingData} />
       </div>
     );
   }
@@ -529,10 +406,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
   const currentStage = trackingData.stages.find((s) => s.status === 'current') || trackingData.stages[0];
 
   return (
-    <div
-      className="h-full flex flex-col overflow-hidden"
-      style={{ backgroundColor: styles.bgPrimary }}
-    >
+    <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: styles.bgPrimary }}>
       {/* Header */}
       <OrderTrackingHeader
         order={trackingData.order}
@@ -564,10 +438,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({
 
         {/* Timeline section header */}
         <div className="px-6 pt-2 pb-3">
-          <h3
-            className="text-sm font-semibold"
-            style={{ color: styles.textPrimary }}
-          >
+          <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
             {t('tracking.timeline') || 'Order Timeline'}
           </h3>
         </div>

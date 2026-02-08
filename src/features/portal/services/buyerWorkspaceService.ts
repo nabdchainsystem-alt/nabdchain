@@ -195,6 +195,7 @@ export interface EnhancedExpenseSummary extends ExpenseSummary {
   budgetComparison: BudgetVsActual[];
   categoryInefficiencies: CategoryInefficiency[];
   totalPotentialSavings: number;
+  savingsCurrency: string;
   healthScore: number; // 0-100, higher is better
 }
 
@@ -249,7 +250,7 @@ export const buyerWorkspaceService = {
 
   async getPurchases(
     token: string,
-    filters?: { status?: string; supplierId?: string; search?: string; dateFrom?: string; dateTo?: string }
+    filters?: { status?: string; supplierId?: string; search?: string; dateFrom?: string; dateTo?: string },
   ): Promise<PurchaseOrder[]> {
     const url = new URL(`${API_URL}/buyer/purchases`);
     if (filters?.status) url.searchParams.append('status', filters.status);
@@ -309,10 +310,7 @@ export const buyerWorkspaceService = {
   // Suppliers
   // ---------------------------------------------------------------------------
 
-  async getSuppliers(
-    token: string,
-    filters?: { search?: string; country?: string }
-  ): Promise<Supplier[]> {
+  async getSuppliers(token: string, filters?: { search?: string; country?: string }): Promise<Supplier[]> {
     const url = new URL(`${API_URL}/buyer/suppliers`);
     if (filters?.search) url.searchParams.append('search', filters.search);
     if (filters?.country) url.searchParams.append('country', filters.country);
@@ -350,10 +348,7 @@ export const buyerWorkspaceService = {
   // Inventory
   // ---------------------------------------------------------------------------
 
-  async getInventory(
-    token: string,
-    filters?: { status?: string; search?: string }
-  ): Promise<InventoryItem[]> {
+  async getInventory(token: string, filters?: { status?: string; search?: string }): Promise<InventoryItem[]> {
     const url = new URL(`${API_URL}/buyer/inventory`);
     if (filters?.status) url.searchParams.append('status', filters.status);
     if (filters?.search) url.searchParams.append('search', filters.search);
@@ -390,7 +385,7 @@ export const buyerWorkspaceService = {
   async updateInventoryItem(
     token: string,
     id: string,
-    data: { quantity?: number; reorderLevel?: number }
+    data: { quantity?: number; reorderLevel?: number },
   ): Promise<InventoryItem> {
     const response = await fetch(`${API_URL}/buyer/inventory/${id}`, {
       method: 'PATCH',
@@ -415,7 +410,7 @@ export const buyerWorkspaceService = {
 
   async getExpenses(
     token: string,
-    filters?: { category?: string; dateFrom?: string; dateTo?: string }
+    filters?: { category?: string; dateFrom?: string; dateTo?: string },
   ): Promise<Expense[]> {
     const url = new URL(`${API_URL}/buyer/expenses`);
     if (filters?.category) url.searchParams.append('category', filters.category);
@@ -469,7 +464,7 @@ export const buyerWorkspaceService = {
 
   async getInventoryWithForecast(
     token: string,
-    filters?: { status?: string; search?: string }
+    filters?: { status?: string; search?: string },
   ): Promise<InventoryItemWithForecast[]> {
     const url = new URL(`${API_URL}/buyer/inventory/forecast`);
     if (filters?.status) url.searchParams.append('status', filters.status);
@@ -480,9 +475,8 @@ export const buyerWorkspaceService = {
     });
 
     if (!response.ok) {
-      // Fallback to basic inventory with mock forecast data
-      const inventory = await this.getInventory(token, filters);
-      return inventory.map((item) => this.generateMockForecast(item));
+      // Return empty array - API endpoint not available
+      return [];
     }
 
     return response.json();
@@ -505,7 +499,7 @@ export const buyerWorkspaceService = {
     token: string,
     itemId: string,
     orderQty: number,
-    supplierId?: string
+    supplierId?: string,
   ): Promise<CostImpactSimulation> {
     const response = await fetch(`${API_URL}/buyer/inventory/${itemId}/simulate`, {
       method: 'POST',
@@ -533,9 +527,18 @@ export const buyerWorkspaceService = {
     });
 
     if (!response.ok) {
-      // Fallback to basic summary with mock analytics
+      // Return basic summary without analytics - API endpoint not available
       const basicSummary = await this.getExpenseSummary(token);
-      return this.generateMockEnhancedSummary(basicSummary);
+      return {
+        ...basicSummary,
+        leakages: [],
+        priceDriftAlerts: [],
+        budgetComparison: [],
+        categoryInefficiencies: [],
+        totalPotentialSavings: 0,
+        savingsCurrency: 'SAR',
+        healthScore: 50,
+      };
     }
 
     return response.json();
@@ -565,109 +568,8 @@ export const buyerWorkspaceService = {
     return response.json();
   },
 
-  // ---------------------------------------------------------------------------
-  // Helper: Generate mock forecast data (for frontend-only demo)
-  // ---------------------------------------------------------------------------
-
-  generateMockForecast(item: InventoryItem): InventoryItemWithForecast {
-    const avgDailyUsage = Math.max(1, Math.round(item.reorderLevel / 14)); // Estimate
-    const daysUntilStockout = Math.round(item.quantity / avgDailyUsage);
-    const now = new Date();
-    const reorderDate = new Date(now.getTime() + (daysUntilStockout - 7) * 24 * 60 * 60 * 1000);
-
-    return {
-      ...item,
-      avgDailyUsage,
-      pendingOrderQty: 0,
-      forecast: {
-        daysUntilStockout,
-        depletionRatePerDay: avgDailyUsage,
-        suggestedReorderDate: reorderDate.toISOString(),
-        confidenceLevel: daysUntilStockout > 30 ? 'high' : daysUntilStockout > 14 ? 'medium' : 'low',
-        basedOnDays: 30,
-      },
-      supplierOptions: [
-        {
-          supplierId: 'sup-1',
-          supplierName: 'Primary Supplier',
-          lastUnitPrice: 45.0,
-          avgDeliveryDays: 5,
-          rating: 4.5,
-          inStock: true,
-          minOrderQty: 10,
-          currency: 'SAR',
-        },
-        {
-          supplierId: 'sup-2',
-          supplierName: 'Backup Supplier',
-          lastUnitPrice: 48.0,
-          avgDeliveryDays: 3,
-          rating: 4.2,
-          inStock: true,
-          minOrderQty: 5,
-          currency: 'SAR',
-        },
-      ],
-      costSimulation: {
-        currentUnitCost: 45.0,
-        projectedUnitCost: 44.0,
-        recommendedQty: Math.max(item.reorderLevel * 2, 50),
-        totalCost: Math.max(item.reorderLevel * 2, 50) * 44.0,
-        potentialSavings: Math.max(item.reorderLevel * 2, 50) * 1.0,
-        savingsPercent: 2.2,
-        bestSupplier: 'Primary Supplier',
-      },
-    };
-  },
-
-  generateMockEnhancedSummary(basicSummary: ExpenseSummary): EnhancedExpenseSummary {
-    return {
-      ...basicSummary,
-      leakages: [
-        {
-          id: 'leak-1',
-          category: 'shipping',
-          amount: 1200,
-          description: 'Duplicate shipping charges detected on 3 orders',
-          severity: 'medium',
-          detectedAt: new Date().toISOString(),
-          recommendation: 'Review shipping invoices for orders #1234, #1235, #1236',
-        },
-      ],
-      priceDriftAlerts: [
-        {
-          id: 'drift-1',
-          supplierId: 'sup-1',
-          supplierName: 'Main Supplier Co.',
-          itemName: 'Steel Bolts M10',
-          previousPrice: 2.5,
-          currentPrice: 2.85,
-          driftPercent: 14,
-          driftDirection: 'up',
-          periodDays: 30,
-          currency: 'SAR',
-        },
-      ],
-      budgetComparison: [
-        { category: 'shipping', budgetAmount: 5000, actualAmount: 4200, variance: -800, variancePercent: -16, status: 'under', trend: 'improving' },
-        { category: 'customs', budgetAmount: 3000, actualAmount: 3400, variance: 400, variancePercent: 13.3, status: 'over', trend: 'worsening' },
-        { category: 'storage', budgetAmount: 2000, actualAmount: 1900, variance: -100, variancePercent: -5, status: 'on_track', trend: 'stable' },
-        { category: 'other', budgetAmount: 1000, actualAmount: 800, variance: -200, variancePercent: -20, status: 'under', trend: 'improving' },
-      ],
-      categoryInefficiencies: [
-        {
-          category: 'shipping',
-          inefficiencyScore: 35,
-          topIssues: ['Multiple carriers for same route', 'Non-consolidated shipments'],
-          recommendations: ['Consolidate shipments weekly', 'Negotiate volume discount with primary carrier'],
-          potentialSavings: 800,
-          currency: 'SAR',
-        },
-      ],
-      totalPotentialSavings: 2000,
-      healthScore: 72,
-    };
-  },
+  // NOTE: Mock generators removed - see MOCK_REMOVAL_REPORT.md
+  // All data must come from API. Frontend handles empty states gracefully.
 };
 
 export default buyerWorkspaceService;

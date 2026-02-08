@@ -53,7 +53,7 @@ router.get('/google/callback', async (req, res) => {
 // Outlook Auth
 router.get('/outlook', async (req: any, res) => {
     try {
-        const userId = req.auth?.userId;
+        const userId = (req as AuthRequest).auth?.userId;
         if (!userId) {
             return res.status(401).send("Unauthorized: User ID required to connect Outlook Account");
         }

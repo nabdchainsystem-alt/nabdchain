@@ -1,5 +1,15 @@
 import React from 'react';
-import { IconProps, Clock, CheckCircle, Truck, Warning, WarningCircle, XCircle, Hourglass, Package } from 'phosphor-react';
+import {
+  IconProps,
+  Clock,
+  CheckCircle,
+  Truck,
+  Warning,
+  WarningCircle,
+  XCircle,
+  Hourglass,
+  Package,
+} from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 
 // =============================================================================
@@ -157,7 +167,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const displayLabel = customLabel || badgeConfig.label;
 
   // Variant colors
-  const variantColors: Record<BadgeVariant, { bg: string; darkBg: string; text: string; darkText: string; border: string }> = {
+  const variantColors: Record<
+    BadgeVariant,
+    { bg: string; darkBg: string; text: string; darkText: string; border: string }
+  > = {
     default: {
       bg: styles.bgSecondary,
       darkBg: styles.bgSecondary,
@@ -225,9 +238,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
         color: styles.isDark ? colors.darkText : colors.text,
       }}
     >
-      {showIcon && Icon && (
-        <Icon size={sizeStyle.icon} weight="bold" />
-      )}
+      {showIcon && Icon && <Icon size={sizeStyle.icon} weight="bold" />}
       {displayLabel}
     </span>
   );
@@ -257,6 +268,7 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
   showLabel = true,
   className = '',
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles } = usePortal();
 
   const priorityConfig: Record<PriorityLevel, { color: string; label: string; pulse: boolean }> = {
@@ -278,10 +290,7 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
   const sizeStyle = sizeConfig[size];
 
   return (
-    <span
-      className={`inline-flex items-center ${sizeStyle.gap} ${className}`}
-      title={config.label}
-    >
+    <span className={`inline-flex items-center ${sizeStyle.gap} ${className}`} title={config.label}>
       <span
         className={`${sizeStyle.dot} rounded-full ${config.pulse ? 'animate-pulse' : ''}`}
         style={{ backgroundColor: config.color }}
@@ -317,6 +326,7 @@ export const ResponseTimeBadge: React.FC<ResponseTimeBadgeProps> = ({
   showLabel = true,
   className = '',
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles } = usePortal();
 
   const getConfig = () => {

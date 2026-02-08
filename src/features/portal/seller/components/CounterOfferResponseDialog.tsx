@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  CurrencyDollar,
-  Truck,
-  ArrowsClockwise,
-  CheckCircle,
-  XCircle,
-  User,
-  Package,
-  ArrowRight,
-  Spinner,
-  Info,
-} from 'phosphor-react';
+import { X, ArrowsClockwise, CheckCircle, XCircle, User, Package, ArrowRight, Spinner, Info } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { CounterOffer, Quote } from '../../types/item.types';
 
@@ -48,7 +36,10 @@ function formatPrice(amount: number, currency: string = 'SAR'): string {
   return `${currency} ${amount.toLocaleString()}`;
 }
 
-function calculatePriceChange(original: number, proposed: number): {
+function calculatePriceChange(
+  original: number,
+  proposed: number,
+): {
   difference: number;
   percent: number;
   isReduction: boolean;
@@ -103,6 +94,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
   onReject,
   isSubmitting = false,
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, direction } = usePortal();
 
   // Form state
@@ -161,10 +153,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity"
-        onClick={handleClose}
-      />
+      <div className="fixed inset-0 bg-black/50 z-50 transition-opacity" onClick={handleClose} />
 
       {/* Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -173,10 +162,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
           style={{ backgroundColor: styles.bgCard }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between p-4 border-b"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: styles.border }}>
             <div className="flex items-center gap-2">
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -225,10 +211,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
 
             {/* Item Info */}
             {itemName && (
-              <div
-                className="p-3 rounded-lg flex items-center gap-3"
-                style={{ backgroundColor: styles.bgSecondary }}
-              >
+              <div className="p-3 rounded-lg flex items-center gap-3" style={{ backgroundColor: styles.bgSecondary }}>
                 <Package size={18} style={{ color: styles.textMuted }} />
                 <span className="text-sm" style={{ color: styles.textPrimary }}>
                   {itemName}
@@ -237,10 +220,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
             )}
 
             {/* Price Comparison */}
-            <div
-              className="p-4 rounded-lg"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="p-4 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
               <p className="text-xs font-medium mb-3" style={{ color: styles.textMuted }}>
                 PRICE COMPARISON
               </p>
@@ -267,7 +247,10 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t flex items-center justify-center" style={{ borderColor: styles.border }}>
+              <div
+                className="mt-3 pt-3 border-t flex items-center justify-center"
+                style={{ borderColor: styles.border }}
+              >
                 <span
                   className="px-2 py-1 rounded text-sm font-medium"
                   style={{
@@ -285,10 +268,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
             {(counterOffer.proposedQuantity || counterOffer.proposedDeliveryDays) && (
               <div className="flex gap-4">
                 {counterOffer.proposedQuantity && counterOffer.proposedQuantity !== quote.quantity && (
-                  <div
-                    className="flex-1 p-3 rounded-lg"
-                    style={{ backgroundColor: styles.bgSecondary }}
-                  >
+                  <div className="flex-1 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                     <p className="text-xs" style={{ color: styles.textMuted }}>
                       Quantity
                     </p>
@@ -302,10 +282,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
                   </div>
                 )}
                 {counterOffer.proposedDeliveryDays && counterOffer.proposedDeliveryDays !== quote.deliveryDays && (
-                  <div
-                    className="flex-1 p-3 rounded-lg"
-                    style={{ backgroundColor: styles.bgSecondary }}
-                  >
+                  <div className="flex-1 p-3 rounded-lg" style={{ backgroundColor: styles.bgSecondary }}>
                     <p className="text-xs" style={{ color: styles.textMuted }}>
                       Lead Time
                     </p>
@@ -402,19 +379,13 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
                   ) : (
                     <XCircle size={20} style={{ color: styles.error }} weight="bold" />
                   )}
-                  <span
-                    className="font-medium"
-                    style={{ color: action === 'accept' ? styles.success : styles.error }}
-                  >
+                  <span className="font-medium" style={{ color: action === 'accept' ? styles.success : styles.error }}>
                     {action === 'accept' ? 'Accepting counter-offer' : 'Rejecting counter-offer'}
                   </span>
                 </div>
 
                 <div>
-                  <label
-                    className="block text-sm font-medium mb-1.5"
-                    style={{ color: styles.textPrimary }}
-                  >
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
                     {action === 'accept' ? 'Response Message' : 'Reason for Rejection'}
                     {action === 'reject' && <span className="text-red-500 ml-1">*</span>}
                     {action === 'accept' && (
@@ -450,8 +421,8 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
                   >
                     <Info size={18} style={{ color: styles.success }} className="mt-0.5 flex-shrink-0" />
                     <p className="text-xs" style={{ color: styles.isDark ? '#86efac' : '#15803d' }}>
-                      Accepting will create a revised quote with the buyer's proposed terms.
-                      The buyer will be notified and can then accept the revised quote.
+                      Accepting will create a revised quote with the buyer's proposed terms. The buyer will be notified
+                      and can then accept the revised quote.
                     </p>
                   </div>
                 )}
@@ -460,10 +431,7 @@ export const CounterOfferResponseDialog: React.FC<CounterOfferResponseDialogProp
           </div>
 
           {/* Footer */}
-          <div
-            className="flex items-center justify-between gap-3 p-4 border-t"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between gap-3 p-4 border-t" style={{ borderColor: styles.border }}>
             {action === null ? (
               <button
                 onClick={handleClose}

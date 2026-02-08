@@ -164,6 +164,7 @@ interface RoleGateProps {
  * </RoleGate>
  */
 export function RoleGate({ role, children, fallback = null }: RoleGateProps): React.ReactElement | null {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { hasRole, isLoading, roles } = usePermissions();
 
   if (isLoading) {

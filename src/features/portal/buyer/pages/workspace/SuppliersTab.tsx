@@ -17,7 +17,6 @@ import {
   Plus,
   Star,
   Timer,
-  CheckCircle,
   Truck,
   TrendUp,
   TrendDown,
@@ -102,9 +101,7 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
     () => [
       columnHelper.accessor('name', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.supplierName')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.supplierName')}</span>
         ),
         cell: (info) => (
           <span className="font-medium" style={{ color: styles.textPrimary }}>
@@ -114,44 +111,26 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
       }),
       columnHelper.accessor('country', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.country')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.country')}</span>
         ),
-        cell: (info) => (
-          <span style={{ color: styles.textSecondary }}>{info.getValue() || '-'}</span>
-        ),
+        cell: (info) => <span style={{ color: styles.textSecondary }}>{info.getValue() || '-'}</span>,
       }),
       columnHelper.accessor('totalOrders', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.totalOrders')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.totalOrders')}</span>
         ),
-        cell: (info) => (
-          <span style={{ color: styles.textPrimary }}>{info.getValue()}</span>
-        ),
+        cell: (info) => <span style={{ color: styles.textPrimary }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor('totalSpend', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.totalSpend')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.totalSpend')}</span>
         ),
-        cell: (info) => (
-          <span style={{ color: styles.textPrimary }}>
-            SAR {info.getValue().toLocaleString()}
-          </span>
-        ),
+        cell: (info) => <span style={{ color: styles.textPrimary }}>SAR {info.getValue().toLocaleString()}</span>,
       }),
       // Performance Column - On-Time Delivery
       columnHelper.display({
         id: 'performance',
-        header: () => (
-          <span className="block text-center">
-            {t('buyer.workspace.performance')}
-          </span>
-        ),
+        header: () => <span className="block text-center">{t('buyer.workspace.performance')}</span>,
         cell: (info) => {
           const row = info.row.original;
           const perf = getSupplierPerformance(row.id);
@@ -188,17 +167,13 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
       }),
       columnHelper.accessor('rating', {
         header: () => (
-          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t('buyer.workspace.rating')}
-          </span>
+          <span className={`block ${isRTL ? 'text-right' : 'text-left'}`}>{t('buyer.workspace.rating')}</span>
         ),
         cell: (info) => renderRating(info.getValue()),
       }),
       columnHelper.display({
         id: 'actions',
-        header: () => (
-          <span className="w-full text-center block">{t('common.actions')}</span>
-        ),
+        header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
         cell: (info) => {
           const row = info.row.original;
           return (
@@ -224,7 +199,7 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
         },
       }),
     ],
-    [t, styles, isRTL, onCreatePO, getSupplierPerformance]
+    [t, styles, isRTL, onCreatePO, getSupplierPerformance],
   );
 
   const table = useReactTable({
@@ -288,19 +263,14 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
           <table className="w-full">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr
-                  key={headerGroup.id}
-                  style={{ backgroundColor: styles.bgSecondary }}
-                >
+                <tr key={headerGroup.id} style={{ backgroundColor: styles.bgSecondary }}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
                       style={{ color: styles.textMuted }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
                   ))}
                 </tr>
@@ -355,7 +325,7 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
               {t('common.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
+                table.getFilteredRowModel().rows.length,
               )}{' '}
               {t('common.of')} {table.getFilteredRowModel().rows.length}
             </span>

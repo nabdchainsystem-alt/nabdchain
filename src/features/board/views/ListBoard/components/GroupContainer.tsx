@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { CaretDown as ChevronDown, Plus, DotsThree as MoreHorizontal, Sparkle as Sparkles } from 'phosphor-react';
+import { CaretDown as ChevronDown, Plus, DotsThree as MoreHorizontal } from 'phosphor-react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { GroupData, TaskItem, Status, StatusOption, ColumnWidths } from '../types';
+import { GroupData, TaskItem, StatusOption, ColumnWidths } from '../types';
 
 import { SortableTaskRow } from './SortableTaskRow';
 
@@ -18,7 +18,7 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
   statusOptions,
   colWidths,
   onColResize,
-  onGroupUpdate
+  onGroupUpdate,
 }) => {
   // ... existing code ...
 
@@ -30,14 +30,13 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-
   const handleUpdateItem = (updatedItem: TaskItem) => {
-    const newItems = group.items.map(item => item.id === updatedItem.id ? updatedItem : item);
+    const newItems = group.items.map((item) => (item.id === updatedItem.id ? updatedItem : item));
     onGroupUpdate({ ...group, items: newItems });
   };
 
   const handleDeleteItem = (itemId: string) => {
-    const newItems = group.items.filter(item => item.id !== itemId);
+    const newItems = group.items.filter((item) => item.id !== itemId);
     onGroupUpdate({ ...group, items: newItems });
   };
 
@@ -48,12 +47,10 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
       person: null,
       status: 'To Do', // Default to 'To Do' instead of empty or 'In Progress'? Standard is usually To Do.
       date: null,
-      selected: false
+      selected: false,
     };
     onGroupUpdate({ ...group, items: [...group.items, newItem] });
   };
-
-
 
   // ... (omitted resize logic) ...
 
@@ -84,12 +81,15 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
 
   // Stats for footer
   const total = group.items.length;
-  const statusCounts = group.items.reduce((acc, item) => {
-    // Normalize item status to match options if possible, or just use raw string
-    const s = item.status || 'To Do';
-    acc[s] = (acc[s] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const statusCounts = group.items.reduce(
+    (acc, item) => {
+      // Normalize item status to match options if possible, or just use raw string
+      const s = item.status || 'To Do';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   return (
     <div className="mb-12 font-sans">
@@ -99,7 +99,10 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
           <MoreHorizontal className="w-5 h-5 text-gray-400 cursor-pointer" />
         </div>
         <button onClick={() => setIsCollapsed(!isCollapsed)} className="mr-2 p-1 hover:bg-gray-100 rounded">
-          <ChevronDown className={`w-5 h-5 transform transition-transform ${isCollapsed ? '-rotate-90' : ''}`} style={{ color: group.color }} />
+          <ChevronDown
+            className={`w-5 h-5 transform transition-transform ${isCollapsed ? '-rotate-90' : ''}`}
+            style={{ color: group.color }}
+          />
         </button>
         <h2
           className="text-[18px] font-normal cursor-text hover:border hover:border-gray-300 px-1 rounded truncate leading-tight"
@@ -111,7 +114,6 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
           {group.title}
         </h2>
         <div className="ml-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-
           <span className="text-gray-300 text-xs">{group.items.length} items</span>
         </div>
       </div>
@@ -174,10 +176,7 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
 
           {/* Sortable Context and Rows */}
           <div className="flex flex-col">
-            <SortableContext
-              items={group.items.map(i => i.id)}
-              strategy={verticalListSortingStrategy}
-            >
+            <SortableContext items={group.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               {group.items.map((item) => (
                 <SortableTaskRow
                   key={item.id}
@@ -193,7 +192,10 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
 
             {/* Add Item Row */}
             <div className="flex border-b border-gray-200 h-[36px]">
-              <div className="w-1.5 flex-shrink-0 bg-transparent rounded-bl-lg" style={{ backgroundColor: group.color }}></div>
+              <div
+                className="w-1.5 flex-shrink-0 bg-transparent rounded-bl-lg"
+                style={{ backgroundColor: group.color }}
+              ></div>
               <div className="w-10 border-r border-gray-200 bg-white flex items-center justify-center flex-shrink-0">
                 <div className="w-4 h-4 border border-gray-200 rounded flex items-center justify-center cursor-pointer hover:bg-gray-100 opacity-0 hover:opacity-100"></div>
               </div>
@@ -227,7 +229,7 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
               {/* Status Summary - No vertical borders */}
               <div className="bg-white px-2 py-2" style={{ width: colWidths.status }}>
                 <div className="w-full h-full flex rounded overflow-hidden bg-[#aeaeae]">
-                  {statusOptions.map(option => {
+                  {statusOptions.map((option) => {
                     // Match by ID or Label
                     const count = statusCounts[option.id] || statusCounts[option.label] || 0;
                     if (count === 0) return null;
@@ -240,7 +242,7 @@ export const GroupContainer: React.FC<GroupContainerProps> = ({
                         className="h-full"
                         style={{
                           width: `${width}%`,
-                          backgroundColor: color
+                          backgroundColor: color,
                         }}
                         title={`${option.label}: ${count}`}
                       ></div>

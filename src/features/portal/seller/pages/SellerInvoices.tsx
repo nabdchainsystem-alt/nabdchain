@@ -20,9 +20,7 @@ import {
   XCircle,
   X,
   Funnel,
-  CurrencyDollar,
   Warning,
-  Clock,
   PaperPlaneTilt,
   Receipt,
   Spinner,
@@ -86,7 +84,9 @@ const QuickStat: React.FC<{
   warning?: boolean;
 }> = ({ label, value, color, styles, warning }) => (
   <div className="flex items-center gap-2">
-    <span className="text-sm" style={{ color: styles.textMuted }}>{label}:</span>
+    <span className="text-sm" style={{ color: styles.textMuted }}>
+      {label}:
+    </span>
     <span
       className={`text-sm font-semibold ${warning ? 'flex items-center gap-1' : ''}`}
       style={{ color: color || styles.textPrimary }}
@@ -98,22 +98,35 @@ const QuickStat: React.FC<{
 );
 
 // Status badge component
-const StatusBadge: React.FC<{ status: InvoiceStatus; styles: ReturnType<typeof usePortal>['styles'] }> = ({ status, styles }) => {
+const StatusBadge: React.FC<{ status: InvoiceStatus; styles: ReturnType<typeof usePortal>['styles'] }> = ({
+  status,
+  styles,
+}) => {
   const config = getInvoiceStatusConfig(status);
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
       style={{
-        backgroundColor: status === 'paid' ? 'rgba(34,197,94,0.1)' :
-          status === 'overdue' ? 'rgba(239,68,68,0.1)' :
-          status === 'issued' ? 'rgba(59,130,246,0.1)' :
-          status === 'cancelled' ? 'rgba(107,114,128,0.1)' :
-          styles.bgSecondary,
-        color: status === 'paid' ? styles.success :
-          status === 'overdue' ? styles.error :
-          status === 'issued' ? styles.info :
-          status === 'cancelled' ? styles.textMuted :
-          styles.textSecondary,
+        backgroundColor:
+          status === 'paid'
+            ? 'rgba(34,197,94,0.1)'
+            : status === 'overdue'
+              ? 'rgba(239,68,68,0.1)'
+              : status === 'issued'
+                ? 'rgba(59,130,246,0.1)'
+                : status === 'cancelled'
+                  ? 'rgba(107,114,128,0.1)'
+                  : styles.bgSecondary,
+        color:
+          status === 'paid'
+            ? styles.success
+            : status === 'overdue'
+              ? styles.error
+              : status === 'issued'
+                ? styles.info
+                : status === 'cancelled'
+                  ? styles.textMuted
+                  : styles.textSecondary,
       }}
     >
       {config.label}
@@ -123,8 +136,9 @@ const StatusBadge: React.FC<{ status: InvoiceStatus; styles: ReturnType<typeof u
 
 const columnHelper = createColumnHelper<MarketplaceInvoice>();
 
-export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) => {
+export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) => {
   const { getToken } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, direction } = usePortal();
   const isRtl = direction === 'rtl';
 
@@ -171,7 +185,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
 
       const [invoicesRes, statsRes] = await Promise.all([
         marketplaceInvoiceService.getSellerInvoices(token, {
-          status: statusFilter === 'all' ? undefined : statusFilter as InvoiceStatus,
+          status: statusFilter === 'all' ? undefined : (statusFilter as InvoiceStatus),
           search: searchQuery || undefined,
         }),
         marketplaceInvoiceService.getSellerInvoiceStats(token),
@@ -191,16 +205,19 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
   }, [loadData]);
 
   // Load payments when invoice selected
-  const loadInvoicePayments = useCallback(async (invoiceId: string) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const payments = await marketplacePaymentService.getInvoicePayments(token, invoiceId);
-      setSelectedPayments(payments);
-    } catch (err) {
-      console.error('Failed to load payments:', err);
-    }
-  }, [getToken]);
+  const loadInvoicePayments = useCallback(
+    async (invoiceId: string) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const payments = await marketplacePaymentService.getInvoicePayments(token, invoiceId);
+        setSelectedPayments(payments);
+      } catch (err) {
+        console.error('Failed to load payments:', err);
+      }
+    },
+    [getToken],
+  );
 
   // Handle view invoice
   const handleViewInvoice = async (invoice: MarketplaceInvoice) => {
@@ -279,7 +296,9 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
             <div className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
               {info.getValue()}
             </div>
-            <div className="text-xs" style={{ color: styles.textMuted }}>{info.row.original.orderNumber}</div>
+            <div className="text-xs" style={{ color: styles.textMuted }}>
+              {info.row.original.orderNumber}
+            </div>
           </div>
         ),
         size: 140,
@@ -291,7 +310,9 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
           <div>
             <div style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>{info.getValue()}</div>
             {info.row.original.buyerCompany && (
-              <div className="text-xs" style={{ color: styles.textMuted }}>{info.row.original.buyerCompany}</div>
+              <div className="text-xs" style={{ color: styles.textMuted }}>
+                {info.row.original.buyerCompany}
+              </div>
             )}
           </div>
         ),
@@ -324,16 +345,21 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
           const isUrgent = daysUntil >= 0 && daysUntil <= 7;
           return (
             <div>
-              <div style={{
-                color: isOverdue ? styles.error : isUrgent ? '#F59E0B' : styles.textPrimary,
-                fontSize: '0.79rem',
-              }}>
+              <div
+                style={{
+                  color: isOverdue ? styles.error : isUrgent ? '#F59E0B' : styles.textPrimary,
+                  fontSize: '0.79rem',
+                }}
+              >
                 {formatDate(dueDate)}
               </div>
               {info.row.original.status === 'issued' && (
-                <div className="text-xs" style={{
-                  color: isOverdue ? styles.error : isUrgent ? '#F59E0B' : styles.textMuted,
-                }}>
+                <div
+                  className="text-xs"
+                  style={{
+                    color: isOverdue ? styles.error : isUrgent ? '#F59E0B' : styles.textMuted,
+                  }}
+                >
                   {isOverdue ? `${Math.abs(daysUntil)} days overdue` : `${daysUntil} days left`}
                 </div>
               )}
@@ -346,9 +372,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
         meta: { align: 'center' as const },
         header: 'Created',
         cell: (info) => (
-          <span style={{ color: styles.textMuted, fontSize: '0.675rem' }}>
-            {formatRelativeTime(info.getValue())}
-          </span>
+          <span style={{ color: styles.textMuted, fontSize: '0.675rem' }}>{formatRelativeTime(info.getValue())}</span>
         ),
         size: 80,
       }),
@@ -431,7 +455,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
         size: 80,
       }),
     ],
-    [styles, actionLoading, isRtl]
+    [styles, actionLoading, isRtl],
   );
 
   // Filter invoices
@@ -496,10 +520,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
         )}
 
         {/* Filter Bar */}
-        <div
-          className="rounded-xl border mb-4"
-          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
-        >
+        <div className="rounded-xl border mb-4" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
           {/* Filter Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
             <button
@@ -515,10 +536,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
                 style={{ color: styles.textMuted }}
               />
               {hasActiveFilters && (
-                <span
-                  className="px-1.5 py-0.5 rounded text-xs"
-                  style={{ backgroundColor: styles.info, color: '#fff' }}
-                >
+                <span className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: styles.info, color: '#fff' }}>
                   Active
                 </span>
               )}
@@ -677,7 +695,8 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
                       key={row.id}
                       className="group transition-colors cursor-pointer"
                       style={{
-                        borderBottom: index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
+                        borderBottom:
+                          index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.tableBorder}`,
                       }}
                       onClick={() => handleViewInvoice(row.original)}
                       onMouseEnter={(e) => {
@@ -733,11 +752,10 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
           className="fixed right-0 top-0 h-full w-96 border-l shadow-xl z-50 overflow-auto"
           style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
         >
-          <div
-            className="p-4 border-b flex items-center justify-between"
-            style={{ borderColor: styles.border }}
-          >
-            <h2 className="font-semibold" style={{ color: styles.textPrimary }}>Invoice Details</h2>
+          <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: styles.border }}>
+            <h2 className="font-semibold" style={{ color: styles.textPrimary }}>
+              Invoice Details
+            </h2>
             <button
               onClick={() => {
                 setShowDetailPanel(false);
@@ -761,18 +779,24 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
                 </span>
                 <StatusBadge status={selectedInvoice.status} styles={styles} />
               </div>
-              <p className="text-sm" style={{ color: styles.textMuted }}>Order: {selectedInvoice.orderNumber}</p>
+              <p className="text-sm" style={{ color: styles.textMuted }}>
+                Order: {selectedInvoice.orderNumber}
+              </p>
             </div>
 
             {/* Amount */}
             <div className="rounded-lg p-4" style={{ backgroundColor: styles.bgSecondary }}>
               <div className="flex justify-between text-sm mb-2">
                 <span style={{ color: styles.textMuted }}>Subtotal</span>
-                <span style={{ color: styles.textPrimary }}>{formatInvoiceAmount(selectedInvoice.subtotal, selectedInvoice.currency)}</span>
+                <span style={{ color: styles.textPrimary }}>
+                  {formatInvoiceAmount(selectedInvoice.subtotal, selectedInvoice.currency)}
+                </span>
               </div>
               <div className="flex justify-between text-sm mb-2">
                 <span style={{ color: styles.textMuted }}>VAT ({selectedInvoice.vatRate}%)</span>
-                <span style={{ color: styles.textPrimary }}>{formatInvoiceAmount(selectedInvoice.vatAmount, selectedInvoice.currency)}</span>
+                <span style={{ color: styles.textPrimary }}>
+                  {formatInvoiceAmount(selectedInvoice.vatAmount, selectedInvoice.currency)}
+                </span>
               </div>
               <div
                 className="flex justify-between font-semibold text-lg border-t pt-2 mt-2"
@@ -791,17 +815,23 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
 
             {/* Customer */}
             <div>
-              <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Customer</h3>
+              <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>
+                Customer
+              </h3>
               <p style={{ color: styles.textPrimary }}>{selectedInvoice.buyerName}</p>
               {selectedInvoice.buyerCompany && (
-                <p className="text-sm" style={{ color: styles.textMuted }}>{selectedInvoice.buyerCompany}</p>
+                <p className="text-sm" style={{ color: styles.textMuted }}>
+                  {selectedInvoice.buyerCompany}
+                </p>
               )}
             </div>
 
             {/* Due date */}
             {selectedInvoice.dueDate && (
               <div>
-                <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Due Date</h3>
+                <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>
+                  Due Date
+                </h3>
                 <p style={{ color: styles.textPrimary }}>{formatDate(selectedInvoice.dueDate)}</p>
               </div>
             )}
@@ -809,18 +839,23 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
             {/* Payments */}
             {selectedPayments.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Payments</h3>
+                <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>
+                  Payments
+                </h3>
                 <div className="space-y-2">
                   {selectedPayments.map((payment) => {
                     const statusConfig = getPaymentStatusConfig(payment.status);
                     return (
                       <div key={payment.id} className="rounded-lg p-3" style={{ backgroundColor: styles.bgSecondary }}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium" style={{ color: styles.textPrimary }}>{payment.paymentNumber}</span>
+                          <span className="font-medium" style={{ color: styles.textPrimary }}>
+                            {payment.paymentNumber}
+                          </span>
                           <span
                             className="text-xs px-2 py-0.5 rounded-full"
                             style={{
-                              backgroundColor: payment.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
+                              backgroundColor:
+                                payment.status === 'confirmed' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
                               color: payment.status === 'confirmed' ? styles.success : '#F59E0B',
                             }}
                           >
@@ -895,15 +930,21 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
 
             {/* Line items */}
             <div>
-              <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>Items</h3>
+              <h3 className="text-sm font-medium mb-2" style={{ color: styles.textMuted }}>
+                Items
+              </h3>
               <div className="space-y-2">
                 {selectedInvoice.lineItems.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-sm">
                     <div>
                       <span style={{ color: styles.textPrimary }}>{item.name}</span>
-                      <span className="ml-2" style={{ color: styles.textMuted }}>x{item.quantity}</span>
+                      <span className="ml-2" style={{ color: styles.textMuted }}>
+                        x{item.quantity}
+                      </span>
                     </div>
-                    <span style={{ color: styles.textPrimary }}>{formatInvoiceAmount(item.total, selectedInvoice.currency)}</span>
+                    <span style={{ color: styles.textPrimary }}>
+                      {formatInvoiceAmount(item.total, selectedInvoice.currency)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -927,8 +968,12 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ onNavigate }) =>
             className="relative z-10 w-full max-w-md rounded-xl shadow-xl p-6"
             style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.border}` }}
           >
-            <h3 className="text-lg font-semibold mb-4" style={{ color: styles.textPrimary }}>Cancel Invoice</h3>
-            <p className="mb-4" style={{ color: styles.textMuted }}>Please provide a reason for cancelling this invoice:</p>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: styles.textPrimary }}>
+              Cancel Invoice
+            </h3>
+            <p className="mb-4" style={{ color: styles.textMuted }}>
+              Please provide a reason for cancelling this invoice:
+            </p>
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}

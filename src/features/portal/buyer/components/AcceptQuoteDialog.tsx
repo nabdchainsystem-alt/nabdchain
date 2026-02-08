@@ -20,12 +20,7 @@ import {
 import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { marketplaceOrderService } from '../../services/marketplaceOrderService';
-import {
-  Quote,
-  MarketplaceOrder,
-  AcceptQuoteData,
-  getQuoteValidityStatus,
-} from '../../types/item.types';
+import { Quote, MarketplaceOrder, AcceptQuoteData, getQuoteValidityStatus } from '../../types/item.types';
 
 // =============================================================================
 // Types
@@ -54,7 +49,7 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
 }) => {
   const { styles, direction } = usePortal();
   const { getToken } = useAuth();
-  const isRtl = direction === 'rtl';
+  const _isRtl = direction === 'rtl';
 
   // Form state
   const [buyerNotes, setBuyerNotes] = useState('');
@@ -147,9 +142,7 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
             <div
               className="flex items-center gap-2 p-3 rounded-lg"
               style={{
-                backgroundColor: validityStatus.isExpired
-                  ? `${styles.error}15`
-                  : `${styles.warning}15`,
+                backgroundColor: validityStatus.isExpired ? `${styles.error}15` : `${styles.warning}15`,
               }}
             >
               <WarningCircle
@@ -171,14 +164,8 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
           )}
 
           {/* Order Summary */}
-          <div
-            className="p-4 rounded-lg space-y-4"
-            style={{ backgroundColor: styles.bgSecondary }}
-          >
-            <p
-              className="text-xs font-medium uppercase tracking-wider"
-              style={{ color: styles.textMuted }}
-            >
+          <div className="p-4 rounded-lg space-y-4" style={{ backgroundColor: styles.bgSecondary }}>
+            <p className="text-xs font-medium uppercase tracking-wider" style={{ color: styles.textMuted }}>
               Order Summary
             </p>
 
@@ -247,7 +234,10 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
             )}
 
             {/* Total */}
-            <div className="flex justify-between items-center pt-2 border-t" style={{ borderColor: styles.borderLight }}>
+            <div
+              className="flex justify-between items-center pt-2 border-t"
+              style={{ borderColor: styles.borderLight }}
+            >
               <span className="font-semibold" style={{ color: styles.textPrimary }}>
                 Total Price
               </span>
@@ -283,8 +273,8 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
                   color: validityStatus.isExpired
                     ? styles.error
                     : validityStatus.isExpiringSoon
-                    ? styles.warning
-                    : styles.textPrimary,
+                      ? styles.warning
+                      : styles.textPrimary,
                 }}
               >
                 {new Date(quote.validUntil).toLocaleDateString()}
@@ -318,10 +308,7 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div
-              className="flex items-center gap-2 p-3 rounded-lg"
-              style={{ backgroundColor: `${styles.error}15` }}
-            >
+            <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: `${styles.error}15` }}>
               <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
               <span className="text-sm" style={{ color: styles.error }}>
                 {error}
@@ -331,16 +318,13 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
 
           {/* Confirmation Text */}
           <p className="text-xs text-center" style={{ color: styles.textMuted }}>
-            By accepting this quote, you agree to purchase the items at the stated price and terms.
-            An order will be created and the seller will be notified.
+            By accepting this quote, you agree to purchase the items at the stated price and terms. An order will be
+            created and the seller will be notified.
           </p>
         </div>
 
         {/* Footer */}
-        <div
-          className="flex gap-3 px-6 py-4 border-t"
-          style={{ borderColor: styles.borderLight }}
-        >
+        <div className="flex gap-3 px-6 py-4 border-t" style={{ borderColor: styles.borderLight }}>
           <button
             onClick={onClose}
             disabled={isSubmitting}
@@ -361,11 +345,7 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
               color: validityStatus.isExpired ? styles.textMuted : '#fff',
             }}
           >
-            {isSubmitting ? (
-              <Spinner size={20} className="animate-spin" />
-            ) : (
-              <CheckCircle size={20} weight="fill" />
-            )}
+            {isSubmitting ? <Spinner size={20} className="animate-spin" /> : <CheckCircle size={20} weight="fill" />}
             {isSubmitting ? 'Processing...' : 'Accept & Create Order'}
           </button>
         </div>

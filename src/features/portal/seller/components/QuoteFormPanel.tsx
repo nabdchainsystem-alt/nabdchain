@@ -11,17 +11,13 @@ import {
   Package,
   CurrencyDollar,
   Truck,
-  Calendar,
   NoteBlank,
   Spinner,
   CheckCircle,
   WarningCircle,
-  Clock,
   Tag,
   Percent,
   FloppyDisk,
-  Info,
-  Lightning,
   Timer,
   Paperclip,
   File,
@@ -45,9 +41,7 @@ import {
   UpdateQuoteData,
   QuoteAttachment,
   QuoteAttachmentType,
-  calculateQuoteTotalPrice,
   calculateDiscountAmount,
-  isQuoteEditable,
   canSendQuote,
 } from '../../types/item.types';
 
@@ -61,8 +55,8 @@ interface QuoteFormPanelProps {
   onSuccess?: (quote: Quote) => void;
 
   // Context data
-  rfq: SellerInboxRFQ;             // The RFQ to quote
-  existingQuote?: Quote | null;    // For editing existing quote
+  rfq: SellerInboxRFQ; // The RFQ to quote
+  existingQuote?: Quote | null; // For editing existing quote
 
   // Pre-filled values from RFQ
   defaultQuantity?: number;
@@ -119,16 +113,14 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   onSuccess,
   rfq,
   existingQuote,
-  defaultQuantity,
+  _defaultQuantity,
 }) => {
   const { styles, direction } = usePortal();
   const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   // Form state
-  const [formData, setFormData] = useState<QuoteFormState>(() =>
-    getInitialFormState(rfq, existingQuote)
-  );
+  const [formData, setFormData] = useState<QuoteFormState>(() => getInitialFormState(rfq, existingQuote));
   const [errors, setErrors] = useState<QuoteFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -136,20 +128,20 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   const [discountMode, setDiscountMode] = useState<'amount' | 'percent'>('amount');
 
   // Attachment state
-  const [attachments, setAttachments] = useState<QuoteAttachment[]>(
-    existingQuote?.attachments || []
-  );
+  const [attachments, setAttachments] = useState<QuoteAttachment[]>(existingQuote?.attachments || []);
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
-  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [_isUploadingAttachment, _setIsUploadingAttachment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // VAT settings
+  const [includeVat, setIncludeVat] = useState(true);
+  const VAT_RATE = 0.15; // 15% VAT
 
   // Calculated values
   const subtotal = formData.unitPrice * formData.quantity;
-  const totalPrice = calculateQuoteTotalPrice(
-    formData.unitPrice,
-    formData.quantity,
-    formData.discount
-  );
+  const discountedSubtotal = subtotal - (formData.discount || 0);
+  const vatAmount = includeVat ? discountedSubtotal * VAT_RATE : 0;
+  const totalPrice = discountedSubtotal + vatAmount;
 
   // Reset form when panel opens or RFQ changes
   useEffect(() => {
@@ -188,9 +180,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
   // Get file icon based on type
   const getFileIcon = (file: File | QuoteAttachment) => {
-    const mimeType = 'type' in file && typeof file.type === 'string' && file.type.includes('/')
-      ? file.type
-      : (file as QuoteAttachment).mimeType || '';
+    const mimeType =
+      'type' in file && typeof file.type === 'string' && file.type.includes('/')
+        ? file.type
+        : (file as QuoteAttachment).mimeType || '';
     const name = 'name' in file ? file.name : '';
 
     if (mimeType === 'application/pdf' || name.endsWith('.pdf')) {
@@ -207,7 +200,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files: File[] = e.target.files ? Array.from(e.target.files) : [];
     const validFiles: File[] = [];
     const errorMessages: string[] = [];
 
@@ -271,12 +264,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
     for (const file of pendingAttachments) {
       try {
-        const uploaded = await quoteService.addAttachment(
-          token,
-          quoteId,
-          file,
-          getAttachmentType(file)
-        );
+        const uploaded = await quoteService.addAttachment(token, quoteId, file, getAttachmentType(file));
         setAttachments((prev) => [...prev, uploaded]);
       } catch (error) {
         console.error('Failed to upload attachment:', error);
@@ -293,15 +281,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
         // Sync discount amount and percentage
         if (field === 'discount' && typeof value === 'number') {
-          const percent =
-            subtotal > 0 ? ((value / subtotal) * 100).toFixed(2) : 0;
+          const percent = subtotal > 0 ? ((value / subtotal) * 100).toFixed(2) : 0;
           newData.discountPercent = parseFloat(percent as string) || 0;
         } else if (field === 'discountPercent' && typeof value === 'number') {
-          newData.discount = calculateDiscountAmount(
-            formData.unitPrice,
-            formData.quantity,
-            value
-          );
+          newData.discount = calculateDiscountAmount(formData.unitPrice, formData.quantity, value);
         } else if (field === 'unitPrice' || field === 'quantity') {
           // Recalculate discount amount if percentage is set
           if (discountMode === 'percent' && prev.discountPercent > 0) {
@@ -319,7 +302,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
         setErrors((prev) => ({ ...prev, [field]: undefined }));
       }
     },
-    [errors, subtotal, formData.unitPrice, formData.quantity, discountMode]
+    [errors, subtotal, formData.unitPrice, formData.quantity, discountMode],
   );
 
   // Validate form
@@ -456,9 +439,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     } catch (error) {
       console.error('Failed to save quote:', error);
       setSubmitStatus('error');
-      setSubmitMessage(
-        error instanceof Error ? error.message : 'Failed to save draft. Please try again.'
-      );
+      setSubmitMessage(error instanceof Error ? error.message : 'Failed to save draft. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -542,9 +523,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     } catch (error) {
       console.error('Failed to send quote:', error);
       setSubmitStatus('error');
-      setSubmitMessage(
-        error instanceof Error ? error.message : 'Failed to send quote. Please try again.'
-      );
+      setSubmitMessage(error instanceof Error ? error.message : 'Failed to send quote. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -589,31 +568,21 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   return (
     <>
       {/* Backdrop - transparent, just for click-outside */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ top: '64px' }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" style={{ top: '64px' }} onClick={onClose} />
 
       {/* Panel */}
       <div
-        className="fixed z-50 w-full max-w-lg overflow-hidden flex flex-col"
+        className="fixed z-50 w-full max-w-xl overflow-hidden flex flex-col"
         style={{
           top: '64px',
           bottom: 0,
           backgroundColor: styles.bgPrimary,
           borderLeft: isRtl ? 'none' : `1px solid ${styles.border}`,
           borderRight: isRtl ? `1px solid ${styles.border}` : 'none',
-          boxShadow: styles.isDark
-            ? '-12px 0 40px rgba(0, 0, 0, 0.6)'
-            : '-8px 0 30px rgba(0, 0, 0, 0.1)',
+          boxShadow: styles.isDark ? '-12px 0 40px rgba(0, 0, 0, 0.6)' : '-8px 0 30px rgba(0, 0, 0, 0.1)',
           right: isRtl ? 'auto' : 0,
           left: isRtl ? 0 : 'auto',
-          transform: isAnimating
-            ? 'translateX(0)'
-            : isRtl
-            ? 'translateX(-100%)'
-            : 'translateX(100%)',
+          transform: isAnimating ? 'translateX(0)' : isRtl ? 'translateX(-100%)' : 'translateX(100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
         dir={direction}
@@ -665,11 +634,11 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                   </div>
                   <div>
                     <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
-                      {rfq.item?.name || 'General RFQ'}
+                      {rfq.item?.name || 'General Request'}
                     </p>
                     {rfq.item?.sku && (
                       <p className="text-xs" style={{ color: styles.textMuted }}>
-                        SKU: {rfq.item.sku}
+                        {rfq.item.sku}
                       </p>
                     )}
                   </div>
@@ -703,34 +672,23 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
             {/* Unit Price & Currency */}
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
-                <label
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                   Unit Price <span style={{ color: styles.error }}>*</span>
                 </label>
-                <div className="relative">
-                  <div
-                    className="absolute left-3 top-1/2 -translate-y-1/2"
-                    style={{ color: styles.textMuted }}
-                  >
-                    <CurrencyDollar size={18} />
-                  </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.unitPrice || ''}
-                    onChange={(e) => handleChange('unitPrice', parseFloat(e.target.value) || 0)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-colors"
-                    style={{
-                      backgroundColor: styles.bgSecondary,
-                      borderColor: errors.unitPrice ? styles.error : styles.borderLight,
-                      color: styles.textPrimary,
-                    }}
-                    placeholder="0.00"
-                  />
-                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.unitPrice || ''}
+                  onChange={(e) => handleChange('unitPrice', parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    borderColor: errors.unitPrice ? styles.error : styles.borderLight,
+                    color: styles.textPrimary,
+                  }}
+                  placeholder="0.00"
+                />
                 {errors.unitPrice && (
                   <p className="text-xs mt-1" style={{ color: styles.error }}>
                     {errors.unitPrice}
@@ -738,10 +696,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                 )}
               </div>
               <div>
-                <label
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: styles.textPrimary }}
-                >
+                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                   Currency
                 </label>
                 <select
@@ -765,10 +720,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Quantity */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Quantity <span style={{ color: styles.error }}>*</span>
               </label>
               <div className="flex items-center gap-2">
@@ -820,17 +772,13 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                 <label className="text-sm font-medium" style={{ color: styles.textPrimary }}>
                   Discount
                 </label>
-                <div
-                  className="flex rounded-lg overflow-hidden border"
-                  style={{ borderColor: styles.borderLight }}
-                >
+                <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: styles.borderLight }}>
                   <button
                     type="button"
                     onClick={() => setDiscountMode('amount')}
                     className="px-2 py-1 text-xs transition-colors"
                     style={{
-                      backgroundColor:
-                        discountMode === 'amount' ? styles.info : styles.bgSecondary,
+                      backgroundColor: discountMode === 'amount' ? styles.info : styles.bgSecondary,
                       color: discountMode === 'amount' ? '#fff' : styles.textMuted,
                     }}
                   >
@@ -841,8 +789,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                     onClick={() => setDiscountMode('percent')}
                     className="px-2 py-1 text-xs transition-colors"
                     style={{
-                      backgroundColor:
-                        discountMode === 'percent' ? styles.info : styles.bgSecondary,
+                      backgroundColor: discountMode === 'percent' ? styles.info : styles.bgSecondary,
                       color: discountMode === 'percent' ? '#fff' : styles.textMuted,
                     }}
                   >
@@ -851,10 +798,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                 </div>
               </div>
               <div className="relative">
-                <div
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: styles.textMuted }}
-                >
+                <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: styles.textMuted }}>
                   {discountMode === 'amount' ? <Tag size={18} /> : <Percent size={18} />}
                 </div>
                 <input
@@ -862,15 +806,11 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                   step={discountMode === 'percent' ? '0.01' : '1'}
                   min="0"
                   max={discountMode === 'percent' ? '100' : subtotal}
-                  value={
-                    discountMode === 'amount'
-                      ? formData.discount || ''
-                      : formData.discountPercent || ''
-                  }
+                  value={discountMode === 'amount' ? formData.discount || '' : formData.discountPercent || ''}
                   onChange={(e) =>
                     handleChange(
                       discountMode === 'amount' ? 'discount' : 'discountPercent',
-                      parseFloat(e.target.value) || 0
+                      parseFloat(e.target.value) || 0,
                     )
                   }
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-colors"
@@ -885,16 +825,44 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
             </div>
 
             {/* Price Summary */}
-            <div
-              className="p-3 rounded-lg space-y-2"
-              style={{ backgroundColor: styles.bgSecondary }}
-            >
+            <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: styles.bgSecondary }}>
+              {/* VAT Toggle */}
+              <div
+                className="flex items-center justify-between pb-3 border-b"
+                style={{ borderColor: styles.borderLight }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                    Include VAT (15%)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIncludeVat(!includeVat)}
+                  className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                  style={{
+                    backgroundColor: includeVat ? styles.success : styles.bgPrimary,
+                    border: `1px solid ${includeVat ? styles.success : styles.border}`,
+                  }}
+                >
+                  <span
+                    className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                    style={{
+                      transform: includeVat ? 'translateX(18px)' : 'translateX(0)',
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Subtotal */}
               <div className="flex justify-between text-sm">
                 <span style={{ color: styles.textMuted }}>Subtotal</span>
                 <span style={{ color: styles.textPrimary }}>
                   {formData.currency} {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
+
+              {/* Discount */}
               {formData.discount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span style={{ color: styles.textMuted }}>Discount</span>
@@ -903,8 +871,33 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                   </span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold pt-2 border-t" style={{ borderColor: styles.borderLight }}>
-                <span style={{ color: styles.textPrimary }}>Total</span>
+
+              {/* Net Amount (before VAT) */}
+              {formData.discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: styles.textMuted }}>Net Amount</span>
+                  <span style={{ color: styles.textPrimary }}>
+                    {formData.currency} {discountedSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {/* VAT */}
+              {includeVat && (
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: styles.textMuted }}>VAT (15%)</span>
+                  <span style={{ color: styles.textSecondary }}>
+                    +{formData.currency} {vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {/* Total */}
+              <div
+                className="flex justify-between font-semibold pt-3 border-t"
+                style={{ borderColor: styles.borderLight }}
+              >
+                <span style={{ color: styles.textPrimary }}>Total {includeVat ? '(incl. VAT)' : '(excl. VAT)'}</span>
                 <span style={{ color: styles.success }}>
                   {formData.currency} {totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
@@ -913,17 +906,11 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Delivery Days */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Lead Time (Days) <span style={{ color: styles.error }}>*</span>
               </label>
               <div className="relative">
-                <div
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: styles.textMuted }}
-                >
+                <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: styles.textMuted }}>
                   <Truck size={18} />
                 </div>
                 <input
@@ -949,10 +936,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Delivery Terms */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Delivery Terms (Incoterms)
               </label>
               <select
@@ -975,10 +959,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Valid Until */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Quote Valid Until <span style={{ color: styles.error }}>*</span>
               </label>
               <PortalDatePicker
@@ -996,17 +977,11 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Notes (Terms & Conditions) */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Terms & Conditions
               </label>
               <div className="relative">
-                <div
-                  className="absolute left-3 top-3"
-                  style={{ color: styles.textMuted }}
-                >
+                <div className="absolute left-3 top-3" style={{ color: styles.textMuted }}>
                   <NoteBlank size={18} />
                 </div>
                 <textarea
@@ -1034,10 +1009,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Internal Notes (Seller Only) */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Internal Notes
               </label>
               <textarea
@@ -1059,10 +1031,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
 
             {/* Attachments Section */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 <div className="flex items-center gap-2">
                   <Paperclip size={16} />
                   <span>Attachments</span>
@@ -1087,7 +1056,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                 onDrop={(e) => {
                   e.preventDefault();
                   e.currentTarget.style.borderColor = styles.borderLight;
-                  const files = Array.from(e.dataTransfer.files);
+                  const files: File[] = Array.from(e.dataTransfer.files);
                   const input = fileInputRef.current;
                   if (input) {
                     const dataTransfer = new DataTransfer();
@@ -1128,10 +1097,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         {getFileIcon(file)}
-                        <span
-                          className="text-sm truncate"
-                          style={{ color: styles.textPrimary }}
-                        >
+                        <span className="text-sm truncate" style={{ color: styles.textPrimary }}>
                           {file.name}
                         </span>
                         <span className="text-xs flex-shrink-0" style={{ color: styles.textMuted }}>
@@ -1165,10 +1131,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         {getFileIcon(attachment)}
-                        <span
-                          className="text-sm truncate"
-                          style={{ color: styles.textPrimary }}
-                        >
+                        <span className="text-sm truncate" style={{ color: styles.textPrimary }}>
                           {attachment.name}
                         </span>
                         {attachment.size && (
@@ -1206,7 +1169,6 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                 Attach spec sheets, certificates, or terms. Visible to the buyer.
               </p>
             </div>
-
           </form>
         </div>
 
@@ -1226,17 +1188,9 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
               }`}
             >
               {submitStatus === 'success' ? (
-                <CheckCircle
-                  size={16}
-                  weight="fill"
-                  className="text-green-600 dark:text-green-400 flex-shrink-0"
-                />
+                <CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400 flex-shrink-0" />
               ) : (
-                <WarningCircle
-                  size={16}
-                  weight="fill"
-                  className="text-red-600 dark:text-red-400 flex-shrink-0"
-                />
+                <WarningCircle size={16} weight="fill" className="text-red-600 dark:text-red-400 flex-shrink-0" />
               )}
               <p
                 className={`text-sm ${
@@ -1262,11 +1216,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
                 minWidth: '120px',
               }}
             >
-              {isSubmitting ? (
-                <Spinner size={18} className="animate-spin" />
-              ) : (
-                <FloppyDisk size={18} />
-              )}
+              {isSubmitting ? <Spinner size={18} className="animate-spin" /> : <FloppyDisk size={18} />}
               Save Draft
             </button>
 

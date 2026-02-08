@@ -11,10 +11,7 @@ interface TimesheetViewProps {
   weekStart?: Date;
 }
 
-export const TimesheetView: React.FC<TimesheetViewProps> = ({
-  userId,
-  weekStart = new Date(),
-}) => {
+export const TimesheetView: React.FC<TimesheetViewProps> = ({ _userId, _weekStart = new Date() }) => {
   // Generate week days
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -49,10 +46,7 @@ export const TimesheetView: React.FC<TimesheetViewProps> = ({
           No projects
         </div>
         {days.map((day) => (
-          <div
-            key={day}
-            className="p-3 text-center border-r border-stone-200 dark:border-stone-700 last:border-r-0"
-          >
+          <div key={day} className="p-3 text-center border-r border-stone-200 dark:border-stone-700 last:border-r-0">
             <span className="text-sm text-stone-400">-</span>
           </div>
         ))}
@@ -64,10 +58,7 @@ export const TimesheetView: React.FC<TimesheetViewProps> = ({
           Total
         </div>
         {days.map((day) => (
-          <div
-            key={day}
-            className="p-3 text-center border-r border-stone-200 dark:border-stone-700 last:border-r-0"
-          >
+          <div key={day} className="p-3 text-center border-r border-stone-200 dark:border-stone-700 last:border-r-0">
             <span className="text-sm font-medium text-stone-700 dark:text-stone-300">0h</span>
           </div>
         ))}
@@ -75,9 +66,7 @@ export const TimesheetView: React.FC<TimesheetViewProps> = ({
 
       {/* Coming Soon Notice */}
       <div className="p-6 text-center border-t border-stone-200 dark:border-stone-700">
-        <p className="text-sm text-stone-500">
-          Full timesheet functionality coming soon
-        </p>
+        <p className="text-sm text-stone-500">Full timesheet functionality coming soon</p>
       </div>
     </div>
   );

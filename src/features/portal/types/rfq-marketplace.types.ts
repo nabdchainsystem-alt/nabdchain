@@ -36,7 +36,7 @@ export interface MarketplaceBuyerInfo {
   city?: string;
   badge: BuyerBadgeType;
   isVerified: boolean;
-  reliabilityScore?: number;  // 0-100
+  reliabilityScore?: number; // 0-100
   totalRFQs?: number;
   totalOrders?: number;
   memberSince?: string;
@@ -80,7 +80,7 @@ export interface MarketplaceRFQ {
   deliveryCity?: string;
   deliveryCountry: string;
   requiredDeliveryDate?: string;
-  leadTimeRequired?: number;  // days
+  leadTimeRequired?: number; // days
 
   // Buyer info
   buyer: MarketplaceBuyerInfo;
@@ -94,7 +94,7 @@ export interface MarketplaceRFQ {
 
   // Quote stats
   totalQuotes: number;
-  quotesFromSeller?: number;  // If current seller has quoted
+  quotesFromSeller?: number; // If current seller has quoted
 
   // Attachments
   attachments?: MarketplaceRFQAttachment[];
@@ -116,11 +116,7 @@ export interface MarketplaceRFQ {
 /**
  * Sort options for marketplace
  */
-export type MarketplaceSortBy =
-  | 'newest'
-  | 'expiring_soon'
-  | 'highest_quantity'
-  | 'best_match';
+export type MarketplaceSortBy = 'newest' | 'expiring_soon' | 'highest_quantity' | 'best_match';
 
 /**
  * Deadline filter options
@@ -171,6 +167,7 @@ export interface SubmittedMarketplaceQuote {
   id: string;
   quoteNumber: string;
   rfqId: string;
+  rfqNumber?: string;
   unitPrice: number;
   quantity: number;
   totalPrice: number;
@@ -180,6 +177,8 @@ export interface SubmittedMarketplaceQuote {
   notes?: string;
   status: 'sent' | 'under_review' | 'accepted' | 'rejected';
   submittedAt: string;
+  rfqPartName?: string;
+  rfqCategory?: string;
 }
 
 // =============================================================================
@@ -694,7 +693,7 @@ export function groupRFQsByPriority(rfqs: MarketplaceRFQ[]): {
     standard: [] as MarketplaceRFQ[],
   };
 
-  rfqs.forEach(rfq => {
+  rfqs.forEach((rfq) => {
     const priorityGroup = getRFQPriorityGroup(rfq);
     switch (priorityGroup) {
       case 'new_today':

@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Package,
-  CheckCircle,
-  Gear,
-  Truck,
-  Timer,
-  XCircle,
-  Export,
-} from 'phosphor-react';
+import { Package, CheckCircle, Gear, Truck, Timer, XCircle, Export } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { Order, OrderStatus } from '../../types/order.types';
 
@@ -46,7 +38,7 @@ const TIMELINE_STEPS: TimelineStep[] = [
     label: 'Order Created',
     icon: Package,
     activeStatuses: [],
-    completedStatuses: ['pending_confirmation', 'confirmed', 'processing', 'shipped', 'delivered', 'closed'],
+    completedStatuses: ['pending_confirmation', 'confirmed', 'in_progress', 'shipped', 'delivered'],
     timestampKey: 'createdAt',
   },
   {
@@ -54,7 +46,7 @@ const TIMELINE_STEPS: TimelineStep[] = [
     label: 'Seller Accepted',
     icon: CheckCircle,
     activeStatuses: ['pending_confirmation'],
-    completedStatuses: ['confirmed', 'processing', 'shipped', 'delivered', 'closed'],
+    completedStatuses: ['confirmed', 'in_progress', 'shipped', 'delivered'],
     timestampKey: 'confirmedAt',
     slaType: 'confirmation',
   },
@@ -63,15 +55,15 @@ const TIMELINE_STEPS: TimelineStep[] = [
     label: 'In Preparation',
     icon: Gear,
     activeStatuses: ['confirmed'],
-    completedStatuses: ['processing', 'shipped', 'delivered', 'closed'],
-    timestampKey: 'processingAt',
+    completedStatuses: ['in_progress', 'shipped', 'delivered'],
+    timestampKey: 'updatedAt',
   },
   {
     key: 'ready_to_ship',
     label: 'Ready to Ship',
     icon: Export,
-    activeStatuses: ['processing'],
-    completedStatuses: ['shipped', 'delivered', 'closed'],
+    activeStatuses: ['in_progress'],
+    completedStatuses: ['shipped', 'delivered'],
     timestampKey: 'readyToShipAt' as keyof Order,
     slaType: 'shipping',
   },
@@ -80,7 +72,7 @@ const TIMELINE_STEPS: TimelineStep[] = [
     label: 'Shipped',
     icon: Truck,
     activeStatuses: [],
-    completedStatuses: ['shipped', 'delivered', 'closed'],
+    completedStatuses: ['shipped', 'delivered'],
     timestampKey: 'shippedAt',
   },
   {
@@ -88,7 +80,7 @@ const TIMELINE_STEPS: TimelineStep[] = [
     label: 'Delivered',
     icon: Package,
     activeStatuses: ['shipped'],
-    completedStatuses: ['delivered', 'closed'],
+    completedStatuses: ['delivered'],
     timestampKey: 'deliveredAt',
     slaType: 'delivery',
   },
@@ -97,8 +89,8 @@ const TIMELINE_STEPS: TimelineStep[] = [
     label: 'Completed',
     icon: CheckCircle,
     activeStatuses: ['delivered'],
-    completedStatuses: ['closed'],
-    timestampKey: 'closedAt',
+    completedStatuses: [],
+    timestampKey: 'deliveredAt',
   },
 ];
 
@@ -118,7 +110,7 @@ const formatTimestamp = (dateStr?: string): string => {
 
 const calculateSLAForStep = (
   order: Order,
-  step: TimelineStep
+  step: TimelineStep,
 ): { remaining: string; urgency: 'ok' | 'warning' | 'critical'; percentUsed: number } | null => {
   if (!step.slaType) return null;
 
@@ -190,18 +182,15 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
   if (['cancelled', 'failed', 'refunded'].includes(order.status)) {
     return (
       <div className="p-4">
-        <div
-          className="flex items-center gap-3 p-4 rounded-lg"
-          style={{ backgroundColor: `${styles.error}10` }}
-        >
+        <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: `${styles.error}10` }}>
           <XCircle size={24} weight="fill" style={{ color: styles.error }} />
           <div>
             <p className="font-medium" style={{ color: styles.error }}>
               {order.status === 'cancelled'
                 ? 'Order Cancelled'
                 : order.status === 'failed'
-                ? 'Order Failed'
-                : 'Order Refunded'}
+                  ? 'Order Failed'
+                  : 'Order Refunded'}
             </p>
             {order.cancelledAt && (
               <p className="text-sm" style={{ color: styles.textMuted }}>
@@ -244,8 +233,8 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                     state === 'completed'
                       ? `${styles.success}20`
                       : state === 'active'
-                      ? `${styles.info}20`
-                      : styles.bgSecondary,
+                        ? `${styles.info}20`
+                        : styles.bgSecondary,
                   ringColor: state === 'active' ? styles.info : undefined,
                 }}
               >
@@ -253,12 +242,7 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                   size={20}
                   weight={state === 'completed' ? 'fill' : state === 'active' ? 'bold' : 'regular'}
                   style={{
-                    color:
-                      state === 'completed'
-                        ? styles.success
-                        : state === 'active'
-                        ? styles.info
-                        : styles.textMuted,
+                    color: state === 'completed' ? styles.success : state === 'active' ? styles.info : styles.textMuted,
                   }}
                 />
               </div>
@@ -285,8 +269,8 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                         state === 'completed'
                           ? styles.textPrimary
                           : state === 'active'
-                          ? styles.info
-                          : styles.textMuted,
+                            ? styles.info
+                            : styles.textMuted,
                     }}
                   >
                     {step.label}
@@ -307,8 +291,8 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                             slaInfo.urgency === 'ok'
                               ? `${styles.success}15`
                               : slaInfo.urgency === 'warning'
-                              ? `${styles.warning}15`
-                              : `${styles.error}15`,
+                                ? `${styles.warning}15`
+                                : `${styles.error}15`,
                         }}
                       >
                         <Timer
@@ -319,8 +303,8 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                               slaInfo.urgency === 'ok'
                                 ? styles.success
                                 : slaInfo.urgency === 'warning'
-                                ? styles.warning
-                                : styles.error,
+                                  ? styles.warning
+                                  : styles.error,
                           }}
                           className={slaInfo.urgency === 'critical' ? 'animate-pulse' : ''}
                         />
@@ -331,8 +315,8 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                               slaInfo.urgency === 'ok'
                                 ? styles.success
                                 : slaInfo.urgency === 'warning'
-                                ? styles.warning
-                                : styles.error,
+                                  ? styles.warning
+                                  : styles.error,
                           }}
                         >
                           {slaInfo.remaining}
@@ -351,8 +335,8 @@ export const OrderStepTimeline: React.FC<OrderStepTimelineProps> = ({ order }) =
                               slaInfo.urgency === 'ok'
                                 ? styles.success
                                 : slaInfo.urgency === 'warning'
-                                ? styles.warning
-                                : styles.error,
+                                  ? styles.warning
+                                  : styles.error,
                           }}
                         />
                       </div>

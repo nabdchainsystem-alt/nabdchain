@@ -5,17 +5,10 @@
 // =============================================================================
 
 import React from 'react';
-import {
-  ChatCircle,
-  ShieldWarning,
-  DownloadSimple,
-  Truck,
-  CheckSquare,
-  Warning,
-  NotePencil,
-} from 'phosphor-react';
+import { ChatCircle, ShieldWarning, DownloadSimple, Truck, CheckSquare, Warning, NotePencil } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { ActionPanelProps, TrackingAction } from './tracking.types';
+import { ThemeStyles } from '../../../../theme/portalColors';
 
 // =============================================================================
 // Button Component
@@ -23,7 +16,7 @@ import { ActionPanelProps, TrackingAction } from './tracking.types';
 
 interface ActionButtonProps {
   action: TrackingAction;
-  styles: any;
+  styles: ThemeStyles;
   isRtl: boolean;
 }
 
