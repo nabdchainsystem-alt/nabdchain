@@ -35,16 +35,16 @@ export default defineConfig({
     },
   ],
 
-  // In CI, auto-start both dev servers. Locally, assume they're already running.
+  // In CI, serve the pre-built frontend via vite preview (fast startup).
+  // Locally, assume dev servers are already running.
   ...(process.env.CI
     ? {
         webServer: [
           {
-            command: 'pnpm dev',
+            command: 'pnpm preview --port 5173',
             url: 'http://localhost:5173',
             reuseExistingServer: false,
-            timeout: 180_000,
-            env: { VITE_USE_MOCK_AUTH: 'true' },
+            timeout: 30_000,
           },
         ],
       }
