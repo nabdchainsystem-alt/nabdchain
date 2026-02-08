@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+// @ts-ignore missing type declarations on production builds
 import cookieParser from 'cookie-parser';
 import { clerkClient } from '@clerk/clerk-sdk-node';
 import { requireAuth, AuthRequest } from './middleware/auth';

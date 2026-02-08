@@ -5,6 +5,7 @@
 // Handles signing, verification, and refresh tokens.
 // =============================================================================
 
+// @ts-ignore missing type declarations on production builds
 import jwt, { JwtPayload, SignOptions, VerifyOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 import { apiLogger } from '../utils/logger';
@@ -166,7 +167,11 @@ export function verifyPortalToken(token: string, expectedType?: 'access' | 'refr
       payload: decoded,
     };
   } catch (err: unknown) {
-    if (err instanceof jwt.TokenExpiredError) {
+    const error = err as Error;
+    const name = error?.name ?? '';
+    const message = error?.message ?? '';
+
+    if (name === 'TokenExpiredError') {
       return {
         valid: false,
         error: {
@@ -176,8 +181,8 @@ export function verifyPortalToken(token: string, expectedType?: 'access' | 'refr
       };
     }
 
-    if (err instanceof jwt.JsonWebTokenError) {
-      if (err.message.includes('signature')) {
+    if (name === 'JsonWebTokenError' || name === 'NotBeforeError') {
+      if (message.includes('signature')) {
         return {
           valid: false,
           error: {
