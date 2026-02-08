@@ -91,11 +91,14 @@ const WorkloadView: React.FC<{ boardId: string; fallbackTasks?: RawTaskData[] }>
     [persons, tasks],
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   const togglePerson = (name: string) =>
     setExpandedPersons((prev) => {
       const n = new Set(prev);
-      n.has(name) ? n.delete(name) : n.add(name);
+      if (n.has(name)) {
+        n.delete(name);
+      } else {
+        n.add(name);
+      }
       return n;
     });
   const getLoadColor = (l: number) =>

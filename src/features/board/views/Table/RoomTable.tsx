@@ -130,9 +130,7 @@ const RoomTable: React.FC<RoomTableProps> = ({
     setRenamingColId,
     activeRowDetail,
     setActiveRowDetail,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     activeKpiFilter,
-    setActiveKpiFilter,
     deleteConfig,
     setDeleteConfig,
     activeUploadCell,
@@ -141,8 +139,6 @@ const RoomTable: React.FC<RoomTableProps> = ({
     setActiveUploadFile,
     activeReminderTarget,
     setActiveReminderTarget,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    closeAllMenus,
   } = useModalState();
 
   // Toolbar states (consolidated hook) — placed early for dependency by useGroupManagement
@@ -151,9 +147,7 @@ const RoomTable: React.FC<RoomTableProps> = ({
     setIsSearchOpen,
     searchQuery,
     setSearchQuery,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     searchInputRef,
-    toggleSearch,
     isPersonFilterOpen,
     setIsPersonFilterOpen,
     personFilter,
@@ -172,21 +166,14 @@ const RoomTable: React.FC<RoomTableProps> = ({
     setHiddenColumns,
     columnSearchQuery,
     setColumnSearchQuery,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    isBodyVisible,
-    setIsBodyVisible,
     isClearDataModalOpen,
     setIsClearDataModalOpen,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    clearAllFilters,
   } = useToolbarState();
   const [sortConfig, setSortConfig] = useState<{ columnId: string; direction: 'asc' | 'desc' } | null>(null);
 
   // Custom statuses (consolidated hook)
   const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     customStatuses,
-    setCustomStatuses,
     addStatus: handleAddCustomStatus,
     deleteStatus: handleDeleteCustomStatus,
   } = useCustomStatuses(roomId, t);
@@ -223,10 +210,8 @@ const RoomTable: React.FC<RoomTableProps> = ({
 
   // Group management (consolidated hook)
   const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     tableGroups,
     setTableGroups,
-    storageKeyGroups,
     addGroup: _handleAddTableGroup,
     updateGroupName: handleUpdateGroupName,
     toggleGroupCollapse: handleToggleGroupCollapse,
@@ -322,9 +307,7 @@ const RoomTable: React.FC<RoomTableProps> = ({
     activeDragId,
     handleDragStart,
     handleDragEnd,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     activeColumnDragId,
-    columnDragMousePos,
     handleStructureDragStart,
     handleStructureDragOver,
     handleStructureDragEnd,
@@ -449,20 +432,7 @@ const RoomTable: React.FC<RoomTableProps> = ({
   }, [columns, storageKeyColumns, externalColumns]);
 
   // Data processing (filtering, sorting, pagination — consolidated hook)
-  const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    filteredRows,
-    sortedRows,
-    visibleColumns,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    filteredTableGroups,
-    paginatedRows,
-    paginatedGroups,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    totalPages,
-    isAllRows,
-    priorityStats,
-  } = useTableDataProcessing({
+  const { visibleColumns, filteredTableGroups, paginatedGroups, totalPages } = useTableDataProcessing({
     rows,
     columns,
     tableGroups,

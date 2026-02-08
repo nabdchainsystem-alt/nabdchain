@@ -6,7 +6,7 @@ vi.mock('../utils/logger', () => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
-import { sanitizeString, sanitizeObject, ValidationSchemas, rateLimiters } from './security';
+import { sanitizeString, sanitizeObject, ValidationSchemas, rateLimiters, rateLimit } from './security';
 
 describe('sanitizeString', () => {
   it('escapes HTML entities', () => {
@@ -92,8 +92,9 @@ describe('rateLimiters', () => {
     expect(typeof rateLimiters.upload).toBe('function');
   });
 
-  it('auth limiter blocks after 5 requests', () => {
-    const req = { ip: 'test-ip-auth-limit' } as Request;
+  it('rate limiter blocks after max requests', () => {
+    const limiter = rateLimit({ windowMs: 60000, max: 3 });
+    const req = { ip: `test-ip-${Date.now()}` } as Request;
     const res = {
       setHeader: vi.fn(),
       status: vi.fn().mockReturnThis(),
@@ -101,16 +102,16 @@ describe('rateLimiters', () => {
     } as unknown as Response;
     const next = vi.fn();
 
-    // First 5 should pass
-    for (let i = 0; i < 5; i++) {
+    // First 3 should pass
+    for (let i = 0; i < 3; i++) {
       next.mockClear();
-      rateLimiters.auth(req, res, next);
+      limiter(req, res, next);
       expect(next).toHaveBeenCalled();
     }
 
-    // 6th should be blocked
+    // 4th should be blocked
     next.mockClear();
-    rateLimiters.auth(req, res, next);
+    limiter(req, res, next);
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(429);
   });

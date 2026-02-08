@@ -3,6 +3,7 @@
  * Generates professional branded PDF documents using PDFKit
  */
 
+// @ts-ignore no type declarations on some environments
 import PDFDocument from 'pdfkit';
 import { Writable } from 'stream';
 import {

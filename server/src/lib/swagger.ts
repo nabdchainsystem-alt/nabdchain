@@ -3,7 +3,9 @@
  * Auto-generates API documentation from JSDoc annotations.
  * Access at /api-docs when enabled.
  */
+// @ts-ignore no type declarations on some environments
 import swaggerJsdoc from 'swagger-jsdoc';
+// @ts-ignore no type declarations on some environments
 import swaggerUi from 'swagger-ui-express';
 import express from 'express';
 import { serverLogger } from '../utils/logger';

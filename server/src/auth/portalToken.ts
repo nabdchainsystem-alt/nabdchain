@@ -47,6 +47,8 @@ export interface PortalTokenPayload {
 
 export interface DecodedPortalToken extends JwtPayload, PortalTokenPayload {
   type: 'access' | 'refresh';
+  exp?: number;
+  iat?: number;
 }
 
 export interface TokenPair {
@@ -163,8 +165,8 @@ export function verifyPortalToken(token: string, expectedType?: 'access' | 'refr
       valid: true,
       payload: decoded,
     };
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
+  } catch (err: unknown) {
+    if (err instanceof jwt.TokenExpiredError) {
       return {
         valid: false,
         error: {
@@ -174,8 +176,8 @@ export function verifyPortalToken(token: string, expectedType?: 'access' | 'refr
       };
     }
 
-    if (error instanceof jwt.JsonWebTokenError) {
-      if (error.message.includes('signature')) {
+    if (err instanceof jwt.JsonWebTokenError) {
+      if (err.message.includes('signature')) {
         return {
           valid: false,
           error: {

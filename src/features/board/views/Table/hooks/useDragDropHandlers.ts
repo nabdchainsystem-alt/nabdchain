@@ -20,15 +20,7 @@ interface DragDropOptions {
 }
 
 export function useDragDropHandlers(options: DragDropOptions) {
-  const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    tableGroups,
-    setTableGroups,
-    columns,
-    setColumns,
-    onUpdateTasks,
-    tableBodyRef,
-  } = options;
+  const { tableGroups, setTableGroups, setColumns, onUpdateTasks, tableBodyRef } = options;
 
   // Row drag state
   const [activeDragId, setActiveDragId] = useState<string | null>(null);

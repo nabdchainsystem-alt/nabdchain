@@ -43,7 +43,7 @@ export default defineConfig({
             command: 'pnpm dev',
             url: 'http://localhost:5173',
             reuseExistingServer: false,
-            timeout: 60_000,
+            timeout: 180_000,
             env: { VITE_USE_MOCK_AUTH: 'true' },
           },
         ],

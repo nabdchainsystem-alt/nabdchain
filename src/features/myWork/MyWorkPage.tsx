@@ -98,12 +98,11 @@ const DateMenu = ({
   </div>
 );
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const BoardSelectionModal = ({
   isOpen,
   onClose,
   boards,
-  taskName,
+  taskName: _taskName,
   onSelectBoard,
   onCreateBoard,
   t,
