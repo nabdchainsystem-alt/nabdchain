@@ -442,13 +442,15 @@ export async function sendQuote(
     }
 
     const fromStatus = existingQuote.status;
+    const newVersion = existingQuote.version + 1;
 
-    // Update quote status to SENT
+    // Update quote status to SENT (increment version for snapshot)
     const updatedQuote = await prisma.quote.update({
       where: { id: quoteId },
       data: {
         status: 'sent',
         sentAt: new Date(),
+        version: newVersion,
       },
       include: { rfq: true },
     });

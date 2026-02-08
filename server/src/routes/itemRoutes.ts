@@ -2055,7 +2055,12 @@ router.post('/quotes', requireAuth, async (req, res: Response) => {
     const data = createQuoteSchema.parse(req.body);
 
     // Get the RFQ to find the buyerId - use all possible seller IDs to find the RFQ
-    const rfqDetail = await sellerRfqInboxService.getRFQDetail(sellerIds, data.rfqId);
+    let rfqDetail;
+    try {
+      rfqDetail = await sellerRfqInboxService.getRFQDetail(sellerIds, data.rfqId);
+    } catch {
+      return res.status(404).json({ error: 'RFQ not found or not accessible' });
+    }
     if (!rfqDetail || !rfqDetail.rfq) {
       return res.status(404).json({ error: 'RFQ not found' });
     }
