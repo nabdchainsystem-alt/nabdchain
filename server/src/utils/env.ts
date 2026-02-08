@@ -22,15 +22,6 @@ const envConfig: EnvConfig = {
         'CLERK_SECRET_KEY',
         // Encryption - MUST be set in production
         'ENCRYPTION_KEY',
-        // Portal JWT - MUST be set in production
-        'PORTAL_JWT_SECRET',
-        // OAuth providers (if email features are used)
-        'GOOGLE_CLIENT_ID',
-        'GOOGLE_CLIENT_SECRET',
-        'GOOGLE_REDIRECT_URI',
-        'OUTLOOK_CLIENT_ID',
-        'OUTLOOK_CLIENT_SECRET',
-        'OUTLOOK_REDIRECT_URI',
     ],
     optional: {
         'NODE_ENV': 'development',
