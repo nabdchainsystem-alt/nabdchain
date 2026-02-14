@@ -31,7 +31,6 @@ import {
   Coins,
   XCircle,
 } from 'phosphor-react';
-import { useAuth } from '../../../../auth-adapter';
 import { EmptyState, Select, SkeletonTableRow } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { disputeService } from '../../services/disputeService';
@@ -126,7 +125,6 @@ const DeadlineBadge: React.FC<{ deadline: string | undefined; status: string }> 
 
 export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
   const { styles, direction } = usePortal();
-  const { getToken } = useAuth();
 
   // State for API data
   const [disputes, setDisputes] = useState<MarketplaceDispute[]>([]);
@@ -158,15 +156,10 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
       try {
         setIsLoading(true);
         setError(null);
-        const token = await getToken();
-        if (!token) {
-          setError('Authentication required');
-          return;
-        }
 
         const [disputesRes, statsRes] = await Promise.all([
-          disputeService.getSellerDisputes(token, { limit: 100 }),
-          disputeService.getSellerDisputeStats(token),
+          disputeService.getSellerDisputes({ limit: 100 }),
+          disputeService.getSellerDisputeStats(),
         ]);
 
         setDisputes(disputesRes.disputes);
@@ -179,7 +172,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
       }
     };
     fetchData();
-  }, [getToken]);
+  }, []);
 
   // Open dispute detail modal
   const openDetail = useCallback((dispute: MarketplaceDispute) => {
@@ -192,10 +185,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
   // Mark as under review
   const handleMarkUnderReview = async (dispute: MarketplaceDispute) => {
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Authentication required');
-
-      const updated = await disputeService.markAsUnderReview(token, dispute.id);
+      const updated = await disputeService.markAsUnderReview(dispute.id);
 
       setDisputes((prev) => prev.map((d) => (d.id === dispute.id ? { ...d, ...updated } : d)));
       if (selectedDispute?.id === dispute.id) {
@@ -226,10 +216,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
     setActionError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Authentication required');
-
-      const updated = await disputeService.respondToDispute(token, selectedDispute.id, {
+      const updated = await disputeService.respondToDispute(selectedDispute.id, {
         responseType,
         response: responseText,
         proposedResolution: responseType === 'propose_resolution' ? proposedResolution : undefined,
@@ -272,6 +259,7 @@ export const DisputeInbox: React.FC<DisputeInboxProps> = ({ _onNavigate }) => {
             </span>
             <div className="text-[10px] font-mono" style={{ color: styles.textMuted }}>
               Order: {info.row.original.orderNumber}
+              {info.row.original.invoiceNumber && <> · Inv: {info.row.original.invoiceNumber}</>}
             </div>
           </div>
         ),
@@ -756,7 +744,6 @@ const SellerDisputeDetailModal: React.FC<{
   onMarkReview: () => void;
 }> = ({ dispute, activeTab, onTabChange, onClose, onRespond, onMarkReview }) => {
   const { styles } = usePortal();
-  const { getToken } = useAuth();
   const [timeline, setTimeline] = useState<DisputeEvent[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
 
@@ -771,11 +758,8 @@ const SellerDisputeDetailModal: React.FC<{
       const fetchTimeline = async () => {
         try {
           setLoadingTimeline(true);
-          const token = await getToken();
-          if (token) {
-            const events = await disputeService.getDisputeHistory(token, dispute.id);
-            setTimeline(events);
-          }
+          const events = await disputeService.getDisputeHistory(dispute.id);
+          setTimeline(events);
         } catch (err) {
           console.error('Failed to fetch timeline:', err);
         } finally {
@@ -784,7 +768,7 @@ const SellerDisputeDetailModal: React.FC<{
       };
       fetchTimeline();
     }
-  }, [activeTab, dispute.id, getToken, timeline.length]);
+  }, [activeTab, dispute.id, timeline.length]);
 
   const tabs = [
     { id: 'details' as const, label: 'Details', icon: FileText },
@@ -885,6 +869,14 @@ const SellerDisputeDetailModal: React.FC<{
                       {dispute.orderNumber}
                     </p>
                   </div>
+                  {dispute.invoiceNumber && (
+                    <div>
+                      <span style={{ color: styles.textMuted }}>Invoice:</span>
+                      <p className="font-mono" style={{ color: styles.info }}>
+                        {dispute.invoiceNumber}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <span style={{ color: styles.textMuted }}>Item:</span>
                     <p className="font-medium" style={{ color: styles.textPrimary }}>

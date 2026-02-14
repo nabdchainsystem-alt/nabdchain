@@ -2,7 +2,7 @@
 // Seller RFQ Inbox Service - Frontend API Client (Stage 2)
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import {
   SellerInboxRFQ,
   InboxFilters,
@@ -33,140 +33,88 @@ export const sellerRfqInboxService = {
   /**
    * Get paginated RFQ inbox with filters
    */
-  async getInbox(token: string, filters: InboxFilters = {}): Promise<InboxResponse> {
-    const url = new URL(`${API_URL}/items/rfq/seller/inbox`);
+  async getInbox(filters: InboxFilters = {}): Promise<InboxResponse> {
+    const params = new URLSearchParams();
 
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.priorityLevel) url.searchParams.append('priorityLevel', filters.priorityLevel);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-    if (filters.sortBy) url.searchParams.append('sortBy', filters.sortBy);
-    if (filters.sortOrder) url.searchParams.append('sortOrder', filters.sortOrder);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.priorityLevel) params.append('priorityLevel', filters.priorityLevel);
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
     // Gmail-style filters
-    if (filters.labelId) url.searchParams.append('labelId', filters.labelId);
-    if (filters.isRead !== undefined) url.searchParams.append('isRead', filters.isRead.toString());
-    if (filters.isArchived !== undefined) url.searchParams.append('isArchived', filters.isArchived.toString());
-    if (filters.isSnoozed !== undefined) url.searchParams.append('isSnoozed', filters.isSnoozed.toString());
+    if (filters.labelId) params.append('labelId', filters.labelId);
+    if (filters.isRead !== undefined) params.append('isRead', filters.isRead.toString());
+    if (filters.isArchived !== undefined) params.append('isArchived', filters.isArchived.toString());
+    if (filters.isSnoozed !== undefined) params.append('isSnoozed', filters.isSnoozed.toString());
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch inbox');
-    }
-
-    return response.json();
+    const qs = params.toString();
+    return portalApiClient.get<InboxResponse>(`/api/items/rfq/seller/inbox${qs ? `?${qs}` : ''}`);
   },
 
   /**
    * Get RFQ detail (auto-marks as VIEWED)
    */
-  async getRFQDetail(token: string, rfqId: string): Promise<SellerInboxRFQ | null> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getRFQDetail(rfqId: string): Promise<SellerInboxRFQ | null> {
+    try {
+      // Backend returns { rfq, history }, extract just the rfq
+      const data = await portalApiClient.get<{ rfq?: SellerInboxRFQ } & SellerInboxRFQ>(
+        `/api/items/rfq/seller/inbox/${rfqId}`,
+      );
+      return data.rfq || data;
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch RFQ detail');
-    }
-
-    // Backend returns { rfq, history }, extract just the rfq
-    const data = await response.json();
-    return data.rfq || data;
   },
 
   /**
    * Update RFQ status (mark as under_review or ignored)
    */
-  async updateStatus(token: string, rfqId: string, data: StatusUpdateData): Promise<SellerInboxRFQ | null> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (response.status === 404) {
+  async updateStatus(rfqId: string, data: StatusUpdateData): Promise<SellerInboxRFQ | null> {
+    try {
+      return await portalApiClient.patch<SellerInboxRFQ>(`/api/items/rfq/seller/inbox/${rfqId}/status`, data);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update RFQ status');
-    }
-
-    return response.json();
   },
 
   /**
    * Mark RFQ as under review
    */
-  async markUnderReview(token: string, rfqId: string): Promise<SellerInboxRFQ | null> {
-    return this.updateStatus(token, rfqId, { status: 'under_review' });
+  async markUnderReview(rfqId: string): Promise<SellerInboxRFQ | null> {
+    return this.updateStatus(rfqId, { status: 'under_review' });
   },
 
   /**
    * Mark RFQ as ignored with reason
    */
-  async markIgnored(token: string, rfqId: string, reason: string): Promise<SellerInboxRFQ | null> {
-    return this.updateStatus(token, rfqId, { status: 'ignored', ignoredReason: reason });
+  async markIgnored(rfqId: string, reason: string): Promise<SellerInboxRFQ | null> {
+    return this.updateStatus(rfqId, { status: 'ignored', ignoredReason: reason });
   },
 
   /**
    * Add internal note to RFQ
    */
-  async addNote(token: string, rfqId: string, data: InternalNoteData): Promise<SellerInboxRFQ | null> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/notes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (response.status === 404) {
+  async addNote(rfqId: string, data: InternalNoteData): Promise<SellerInboxRFQ | null> {
+    try {
+      return await portalApiClient.post<SellerInboxRFQ>(`/api/items/rfq/seller/inbox/${rfqId}/notes`, data);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to add note');
-    }
-
-    return response.json();
   },
 
   /**
    * Get RFQ event history
    */
-  async getHistory(token: string, rfqId: string): Promise<RFQEvent[] | null> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getHistory(rfqId: string): Promise<RFQEvent[] | null> {
+    try {
+      return await portalApiClient.get<RFQEvent[]>(`/api/items/rfq/seller/inbox/${rfqId}/history`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch history');
-    }
-
-    return response.json();
   },
 
   // =============================================================================
@@ -176,125 +124,50 @@ export const sellerRfqInboxService = {
   /**
    * Get all labels for the seller
    */
-  async getLabels(token: string): Promise<RFQLabel[]> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/labels`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch labels');
-    }
-
-    return response.json();
+  async getLabels(): Promise<RFQLabel[]> {
+    return portalApiClient.get<RFQLabel[]>(`/api/items/rfq/seller/labels`);
   },
 
   /**
    * Create a new label
    */
-  async createLabel(token: string, data: CreateLabelData): Promise<RFQLabel> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/labels`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to create label');
-    }
-
-    return response.json();
+  async createLabel(data: CreateLabelData): Promise<RFQLabel> {
+    return portalApiClient.post<RFQLabel>(`/api/items/rfq/seller/labels`, data);
   },
 
   /**
    * Update a label
    */
-  async updateLabel(token: string, labelId: string, data: UpdateLabelData): Promise<RFQLabel> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/labels/${labelId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update label');
-    }
-
-    return response.json();
+  async updateLabel(labelId: string, data: UpdateLabelData): Promise<RFQLabel> {
+    return portalApiClient.patch<RFQLabel>(`/api/items/rfq/seller/labels/${labelId}`, data);
   },
 
   /**
    * Delete a label
    */
-  async deleteLabel(token: string, labelId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/labels/${labelId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to delete label');
-    }
+  async deleteLabel(labelId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/labels/${labelId}`);
   },
 
   /**
    * Add a label to an RFQ
    */
-  async addLabelToRFQ(token: string, rfqId: string, labelId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/labels/${labelId}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to add label');
-    }
+  async addLabelToRFQ(rfqId: string, labelId: string): Promise<void> {
+    await portalApiClient.post(`/api/items/rfq/seller/inbox/${rfqId}/labels/${labelId}`);
   },
 
   /**
    * Remove a label from an RFQ
    */
-  async removeLabelFromRFQ(token: string, rfqId: string, labelId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/labels/${labelId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to remove label');
-    }
+  async removeLabelFromRFQ(rfqId: string, labelId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/inbox/${rfqId}/labels/${labelId}`);
   },
 
   /**
    * Bulk add/remove label from multiple RFQs
    */
-  async bulkUpdateLabels(token: string, data: BulkLabelData): Promise<{ updated: number }> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/bulk/labels`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update labels');
-    }
-
-    return response.json();
+  async bulkUpdateLabels(data: BulkLabelData): Promise<{ updated: number }> {
+    return portalApiClient.post<{ updated: number }>(`/api/items/rfq/seller/inbox/bulk/labels`, data);
   },
 
   // =============================================================================
@@ -304,74 +177,29 @@ export const sellerRfqInboxService = {
   /**
    * Get all notes for an RFQ (threaded)
    */
-  async getNotes(token: string, rfqId: string): Promise<RFQNote[]> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/notes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch notes');
-    }
-
-    return response.json();
+  async getNotes(rfqId: string): Promise<RFQNote[]> {
+    return portalApiClient.get<RFQNote[]>(`/api/items/rfq/seller/inbox/${rfqId}/notes`);
   },
 
   /**
    * Add a new note to an RFQ
    */
-  async addThreadedNote(token: string, rfqId: string, data: CreateNoteData): Promise<RFQNote> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/notes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to add note');
-    }
-
-    return response.json();
+  async addThreadedNote(rfqId: string, data: CreateNoteData): Promise<RFQNote> {
+    return portalApiClient.post<RFQNote>(`/api/items/rfq/seller/inbox/${rfqId}/notes`, data);
   },
 
   /**
    * Update a note
    */
-  async updateNote(token: string, noteId: string, content: string): Promise<RFQNote> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/notes/${noteId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update note');
-    }
-
-    return response.json();
+  async updateNote(noteId: string, content: string): Promise<RFQNote> {
+    return portalApiClient.patch<RFQNote>(`/api/items/rfq/seller/inbox/notes/${noteId}`, { content });
   },
 
   /**
    * Delete a note
    */
-  async deleteNote(token: string, noteId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/notes/${noteId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to delete note');
-    }
+  async deleteNote(noteId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/inbox/notes/${noteId}`);
   },
 
   // =============================================================================
@@ -381,98 +209,40 @@ export const sellerRfqInboxService = {
   /**
    * Get all saved replies
    */
-  async getSavedReplies(token: string, category?: string): Promise<SavedReply[]> {
-    const url = new URL(`${API_URL}/items/rfq/seller/saved-replies`);
-    if (category) url.searchParams.append('category', category);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch saved replies');
-    }
-
-    return response.json();
+  async getSavedReplies(category?: string): Promise<SavedReply[]> {
+    const qs = category ? `?category=${encodeURIComponent(category)}` : '';
+    return portalApiClient.get<SavedReply[]>(`/api/items/rfq/seller/saved-replies${qs}`);
   },
 
   /**
    * Create a saved reply
    */
-  async createSavedReply(token: string, data: CreateSavedReplyData): Promise<SavedReply> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/saved-replies`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to create saved reply');
-    }
-
-    return response.json();
+  async createSavedReply(data: CreateSavedReplyData): Promise<SavedReply> {
+    return portalApiClient.post<SavedReply>(`/api/items/rfq/seller/saved-replies`, data);
   },
 
   /**
    * Update a saved reply
    */
-  async updateSavedReply(token: string, replyId: string, data: UpdateSavedReplyData): Promise<SavedReply> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/saved-replies/${replyId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update saved reply');
-    }
-
-    return response.json();
+  async updateSavedReply(replyId: string, data: UpdateSavedReplyData): Promise<SavedReply> {
+    return portalApiClient.patch<SavedReply>(`/api/items/rfq/seller/saved-replies/${replyId}`, data);
   },
 
   /**
    * Delete a saved reply
    */
-  async deleteSavedReply(token: string, replyId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/saved-replies/${replyId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to delete saved reply');
-    }
+  async deleteSavedReply(replyId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/saved-replies/${replyId}`);
   },
 
   /**
    * Expand a saved reply with RFQ data
    */
-  async expandTemplate(token: string, replyId: string, rfqId: string): Promise<string> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/saved-replies/${replyId}/expand`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ rfqId }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to expand template');
-    }
-
-    const data = await response.json();
+  async expandTemplate(replyId: string, rfqId: string): Promise<string> {
+    const data = await portalApiClient.post<{ content: string }>(
+      `/api/items/rfq/seller/saved-replies/${replyId}/expand`,
+      { rfqId },
+    );
     return data.content;
   },
 
@@ -483,56 +253,22 @@ export const sellerRfqInboxService = {
   /**
    * Snooze an RFQ
    */
-  async snoozeRFQ(token: string, rfqId: string, data: SnoozeData): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/snooze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to snooze RFQ');
-    }
+  async snoozeRFQ(rfqId: string, data: SnoozeData): Promise<void> {
+    await portalApiClient.post(`/api/items/rfq/seller/inbox/${rfqId}/snooze`, data);
   },
 
   /**
    * Unsnooze an RFQ
    */
-  async unsnoozeRFQ(token: string, rfqId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/snooze`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to unsnooze RFQ');
-    }
+  async unsnoozeRFQ(rfqId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/inbox/${rfqId}/snooze`);
   },
 
   /**
    * Bulk snooze multiple RFQs
    */
-  async bulkSnooze(token: string, data: BulkSnoozeData): Promise<{ snoozed: number }> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/bulk/snooze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to snooze RFQs');
-    }
-
-    return response.json();
+  async bulkSnooze(data: BulkSnoozeData): Promise<{ snoozed: number }> {
+    return portalApiClient.post<{ snoozed: number }>(`/api/items/rfq/seller/inbox/bulk/snooze`, data);
   },
 
   // =============================================================================
@@ -542,73 +278,29 @@ export const sellerRfqInboxService = {
   /**
    * Mark an RFQ as read
    */
-  async markAsRead(token: string, rfqId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/read`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to mark as read');
-    }
+  async markAsRead(rfqId: string): Promise<void> {
+    await portalApiClient.post(`/api/items/rfq/seller/inbox/${rfqId}/read`);
   },
 
   /**
    * Mark an RFQ as unread
    */
-  async markAsUnread(token: string, rfqId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/read`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to mark as unread');
-    }
+  async markAsUnread(rfqId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/inbox/${rfqId}/read`);
   },
 
   /**
    * Bulk mark RFQs as read
    */
-  async bulkMarkAsRead(token: string, data: BulkIdsData): Promise<{ updated: number }> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/bulk/read`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to mark as read');
-    }
-
-    return response.json();
+  async bulkMarkAsRead(data: BulkIdsData): Promise<{ updated: number }> {
+    return portalApiClient.post<{ updated: number }>(`/api/items/rfq/seller/inbox/bulk/read`, data);
   },
 
   /**
    * Bulk mark RFQs as unread
    */
-  async bulkMarkAsUnread(token: string, data: BulkIdsData): Promise<{ updated: number }> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/bulk/unread`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to mark as unread');
-    }
-
-    return response.json();
+  async bulkMarkAsUnread(data: BulkIdsData): Promise<{ updated: number }> {
+    return portalApiClient.post<{ updated: number }>(`/api/items/rfq/seller/inbox/bulk/unread`, data);
   },
 
   // =============================================================================
@@ -618,73 +310,29 @@ export const sellerRfqInboxService = {
   /**
    * Archive an RFQ
    */
-  async archiveRFQ(token: string, rfqId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/archive`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to archive RFQ');
-    }
+  async archiveRFQ(rfqId: string): Promise<void> {
+    await portalApiClient.post(`/api/items/rfq/seller/inbox/${rfqId}/archive`);
   },
 
   /**
    * Unarchive an RFQ
    */
-  async unarchiveRFQ(token: string, rfqId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/${rfqId}/archive`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to unarchive RFQ');
-    }
+  async unarchiveRFQ(rfqId: string): Promise<void> {
+    await portalApiClient.delete(`/api/items/rfq/seller/inbox/${rfqId}/archive`);
   },
 
   /**
    * Bulk archive RFQs
    */
-  async bulkArchive(token: string, data: BulkIdsData): Promise<{ updated: number }> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/bulk/archive`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to archive RFQs');
-    }
-
-    return response.json();
+  async bulkArchive(data: BulkIdsData): Promise<{ updated: number }> {
+    return portalApiClient.post<{ updated: number }>(`/api/items/rfq/seller/inbox/bulk/archive`, data);
   },
 
   /**
    * Bulk unarchive RFQs
    */
-  async bulkUnarchive(token: string, data: BulkIdsData): Promise<{ updated: number }> {
-    const response = await fetch(`${API_URL}/items/rfq/seller/inbox/bulk/unarchive`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to unarchive RFQs');
-    }
-
-    return response.json();
+  async bulkUnarchive(data: BulkIdsData): Promise<{ updated: number }> {
+    return portalApiClient.post<{ updated: number }>(`/api/items/rfq/seller/inbox/bulk/unarchive`, data);
   },
 };
 

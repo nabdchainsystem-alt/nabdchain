@@ -1,13 +1,11 @@
 // =============================================================================
 // Portal Notification Service - Frontend API Client
 // =============================================================================
+// Uses portalApiClient for automatic portal JWT auth
+// =============================================================================
 
-import { API_URL } from '../../../config/api';
-import {
-  PortalNotification,
-  NotificationCounts,
-  PortalType,
-} from '../types/notification.types';
+import { portalApiClient } from './portalApiClient';
+import { PortalNotification, NotificationCounts, PortalType } from '../types/notification.types';
 
 // =============================================================================
 // Notification Service
@@ -18,88 +16,46 @@ export const notificationService = {
    * Get notifications for portal
    */
   async getNotifications(
-    token: string,
     portalType: PortalType,
     options: {
       limit?: number;
       offset?: number;
       unreadOnly?: boolean;
       actionRequired?: boolean;
-    } = {}
+    } = {},
   ): Promise<PortalNotification[]> {
-    const url = new URL(`${API_URL}/notifications/portal`);
-    url.searchParams.append('portalType', portalType);
-    if (options.limit) url.searchParams.append('limit', options.limit.toString());
-    if (options.offset) url.searchParams.append('offset', options.offset.toString());
-    if (options.unreadOnly) url.searchParams.append('unreadOnly', 'true');
-    if (options.actionRequired) url.searchParams.append('actionRequired', 'true');
+    const params = new URLSearchParams({ portalType });
+    if (options.limit) params.append('limit', options.limit.toString());
+    if (options.offset) params.append('offset', options.offset.toString());
+    if (options.unreadOnly) params.append('unreadOnly', 'true');
+    if (options.actionRequired) params.append('actionRequired', 'true');
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch notifications');
-    }
-
-    return response.json();
+    return portalApiClient.get<PortalNotification[]>(`/api/notifications/portal?${params.toString()}`);
   },
 
   /**
    * Get unread count for portal
    */
-  async getUnreadCount(
-    token: string,
-    portalType: PortalType
-  ): Promise<NotificationCounts> {
-    const url = new URL(`${API_URL}/notifications/portal/count`);
-    url.searchParams.append('portalType', portalType);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch notification count');
-    }
-
-    return response.json();
+  async getUnreadCount(portalType: PortalType): Promise<NotificationCounts> {
+    const params = new URLSearchParams({ portalType });
+    return portalApiClient.get<NotificationCounts>(`/api/notifications/portal/count?${params.toString()}`);
   },
 
   /**
    * Mark single notification as read
    */
-  async markAsRead(token: string, notificationId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to mark notification as read');
-    }
+  async markAsRead(notificationId: string): Promise<void> {
+    await portalApiClient.patch(`/api/notifications/${notificationId}/read`);
   },
 
   /**
    * Mark all notifications as read for portal
    */
-  async markAllAsRead(
-    token: string,
-    portalType: PortalType
-  ): Promise<number> {
-    const url = new URL(`${API_URL}/notifications/portal/read-all`);
-    url.searchParams.append('portalType', portalType);
-
-    const response = await fetch(url.toString(), {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to mark all notifications as read');
-    }
-
-    const data = await response.json();
+  async markAllAsRead(portalType: PortalType): Promise<number> {
+    const params = new URLSearchParams({ portalType });
+    const data = await portalApiClient.patch<{ updatedCount: number }>(
+      `/api/notifications/portal/read-all?${params.toString()}`,
+    );
     return data.updatedCount;
   },
 };

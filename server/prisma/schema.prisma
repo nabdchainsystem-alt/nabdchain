@@ -820,6 +820,7 @@ model Item {
   // Relations
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   rfqItems        ItemRFQ[]
+  rfqLineItems    RFQLineItem[]    @relation("RFQLineItemItem")
   marketplaceRfqs MarketplaceRFQ[]
 
   @@unique([userId, sku]) // SKU unique per seller
@@ -1018,12 +1019,13 @@ model ItemRFQ {
   archivedAt DateTime?
 
   // Relations
-  item   Item?                @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  events ItemRFQEvent[]
-  quotes Quote[]
-  labels RFQLabelAssignment[]
-  notes  RFQNote[]
-  snooze RFQSnooze?
+  item      Item?                @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  lineItems RFQLineItem[]
+  events    ItemRFQEvent[]
+  quotes    Quote[]
+  labels    RFQLabelAssignment[]
+  notes     RFQNote[]
+  snooze    RFQSnooze?
 
   @@index([itemId])
   @@index([buyerId])
@@ -1038,6 +1040,38 @@ model ItemRFQ {
   @@index([sellerId, isArchived])
   @@index([rfqType])
   @@index([rfqType, status])
+}
+
+// =============================================================================
+// RFQ LINE ITEMS (Multi-Item RFQ Support)
+// =============================================================================
+// Each RFQ can have multiple line items, one per requested item.
+// For legacy single-item RFQs, lineItems may be empty (parent fields authoritative).
+
+model RFQLineItem {
+  id             String   @id @default(uuid())
+  rfqId          String
+  itemId         String?
+  quantity       Int
+  message        String? // Per-line-item notes from buyer
+
+  // Item snapshot at time of RFQ creation (denormalized for display)
+  itemName       String?
+  itemSku        String?
+  itemImage      String?
+  priceAtRequest Float? // Reference price when requested (not binding)
+
+  // Position ordering
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  rfq            ItemRFQ         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  item           Item?           @relation("RFQLineItemItem", fields: [itemId], references: [id], onDelete: SetNull)
+  quoteLineItems QuoteLineItem[]
+
+  @@index([rfqId])
+  @@index([itemId])
 }
 
 // =============================================================================
@@ -1119,6 +1153,7 @@ model Quote {
 
   // Relations
   rfq           ItemRFQ           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  lineItems     QuoteLineItem[]
   versions      QuoteVersion[]
   events        QuoteEvent[]
   counterOffers CounterOffer[]
@@ -1132,6 +1167,40 @@ model Quote {
   @@index([rfqId, isLatest])
   @@index([validUntil])
   @@index([createdAt])
+}
+
+// =============================================================================
+// QUOTE LINE ITEMS (Multi-Item Quote Support)
+// =============================================================================
+// Per-line-item pricing for multi-item RFQs.
+// Links each QuoteLineItem to its corresponding RFQLineItem.
+
+model QuoteLineItem {
+  id            String   @id @default(uuid())
+  quoteId       String
+  rfqLineItemId String
+  itemId        String? // Denormalized from RFQLineItem
+
+  // Pricing per line item
+  unitPrice  Float
+  quantity   Int
+  discount   Float?
+  totalPrice Float
+
+  // Item snapshot (denormalized)
+  itemName String?
+  itemSku  String?
+
+  // Position ordering
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  quote       Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  rfqLineItem RFQLineItem @relation(fields: [rfqLineItemId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([rfqLineItemId])
 }
 
 // Immutable version history for quotes
@@ -1158,7 +1227,8 @@ model QuoteVersion {
   createdAt DateTime @default(now())
 
   // Change tracking
-  changeReason String? // Why this version was created
+  changeReason      String? // Why this version was created
+  lineItemsSnapshot String? // JSON snapshot of QuoteLineItem[] at this version
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
@@ -1336,11 +1406,14 @@ model MarketplaceOrder {
   // pending_confirmation → confirmed → processing → shipped → delivered → closed
   // Can be cancelled at various stages (with rejectionReason)
   status            String @default("pending_confirmation") // pending_confirmation, confirmed, processing, shipped, delivered, closed, cancelled, failed, refunded
-  paymentStatus     String @default("unpaid") // unpaid, authorized, paid, refunded
+  paymentStatus     String @default("unpaid") // unpaid, authorized, pending_conf, unpaid_credit, paid, paid_cash, refunded
   fulfillmentStatus String @default("not_started") // not_started, picking, packing, ready_to_ship, shipped, delivered
 
   // Source
   source String @default("direct_buy") // rfq, direct_buy
+
+  // Payment Method (selected at order creation, immutable)
+  paymentMethod String @default("bank_transfer") // bank_transfer, cod, credit
 
   // Shipping Information
   shippingAddress   String? // JSON: { name, company, street1, street2, city, state, postalCode, country, phone }
@@ -1410,6 +1483,11 @@ model MarketplaceOrder {
   closedAt     DateTime? // Stage 5: When order was closed
   cancelledAt  DateTime?
 
+  // Relations
+  invoice   MarketplaceInvoice?
+  lineItems OrderLineItem[]
+  ratings   MarketplaceRating[]
+
   @@index([buyerId])
   @@index([sellerId])
   @@index([sellerId, status])
@@ -1431,6 +1509,43 @@ model MarketplaceOrder {
   @@index([paymentStatus])
   @@index([sellerId, status, paymentStatus])
   @@index([buyerId, status, paymentStatus])
+}
+
+// =============================================================================
+// ORDER LINE ITEMS (Multi-Item Order Support)
+// =============================================================================
+// Per-line-item detail for multi-item orders (created from multi-item quotes).
+// For legacy single-item orders, lineItems may be empty (parent fields authoritative).
+
+model OrderLineItem {
+  id      String @id @default(uuid())
+  orderId String
+
+  // Item reference
+  itemId    String?
+  itemName  String
+  itemSku   String
+  itemImage String?
+
+  // Pricing
+  unitPrice  Float
+  quantity   Int
+  discount   Float?
+  totalPrice Float
+
+  // Source tracking
+  rfqLineItemId   String?
+  quoteLineItemId String?
+
+  // Position ordering
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  order MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([itemId])
 }
 
 model MarketplaceOrderAudit {
@@ -1462,7 +1577,8 @@ model MarketplaceInvoice {
   invoiceNumber String @unique // Human-readable: INV-2024-0001
 
   // Reference - One invoice per order
-  orderId     String @unique
+  orderId     String             @unique
+  order       MarketplaceOrder   @relation(fields: [orderId], references: [id])
   orderNumber String
 
   // Parties
@@ -1516,6 +1632,10 @@ model MarketplaceInvoice {
   cancelledAt  DateTime?
   cancelReason String?
 
+  // PDF
+  pdfPath        String?
+  pdfGeneratedAt DateTime?
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1541,10 +1661,13 @@ model MarketplacePayment {
   paymentNumber String @unique // Human-readable: PAY-2024-0001
 
   // References
-  invoiceId String
-  orderId   String // Denormalized for queries
+  invoiceId String? // Nullable: payment can be recorded before invoice exists
+  orderId   String
   buyerId   String
   sellerId  String
+
+  // Notes (buyer can add context for order-level payments)
+  notes String?
 
   // Payment Details
   amount   Float
@@ -1572,10 +1695,10 @@ model MarketplacePayment {
   updatedAt DateTime @updatedAt
 
   // Relations
-  invoice MarketplaceInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice MarketplaceInvoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-  // Prevent duplicate bank reference for same invoice (anti-duplication)
-  @@unique([invoiceId, bankReference])
+  // Prevent duplicate bank reference for same order (anti-duplication)
+  @@unique([orderId, bankReference])
   @@index([invoiceId])
   @@index([orderId])
   @@index([buyerId])
@@ -2255,6 +2378,9 @@ model BuyerProfile {
 
   // Profile Status: active, suspended
   status String @default("active")
+
+  // Credit payment eligibility
+  creditEnabled Boolean @default(false)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -3515,4 +3641,81 @@ model JobQueueDLQ {
   @@index([failedAt])
   @@index([resolvedAt])
   @@index([failureReason])
+}
+
+// =============================================================================
+// WORKSPACE INTELLIGENCE EVENTS
+// =============================================================================
+// AI-generated insight events surfaced in buyer/seller workspace feeds.
+// Each event captures an AI analysis result for orders, invoices, etc.
+// =============================================================================
+
+model WorkspaceInsightEvent {
+  id     String @id @default(uuid())
+  userId String
+
+  // Context
+  role       String // "buyer" | "seller"
+  entityType String // "order" | "invoice" | "rfq" | "workspace"
+  entityId   String? // FK to the entity (orderId, invoiceId, etc.)
+
+  // AI result
+  insightType String // "order_summary" | "invoice_risk" | "general_insight" | "workspace_summary"
+  title       String
+  summary     String @db.Text
+  severity    String @default("info") // "info" | "warning" | "critical"
+  confidence  Float  @default(0.5)
+
+  // Full structured payload (AIInsightOutput JSON)
+  payload String? @db.Text
+
+  // Lifecycle
+  status     String    @default("active") // "active" | "resolved" | "dismissed"
+  resolvedAt DateTime?
+  resolvedBy String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, role])
+  @@index([userId, role, status])
+  @@index([entityType, entityId])
+  @@index([insightType])
+  @@index([createdAt])
+  @@index([status])
+}
+
+// =============================================================================
+// MARKETPLACE MUTUAL RATINGS (Buyer ↔ Seller)
+// =============================================================================
+// After an order is fully completed (delivered + paid), both buyer and seller
+// can rate each other once per order.
+
+model MarketplaceRating {
+  id      String @id @default(uuid())
+  orderId String
+  order   MarketplaceOrder @relation(fields: [orderId], references: [id])
+
+  // Who is rating
+  raterRole String // 'BUYER' | 'SELLER'
+  raterId   String // buyerId or sellerId depending on role
+
+  // Who is being rated
+  targetRole String // 'SELLER' | 'BUYER'
+  targetId   String // sellerId or buyerId
+
+  // Rating data
+  score   Int     // 1-5
+  tags    String? // JSON array of tag strings
+  comment String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // One rating per side per order
+  @@unique([orderId, raterRole])
+  @@index([targetRole, targetId])
+  @@index([orderId])
+  @@index([raterId])
 }

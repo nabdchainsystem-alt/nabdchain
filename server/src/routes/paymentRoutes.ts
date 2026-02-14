@@ -8,6 +8,8 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { idempotency } from '../middleware/idempotencyMiddleware';
 import { marketplacePaymentService, PaymentStatus, PaymentMethod } from '../services/marketplacePaymentService';
 import { apiLogger } from '../utils/logger';
+import { resolveBuyerId } from '../utils/resolveBuyerId';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
 
@@ -50,7 +52,20 @@ const failPaymentSchema = z.object({
  */
 router.get('/invoice/:invoiceId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
+    // Resolve the user's profile ID (buyer or seller) for authorization
+    const buyerId = await resolveBuyerId(req);
+    // Try seller profile lookup
+    const authUserId = (req as AuthRequest).auth?.userId;
+    let sellerId: string | null = null;
+    if (authUserId) {
+      const seller = await prisma.sellerProfile.findFirst({
+        where: { userId: authUserId },
+        select: { id: true },
+      });
+      sellerId = seller?.id || null;
+    }
+
+    const userId = buyerId || sellerId;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -77,13 +92,13 @@ router.get('/invoice/:invoiceId', requireAuth, async (req: Request, res: Respons
  */
 router.get('/buyer', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
 
     const filters = paymentFiltersSchema.parse(req.query);
-    const result = await marketplacePaymentService.getBuyerPayments(userId, filters);
+    const result = await marketplacePaymentService.getBuyerPayments(buyerId, filters);
 
     return res.json(result);
   } catch (error) {
@@ -102,16 +117,16 @@ router.get('/buyer', requireAuth, async (req: Request, res: Response) => {
  */
 router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'payment' }), async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
 
     const body = recordPaymentSchema.parse(req.body);
 
     const result = await marketplacePaymentService.recordPayment({
       ...body,
-      buyerId: userId,
+      buyerId,
     });
 
     if (!result.success) {
@@ -134,12 +149,12 @@ router.post('/buyer', requireAuth, idempotency({ required: true, entityType: 'pa
  */
 router.get('/buyer/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
 
-    const payment = await marketplacePaymentService.getPayment(String(req.params.id), userId);
+    const payment = await marketplacePaymentService.getPayment(String(req.params.id), buyerId);
 
     if (!payment) {
       return res.status(404).json({ error: 'Payment not found' });
@@ -162,13 +177,20 @@ router.get('/buyer/:id', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/seller', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
+    const authUserId = (req as AuthRequest).auth?.userId;
+    if (!authUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const seller = await prisma.sellerProfile.findFirst({
+      where: { userId: authUserId },
+      select: { id: true },
+    });
+    if (!seller) {
+      return res.status(401).json({ error: 'Unauthorized - no seller profile found' });
     }
 
     const filters = paymentFiltersSchema.parse(req.query);
-    const result = await marketplacePaymentService.getSellerPayments(userId, filters);
+    const result = await marketplacePaymentService.getSellerPayments(seller.id, filters);
 
     return res.json(result);
   } catch (error) {
@@ -186,12 +208,17 @@ router.get('/seller', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
+    const authUserId = (req as AuthRequest).auth?.userId;
+    if (!authUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const seller = await prisma.sellerProfile.findFirst({
+      where: { userId: authUserId },
+      select: { id: true },
+    });
+    const sellerId = seller?.id || authUserId;
 
-    const payment = await marketplacePaymentService.getPayment(String(req.params.id), userId);
+    const payment = await marketplacePaymentService.getPayment(String(req.params.id), sellerId);
 
     if (!payment) {
       return res.status(404).json({ error: 'Payment not found' });
@@ -210,16 +237,21 @@ router.get('/seller/:id', requireAuth, async (req: Request, res: Response) => {
  */
 router.post('/seller/:id/confirm', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
+    const authUserId = (req as AuthRequest).auth?.userId;
+    if (!authUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const seller = await prisma.sellerProfile.findFirst({
+      where: { userId: authUserId },
+      select: { id: true },
+    });
+    const sellerId = seller?.id || authUserId;
 
     const body = confirmPaymentSchema.parse(req.body);
 
     const result = await marketplacePaymentService.confirmPayment({
       paymentId: String(req.params.id),
-      sellerId: userId,
+      sellerId,
       confirmationNote: body.confirmationNote,
     });
 
@@ -243,16 +275,21 @@ router.post('/seller/:id/confirm', requireAuth, async (req: Request, res: Respon
  */
 router.post('/seller/:id/fail', requireAuth, async (req: Request, res: Response) => {
   try {
-    const userId = (req as AuthRequest).auth?.userId;
-    if (!userId) {
+    const authUserId = (req as AuthRequest).auth?.userId;
+    if (!authUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const seller = await prisma.sellerProfile.findFirst({
+      where: { userId: authUserId },
+      select: { id: true },
+    });
+    const sellerId = seller?.id || authUserId;
 
     const body = failPaymentSchema.parse(req.body);
 
     const result = await marketplacePaymentService.failPayment({
       paymentId: String(req.params.id),
-      sellerId: userId,
+      sellerId,
       reason: body.reason,
     });
 

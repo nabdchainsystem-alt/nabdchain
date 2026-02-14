@@ -381,7 +381,7 @@ export const SellerExpenses: React.FC = () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const data = await expenseService.getSellerExpenses(token, {
+      const data = await expenseService.getSellerExpenses({
         type: typeFilter !== 'all' ? (typeFilter as ExpenseType) : undefined,
       });
       setExpenses(data);
@@ -399,7 +399,7 @@ export const SellerExpenses: React.FC = () => {
       const token = await getToken();
       if (!token) return;
 
-      const data = await expenseService.getExpenseSummary(token);
+      const data = await expenseService.getExpenseSummary();
       setSummary(data);
     } catch (err) {
       console.error('Failed to load summary:', err);
@@ -421,7 +421,7 @@ export const SellerExpenses: React.FC = () => {
         const token = await getToken();
         if (!token) throw new Error('Not authenticated');
 
-        const newExpense = await expenseService.createExpense(token, input);
+        const newExpense = await expenseService.createExpense(input);
         setExpenses((prev) => [newExpense, ...prev]);
         setShowAddModal(false);
         fetchSummary();
@@ -443,7 +443,7 @@ export const SellerExpenses: React.FC = () => {
         const token = await getToken();
         if (!token) throw new Error('Not authenticated');
 
-        await expenseService.deleteExpense(token, expenseId);
+        await expenseService.deleteExpense(expenseId);
         setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
         fetchSummary();
       } catch (err) {

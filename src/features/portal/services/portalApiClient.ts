@@ -185,7 +185,14 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
   // Ensure fresh token before request (unless skipped)
   if (!noAuth && !skipRefresh) {
-    await ensureFreshToken();
+    const tokenReady = await ensureFreshToken();
+    if (!tokenReady) {
+      // Token expired and refresh failed — try the request anyway
+      // (the 401 retry handler below will attempt one more refresh)
+      if (DEV_LOGGING) {
+        portalApiLogger.debug(`Token not ready for ${endpoint}, proceeding anyway`);
+      }
+    }
   }
 
   // Build headers
@@ -199,6 +206,8 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
     const token = getAccessToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    } else if (DEV_LOGGING) {
+      portalApiLogger.debug(`No access token for authenticated request to ${endpoint}`);
     }
   }
 

@@ -36,7 +36,6 @@ import {
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import { Select } from '../../../components';
-import { useAuth } from '../../../../../auth-adapter';
 import {
   buyerWorkspaceService,
   Expense,
@@ -462,7 +461,6 @@ const InefficiencyPanel: React.FC<{
 
 export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -485,14 +483,12 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = await getToken();
-      if (!token) return;
 
       const [expensesData, summaryData] = await Promise.all([
-        buyerWorkspaceService.getExpenses(token, {
+        buyerWorkspaceService.getExpenses({
           category: categoryFilter || undefined,
         }),
-        buyerWorkspaceService.getEnhancedExpenseSummary(token),
+        buyerWorkspaceService.getEnhancedExpenseSummary(),
       ]);
       setExpenses(expensesData);
       setSummary(summaryData);
@@ -501,7 +497,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, categoryFilter]);
+  }, [categoryFilter]);
 
   useEffect(() => {
     fetchData();
@@ -509,10 +505,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = () => {
 
   const handleAddExpense = async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await buyerWorkspaceService.createExpense(token, newExpense);
+      await buyerWorkspaceService.createExpense(newExpense);
       setShowAddModal(false);
       setNewExpense({ category: 'shipping', amount: 0, notes: '' });
       fetchData();

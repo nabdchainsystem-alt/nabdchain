@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
+import { portalNotificationService } from './portalNotificationService';
 
 // =============================================================================
 // Types
@@ -146,9 +147,13 @@ export async function addToCart(
     });
   }
 
-  // Check if cart is locked
+  // Auto-unlock cart when adding new items (lock was from a completed RFQ)
   if (cart.isLocked) {
-    throw new Error('Cart is locked. Clear the cart to add new items.');
+    await prisma.buyerCart.update({
+      where: { id: cart.id },
+      data: { isLocked: false, lockedAt: null, lockedReason: null },
+    });
+    cart = { ...cart, isLocked: false, lockedAt: null, lockedReason: null };
   }
 
   // Get item details for snapshot
@@ -447,7 +452,8 @@ export interface BuyNowFromCartResult {
 }
 
 /**
- * Create ItemRFQ records from cart items (for a specific seller)
+ * Create ONE ItemRFQ with line items from cart items (for a specific seller)
+ * Groups all items from this seller into a single RFQ with RFQLineItem children.
  */
 export async function createRFQFromCartForSeller(
   buyerId: string,
@@ -465,23 +471,38 @@ export async function createRFQFromCartForSeller(
     throw new Error('No items from this seller in cart');
   }
 
-  // Create ItemRFQ records for each item
-  const rfqIds: string[] = [];
+  const baseCount = await prisma.itemRFQ.count();
+  const rfqNumber = `RFQ-${new Date().getFullYear()}-${String(baseCount + 1).padStart(3, '0')}`;
+  const totalQuantity = sellerItems.reduce((sum, item) => sum + item.quantity, 0);
+  const isSingleItem = sellerItems.length === 1;
 
-  for (const cartItem of sellerItems) {
-    const rfq = await prisma.itemRFQ.create({
-      data: {
-        buyerId,
-        sellerId,
-        itemId: cartItem.itemId,
-        quantity: cartItem.quantity,
-        status: 'pending',
-        message: `Added from cart`,
-        source: 'item',
+  // Create ONE RFQ with line items
+  const rfq = await prisma.itemRFQ.create({
+    data: {
+      rfqNumber,
+      buyerId,
+      sellerId,
+      // For single-item RFQs, keep itemId on parent for backward compat
+      itemId: isSingleItem ? sellerItems[0].itemId : null,
+      quantity: totalQuantity,
+      rfqType: 'DIRECT',
+      status: 'new',
+      message: isSingleItem
+        ? 'Added from cart'
+        : `${sellerItems.length} items from cart`,
+      source: 'item',
+      lineItems: {
+        create: sellerItems.map((cartItem, index) => ({
+          itemId: cartItem.itemId,
+          quantity: cartItem.quantity,
+          itemName: cartItem.item?.name || cartItem.itemName || 'Unknown',
+          itemSku: cartItem.item?.sku || cartItem.itemSku || '',
+          priceAtRequest: cartItem.item?.price ?? cartItem.priceAtAdd,
+          position: index,
+        })),
       },
-    });
-    rfqIds.push(rfq.id);
-  }
+    },
+  });
 
   // Remove items from cart after RFQ creation
   await prisma.buyerCartItem.deleteMany({
@@ -491,15 +512,28 @@ export async function createRFQFromCartForSeller(
     },
   });
 
+  // Notify seller about new RFQ
+  portalNotificationService.create({
+    userId: sellerId,
+    portalType: 'seller',
+    type: 'rfq_received',
+    entityType: 'rfq',
+    entityId: rfq.id,
+    entityName: `${sellerItems.length} item(s) from cart`,
+    actorId: buyerId,
+    metadata: { rfqCount: 1, rfqIds: [rfq.id], itemCount: sellerItems.length },
+  }).catch(() => {});
+
   return {
-    rfqIds,
+    rfqIds: [rfq.id],
     itemCount: sellerItems.length,
     sellerCount: 1,
   };
 }
 
 /**
- * Create ItemRFQ records from all cart items (grouped by seller)
+ * Create ONE ItemRFQ per seller from all cart items (grouped by seller)
+ * Each RFQ has RFQLineItem children for all items from that seller.
  */
 export async function createRFQFromAllCart(
   buyerId: string
@@ -513,23 +547,41 @@ export async function createRFQFromAllCart(
   const sellerIds = [...new Set(cart.items.map((item) => item.sellerId))];
   const rfqIds: string[] = [];
 
-  for (const sellerId of sellerIds) {
-    const sellerItems = cart.items.filter((item) => item.sellerId === sellerId);
+  const baseCount = await prisma.itemRFQ.count();
 
-    for (const cartItem of sellerItems) {
-      const rfq = await prisma.itemRFQ.create({
-        data: {
-          buyerId,
-          sellerId,
-          itemId: cartItem.itemId,
-          quantity: cartItem.quantity,
-          status: 'pending',
-          message: `Added from cart`,
-          source: 'item',
+  for (let sellerIndex = 0; sellerIndex < sellerIds.length; sellerIndex++) {
+    const sellerId = sellerIds[sellerIndex];
+    const sellerItems = cart.items.filter((item) => item.sellerId === sellerId);
+    const rfqNumber = `RFQ-${new Date().getFullYear()}-${String(baseCount + sellerIndex + 1).padStart(3, '0')}`;
+    const totalQuantity = sellerItems.reduce((sum, item) => sum + item.quantity, 0);
+    const isSingleItem = sellerItems.length === 1;
+
+    const rfq = await prisma.itemRFQ.create({
+      data: {
+        rfqNumber,
+        buyerId,
+        sellerId,
+        itemId: isSingleItem ? sellerItems[0].itemId : null,
+        quantity: totalQuantity,
+        rfqType: 'DIRECT',
+        status: 'new',
+        message: isSingleItem
+          ? 'Added from cart'
+          : `${sellerItems.length} items from cart`,
+        source: 'item',
+        lineItems: {
+          create: sellerItems.map((cartItem, index) => ({
+            itemId: cartItem.itemId,
+            quantity: cartItem.quantity,
+            itemName: cartItem.item?.name || cartItem.itemName || 'Unknown',
+            itemSku: cartItem.item?.sku || cartItem.itemSku || '',
+            priceAtRequest: cartItem.item?.price ?? cartItem.priceAtAdd,
+            position: index,
+          })),
         },
-      });
-      rfqIds.push(rfq.id);
-    }
+      },
+    });
+    rfqIds.push(rfq.id);
   }
 
   // Lock and clear cart after all RFQs created
@@ -545,6 +597,22 @@ export async function createRFQFromAllCart(
       lockedReason: 'rfq_sent',
     },
   });
+
+  // Notify each seller about new RFQ
+  for (let i = 0; i < sellerIds.length; i++) {
+    const sellerId = sellerIds[i];
+    const sellerRfqItems = cart.items.filter((item) => item.sellerId === sellerId);
+    portalNotificationService.create({
+      userId: sellerId,
+      portalType: 'seller',
+      type: 'rfq_received',
+      entityType: 'rfq',
+      entityId: rfqIds[i],
+      entityName: `${sellerRfqItems.length} item(s) from cart`,
+      actorId: buyerId,
+      metadata: { rfqCount: 1, itemCount: sellerRfqItems.length },
+    }).catch(() => {});
+  }
 
   return {
     rfqIds,
@@ -597,7 +665,8 @@ function isBuyNowEligible(
  */
 export async function buyNowFromCartForSeller(
   buyerId: string,
-  sellerId: string
+  sellerId: string,
+  paymentMethod: 'bank_transfer' | 'cod' | 'credit' = 'bank_transfer'
 ): Promise<BuyNowFromCartResult> {
   const cart = await getOrCreateCart(buyerId);
 
@@ -624,6 +693,17 @@ export async function buyNowFromCartForSeller(
 
   if (eligibleItems.length === 0) {
     throw new Error('No Buy Now eligible items from this seller');
+  }
+
+  // Validate credit eligibility
+  if (paymentMethod === 'credit') {
+    const buyerProfile = await prisma.buyerProfile.findUnique({
+      where: { userId: buyerId },
+      select: { creditEnabled: true },
+    });
+    if (!buyerProfile?.creditEnabled) {
+      throw new Error('Your account is not enabled for credit/pay-later purchases');
+    }
   }
 
   // Calculate totals and create orders
@@ -668,6 +748,8 @@ export async function buyNowFromCartForSeller(
         currency,
         status: 'pending_confirmation',
         source: 'direct_buy',
+        paymentMethod,
+        paymentStatus: paymentMethod === 'credit' ? 'unpaid_credit' : 'unpaid',
       },
     });
 
@@ -691,6 +773,18 @@ export async function buyNowFromCartForSeller(
     },
   });
 
+  // Notify seller about new order(s)
+  portalNotificationService.create({
+    userId: sellerId,
+    portalType: 'seller',
+    type: 'order_created',
+    entityType: 'order',
+    entityId: orderIds[0],
+    entityName: `${eligibleItems.length} item(s) purchased`,
+    actorId: buyerId,
+    metadata: { orderCount: orderIds.length, totalAmount, currency },
+  }).catch(() => {});
+
   return {
     orderIds,
     itemCount: eligibleItems.reduce((sum, item) => sum + item.quantity, 0),
@@ -705,7 +799,8 @@ export async function buyNowFromCartForSeller(
  * Creates a MarketplaceOrder for each eligible item
  */
 export async function buyNowFromAllCart(
-  buyerId: string
+  buyerId: string,
+  paymentMethod: 'bank_transfer' | 'cod' | 'credit' = 'bank_transfer'
 ): Promise<BuyNowFromCartResult> {
   const cart = await getOrCreateCart(buyerId);
 
@@ -725,6 +820,17 @@ export async function buyNowFromAllCart(
 
   if (eligibleItems.length === 0) {
     throw new Error('No Buy Now eligible items in cart');
+  }
+
+  // Validate credit eligibility
+  if (paymentMethod === 'credit') {
+    const buyerProfile = await prisma.buyerProfile.findUnique({
+      where: { userId: buyerId },
+      select: { creditEnabled: true },
+    });
+    if (!buyerProfile?.creditEnabled) {
+      throw new Error('Your account is not enabled for credit/pay-later purchases');
+    }
   }
 
   // Track unique sellers for counting
@@ -775,6 +881,8 @@ export async function buyNowFromAllCart(
         currency,
         status: 'pending_confirmation',
         source: 'direct_buy',
+        paymentMethod,
+        paymentStatus: paymentMethod === 'credit' ? 'unpaid_credit' : 'unpaid',
       },
     });
 
@@ -797,6 +905,20 @@ export async function buyNowFromAllCart(
       itemId: { in: eligibleItems.map((i) => i.itemId) },
     },
   });
+
+  // Notify each seller about new order(s)
+  for (const sid of sellerIds) {
+    portalNotificationService.create({
+      userId: sid,
+      portalType: 'seller',
+      type: 'order_created',
+      entityType: 'order',
+      entityId: orderIds[0],
+      entityName: 'New direct purchase order',
+      actorId: buyerId,
+      metadata: { totalAmount, currency },
+    }).catch(() => {});
+  }
 
   return {
     orderIds,
@@ -872,8 +994,23 @@ async function enrichCartWithDetails(
     },
   });
 
-  // Create lookup maps
-  const itemMap = new Map(items.map((item) => [item.id, item]));
+  // Create lookup maps — extract only first image thumbnail (not full base64 blobs)
+  const itemMap = new Map(items.map((item) => {
+    let firstImage: string | null = null;
+    if (item.images) {
+      try {
+        const parsed = JSON.parse(item.images);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const img = parsed[0];
+          // Only include if it's a URL (not a data: URI) to keep response small
+          firstImage = typeof img === 'string' && !img.startsWith('data:') ? img : null;
+        }
+      } catch {
+        firstImage = null;
+      }
+    }
+    return [item.id, { ...item, images: firstImage }];
+  }));
   const sellerMap = new Map(sellers.map((seller) => [seller.id, seller]));
 
   // Enrich cart items

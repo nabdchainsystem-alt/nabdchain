@@ -2,7 +2,7 @@
 // Unified Orders Page - Shared between Buyer and Seller
 // =============================================================================
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -54,6 +54,10 @@ import {
   RejectOrderDialog,
   CancelOrderDialog,
 } from './OrderDialogs';
+import { PayOrderModal } from './PayOrderModal';
+import { RatingModal } from './RatingModal';
+import { ratingService } from '../../services/ratingService';
+import { marketplaceInvoiceService } from '../../services/marketplaceInvoiceService';
 
 const columnHelper = createColumnHelper<Order>();
 
@@ -88,19 +92,20 @@ const SLAIndicator: React.FC<{ order: Order; styles: ReturnType<typeof usePortal
     critical: { bg: `${styles.error}15`, text: styles.error },
   }[colorKey];
 
+  const hoverText = isWaiting
+    ? 'Waiting for buyer to confirm delivery'
+    : `${sla.statusText}${sla.timeText ? ` — ${sla.timeText}` : ''}`;
+
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded" style={{ backgroundColor: colors.bg }}>
-        <Timer size={12} weight={sla.urgency === 'critical' ? 'fill' : 'bold'} style={{ color: colors.text }} />
-        <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: colors.text }}>
-          {isWaiting ? 'Waiting for buyer' : sla.statusText}
-        </span>
-      </div>
-      {!isWaiting && (
-        <span className="text-[9px] whitespace-nowrap px-2" style={{ color: styles.textMuted }}>
-          {sla.timeText}
-        </span>
-      )}
+    <div
+      className="flex items-center gap-1.5 px-2 py-1 rounded"
+      style={{ backgroundColor: colors.bg }}
+      title={hoverText}
+    >
+      <Timer size={12} weight={sla.urgency === 'critical' ? 'fill' : 'bold'} style={{ color: colors.text }} />
+      <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: colors.text }}>
+        {isWaiting ? 'Waiting' : sla.statusText}
+      </span>
     </div>
   );
 };
@@ -165,20 +170,88 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
   const [shipDialogOrder, setShipDialogOrder] = useState<Order | null>(null);
   const [rejectDialogOrder, setRejectDialogOrder] = useState<Order | null>(null);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<Order | null>(null);
+  const [payModalOrder, setPayModalOrder] = useState<Order | null>(null);
+
+  // Rating states
+  const [ratingModalOrder, setRatingModalOrder] = useState<Order | null>(null);
+  const [ratedOrderIds, setRatedOrderIds] = useState<Set<string>>(new Set());
 
   // Exception banner
   const [showExceptionsBanner, setShowExceptionsBanner] = useState(true);
 
-  const handleViewDetails = useCallback((order: Order) => {
-    setSelectedOrder(order);
-    setIsDetailsPanelOpen(true);
-  }, []);
+  // Fetch rating status for completed orders
+  useEffect(() => {
+    const completedOrders = data.orders.filter(
+      (o) => ['delivered', 'closed'].includes(o.status) && ['paid', 'paid_cash'].includes(o.paymentStatus),
+    );
+    if (completedOrders.length === 0) return;
+
+    const fetchEligibility = async () => {
+      const rated = new Set<string>();
+      await Promise.allSettled(
+        completedOrders.map(async (order) => {
+          try {
+            const elig = await ratingService.checkEligibility(order.id);
+            const cpRated = role === 'buyer' ? elig.buyerAlreadyRated : elig.sellerAlreadyRated;
+            const orderRated = role === 'buyer' ? elig.buyerOrderRated : elig.sellerOrderRated;
+            if (cpRated && orderRated) {
+              rated.add(order.id);
+            }
+          } catch {
+            // ignore
+          }
+        }),
+      );
+      setRatedOrderIds(rated);
+    };
+
+    fetchEligibility();
+  }, [data.orders, role]);
+
+  // Auto-prompt rating when viewing completed order details
+  const handleAutoRatingPrompt = useCallback(
+    (order: Order) => {
+      const isCompleted =
+        ['delivered', 'closed'].includes(order.status) && ['paid', 'paid_cash'].includes(order.paymentStatus);
+      if (!isCompleted || ratedOrderIds.has(order.id)) return;
+
+      const dismissKey = `rating_dismissed_${order.id}_${role}`;
+      if (localStorage.getItem(dismissKey)) return;
+
+      // Mark as dismissed so we don't nag again
+      localStorage.setItem(dismissKey, '1');
+      setRatingModalOrder(order);
+    },
+    [ratedOrderIds, role],
+  );
+
+  const handleViewDetails = useCallback(
+    (order: Order) => {
+      setSelectedOrder(order);
+      setIsDetailsPanelOpen(true);
+      // Auto-prompt rating for completed orders
+      handleAutoRatingPrompt(order);
+    },
+    [handleAutoRatingPrompt],
+  );
 
   const handleTrack = useCallback(
-    (order: Order) => {
-      onNavigate('order-tracking', { orderId: order.id });
+    (_order: Order) => {
+      onNavigate('tracking');
     },
     [onNavigate],
+  );
+
+  const handleGenerateInvoice = useCallback(
+    async (order: Order) => {
+      try {
+        await marketplaceInvoiceService.generateInvoice(order.id);
+        data.refreshOrders();
+      } catch (err) {
+        console.error('Failed to generate invoice:', err);
+      }
+    },
+    [data],
   );
 
   // Color maps
@@ -191,35 +264,6 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
   const columns = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mixed column def types
     const cols: ColumnDef<Order, any>[] = [];
-
-    // Checkbox (seller only)
-    if (role === 'seller') {
-      cols.push(
-        columnHelper.display({
-          id: 'select',
-          meta: { align: 'center' as const },
-          header: ({ table }) => (
-            <input
-              type="checkbox"
-              checked={table.getIsAllRowsSelected()}
-              onChange={table.getToggleAllRowsSelectedHandler()}
-              className="w-4 h-4 rounded border-2 cursor-pointer accent-blue-600"
-              style={{ borderColor: styles.border }}
-            />
-          ),
-          cell: ({ row }) => (
-            <input
-              type="checkbox"
-              checked={row.getIsSelected()}
-              onChange={row.getToggleSelectedHandler()}
-              className="w-4 h-4 rounded border-2 cursor-pointer accent-blue-600"
-              style={{ borderColor: styles.border }}
-            />
-          ),
-          size: 40,
-        }),
-      );
-    }
 
     // Order #
     cols.push(
@@ -236,24 +280,18 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
           }[order.healthStatus || 'on_track'];
 
           return (
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: healthColor }}
-                  title={order.healthStatus || 'on_track'}
-                />
-                <button
-                  onClick={() => handleViewDetails(order)}
-                  className="font-medium hover:underline cursor-pointer truncate"
-                  style={{ color: styles.info, fontSize: '0.79rem' }}
-                >
-                  {order.orderNumber}
-                </button>
-              </div>
-              <p className="mt-0.5 pl-[18px]" style={{ color: styles.textMuted, fontSize: '0.65rem' }}>
-                {formatRelativeTime(order.createdAt)}
-              </p>
+            <div
+              className="flex items-center gap-1.5 min-w-0"
+              title={`${order.orderNumber} · ${formatRelativeTime(order.createdAt)}`}
+            >
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: healthColor }} />
+              <button
+                onClick={() => handleViewDetails(order)}
+                className="font-medium hover:underline cursor-pointer truncate"
+                style={{ color: styles.info, fontSize: '0.78rem' }}
+              >
+                {order.orderNumber}
+              </button>
             </div>
           );
         },
@@ -270,19 +308,20 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
           cell: ({ row }) => {
             const order = row.original;
             return (
-              <div className="min-w-0">
-                <p className="font-medium truncate" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-                  {order.buyerName || 'Unknown Buyer'}
-                </p>
-                {order.buyerCompany && order.buyerCompany !== order.buyerName && (
-                  <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.65rem' }}>
-                    {order.buyerCompany}
-                  </p>
-                )}
-              </div>
+              <p
+                className="font-medium truncate"
+                style={{ color: styles.textPrimary, fontSize: '0.78rem' }}
+                title={
+                  order.buyerCompany && order.buyerCompany !== order.buyerName
+                    ? `${order.buyerName || 'Unknown Buyer'} — ${order.buyerCompany}`
+                    : order.buyerName || 'Unknown Buyer'
+                }
+              >
+                {order.buyerName || 'Unknown Buyer'}
+              </p>
             );
           },
-          size: 150,
+          size: 130,
         }),
       );
     } else {
@@ -297,20 +336,18 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
             return (
               <div className="min-w-0 flex items-center gap-2">
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: styles.bgSecondary }}
                 >
-                  <Storefront size={13} style={{ color: styles.textMuted }} />
+                  <Storefront size={12} style={{ color: styles.textMuted }} />
                 </div>
-                <div>
-                  <p className="font-medium truncate" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-                    {order.sellerName || 'Seller'}
-                  </p>
-                </div>
+                <p className="font-medium truncate" style={{ color: styles.textPrimary, fontSize: '0.78rem' }}>
+                  {order.sellerName || 'Seller'}
+                </p>
               </div>
             );
           },
-          size: 150,
+          size: 130,
         }),
       );
     }
@@ -322,27 +359,37 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
         header: 'Item',
         cell: ({ row }) => {
           const order = row.original;
+          const hasLineItems = (order.lineItems?.length ?? 0) > 1;
           return (
             <div className="flex items-center gap-2">
               <div
-                className="w-8 h-8 rounded-lg flex-shrink-0 overflow-hidden border flex items-center justify-center"
+                className="w-7 h-7 rounded flex-shrink-0 overflow-hidden border flex items-center justify-center"
                 style={{ backgroundColor: styles.bgSecondary, borderColor: styles.border }}
               >
                 {order.itemImage ? (
                   <img src={order.itemImage} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <Cube size={14} style={{ color: styles.textMuted }} />
+                  <Cube size={13} style={{ color: styles.textMuted }} />
                 )}
               </div>
-              <div className="min-w-0">
+              <div
+                className="min-w-0"
+                title={
+                  hasLineItems
+                    ? `${order.itemName || 'Item'} — ${order.lineItems!.length} items · Qty: ${order.lineItems!.reduce((s, li) => s + li.quantity, 0)}`
+                    : `${order.itemName || 'Item'}${order.itemSku && order.itemSku !== 'N/A' ? ` — ${order.itemSku}` : ''} · Qty: ${order.quantity}`
+                }
+              >
                 <p
                   className="font-medium truncate leading-tight"
                   style={{ color: styles.textPrimary, fontSize: '0.75rem' }}
                 >
                   {order.itemName || 'Item'}
                 </p>
-                <p className="truncate" style={{ color: styles.textMuted, fontSize: '0.625rem' }}>
-                  {order.itemSku ? `${order.itemSku} · ` : ''}Qty: {order.quantity}
+                <p className="truncate leading-tight" style={{ color: styles.textMuted, fontSize: '0.6rem' }}>
+                  {hasLineItems
+                    ? `${order.lineItems!.length} items · Qty: ${order.lineItems!.reduce((s, li) => s + li.quantity, 0)}`
+                    : `Qty: ${order.quantity}`}
                 </p>
               </div>
             </div>
@@ -389,7 +436,7 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
           ) : (
             <DeliveryIndicator order={row.original} styles={styles} />
           ),
-        size: 120,
+        size: 100,
       }),
     );
 
@@ -420,24 +467,41 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
           meta: { align: 'center' as const },
           header: 'Payment',
           cell: ({ row }) => {
-            const config = getPaymentStatusConfig(row.original.paymentStatus);
+            const order = row.original;
+            const config = getPaymentStatusConfig(order.paymentStatus);
             const payColorMap: Record<string, string> = {
               warning: styles.warning,
               info: styles.info,
               success: styles.success,
               error: styles.error,
             };
+            const paidAmt = order.paidAmount ?? 0;
+            const isPartial = order.paymentStatus === 'partial' || (paidAmt > 0 && paidAmt < order.totalPrice);
             return (
-              <span
-                className="text-[10px] font-medium flex items-center gap-1"
-                style={{ color: payColorMap[config.color] }}
+              <div
+                className="flex flex-col items-center gap-0.5"
+                title={
+                  isPartial
+                    ? `Paid ${formatCurrency(paidAmt, order.currency)} / Remaining ${formatCurrency(order.remainingAmount ?? order.totalPrice, order.currency)}`
+                    : t(config.labelKey)
+                }
               >
-                <CurrencyDollar size={10} />
-                {t(config.labelKey)}
-              </span>
+                <span
+                  className="text-[10px] font-medium flex items-center gap-1"
+                  style={{ color: payColorMap[config.color] }}
+                >
+                  <CurrencyDollar size={10} />
+                  {t(config.labelKey)}
+                </span>
+                {isPartial && (
+                  <span className="text-[8px]" style={{ color: styles.textMuted }}>
+                    {formatCurrency(paidAmt, order.currency)} / {formatCurrency(order.totalPrice, order.currency)}
+                  </span>
+                )}
+              </div>
             );
           },
-          size: 80,
+          size: 100,
         }),
       );
     }
@@ -455,13 +519,15 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
             onView={handleViewDetails}
             onTrack={handleTrack}
             onConfirm={role === 'seller' ? (o) => setConfirmDialogOrder(o) : undefined}
+            onReject={role === 'seller' ? (o) => setRejectDialogOrder(o) : undefined}
             onProcess={role === 'seller' ? (o) => setProcessingDialogOrder(o) : undefined}
             onShip={role === 'seller' ? (o) => setShipDialogOrder(o) : undefined}
             onDeliver={role === 'seller' ? data.handleMarkDelivered : undefined}
             onConfirmDelivery={role === 'buyer' ? data.handleMarkDelivered : undefined}
+            onPay={role === 'buyer' ? (o) => setPayModalOrder(o) : undefined}
           />
         ),
-        size: 130,
+        size: 100,
       }),
     );
 
@@ -471,17 +537,13 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
   const table = useReactTable({
     data: data.filteredOrders,
     columns,
-    state: { sorting, rowSelection: data.rowSelection },
+    state: { sorting },
     onSortingChange: setSorting,
-    onRowSelectionChange: data.setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    enableRowSelection: role === 'seller',
     getRowId: (row: Order) => row.id,
   });
-
-  const selectedCount = Object.keys(data.rowSelection).length;
 
   // ==========================================================================
   // Loading Skeleton
@@ -683,17 +745,8 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
           onSortChange={data.setSortOption}
           hasActiveFilters={data.hasActiveFilters}
           onClearAll={data.clearAllFilters}
-          selectedCount={selectedCount}
-          onBulkConfirm={() => {
-            const ids = Object.keys(data.rowSelection);
-            ids.forEach((id) => {
-              const order = data.orders.find((o) => o.id === id);
-              if (order && order.status === 'pending_confirmation') {
-                data.handleConfirmOrder(order);
-              }
-            });
-            data.setRowSelection({});
-          }}
+          selectedCount={0}
+          onBulkConfirm={() => {}}
         />
 
         {/* Table */}
@@ -733,7 +786,7 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
             style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
           >
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full" style={{ tableLayout: 'fixed' }}>
                 <thead className="sticky top-0 z-10">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr
@@ -745,16 +798,16 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
                         return (
                           <th
                             key={header.id}
-                            className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
+                            className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
                             style={{
                               color: styles.textMuted,
                               width: header.getSize(),
-                              textAlign: align as 'start' | 'center',
+                              textAlign: align as 'start' | 'center' | 'end',
                             }}
                           >
                             {header.isPlaceholder ? null : (
                               <div
-                                className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : ''} ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
+                                className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : align === 'end' ? 'justify-end' : ''} ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
                                 onClick={header.column.getToggleSortingHandler()}
                               >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
@@ -794,28 +847,20 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
                         key={row.id}
                         className="group transition-colors"
                         style={{
+                          animation: 'fadeSlideIn 0.3s ease-out both',
+                          animationDelay: `${index * 30}ms`,
                           borderBottom:
                             index === table.getRowModel().rows.length - 1 ? 'none' : `1px solid ${styles.border}`,
-                          backgroundColor: row.getIsSelected()
-                            ? styles.isDark
-                              ? 'rgba(59,130,246,0.1)'
-                              : 'rgba(59,130,246,0.05)'
-                            : shouldHighlight
-                              ? atRiskBg
-                              : 'transparent',
+                          backgroundColor: shouldHighlight ? atRiskBg : 'transparent',
                           borderLeft: shouldHighlight ? `3px solid ${styles.warning}` : undefined,
                         }}
                         onMouseEnter={(e) => {
-                          if (!row.getIsSelected()) {
-                            e.currentTarget.style.backgroundColor = styles.isDark
-                              ? 'rgba(255,255,255,0.03)'
-                              : 'rgba(0,0,0,0.02)';
-                          }
+                          e.currentTarget.style.backgroundColor = styles.isDark
+                            ? 'rgba(255,255,255,0.03)'
+                            : 'rgba(0,0,0,0.02)';
                         }}
                         onMouseLeave={(e) => {
-                          if (!row.getIsSelected()) {
-                            e.currentTarget.style.backgroundColor = shouldHighlight ? atRiskBg : 'transparent';
-                          }
+                          e.currentTarget.style.backgroundColor = shouldHighlight ? atRiskBg : 'transparent';
                         }}
                       >
                         {row.getVisibleCells().map((cell) => {
@@ -823,11 +868,11 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
                           return (
                             <td
                               key={cell.id}
-                              className="px-3 py-2.5"
+                              className="px-3 py-1.5 overflow-hidden"
                               style={{
                                 width: cell.column.getSize(),
                                 verticalAlign: 'middle',
-                                textAlign: align as 'start' | 'center',
+                                textAlign: align as 'start' | 'center' | 'end',
                               }}
                             >
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -853,11 +898,6 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
               <span>
                 Showing {data.filteredOrders.length} of {data.orders.length} orders
               </span>
-              {selectedCount > 0 && (
-                <span className="font-medium" style={{ color: styles.textPrimary }}>
-                  {selectedCount} selected
-                </span>
-              )}
             </div>
           </div>
         )}
@@ -868,6 +908,7 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
       <OrderDetailsPanel
         isOpen={isDetailsPanelOpen}
         order={selectedOrder as any}
+        role={role}
         onClose={() => {
           setIsDetailsPanelOpen(false);
           setSelectedOrder(null);
@@ -876,6 +917,9 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
         onShip={(order: any) => setShipDialogOrder(order)}
         onMarkDelivered={data.handleMarkDelivered as any}
         onCancel={(order: any) => setCancelDialogOrder(order)}
+        onGenerateInvoice={role === 'seller' ? (handleGenerateInvoice as any) : undefined}
+        onRate={(order: any) => setRatingModalOrder(order)}
+        isRated={selectedOrder ? ratedOrderIds.has(selectedOrder.id) : false}
       />
       {/* eslint-enable @typescript-eslint/no-explicit-any */}
 
@@ -938,6 +982,41 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
           }}
           isLoading={data.isActionLoading}
           error={data.actionError}
+        />
+      )}
+
+      {/* Pay Order Modal (buyer only) */}
+      {role === 'buyer' && payModalOrder && (
+        <PayOrderModal
+          order={payModalOrder}
+          onSubmit={async (order, payData) => {
+            await data.handleRecordPayment(order, payData);
+            setPayModalOrder(null);
+          }}
+          onConfirmCOD={async (order, notes) => {
+            await data.handleConfirmCOD(order, notes);
+            setPayModalOrder(null);
+          }}
+          onClose={() => {
+            setPayModalOrder(null);
+            data.setActionError(null);
+          }}
+          isLoading={data.isActionLoading}
+          error={data.actionError}
+        />
+      )}
+
+      {/* Rating Modal (both buyer and seller) */}
+      {ratingModalOrder && (
+        <RatingModal
+          orderId={ratingModalOrder.id}
+          orderNumber={ratingModalOrder.orderNumber}
+          raterRole={role}
+          onClose={() => setRatingModalOrder(null)}
+          onRated={() => {
+            setRatedOrderIds((prev) => new Set([...prev, ratingModalOrder.id]));
+            setRatingModalOrder(null);
+          }}
         />
       )}
     </div>

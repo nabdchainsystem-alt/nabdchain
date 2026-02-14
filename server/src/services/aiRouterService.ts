@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, Content, GenerativeModel, CachedContent } from '@google/generative-ai';
 import { prisma } from '../lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { getDepartmentPrompt } from './departmentPrompts';
 import { aiLogger } from '../utils/logger';
 
@@ -1521,7 +1522,7 @@ export async function getUsageStats(
     byType: Record<string, number>;
     successRate: number;
 }> {
-    const whereClause: any = { userId };
+    const whereClause: Prisma.AIUsageLogWhereInput = { userId };
 
     if (startDate || endDate) {
         whereClause.createdAt = {};

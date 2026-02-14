@@ -70,6 +70,7 @@ export interface ProductFormData {
   // Pricing & Inventory
   price: string;
   currency: string;
+  priceUnit: string;
   stock: string;
   minOrderQty: string;
   // Product Details
@@ -100,6 +101,7 @@ const initialFormData: ProductFormData = {
   description: '',
   price: '',
   currency: 'SAR',
+  priceUnit: 'per_unit',
   stock: '',
   minOrderQty: '1',
   category: '',
@@ -362,6 +364,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
         description: editProduct.description || '',
         price: editProduct.price,
         currency: editProduct.currency,
+        priceUnit: editProduct.priceUnit || 'per_unit',
         stock: String(editProduct.stock),
         minOrderQty: String(editProduct.minOrderQty),
         category: editProduct.category,
@@ -506,6 +509,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
         description: formData.description,
         price: formData.price,
         currency: formData.currency,
+        priceUnit: formData.priceUnit,
         stock: parseInt(formData.stock) || 0,
         minOrderQty: parseInt(formData.minOrderQty) || 1,
         category: formData.category,
@@ -536,6 +540,7 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
         description: formData.description,
         price: formData.price,
         currency: formData.currency,
+        priceUnit: formData.priceUnit,
         stock: parseInt(formData.stock) || 0,
         minOrderQty: parseInt(formData.minOrderQty) || 1,
         category: formData.category,
@@ -984,6 +989,26 @@ export const AddProductPanel: React.FC<AddProductPanelProps> = ({ isOpen, onClos
                         required
                       />
                     </div>
+                  </FormField>
+
+                  <FormField label={t('addProduct.unitOfMeasure')} styles={styles}>
+                    <select
+                      value={formData.priceUnit}
+                      onChange={(e) => handleChange('priceUnit', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-md border text-sm outline-none"
+                      style={{
+                        borderColor: styles.border,
+                        backgroundColor: styles.bgCard,
+                        color: styles.textPrimary,
+                      }}
+                    >
+                      <option value="per_unit">{t('addProduct.uomPerUnit')}</option>
+                      <option value="per_kg">{t('addProduct.uomPerKg')}</option>
+                      <option value="per_meter">{t('addProduct.uomPerMeter')}</option>
+                      <option value="per_liter">{t('addProduct.uomPerLiter')}</option>
+                      <option value="per_set">{t('addProduct.uomPerSet')}</option>
+                      <option value="per_box">{t('addProduct.uomPerBox')}</option>
+                    </select>
                   </FormField>
 
                   <FormField label={t('addProduct.stockQuantity')} required styles={styles}>

@@ -3,7 +3,6 @@ import { Check, CircleNotch, CheckCircle, Warning, ArrowLeft } from 'phosphor-re
 import { Container, PageHeader, Button, PortalDatePicker } from '../../components';
 import { Select } from '../../components/ui/Select';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import { ThemeStyles } from '../../../../theme/portalColors';
 
@@ -30,7 +29,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
   const [error, setError] = useState<string | null>(null);
   const [_createdRfqId, setCreatedRfqId] = useState<string | null>(null);
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   const [formData, setFormData] = useState<RFQFormData>({
@@ -74,11 +72,6 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       // Convert date from YYYY-MM-DD to ISO datetime format if provided
       let isoDeliveryDate: string | undefined;
       if (formData.requiredDeliveryDate) {
@@ -87,7 +80,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
       }
 
       // Create the RFQ - this is a general RFQ not tied to a specific item
-      const rfq = await itemService.createRFQ(token, {
+      const rfq = await itemService.createRFQ({
         itemId: null, // General RFQ, not tied to specific item
         sellerId: null, // Will be broadcast to all matching sellers
         quantity: formData.quantity,
@@ -115,7 +108,10 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
   const getMinDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 
   return (
@@ -133,7 +129,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
         />
 
         {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-4 mb-8">
+        <div className="flex items-center justify-center gap-4 mb-4">
           <StepIndicator
             number={1}
             label="Details"
@@ -155,7 +151,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
 
         {/* Step Content */}
         <div
-          className="rounded-lg border p-8 max-w-2xl mx-auto transition-colors"
+          className="rounded-lg border p-6 max-w-2xl mx-auto transition-colors"
           style={{ borderColor: styles.border, backgroundColor: styles.bgCard }}
         >
           {/* Error Message */}
@@ -170,14 +166,14 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
           )}
 
           {step === 'details' && (
-            <div className="space-y-6">
-              <h2 className="text-lg font-semibold mb-6" style={{ color: styles.textPrimary }}>
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold mb-2" style={{ color: styles.textPrimary }}>
                 What do you need?
               </h2>
 
               {/* Part Name */}
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                   Part Name <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
@@ -185,7 +181,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                   value={formData.partName}
                   onChange={(e) => handleChange('partName', e.target.value)}
                   placeholder="e.g., Hydraulic Pump, Ball Bearing, Electric Motor"
-                  className="w-full px-3 py-2.5 rounded-md border outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-md border outline-none text-sm"
                   style={{
                     borderColor: styles.border,
                     backgroundColor: styles.bgPrimary,
@@ -197,7 +193,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
               {/* Part Number & Manufacturer */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                     Part Number (Optional)
                   </label>
                   <input
@@ -205,7 +201,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                     value={formData.partNumber}
                     onChange={(e) => handleChange('partNumber', e.target.value)}
                     placeholder="e.g., SKF-6205-2RS"
-                    className="w-full px-3 py-2.5 rounded-md border outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-md border outline-none text-sm"
                     style={{
                       borderColor: styles.border,
                       backgroundColor: styles.bgPrimary,
@@ -214,7 +210,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                     Manufacturer (Optional)
                   </label>
                   <input
@@ -222,7 +218,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                     value={formData.manufacturer}
                     onChange={(e) => handleChange('manufacturer', e.target.value)}
                     placeholder="e.g., SKF, NSK, Siemens"
-                    className="w-full px-3 py-2.5 rounded-md border outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-md border outline-none text-sm"
                     style={{
                       borderColor: styles.border,
                       backgroundColor: styles.bgPrimary,
@@ -235,7 +231,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
               {/* Quantity & Priority */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                     Quantity <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
@@ -243,7 +239,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                     min="1"
                     value={formData.quantity}
                     onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-2.5 rounded-md border outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-md border outline-none text-sm"
                     style={{
                       borderColor: styles.border,
                       backgroundColor: styles.bgPrimary,
@@ -252,7 +248,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                     Priority
                   </label>
                   <Select
@@ -270,7 +266,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
 
               {/* Delivery Location */}
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                   Delivery Location <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
@@ -278,7 +274,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                   value={formData.deliveryLocation}
                   onChange={(e) => handleChange('deliveryLocation', e.target.value)}
                   placeholder="Full address or area"
-                  className="w-full px-3 py-2.5 rounded-md border outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-md border outline-none text-sm"
                   style={{
                     borderColor: styles.border,
                     backgroundColor: styles.bgPrimary,
@@ -290,7 +286,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
               {/* City & Country */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                     City
                   </label>
                   <input
@@ -298,7 +294,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                     value={formData.deliveryCity}
                     onChange={(e) => handleChange('deliveryCity', e.target.value)}
                     placeholder="e.g., Riyadh, Jeddah"
-                    className="w-full px-3 py-2.5 rounded-md border outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-md border outline-none text-sm"
                     style={{
                       borderColor: styles.border,
                       backgroundColor: styles.bgPrimary,
@@ -307,7 +303,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                  <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                     Country
                   </label>
                   <Select
@@ -328,7 +324,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
 
               {/* Required Delivery Date */}
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                   Required Delivery Date (Optional)
                 </label>
                 <PortalDatePicker
@@ -341,15 +337,15 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
 
               {/* Additional Details */}
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: styles.textPrimary }}>
+                <label className="block text-sm font-medium mb-1" style={{ color: styles.textPrimary }}>
                   Additional Details (Optional)
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleChange('description', e.target.value)}
                   placeholder="Any specifications, requirements, or notes for suppliers..."
-                  rows={3}
-                  className="w-full px-3 py-2.5 rounded-md border outline-none text-sm resize-none"
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-md border outline-none text-sm resize-none"
                   style={{
                     borderColor: styles.border,
                     backgroundColor: styles.bgPrimary,
@@ -359,7 +355,7 @@ export const RequestQuote: React.FC<RequestQuoteProps> = ({ onNavigate }) => {
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-2">
                 <Button onClick={() => validateForm() && setStep('review')}>Continue to Review</Button>
               </div>
             </div>

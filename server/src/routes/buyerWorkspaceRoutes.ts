@@ -4,6 +4,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
@@ -107,20 +108,22 @@ router.get('/purchases', requireAuth, async (req, res: Response) => {
     }
     const { status, supplierId, search, dateFrom, dateTo } = req.query;
 
-    const where: any = { buyerId };
-    if (status) where.status = status as string;
-    if (supplierId) where.supplierId = supplierId as string;
-    if (search) {
-      where.OR = [
-        { poNumber: { contains: search as string, mode: 'insensitive' } },
-        { supplierName: { contains: search as string, mode: 'insensitive' } },
-      ];
-    }
-    if (dateFrom || dateTo) {
-      where.orderDate = {};
-      if (dateFrom) where.orderDate.gte = new Date(dateFrom as string);
-      if (dateTo) where.orderDate.lte = new Date(dateTo as string);
-    }
+    const dateFilter: Prisma.DateTimeFilter<'BuyerPurchaseOrder'> = {};
+    if (dateFrom) dateFilter.gte = new Date(dateFrom as string);
+    if (dateTo) dateFilter.lte = new Date(dateTo as string);
+
+    const where: Prisma.BuyerPurchaseOrderWhereInput = {
+      buyerId,
+      ...(status && { status: status as string }),
+      ...(supplierId && { supplierId: supplierId as string }),
+      ...(search && {
+        OR: [
+          { poNumber: { contains: search as string, mode: 'insensitive' as const } },
+          { supplierName: { contains: search as string, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...((dateFrom || dateTo) && { orderDate: dateFilter }),
+    };
 
     const purchases = await prisma.buyerPurchaseOrder.findMany({
       where,
@@ -209,7 +212,7 @@ router.patch('/purchases/:id/status', requireAuth, async (req, res: Response) =>
       return res.status(404).json({ error: 'Purchase order not found' });
     }
 
-    const updateData: any = { status };
+    const updateData: Prisma.BuyerPurchaseOrderUpdateInput = { status };
     if (status === 'delivered') {
       updateData.deliveredAt = new Date();
     }
@@ -243,6 +246,43 @@ router.patch('/purchases/:id/status', requireAuth, async (req, res: Response) =>
 // =============================================================================
 
 /**
+ * GET /api/buyer/suppliers/stats
+ * Get supplier KPI stats for the buyer dashboard
+ */
+router.get('/suppliers/stats', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+
+    const suppliers = await prisma.buyerSupplier.findMany({
+      where: { buyerId },
+      select: { rating: true, totalOrders: true, totalSpend: true },
+    });
+
+    const totalSuppliers = suppliers.length;
+    const activeSuppliers = suppliers.filter(s => s.totalOrders > 0).length;
+    const totalSpend = suppliers.reduce((sum, s) => sum + s.totalSpend, 0);
+    const ratedSuppliers = suppliers.filter(s => (s.rating ?? 0) > 0);
+    const avgRating = ratedSuppliers.length > 0
+      ? ratedSuppliers.reduce((sum, s) => sum + (s.rating ?? 0), 0) / ratedSuppliers.length
+      : 0;
+
+    res.json({
+      totalSuppliers,
+      activeSuppliers,
+      totalSpend,
+      avgRating: Math.round(avgRating * 10) / 10,
+      currency: 'SAR',
+    });
+  } catch (error) {
+    apiLogger.error('[BuyerWorkspace] Error fetching supplier stats:', error);
+    res.json({ totalSuppliers: 0, activeSuppliers: 0, totalSpend: 0, avgRating: 0, currency: 'SAR' });
+  }
+});
+
+/**
  * GET /api/buyer/suppliers
  * Get all suppliers for the buyer
  */
@@ -254,14 +294,16 @@ router.get('/suppliers', requireAuth, async (req, res: Response) => {
     }
     const { search, country } = req.query;
 
-    const where: any = { buyerId };
-    if (country) where.country = country as string;
-    if (search) {
-      where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { email: { contains: search as string, mode: 'insensitive' } },
-      ];
-    }
+    const where: Prisma.BuyerSupplierWhereInput = {
+      buyerId,
+      ...(country && { country: country as string }),
+      ...(search && {
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' as const } },
+          { email: { contains: search as string, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
 
     const suppliers = await prisma.buyerSupplier.findMany({
       where,
@@ -321,14 +363,16 @@ router.get('/inventory', requireAuth, async (req, res: Response) => {
     }
     const { status, search } = req.query;
 
-    const where: any = { buyerId };
-    if (status) where.status = status as string;
-    if (search) {
-      where.OR = [
-        { productName: { contains: search as string, mode: 'insensitive' } },
-        { sku: { contains: search as string, mode: 'insensitive' } },
-      ];
-    }
+    const where: Prisma.BuyerInventoryWhereInput = {
+      buyerId,
+      ...(status && { status: status as string }),
+      ...(search && {
+        OR: [
+          { productName: { contains: search as string, mode: 'insensitive' as const } },
+          { sku: { contains: search as string, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
 
     const inventory = await prisma.buyerInventory.findMany({
       where,
@@ -441,13 +485,15 @@ router.get('/expenses', requireAuth, async (req, res: Response) => {
     }
     const { category, dateFrom, dateTo } = req.query;
 
-    const where: any = { buyerId };
-    if (category) where.category = category as string;
-    if (dateFrom || dateTo) {
-      where.date = {};
-      if (dateFrom) where.date.gte = new Date(dateFrom as string);
-      if (dateTo) where.date.lte = new Date(dateTo as string);
-    }
+    const expenseDateFilter: Prisma.DateTimeFilter<'BuyerExpense'> = {};
+    if (dateFrom) expenseDateFilter.gte = new Date(dateFrom as string);
+    if (dateTo) expenseDateFilter.lte = new Date(dateTo as string);
+
+    const where: Prisma.BuyerExpenseWhereInput = {
+      buyerId,
+      ...(category && { category: category as string }),
+      ...((dateFrom || dateTo) && { date: expenseDateFilter }),
+    };
 
     const expenses = await prisma.buyerExpense.findMany({
       where,
@@ -556,14 +602,16 @@ router.get('/inventory/forecast', requireAuth, async (req, res: Response) => {
     }
     const { status, search } = req.query;
 
-    const where: any = { buyerId };
-    if (status) where.status = status as string;
-    if (search) {
-      where.OR = [
-        { productName: { contains: search as string, mode: 'insensitive' } },
-        { sku: { contains: search as string, mode: 'insensitive' } },
-      ];
-    }
+    const where: Prisma.BuyerInventoryWhereInput = {
+      buyerId,
+      ...(status && { status: status as string }),
+      ...(search && {
+        OR: [
+          { productName: { contains: search as string, mode: 'insensitive' as const } },
+          { sku: { contains: search as string, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
 
     const inventory = await prisma.buyerInventory.findMany({
       where,

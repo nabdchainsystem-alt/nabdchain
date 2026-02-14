@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,7 +20,6 @@ import {
   CaretUp,
   Trash,
   Eye,
-  PencilSimple,
   ArrowUp,
   ArrowDown,
   Tag,
@@ -29,9 +28,24 @@ import {
   EnvelopeSimple,
   Buildings,
   Note,
+  Spinner,
+  Sparkle,
+  Gauge,
+  FileText,
+  Truck,
+  CurrencyDollar,
+  Warning,
+  ShieldWarning,
+  ArrowRight,
+  ArrowsClockwise,
 } from 'phosphor-react';
-import { Container, PageHeader, EmptyState, Select } from '../../components';
+import { Container, PageHeader, EmptyState, Select, Button } from '../../components';
 import { usePortal } from '../../context/PortalContext';
+import { AICopilotPanel } from '../../components/ai/AICopilotPanel';
+import { IntelligenceFeed } from '../../components/ai/IntelligenceFeed';
+import { marketplaceInvoiceService } from '../../services/marketplaceInvoiceService';
+import { sellerWorkspaceService } from '../../services/sellerWorkspaceService';
+import { sellerHomeSummaryService, SellerHomeSummary } from '../../services/sellerHomeSummaryService';
 import {
   SellerInvoice,
   InvoiceStatus,
@@ -51,32 +65,49 @@ interface SellerWorkspaceProps {
   onNavigate: (page: string) => void;
 }
 
-type WorkspaceTab = 'invoices' | 'stock' | 'costs' | 'buyers';
+type WorkspaceTab = 'operations' | 'invoices' | 'stock' | 'costs' | 'buyers' | 'intelligence';
 
 // =============================================================================
 // Main Component
 // =============================================================================
 
-export const SellerWorkspace: React.FC<SellerWorkspaceProps> = ({ _onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('invoices');
+export const SellerWorkspace: React.FC<SellerWorkspaceProps> = ({ onNavigate }) => {
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('operations');
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const { styles, t, direction } = usePortal();
   const isRtl = direction === 'rtl';
 
   const tabs: { id: WorkspaceTab; label: string; icon: React.ComponentType<{ size: number; weight?: string }> }[] = [
+    { id: 'operations', label: 'Operations', icon: Gauge },
     { id: 'invoices', label: t('seller.workspace.invoices'), icon: Receipt },
     { id: 'stock', label: t('seller.workspace.stock'), icon: Package },
     { id: 'costs', label: t('seller.workspace.costs'), icon: Tag },
     { id: 'buyers', label: t('seller.workspace.buyers'), icon: Users },
+    { id: 'intelligence', label: 'Intelligence', icon: Sparkle },
   ];
 
   return (
     <div className="min-h-screen transition-colors" style={{ backgroundColor: styles.bgPrimary }}>
       <Container variant="full">
-        <PageHeader title={t('seller.workspace.title')} subtitle={t('seller.workspace.executionSubtitle')} />
+        <div className="flex items-start justify-between">
+          <PageHeader title={t('seller.workspace.title')} subtitle={t('seller.workspace.executionSubtitle')} />
+          <button
+            onClick={() => setAiPanelOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all mt-2"
+            style={{
+              background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+              color: '#fff',
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+            }}
+          >
+            <Sparkle size={16} weight="fill" />
+            {t('ai.askAI') || 'Ask AI'}
+          </button>
+        </div>
 
         {/* Tabs */}
         <div
-          className="flex items-center gap-1 p-1 rounded-lg mb-6 w-fit"
+          className="flex items-center gap-1 p-1 rounded-lg mb-6 w-fit overflow-x-auto"
           style={{ backgroundColor: styles.bgSecondary }}
         >
           {tabs.map((tab) => {
@@ -85,7 +116,7 @@ export const SellerWorkspace: React.FC<SellerWorkspaceProps> = ({ _onNavigate })
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 style={{
                   backgroundColor: activeTab === tab.id ? styles.bgCard : 'transparent',
                   color: activeTab === tab.id ? styles.textPrimary : styles.textSecondary,
@@ -100,14 +131,386 @@ export const SellerWorkspace: React.FC<SellerWorkspaceProps> = ({ _onNavigate })
         </div>
 
         {/* Tab Content */}
+        {activeTab === 'operations' && (
+          <OperationsDashboard styles={styles} t={t} isRtl={isRtl} onNavigate={onNavigate} />
+        )}
         {activeTab === 'invoices' && <InvoicesTab styles={styles} t={t} isRtl={isRtl} />}
         {activeTab === 'stock' && <StockTab styles={styles} t={t} isRtl={isRtl} />}
         {activeTab === 'costs' && <CostsTab styles={styles} t={t} isRtl={isRtl} />}
         {activeTab === 'buyers' && <BuyersTab styles={styles} t={t} isRtl={isRtl} />}
+        {activeTab === 'intelligence' && <IntelligenceFeed role="seller" />}
       </Container>
+
+      {/* AI Copilot Panel */}
+      <AICopilotPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} role="seller" />
     </div>
   );
 };
+
+// =============================================================================
+// Operations Dashboard Tab - Command Center
+// =============================================================================
+
+interface OperationsDashboardProps extends TabProps {
+  onNavigate: (page: string) => void;
+}
+
+const OperationsDashboard: React.FC<OperationsDashboardProps> = ({ styles, t: _t, isRtl: _isRtl, onNavigate }) => {
+  const [summary, setSummary] = useState<SellerHomeSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSummary = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await sellerHomeSummaryService.getSummary(30);
+      setSummary(data);
+    } catch {
+      setSummary(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Spinner size={28} className="animate-spin" style={{ color: styles.textMuted }} />
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <EmptyState icon={Gauge} title="Unable to load operations data" description="Please try refreshing the page." />
+    );
+  }
+
+  const kpis = summary.kpis;
+
+  // Quick links for navigation
+  const quickLinks = [
+    {
+      label: 'RFQ Marketplace',
+      route: 'rfq-marketplace',
+      icon: FileText,
+      badge: kpis.newRfqs > 0 ? kpis.newRfqs : undefined,
+    },
+    { label: 'RFQ Inbox', route: 'rfqs', icon: FileText, badge: kpis.rfqInbox > 0 ? kpis.rfqInbox : undefined },
+    {
+      label: 'Orders',
+      route: 'orders',
+      icon: Package,
+      badge: kpis.ordersNeedingAction > 0 ? kpis.ordersNeedingAction : undefined,
+    },
+    { label: 'Invoices', route: 'invoices', icon: Receipt },
+    { label: 'Payouts', route: 'payouts', icon: CurrencyDollar },
+    { label: 'Analytics', route: 'analytics', icon: Gauge },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Alerts Banner */}
+      {summary.alerts.length > 0 && (
+        <div className="space-y-2">
+          {summary.alerts.slice(0, 3).map((alert) => {
+            const severityColor =
+              alert.severity === 'critical' ? styles.error : alert.severity === 'warning' ? '#F59E0B' : styles.info;
+            return (
+              <div
+                key={alert.id}
+                className="flex items-center justify-between p-3 rounded-lg border-l-4"
+                style={{
+                  backgroundColor: `${severityColor}08`,
+                  borderLeftColor: severityColor,
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  {alert.severity === 'critical' ? (
+                    <ShieldWarning size={18} style={{ color: severityColor }} />
+                  ) : (
+                    <Warning size={18} style={{ color: severityColor }} />
+                  )}
+                  <span className="text-sm" style={{ color: styles.textPrimary }}>
+                    {alert.message}
+                  </span>
+                </div>
+                <button
+                  onClick={() => onNavigate(alert.ctaRoute)}
+                  className="flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-md transition-colors"
+                  style={{ color: severityColor }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${severityColor}15`)}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  {alert.ctaLabel}
+                  <ArrowRight size={12} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Open Actions Cards Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: styles.textMuted }}>
+            Open Actions
+          </h2>
+          <button
+            onClick={fetchSummary}
+            className="p-1.5 rounded transition-colors"
+            style={{ color: styles.textMuted }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <ArrowsClockwise size={16} />
+          </button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ActionCard
+            label="RFQs Awaiting Quote"
+            value={kpis.rfqInbox}
+            highlight={kpis.newRfqs}
+            highlightLabel="new"
+            icon={FileText}
+            color="#3b82f6"
+            styles={styles}
+            onClick={() => onNavigate('rfqs')}
+            cta="Quote Now"
+          />
+          <ActionCard
+            label="Orders Needing Action"
+            value={kpis.ordersNeedingAction}
+            icon={Package}
+            color="#8b5cf6"
+            styles={styles}
+            onClick={() => onNavigate('orders')}
+            cta="Process Orders"
+          />
+          <ActionCard
+            label="Active Orders"
+            value={kpis.activeOrders}
+            icon={Truck}
+            color="#06b6d4"
+            styles={styles}
+            onClick={() => onNavigate('tracking')}
+            cta="Track Shipments"
+          />
+          <ActionCard
+            label="Pending Payout"
+            value={kpis.pendingPayout}
+            isCurrency
+            currency={kpis.currency}
+            icon={CurrencyDollar}
+            color="#10b981"
+            styles={styles}
+            onClick={() => onNavigate('payouts')}
+            cta="View Payouts"
+          />
+        </div>
+      </div>
+
+      {/* Risk Indicators */}
+      {summary.systemHealth.status !== 'healthy' && (
+        <div
+          className="rounded-xl border p-4"
+          style={{
+            backgroundColor:
+              summary.systemHealth.status === 'critical' ? 'rgba(239,68,68,0.05)' : 'rgba(245,158,11,0.05)',
+            borderColor: summary.systemHealth.status === 'critical' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldWarning
+              size={18}
+              style={{ color: summary.systemHealth.status === 'critical' ? styles.error : '#F59E0B' }}
+            />
+            <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+              {summary.systemHealth.message}
+            </span>
+          </div>
+          {summary.systemHealth.issues.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {summary.systemHealth.issues.map((issue, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onNavigate(issue.ctaRoute)}
+                  className="text-xs px-3 py-1 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: styles.bgSecondary,
+                    color: styles.textMuted,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = styles.textPrimary)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = styles.textMuted)}
+                >
+                  {issue.area}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Focus Item */}
+      {summary.focus && !summary.focus.isEmpty && (
+        <div className="rounded-xl border p-5" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: summary.focus.priority === 'urgent' ? 'rgba(239,68,68,0.1)' : 'rgba(59,130,246,0.1)',
+                  color: summary.focus.priority === 'urgent' ? styles.error : styles.info,
+                }}
+              >
+                {summary.focus.priority} priority
+              </span>
+              <h3 className="text-lg font-semibold mt-2" style={{ color: styles.textPrimary }}>
+                {summary.focus.title}
+              </h3>
+              <p className="text-sm mt-1" style={{ color: styles.textMuted }}>
+                {summary.focus.description}
+              </p>
+            </div>
+            <Button variant="primary" size="sm" onClick={() => onNavigate(summary.focus.ctaRoute)}>
+              {summary.focus.ctaLabel}
+              <ArrowRight size={14} className="ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Links */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: styles.textMuted }}>
+          Quick Links
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {quickLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <button
+                key={link.route}
+                onClick={() => onNavigate(link.route)}
+                className="relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all"
+                style={{
+                  backgroundColor: styles.bgCard,
+                  borderColor: styles.border,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = styles.info;
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = styles.border;
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <Icon size={20} style={{ color: styles.textMuted }} />
+                <span className="text-xs font-medium" style={{ color: styles.textPrimary }}>
+                  {link.label}
+                </span>
+                {link.badge && (
+                  <span
+                    className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    style={{ backgroundColor: styles.error }}
+                  >
+                    {link.badge > 9 ? '9+' : link.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Revenue Summary */}
+      <div className="rounded-xl border p-4" style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase" style={{ color: styles.textMuted }}>
+              Revenue (Last 30 days)
+            </p>
+            <p className="text-2xl font-bold mt-1" style={{ color: styles.textPrimary }}>
+              {kpis.currency} {kpis.revenue.toLocaleString()}
+            </p>
+          </div>
+          {kpis.revenueChange !== 0 && (
+            <div className="flex items-center gap-1">
+              {kpis.revenueChange > 0 ? (
+                <ArrowUp size={14} style={{ color: styles.success }} />
+              ) : (
+                <ArrowDown size={14} style={{ color: styles.error }} />
+              )}
+              <span
+                className="text-sm font-medium"
+                style={{ color: kpis.revenueChange > 0 ? styles.success : styles.error }}
+              >
+                {Math.abs(kpis.revenueChange)}%
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Action Card for Operations Dashboard
+const ActionCard: React.FC<{
+  label: string;
+  value: number;
+  highlight?: number;
+  highlightLabel?: string;
+  icon: React.ComponentType<{ size: number; weight?: string }>;
+  color: string;
+  styles: ReturnType<typeof usePortal>['styles'];
+  onClick: () => void;
+  cta: string;
+  isCurrency?: boolean;
+  currency?: string;
+}> = ({ label, value, highlight, highlightLabel, icon: Icon, color, styles, onClick, cta, isCurrency, currency }) => (
+  <div
+    className="rounded-xl border p-4 cursor-pointer transition-all"
+    style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+    onClick={onClick}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.borderColor = color;
+      e.currentTarget.style.transform = 'translateY(-1px)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.borderColor = styles.border;
+      e.currentTarget.style.transform = 'translateY(0)';
+    }}
+  >
+    <div className="flex items-start justify-between mb-3">
+      <div className="p-2 rounded-lg" style={{ backgroundColor: `${color}15` }}>
+        <Icon size={18} style={{ color }} />
+      </div>
+      {highlight !== undefined && highlight > 0 && (
+        <span
+          className="px-2 py-0.5 text-[10px] font-bold rounded-full text-white"
+          style={{ backgroundColor: styles.error }}
+        >
+          {highlight} {highlightLabel}
+        </span>
+      )}
+    </div>
+    <p className="text-xs mb-1" style={{ color: styles.textMuted }}>
+      {label}
+    </p>
+    <p className="text-xl font-bold mb-2" style={{ color: styles.textPrimary }}>
+      {isCurrency ? `${currency} ${value.toLocaleString()}` : value}
+    </p>
+    <span className="text-xs font-medium flex items-center gap-1" style={{ color }}>
+      {cta} <ArrowRight size={12} />
+    </span>
+  </div>
+);
 
 // =============================================================================
 // Invoices Tab
@@ -119,14 +522,55 @@ interface TabProps {
   isRtl: boolean;
 }
 
+type InvoicesTabProps = TabProps;
+
 const invoiceColumnHelper = createColumnHelper<SellerInvoice>();
 
-const InvoicesTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
-  const [invoices, _setInvoices] = useState<SellerInvoice[]>([]);
+const InvoicesTab: React.FC<InvoicesTabProps> = ({ styles, t, _isRtl }) => {
+  const [invoices, setInvoices] = useState<SellerInvoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'issueDate', desc: true }]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('');
   const [_showCreatePanel, setShowCreatePanel] = useState(false);
+
+  const fetchInvoices = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await marketplaceInvoiceService.getSellerInvoices({
+        status: statusFilter || undefined,
+      });
+      // Map MarketplaceInvoice to SellerInvoice shape for the table
+      const mapped: SellerInvoice[] = res.invoices.map((inv: any) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        customerName: inv.buyerName || 'Buyer',
+        customerEmail: undefined,
+        customerPhone: undefined,
+        customerCompany: inv.buyerCompany,
+        lineItems: inv.lineItems || [],
+        subtotal: inv.subtotal || 0,
+        vatRate: inv.vatRate || 15,
+        vatAmount: inv.vatAmount || 0,
+        total: inv.totalAmount || 0,
+        currency: inv.currency || 'SAR',
+        status: inv.status as InvoiceStatus,
+        issueDate: inv.issuedAt || inv.createdAt,
+        dueDate: inv.dueDate,
+        createdAt: inv.createdAt,
+        updatedAt: inv.updatedAt || inv.createdAt,
+      }));
+      setInvoices(mapped);
+    } catch {
+      setInvoices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const filteredInvoices = useMemo(() => {
     let result = [...invoices];
@@ -217,14 +661,18 @@ const InvoicesTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
         header: t('common.actions'),
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
-            <ActionButton icon={Eye} tooltip={t('common.view')} styles={styles} onClick={() => {}} />
-            <ActionButton icon={PencilSimple} tooltip={t('common.edit')} styles={styles} onClick={() => {}} />
-            {row.original.status === 'draft' && (
-              <ActionButton icon={Trash} tooltip={t('common.delete')} styles={styles} onClick={() => {}} danger />
-            )}
+            <ActionButton
+              icon={Eye}
+              tooltip={t('common.view')}
+              styles={styles}
+              onClick={() => {
+                // Navigate to invoices filtered view - invoice details handled by backend
+                window.open(`/portal/seller/invoices/${row.original.id}`, '_self');
+              }}
+            />
           </div>
         ),
-        size: 100,
+        size: 80,
       }),
     ],
     [styles, t],
@@ -277,13 +725,22 @@ const InvoicesTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
       </div>
 
       {/* Table */}
-      <DataTable
-        table={table}
-        styles={styles}
-        emptyIcon={Receipt}
-        emptyTitle={t('seller.workspace.noInvoices')}
-        emptyDesc={t('seller.workspace.noInvoicesDesc')}
-      />
+      {isLoading ? (
+        <div
+          className="rounded-xl border py-12 flex items-center justify-center"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          <Spinner size={28} className="animate-spin" style={{ color: styles.textMuted }} />
+        </div>
+      ) : (
+        <DataTable
+          table={table}
+          styles={styles}
+          emptyIcon={Receipt}
+          emptyTitle={t('seller.workspace.noInvoices')}
+          emptyDesc={t('seller.workspace.noInvoicesDesc')}
+        />
+      )}
     </div>
   );
 };
@@ -294,14 +751,36 @@ const InvoicesTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
 
 const stockColumnHelper = createColumnHelper<InventoryItem>();
 
-const StockTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
-  const [inventory, _setInventory] = useState<InventoryItem[]>([]);
-  const [adjustments, _setAdjustments] = useState<StockAdjustment[]>([]);
+const StockTab: React.FC<InvoicesTabProps> = ({ styles, t, _isRtl }) => {
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [stockFilter, setStockFilter] = useState<StockStatus | ''>('');
   const [_showAdjustPanel, setShowAdjustPanel] = useState(false);
   const [_selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+
+  const fetchStock = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const [inv, adj] = await Promise.all([
+        sellerWorkspaceService.getInventory(),
+        sellerWorkspaceService.getStockAdjustments(),
+      ]);
+      setInventory(inv);
+      setAdjustments(adj);
+    } catch {
+      setInventory([]);
+      setAdjustments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStock();
+  }, [fetchStock]);
 
   const filteredInventory = useMemo(() => {
     let result = [...inventory];
@@ -450,13 +929,22 @@ const StockTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
       </div>
 
       {/* Table */}
-      <DataTable
-        table={table}
-        styles={styles}
-        emptyIcon={Package}
-        emptyTitle={t('seller.workspace.noStock')}
-        emptyDesc={t('seller.workspace.noStockDesc')}
-      />
+      {isLoading ? (
+        <div
+          className="rounded-xl border py-12 flex items-center justify-center"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          <Spinner size={28} className="animate-spin" style={{ color: styles.textMuted }} />
+        </div>
+      ) : (
+        <DataTable
+          table={table}
+          styles={styles}
+          emptyIcon={Package}
+          emptyTitle={t('seller.workspace.noStock')}
+          emptyDesc={t('seller.workspace.noStockDesc')}
+        />
+      )}
 
       {/* Recent Adjustments */}
       <div className="mt-6">
@@ -520,11 +1008,30 @@ const StockTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
 
 const costColumnHelper = createColumnHelper<ItemCostTag>();
 
-const CostsTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
-  const [costTags, _setCostTags] = useState<ItemCostTag[]>([]);
+const CostsTab: React.FC<InvoicesTabProps> = ({ styles, t, _isRtl }) => {
+  const [costTags, setCostTags] = useState<ItemCostTag[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<CostType | ''>('');
+
+  const fetchCostTags = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const tags = await sellerWorkspaceService.getCostTags({
+        costType: typeFilter || undefined,
+      });
+      setCostTags(tags);
+    } catch {
+      setCostTags([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [typeFilter]);
+
+  useEffect(() => {
+    fetchCostTags();
+  }, [fetchCostTags]);
 
   const filteredCosts = useMemo(() => {
     let result = [...costTags];
@@ -692,13 +1199,22 @@ const CostsTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
       </div>
 
       {/* Table */}
-      <DataTable
-        table={table}
-        styles={styles}
-        emptyIcon={Tag}
-        emptyTitle={t('seller.workspace.noCosts')}
-        emptyDesc={t('seller.workspace.noCostsDesc')}
-      />
+      {isLoading ? (
+        <div
+          className="rounded-xl border py-12 flex items-center justify-center"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          <Spinner size={28} className="animate-spin" style={{ color: styles.textMuted }} />
+        </div>
+      ) : (
+        <DataTable
+          table={table}
+          styles={styles}
+          emptyIcon={Tag}
+          emptyTitle={t('seller.workspace.noCosts')}
+          emptyDesc={t('seller.workspace.noCostsDesc')}
+        />
+      )}
     </div>
   );
 };
@@ -709,10 +1225,27 @@ const CostsTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
 
 const buyerColumnHelper = createColumnHelper<SellerBuyerProfile>();
 
-const BuyersTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
-  const [buyers, _setBuyers] = useState<SellerBuyerProfile[]>([]);
+const BuyersTab: React.FC<InvoicesTabProps> = ({ styles, t, _isRtl }) => {
+  const [buyers, setBuyers] = useState<SellerBuyerProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'totalSpend', desc: true }]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchBuyers = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const profiles = await sellerWorkspaceService.getBuyerProfiles();
+      setBuyers(profiles);
+    } catch {
+      setBuyers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBuyers();
+  }, [fetchBuyers]);
 
   const filteredBuyers = useMemo(() => {
     if (!searchQuery) return buyers;
@@ -867,13 +1400,22 @@ const BuyersTab: React.FC<TabProps> = ({ styles, t, _isRtl }) => {
       </div>
 
       {/* Table */}
-      <DataTable
-        table={table}
-        styles={styles}
-        emptyIcon={Users}
-        emptyTitle={t('seller.workspace.noBuyers')}
-        emptyDesc={t('seller.workspace.noBuyersDesc')}
-      />
+      {isLoading ? (
+        <div
+          className="rounded-xl border py-12 flex items-center justify-center"
+          style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
+        >
+          <Spinner size={28} className="animate-spin" style={{ color: styles.textMuted }} />
+        </div>
+      ) : (
+        <DataTable
+          table={table}
+          styles={styles}
+          emptyIcon={Users}
+          emptyTitle={t('seller.workspace.noBuyers')}
+          emptyDesc={t('seller.workspace.noBuyersDesc')}
+        />
+      )}
     </div>
   );
 };

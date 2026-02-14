@@ -2,7 +2,7 @@
 // Marketplace Invoice Service - Frontend API Client (Stage 6)
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import {
   MarketplaceInvoice,
   InvoiceStats,
@@ -10,6 +10,23 @@ import {
   InvoicesResponse,
   InvoiceEvent,
 } from '../types/invoice.types';
+
+// =============================================================================
+// Helper
+// =============================================================================
+
+function buildInvoiceQS(filters: InvoiceFilters): string {
+  const p = new URLSearchParams();
+  if (filters.status) p.append('status', filters.status);
+  if (filters.dateFrom) p.append('dateFrom', filters.dateFrom);
+  if (filters.dateTo) p.append('dateTo', filters.dateTo);
+  if (filters.search) p.append('search', filters.search);
+  if (filters.overdueOnly) p.append('overdueOnly', 'true');
+  if (filters.page) p.append('page', filters.page.toString());
+  if (filters.limit) p.append('limit', filters.limit.toString());
+  const qs = p.toString();
+  return qs ? `?${qs}` : '';
+}
 
 // =============================================================================
 // Invoice Service
@@ -20,238 +37,103 @@ export const marketplaceInvoiceService = {
   // Seller Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get all invoices for the authenticated seller
-   */
-  async getSellerInvoices(
-    token: string,
-    filters: InvoiceFilters = {}
-  ): Promise<InvoicesResponse> {
-    const url = new URL(`${API_URL}/invoices/seller`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.overdueOnly) url.searchParams.append('overdueOnly', 'true');
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoices');
-    }
-
-    return response.json();
+  async getSellerInvoices(filters: InvoiceFilters = {}): Promise<InvoicesResponse> {
+    return portalApiClient.get<InvoicesResponse>(`/api/invoices/seller${buildInvoiceQS(filters)}`);
   },
 
-  /**
-   * Get seller invoice statistics
-   */
-  async getSellerInvoiceStats(token: string): Promise<InvoiceStats> {
-    const response = await fetch(`${API_URL}/invoices/seller/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoice statistics');
-    }
-
-    return response.json();
+  async getSellerInvoiceStats(): Promise<InvoiceStats> {
+    return portalApiClient.get<InvoiceStats>(`/api/invoices/seller/stats`);
   },
 
-  /**
-   * Get single invoice for seller
-   */
-  async getSellerInvoice(token: string, invoiceId: string): Promise<MarketplaceInvoice | null> {
-    const response = await fetch(`${API_URL}/invoices/seller/${invoiceId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getSellerInvoice(invoiceId: string): Promise<MarketplaceInvoice | null> {
+    try {
+      return await portalApiClient.get<MarketplaceInvoice>(`/api/invoices/seller/${invoiceId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoice');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Issue an invoice (freeze content, start payment terms)
-   */
-  async issueInvoice(token: string, invoiceId: string): Promise<MarketplaceInvoice> {
-    const response = await fetch(`${API_URL}/invoices/seller/${invoiceId}/issue`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to issue invoice');
-    }
-
-    return response.json();
+  async issueInvoice(invoiceId: string): Promise<MarketplaceInvoice> {
+    return portalApiClient.post<MarketplaceInvoice>(`/api/invoices/seller/${invoiceId}/issue`);
   },
 
-  /**
-   * Cancel a draft invoice
-   */
-  async cancelInvoice(token: string, invoiceId: string, reason: string): Promise<MarketplaceInvoice> {
-    const response = await fetch(`${API_URL}/invoices/seller/${invoiceId}/cancel`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reason }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to cancel invoice');
-    }
-
-    return response.json();
+  async cancelInvoice(invoiceId: string, reason: string): Promise<MarketplaceInvoice> {
+    return portalApiClient.post<MarketplaceInvoice>(`/api/invoices/seller/${invoiceId}/cancel`, { reason });
   },
 
-  /**
-   * Get invoice event history
-   */
-  async getInvoiceHistory(token: string, invoiceId: string): Promise<InvoiceEvent[]> {
-    const response = await fetch(`${API_URL}/invoices/seller/${invoiceId}/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoice history');
-    }
-
-    return response.json();
+  async getInvoiceHistory(invoiceId: string): Promise<InvoiceEvent[]> {
+    return portalApiClient.get<InvoiceEvent[]>(`/api/invoices/seller/${invoiceId}/history`);
   },
 
   // ---------------------------------------------------------------------------
   // Buyer Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get all invoices for the authenticated buyer
-   */
-  async getBuyerInvoices(
-    token: string,
-    filters: InvoiceFilters = {}
-  ): Promise<InvoicesResponse> {
-    const url = new URL(`${API_URL}/invoices/buyer`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.overdueOnly) url.searchParams.append('overdueOnly', 'true');
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoices');
-    }
-
-    return response.json();
+  async getBuyerInvoices(filters: InvoiceFilters = {}): Promise<InvoicesResponse> {
+    return portalApiClient.get<InvoicesResponse>(`/api/invoices/buyer${buildInvoiceQS(filters)}`);
   },
 
-  /**
-   * Get buyer invoice statistics
-   */
-  async getBuyerInvoiceStats(token: string): Promise<InvoiceStats> {
-    const response = await fetch(`${API_URL}/invoices/buyer/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoice statistics');
-    }
-
-    return response.json();
+  async getBuyerInvoiceStats(): Promise<InvoiceStats> {
+    return portalApiClient.get<InvoiceStats>(`/api/invoices/buyer/stats`);
   },
 
-  /**
-   * Get single invoice for buyer
-   */
-  async getBuyerInvoice(token: string, invoiceId: string): Promise<MarketplaceInvoice | null> {
-    const response = await fetch(`${API_URL}/invoices/buyer/${invoiceId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getBuyerInvoice(invoiceId: string): Promise<MarketplaceInvoice | null> {
+    try {
+      return await portalApiClient.get<MarketplaceInvoice>(`/api/invoices/buyer/${invoiceId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoice');
-    }
-
-    return response.json();
   },
 
   // ---------------------------------------------------------------------------
   // Order-based Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get invoice for a specific order
-   */
-  async getInvoiceByOrder(token: string, orderId: string): Promise<MarketplaceInvoice | null> {
-    const response = await fetch(`${API_URL}/invoices/order/${orderId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getInvoiceByOrder(orderId: string): Promise<MarketplaceInvoice | null> {
+    try {
+      return await portalApiClient.get<MarketplaceInvoice>(`/api/invoices/order/${orderId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch invoice');
-    }
-
-    return response.json();
   },
 
+  async generateInvoice(orderId: string): Promise<MarketplaceInvoice> {
+    return portalApiClient.post<MarketplaceInvoice>(`/api/invoices/generate/${orderId}`);
+  },
+
+  // ---------------------------------------------------------------------------
+  // PDF Operations
+  // ---------------------------------------------------------------------------
+
   /**
-   * Manually generate invoice for an order
+   * Download invoice PDF.
+   * Fetches the PDF blob with auth and triggers a browser download.
    */
-  async generateInvoice(token: string, orderId: string): Promise<MarketplaceInvoice> {
-    const response = await fetch(`${API_URL}/invoices/generate/${orderId}`, {
-      method: 'POST',
+  async downloadPdf(invoiceId: string, invoiceNumber?: string): Promise<void> {
+    const token = portalApiClient.getAccessToken();
+    const url = `${portalApiClient.baseUrl}/api/invoices/${invoiceId}/pdf`;
+
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: token ? `Bearer ${token}` : '',
       },
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to generate invoice');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error((errorData as { error?: string }).error || 'Failed to download PDF');
     }
 
-    return response.json();
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = invoiceNumber ? `${invoiceNumber}.pdf` : 'invoice.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
   },
 };
 

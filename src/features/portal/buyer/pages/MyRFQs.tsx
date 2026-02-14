@@ -43,21 +43,21 @@ import { Container, PageHeader, Button, EmptyState, Select } from '../../compone
 import { useToast } from '../../components/Toast';
 import { usePortal } from '../../context/PortalContext';
 import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
-import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import { quoteService } from '../../services/quoteService';
 import { counterOfferService } from '../../services/counterOfferService';
 import { marketplaceOrderService } from '../../services/marketplaceOrderService';
 import { QuoteDetailPanel } from '../components/QuoteDetailPanel';
 import { CounterOfferDialog } from '../components/CounterOfferDialog';
-import { ItemRFQ, Quote, QuoteWithRFQ, CreateCounterOfferData } from '../../types/item.types';
+import { ItemRFQ, Quote, QuoteWithRFQ, CreateCounterOfferData, CounterOffer } from '../../types/item.types';
 import { HybridCompareModal } from '../../components/HybridCompareModal';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface MyRFQsProps {
   onNavigate: (page: string) => void;
 }
 
-type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired' | 'negotiating' | 'cancelled';
+type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired' | 'negotiating' | 'cancelled' | 'declined';
 
 // Extended RFQ with intelligence data
 interface RFQ {
@@ -82,6 +82,9 @@ interface RFQ {
   hasMultipleQuotes?: boolean;
   relatedQuotes?: SupplierQuote[];
   timeline?: TimelineEvent[];
+  // Decline info (from seller)
+  declineReason?: string;
+  declinedAt?: string;
   // Real data from API - uses partial Quote type since we only access id to fetch full details
   quote?: Partial<Quote> & { id: string };
   rawRfq?: ItemRFQ;
@@ -176,6 +179,14 @@ const StatusBadge: React.FC<{ status: RFQStatus; showIcon?: boolean }> = ({ stat
       label: t('buyer.myRfqs.expired') || 'Expired',
       icon: Timer,
     },
+    declined: {
+      bg: '#fce4ec',
+      darkBg: '#4a1525',
+      text: '#c62828',
+      darkText: '#ef9a9a',
+      label: 'Declined by Seller',
+      icon: Prohibit,
+    },
     cancelled: { bg: '#f3f4f6', darkBg: '#374151', text: '#6b7280', darkText: '#9ca3af', label: 'Cancelled', icon: X },
   };
 
@@ -224,8 +235,18 @@ const ResponseSpeedIndicator: React.FC<{ speed?: 'fast' | 'moderate' | 'slow' }>
 
 export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const toast = useToast();
+  const { notifications, markAsRead } = useNotifications();
+
+  // Helper: mark unread RFQ notifications as read for a specific RFQ
+  const markRfqNotificationsRead = useCallback(
+    (rfqId: string) => {
+      notifications
+        .filter((n) => !n.read && n.entityType === 'rfq' && n.entityId === rfqId)
+        .forEach((n) => markAsRead(n.id));
+    },
+    [notifications, markAsRead],
+  );
 
   // Data state
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
@@ -252,6 +273,7 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   const [showCounterOfferDialog, setShowCounterOfferDialog] = useState(false);
   const [quoteForCounterOffer, setQuoteForCounterOffer] = useState<Quote | null>(null);
   const [isSubmittingCounterOffer, setIsSubmittingCounterOffer] = useState(false);
+  const [quoteCounterOffers, setQuoteCounterOffers] = useState<CounterOffer[]>([]);
 
   // Hybrid comparison modal state
   const [showHybridModal, setShowHybridModal] = useState(false);
@@ -274,35 +296,42 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
 
-      const apiRfqs = await itemService.getBuyerRFQs(token);
+      const apiRfqs = await itemService.getBuyerRFQs();
 
       // Transform API RFQs to our RFQ type with additional computed fields
       const transformedRfqs = apiRfqs.map((rfq: ItemRFQ) => {
         // Get the first/latest quote from the quotes array (backend returns quotes sorted by createdAt desc)
         const latestQuote = rfq.quotes?.[0];
 
-        // Extract item name - from item if linked, otherwise from message for general RFQs
-        let itemName = rfq.item?.name || '';
-        let partNumber = rfq.item?.sku || '';
-        if (!itemName && rfq.message) {
-          // Extract "Part: XXX" from message for general RFQs
-          const partMatch = rfq.message.match(/^Part:\s*(.+?)(?:\n|$)/i);
-          if (partMatch) {
-            itemName = partMatch[1].trim();
+        // Extract item name - multi-item RFQs show summary, otherwise from item or message
+        const hasMultiItems = (rfq.lineItems?.length ?? 0) > 1;
+        let itemName = '';
+        let partNumber = '';
+
+        if (hasMultiItems) {
+          const first = rfq.lineItems![0];
+          const remaining = rfq.lineItems!.length - 1;
+          itemName = `${first.itemName || first.item?.name || 'Item'} +${remaining} more`;
+          partNumber = `${rfq.lineItems!.length} items`;
+        } else {
+          itemName = rfq.item?.name || '';
+          partNumber = rfq.item?.sku || '';
+          if (!itemName && rfq.message) {
+            // Extract "Part: XXX" from message for general RFQs
+            const partMatch = rfq.message.match(/^Part:\s*(.+?)(?:\n|$)/i);
+            if (partMatch) {
+              itemName = partMatch[1].trim();
+            }
+            // Extract "Part Number: XXX" from message
+            const partNumMatch = rfq.message.match(/Part Number:\s*(.+?)(?:\n|$)/i);
+            if (partNumMatch && partNumMatch[1].trim() !== 'N/A') {
+              partNumber = partNumMatch[1].trim();
+            }
           }
-          // Extract "Part Number: XXX" from message
-          const partNumMatch = rfq.message.match(/Part Number:\s*(.+?)(?:\n|$)/i);
-          if (partNumMatch && partNumMatch[1].trim() !== 'N/A') {
-            partNumber = partNumMatch[1].trim();
+          if (!itemName) {
+            itemName = 'General RFQ';
           }
-        }
-        if (!itemName) {
-          itemName = 'General RFQ';
         }
 
         return {
@@ -326,6 +355,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
           leadTimeDays: latestQuote?.deliveryDays,
           supplierReliability: 90, // Placeholder: resolve from seller profile when available
           supplierResponseSpeed: 'moderate' as const,
+          declineReason: (rfq as unknown as Record<string, unknown>).ignoredReason as string | undefined,
+          declinedAt: (rfq as unknown as Record<string, unknown>).ignoredAt as string | undefined,
           hasMultipleQuotes: (rfq.quotes?.length || 0) > 1,
           quote: latestQuote,
           rawRfq: rfq,
@@ -348,10 +379,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
     try {
       setIsCancelling(true);
-      const token = await getToken();
-      if (!token) return;
 
-      await itemService.cancelRFQ(token, rfq.rfqId);
+      await itemService.cancelRFQ(rfq.rfqId);
       setCancelConfirm(null);
       fetchRfqs(); // Refresh list
       toast.addToast({
@@ -377,10 +406,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
     try {
       setIsReactivating(true);
-      const token = await getToken();
-      if (!token) return;
 
-      await itemService.reactivateRFQ(token, rfq.rfqId);
+      await itemService.reactivateRFQ(rfq.rfqId);
       setReactivateConfirm(null);
       fetchRfqs(); // Refresh list
       toast.addToast({
@@ -405,8 +432,12 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
     const statusMap: Record<string, RFQStatus> = {
       PENDING: 'pending',
       NEW: 'pending',
+      VIEWED: 'pending',
       UNDER_REVIEW: 'pending',
+      IGNORED: 'declined',
       QUOTED: 'quoted',
+      NEGOTIATION: 'negotiating',
+      NEGOTIATING: 'negotiating',
       ACCEPTED: 'accepted',
       REJECTED: 'rejected',
       EXPIRED: 'expired',
@@ -418,6 +449,11 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
   // View quote details
   const handleViewQuote = async (rfq: RFQ) => {
+    // Mark related notifications as read when user interacts with an RFQ
+    if (rfq.rfqId) {
+      markRfqNotificationsRead(rfq.rfqId);
+    }
+
     if (!rfq.quote?.id && !rfq.rawRfq) {
       openDetail(rfq);
       return;
@@ -425,14 +461,16 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
     try {
       setIsLoadingQuote(true);
-      const token = await getToken();
-      if (!token) return;
 
       // If we have a quote ID, fetch the full quote details
       if (rfq.quote?.id) {
-        const quoteDetails = await quoteService.getQuote(token, rfq.quote.id);
+        const [quoteDetails, counterOffers] = await Promise.all([
+          quoteService.getQuote(rfq.quote.id),
+          counterOfferService.getCounterOffers(rfq.quote.id),
+        ]);
         if (quoteDetails) {
           setSelectedQuote(quoteDetails);
+          setQuoteCounterOffers(counterOffers);
           setShowQuotePanel(true);
           return;
         }
@@ -451,22 +489,11 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
   // Handle quote actions from panel
   const handleAcceptQuote = async (quoteId: string) => {
     try {
-      const token = await getToken();
-      if (!token) {
-        console.error('[AcceptQuote] No auth token available');
-        toast.addToast({
-          type: 'error',
-          title: 'Authentication Required',
-          message: 'Please log in again to accept quotes.',
-        });
-        return;
-      }
-
       portalApiLogger.info('[AcceptQuote] Accepting quote:', quoteId);
 
       // Use the correct endpoint: POST /api/items/quotes/:id/accept
       // This creates a MarketplaceOrder and updates Quote + RFQ status
-      const order = await marketplaceOrderService.acceptQuote(token, quoteId, {});
+      const order = await marketplaceOrderService.acceptQuote(quoteId, {});
       portalApiLogger.info('[AcceptQuote] Order created:', order);
 
       setShowQuotePanel(false);
@@ -497,11 +524,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
   const handleRejectQuote = async (quoteId: string, reason: string) => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
       // Use the correct endpoint: POST /api/items/quotes/:id/reject
-      await marketplaceOrderService.rejectQuote(token, quoteId, { reason });
+      await marketplaceOrderService.rejectQuote(quoteId, { reason });
       setShowQuotePanel(false);
       fetchRfqs();
       toast.addToast({
@@ -529,17 +553,23 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
 
     try {
       setIsSubmittingCounterOffer(true);
-      const token = await getToken();
-      if (!token) return;
 
-      await counterOfferService.createCounterOffer(token, quoteForCounterOffer.id, data);
+      await counterOfferService.createCounterOffer(quoteForCounterOffer.id, data);
       setShowCounterOfferDialog(false);
       setQuoteForCounterOffer(null);
       setShowQuotePanel(false);
       fetchRfqs();
+      toast.addToast({
+        type: 'success',
+        message: 'Counter offer submitted successfully',
+      });
     } catch (err) {
       console.error('Failed to submit counter offer:', err);
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit counter offer. Please try again.';
+      toast.addToast({
+        type: 'error',
+        message: errorMessage,
+      });
     } finally {
       setIsSubmittingCounterOffer(false);
     }
@@ -558,8 +588,9 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
     const responded = rfqs.filter((r) => r.status === 'quoted').length;
     const negotiating = rfqs.filter((r) => r.status === 'negotiating').length;
     const accepted = rfqs.filter((r) => r.status === 'accepted').length;
+    const declined = rfqs.filter((r) => r.status === 'declined').length;
     const withMultipleQuotes = rfqs.filter((r) => r.hasMultipleQuotes).length;
-    return { waiting, responded, negotiating, accepted, withMultipleQuotes };
+    return { waiting, responded, negotiating, accepted, declined, withMultipleQuotes };
   }, [rfqs]);
 
   // Filtered data
@@ -631,7 +662,23 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
       }),
       columnHelper.accessor('status', {
         header: t('buyer.myRfqs.status'),
-        cell: (info) => <StatusBadge status={info.getValue()} />,
+        cell: (info) => {
+          const rfq = info.row.original;
+          return (
+            <div>
+              <StatusBadge status={info.getValue()} />
+              {rfq.status === 'declined' && rfq.declineReason && (
+                <p
+                  className="text-[10px] mt-0.5 max-w-[160px] truncate"
+                  style={{ color: styles.textMuted }}
+                  title={rfq.declineReason}
+                >
+                  {rfq.declineReason}
+                </p>
+              )}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor('createdAt', {
         header: t('buyer.myRfqs.created'),
@@ -800,13 +847,13 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
             color="emerald"
           />
           <KPICard
-            id="multipleQuotes"
-            label="Multiple Quotes"
-            value={stats.withMultipleQuotes.toString()}
+            id="declined"
+            label="Declined"
+            value={stats.declined.toString()}
             change=""
             trend="neutral"
-            icon={<Scales size={18} />}
-            color="blue"
+            icon={<Prohibit size={18} />}
+            color="red"
           />
         </div>
 
@@ -844,6 +891,7 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
               { value: 'negotiating', label: 'Negotiating' },
               { value: 'accepted', label: t('buyer.myRfqs.accepted') || 'Accepted' },
               { value: 'rejected', label: t('buyer.myRfqs.rejected') || 'Rejected' },
+              { value: 'declined', label: 'Declined by Seller' },
               { value: 'cancelled', label: 'Cancelled' },
               { value: 'expired', label: t('buyer.myRfqs.expired') || 'Expired' },
             ]}
@@ -928,7 +976,8 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
                 </thead>
                 <tbody style={{ backgroundColor: styles.bgCard }}>
                   {table.getRowModel().rows.map((row, idx) => {
-                    const isCancelled = (row.original as RFQ).status === 'cancelled';
+                    const isCancelled =
+                      (row.original as RFQ).status === 'cancelled' || (row.original as RFQ).status === 'declined';
                     return (
                       <tr
                         key={row.id}
@@ -1016,10 +1065,16 @@ export const MyRFQs: React.FC<MyRFQsProps> = ({ onNavigate }) => {
       {selectedQuote && (
         <QuoteDetailPanel
           quote={selectedQuote}
+          counterOffers={quoteCounterOffers}
+          itemName={selectedQuote.rfq?.item?.name}
+          itemSku={selectedQuote.rfq?.item?.sku}
+          sellerName={(selectedQuote as Record<string, unknown>).sellerName as string | undefined}
+          sellerCompany={(selectedQuote.rfq as Record<string, unknown>)?.sellerCompanyName as string | undefined}
           isOpen={showQuotePanel}
           onClose={() => {
             setShowQuotePanel(false);
             setSelectedQuote(null);
+            setQuoteCounterOffers([]);
           }}
           onAccept={() => handleAcceptQuote(selectedQuote.id)}
           onReject={(reason) => handleRejectQuote(selectedQuote.id, reason || 'Quote rejected by buyer')}
@@ -1476,6 +1531,32 @@ const OverviewTab: React.FC<{
           <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
             Seller is preparing their offer
           </p>
+        </div>
+      )}
+
+      {/* Decline Reason (shown when seller declined) */}
+      {rfq.status === 'declined' && rfq.declineReason && (
+        <div
+          className="p-4 rounded-xl"
+          style={{
+            backgroundColor: styles.isDark ? '#4a1525' : '#fce4ec',
+            border: `1px solid ${styles.isDark ? '#c62828' : '#ef9a9a'}`,
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Prohibit size={16} weight="bold" style={{ color: '#c62828' }} />
+            <h4 className="text-sm font-semibold" style={{ color: styles.isDark ? '#ef9a9a' : '#c62828' }}>
+              Declined by Seller
+            </h4>
+          </div>
+          <p className="text-sm" style={{ color: styles.textPrimary }}>
+            {rfq.declineReason}
+          </p>
+          {rfq.declinedAt && (
+            <p className="text-xs mt-2" style={{ color: styles.textMuted }}>
+              Declined on {formatDate(rfq.declinedAt)}
+            </p>
+          )}
         </div>
       )}
 

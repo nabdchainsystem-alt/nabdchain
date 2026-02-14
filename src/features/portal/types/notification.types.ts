@@ -9,9 +9,14 @@ export type NotificationCategory = 'rfq' | 'order' | 'invoice' | 'dispute' | 'pa
 export type PortalNotificationType =
   // RFQ Notifications
   | 'rfq_received'
+  | 'rfq_declined'
   | 'rfq_expiring_soon'
   | 'rfq_expired'
   | 'rfq_quote_received'
+  // Counter-Offer Notifications
+  | 'counter_offer_received'
+  | 'counter_offer_accepted'
+  | 'counter_offer_rejected'
   // Order Notifications
   | 'order_created'
   | 'order_confirmed'
@@ -73,11 +78,14 @@ export const NOTIFICATION_CATEGORY_ICONS: Record<NotificationCategory, string> =
 };
 
 // Priority colors for styling
-export const PRIORITY_COLORS: Record<NotificationPriority, {
-  dot: string;
-  bg: string;
-  text: string;
-}> = {
+export const PRIORITY_COLORS: Record<
+  NotificationPriority,
+  {
+    dot: string;
+    bg: string;
+    text: string;
+  }
+> = {
   critical: { dot: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)', text: '#DC2626' },
   high: { dot: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)', text: '#D97706' },
   normal: { dot: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)', text: '#2563EB' },

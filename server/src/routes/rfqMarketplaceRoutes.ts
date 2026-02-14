@@ -6,8 +6,10 @@
 
 import { Router, Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+import { PortalAuthRequest } from '../middleware/portalAdminMiddleware';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
+import { getQueryString } from '../utils/queryParsing';
 
 const router = Router();
 
@@ -28,14 +30,7 @@ interface MarketplaceFilters {
   savedOnly?: boolean;
 }
 
-/**
- * Get a string query parameter value (handles Express query types)
- */
-function getQueryString(value: unknown): string | undefined {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
-  return undefined;
-}
+// getQueryString imported from ../utils/queryParsing
 
 // =============================================================================
 // Helper Functions
@@ -45,7 +40,7 @@ function getQueryString(value: unknown): string | undefined {
  * Get seller ID from request (from portal auth or legacy header)
  */
 async function getSellerId(req: Request): Promise<string | null> {
-  const portalAuth = (req as any).portalAuth;
+  const portalAuth = (req as PortalAuthRequest).portalAuth;
   const authUserId = (req as AuthRequest).auth?.userId;
 
   apiLogger.info('[getSellerId] Auth context:', {
@@ -645,7 +640,7 @@ router.post('/:id/quote', async (req: Request, res: Response) => {
     apiLogger.info('[RFQ Marketplace] Quote submission attempt:', {
       rfqId: id,
       sellerId,
-      hasPortalAuth: !!(req as any).portalAuth,
+      hasPortalAuth: !!(req as PortalAuthRequest).portalAuth,
       body: req.body
     });
 

@@ -303,7 +303,8 @@ router.post('/buy-now', requireAuth, async (req, res: Response) => {
     if (!buyerId) {
       return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
-    const result = await buyerCartService.buyNowFromAllCart(buyerId);
+    const { paymentMethod } = req.body || {};
+    const result = await buyerCartService.buyNowFromAllCart(buyerId, paymentMethod || 'bank_transfer');
     res.json({
       success: true,
       message: `Created ${result.orderIds.length} order(s) for ${result.itemCount} item(s)`,
@@ -317,6 +318,10 @@ router.post('/buy-now', requireAuth, async (req, res: Response) => {
       }
       if (error.message === 'No Buy Now eligible items in cart') {
         res.status(400).json({ error: error.message });
+        return;
+      }
+      if (error.message.includes('not enabled for credit')) {
+        res.status(403).json({ error: error.message });
         return;
       }
       if (error.message === 'Cart is locked') {
@@ -340,7 +345,8 @@ router.post('/buy-now/seller/:sellerId', requireAuth, async (req, res: Response)
       return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
     }
     const sellerId = req.params.sellerId as string;
-    const result = await buyerCartService.buyNowFromCartForSeller(buyerId, sellerId);
+    const { paymentMethod } = req.body || {};
+    const result = await buyerCartService.buyNowFromCartForSeller(buyerId, sellerId, paymentMethod || 'bank_transfer');
     res.json({
       success: true,
       message: `Created order for ${result.itemCount} item(s)`,
@@ -354,6 +360,10 @@ router.post('/buy-now/seller/:sellerId', requireAuth, async (req, res: Response)
       }
       if (error.message === 'No Buy Now eligible items from this seller') {
         res.status(400).json({ error: error.message });
+        return;
+      }
+      if (error.message.includes('not enabled for credit')) {
+        res.status(403).json({ error: error.message });
         return;
       }
       if (error.message === 'Cart is locked') {

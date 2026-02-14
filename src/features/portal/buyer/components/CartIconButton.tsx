@@ -13,7 +13,7 @@ interface CartIconButtonProps {
 
 export const CartIconButton: React.FC<CartIconButtonProps> = ({ onClick }) => {
   const { styles } = usePortal();
-  const { cart, isLoading } = useCart();
+  const { cart } = useCart();
 
   const itemCount = cart?.itemCount || 0;
   const showBadge = itemCount > 0;
@@ -36,7 +36,7 @@ export const CartIconButton: React.FC<CartIconButtonProps> = ({ onClick }) => {
       <ShoppingCart size={18} weight={showBadge ? 'fill' : 'regular'} />
 
       {/* Badge */}
-      {showBadge && !isLoading && (
+      {showBadge && (
         <span
           className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1"
           style={{

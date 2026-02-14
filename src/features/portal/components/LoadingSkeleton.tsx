@@ -60,19 +60,11 @@ interface SkeletonTextProps {
 /**
  * Text Skeleton - Multiple lines of text
  */
-export const SkeletonText: React.FC<SkeletonTextProps> = ({
-  lines = 3,
-  lastLineWidth = '60%',
-  className = '',
-}) => {
+export const SkeletonText: React.FC<SkeletonTextProps> = ({ lines = 3, lastLineWidth = '60%', className = '' }) => {
   return (
     <div className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton
-          key={i}
-          width={i === lines - 1 ? lastLineWidth : '100%'}
-          height="0.875rem"
-        />
+        <Skeleton key={i} width={i === lines - 1 ? lastLineWidth : '100%'} height="0.875rem" />
       ))}
     </div>
   );
@@ -81,18 +73,8 @@ export const SkeletonText: React.FC<SkeletonTextProps> = ({
 /**
  * Avatar Skeleton - Circular avatar placeholder
  */
-export const SkeletonAvatar: React.FC<{ size?: number; className?: string }> = ({
-  size = 40,
-  className = '',
-}) => {
-  return (
-    <Skeleton
-      width={size}
-      height={size}
-      rounded="full"
-      className={className}
-    />
-  );
+export const SkeletonAvatar: React.FC<{ size?: number; className?: string }> = ({ size = 40, className = '' }) => {
+  return <Skeleton width={size} height={size} rounded="full" className={className} />;
 };
 
 /**
@@ -130,15 +112,8 @@ export const SkeletonTableRow: React.FC<{ columns?: number; className?: string }
   return (
     <tr className={className}>
       {Array.from({ length: columns }).map((_, i) => (
-        <td
-          key={i}
-          className="px-4 py-3"
-          style={{ borderBottom: `1px solid ${styles.border}` }}
-        >
-          <Skeleton
-            width={i === 0 ? '70%' : i === columns - 1 ? '50%' : '80%'}
-            height="0.875rem"
-          />
+        <td key={i} className="px-4 py-3" style={{ borderBottom: `1px solid ${styles.border}` }}>
+          <Skeleton width={i === 0 ? '70%' : i === columns - 1 ? '50%' : '80%'} height="0.875rem" />
         </td>
       ))}
     </tr>
@@ -160,13 +135,10 @@ export const SkeletonProductCard: React.FC<{ className?: string }> = ({ classNam
       <Skeleton width="100%" height={160} rounded="none" />
 
       {/* Content */}
-      <div className="p-4 space-y-3">
+      <div className="px-2.5 py-2 space-y-2">
         <Skeleton width="80%" height="1rem" />
+        <Skeleton width="35%" height="1rem" />
         <Skeleton width="50%" height="0.75rem" />
-        <div className="flex justify-between items-center pt-2">
-          <Skeleton width="30%" height="1.25rem" />
-          <Skeleton width={60} height={28} rounded="md" />
-        </div>
       </div>
     </div>
   );
@@ -294,10 +266,7 @@ export const SkeletonTablePage: React.FC<{
       </div>
 
       {/* Table */}
-      <div
-        className="rounded-lg border overflow-hidden"
-        style={{ borderColor: styles.border }}
-      >
+      <div className="rounded-lg border overflow-hidden" style={{ borderColor: styles.border }}>
         <table className="w-full">
           <tbody>
             {Array.from({ length: rows }).map((_, i) => (
@@ -334,7 +303,7 @@ export const SkeletonMarketplaceGrid: React.FC<{
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
         {Array.from({ length: items }).map((_, i) => (
           <SkeletonProductCard key={i} />
         ))}
@@ -350,10 +319,9 @@ export const SkeletonMarketplaceGrid: React.FC<{
 /**
  * Shimmer Box - Base shimmer component for chart skeletons
  */
-const ShimmerBox: React.FC<{ className?: string; style?: React.CSSProperties }> = ({
-  className = '',
-  style,
-}) => <div className={`shimmer rounded ${className}`} style={style} />;
+const ShimmerBox: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = '', style }) => (
+  <div className={`shimmer rounded ${className}`} style={style} />
+);
 
 /**
  * Bar Chart Skeleton - Shimmer loading for bar charts
@@ -382,18 +350,12 @@ export const SkeletonBarChart: React.FC<{
       <div className="flex-1 flex items-end justify-between gap-2 pb-4">
         {BAR_HEIGHTS.map((h, i) => (
           <div key={i} className="flex-1 flex flex-col justify-end" style={{ height: '100%' }}>
-            <div
-              className="w-full rounded-t shimmer"
-              style={{ height: `${h}%`, animationDelay: `${i * 50}ms` }}
-            />
+            <div className="w-full rounded-t shimmer" style={{ height: `${h}%`, animationDelay: `${i * 50}ms` }} />
           </div>
         ))}
       </div>
       {showLegend && (
-        <div
-          className="flex items-center gap-4 pt-3 border-t"
-          style={{ borderColor: styles.border }}
-        >
+        <div className="flex items-center gap-4 pt-3 border-t" style={{ borderColor: styles.border }}>
           <ShimmerBox className="h-3 w-16" />
           <ShimmerBox className="h-3 w-16" />
           <ShimmerBox className="h-3 w-16" />
@@ -459,11 +421,7 @@ export const SkeletonLineChart: React.FC<{
         </div>
         {/* Chart area with shimmer */}
         <div className="ml-12 h-full flex items-center relative overflow-hidden rounded-lg shimmer">
-          <svg
-            className="w-full h-3/4 relative z-10"
-            viewBox="0 0 100 50"
-            preserveAspectRatio="none"
-          >
+          <svg className="w-full h-3/4 relative z-10" viewBox="0 0 100 50" preserveAspectRatio="none">
             <path
               d="M0,40 Q10,35 20,38 T40,30 T60,35 T80,25 T100,30"
               fill="none"
@@ -543,9 +501,7 @@ export const SkeletonKPICard: React.FC<{ className?: string }> = ({ className = 
 /**
  * Analytics Dashboard Skeleton - Full shimmer skeleton for analytics pages
  */
-export const SkeletonAnalyticsDashboard: React.FC<{ className?: string }> = ({
-  className = '',
-}) => {
+export const SkeletonAnalyticsDashboard: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div className={`space-y-6 ${className}`}>
       {/* KPI Cards */}
@@ -589,11 +545,7 @@ export const SkeletonListSkeleton: React.FC<{
       {title && <ShimmerBox className="h-4 w-24 mb-4" />}
       <div className="space-y-3">
         {[...Array(rows)].map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between"
-            style={{ animationDelay: `${i * 50}ms` }}
-          >
+          <div key={i} className="flex items-center justify-between" style={{ animationDelay: `${i * 50}ms` }}>
             <div className="flex items-center gap-3">
               <ShimmerBox className="w-8 h-8 rounded" />
               <div className="space-y-1">

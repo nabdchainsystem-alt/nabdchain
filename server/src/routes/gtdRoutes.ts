@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma, GTDItem } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
@@ -47,7 +48,7 @@ const syncPushSchema = z.object({
 });
 
 // Helper to serialize GTD item for response
-function serializeGTDItem(item: any) {
+function serializeGTDItem(item: GTDItem) {
     return {
         ...item,
         scheduledAt: item.scheduledAt?.getTime() || null,
@@ -65,7 +66,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
         const userId = (req as AuthRequest).auth.userId;
         const { boardId, category, includeDeleted } = req.query;
 
-        const where: any = { userId };
+        const where: Prisma.GTDItemWhereInput = { userId };
         if (boardId) where.boardId = boardId as string;
         if (category) where.category = category as string;
         if (includeDeleted !== 'true') where.isDeleted = false;
@@ -157,7 +158,7 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
             });
         }
 
-        const updateData: any = { version: existing.version + 1 };
+        const updateData: Prisma.GTDItemUpdateInput = { version: existing.version + 1 };
         if (data.title !== undefined) updateData.title = data.title;
         if (data.category !== undefined) updateData.category = data.category;
         if (data.scheduledAt !== undefined) updateData.scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
@@ -223,7 +224,7 @@ router.get('/sync/changes', requireAuth, async (req, res: Response) => {
 
         const sinceDate = since ? new Date(parseInt(since as string)) : new Date(0);
 
-        const where: any = {
+        const where: Prisma.GTDItemWhereInput = {
             userId,
             updatedAt: { gt: sinceDate },
         };
@@ -251,9 +252,9 @@ router.post('/sync', requireAuth, async (req, res: Response) => {
         const data = syncPushSchema.parse(req.body);
 
         const results: {
-            created: any[];
-            updated: any[];
-            conflicts: any[];
+            created: ReturnType<typeof serializeGTDItem>[];
+            updated: ReturnType<typeof serializeGTDItem>[];
+            conflicts: { clientItem: typeof data.items[number]; serverItem: ReturnType<typeof serializeGTDItem>; resolution: string }[];
             deleted: string[];
         } = {
             created: [],
@@ -372,7 +373,7 @@ router.post('/bulk', requireAuth, async (req, res: Response) => {
         }
 
         const created = await prisma.gTDItem.createMany({
-            data: items.map((item: any) => ({
+            data: items.map((item: { id?: string; clientId?: string; title: string; category?: string; scheduledAt?: number | string; notes?: string; tags?: string[]; createdAt?: number | string }) => ({
                 userId,
                 boardId: boardId || 'default',
                 clientId: item.id || item.clientId,

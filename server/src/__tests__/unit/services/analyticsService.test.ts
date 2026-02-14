@@ -91,10 +91,10 @@ describe('buyerAnalyticsService.getKPIs', () => {
 });
 
 // =============================================================================
-// Buyer Analytics: getSpendByCategory
+// Buyer Analytics: getSpendBySupplier
 // =============================================================================
 
-describe('buyerAnalyticsService.getSpendByCategory', () => {
+describe('buyerAnalyticsService.getSpendBySupplier', () => {
   const dates = {
     period: 'month' as const,
     startDate: new Date('2026-01-01'),
@@ -103,43 +103,45 @@ describe('buyerAnalyticsService.getSpendByCategory', () => {
     prevEndDate: new Date('2025-12-31'),
   };
 
-  it('returns spend aggregated by item category', async () => {
+  it('returns spend aggregated by supplier', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([
-      { itemId: 'item-1', quantity: 10, unitPrice: 100 },
-      { itemId: 'item-2', quantity: 5, unitPrice: 200 },
-      { itemId: 'item-1', quantity: 3, unitPrice: 100 },
+      { sellerId: 'seller-1', totalPrice: 1000 },
+      { sellerId: 'seller-2', totalPrice: 1000 },
+      { sellerId: 'seller-1', totalPrice: 300 },
     ]);
-    prismaMock.item.findMany.mockResolvedValue([
-      { id: 'item-1', category: 'Bearings' },
-      { id: 'item-2', category: 'Motors' },
+    prismaMock.sellerProfile.findMany.mockResolvedValue([
+      { userId: 'seller-1', displayName: 'Bearings Co' },
+      { userId: 'seller-2', displayName: 'Motors Inc' },
     ]);
 
-    const result = await buyerAnalyticsService.getSpendByCategory('buyer-1', dates);
+    const result = await buyerAnalyticsService.getSpendBySupplier('buyer-1', dates);
 
     expect(result).toHaveLength(2);
-    // Bearings: 10*100 + 3*100 = 1300, Motors: 5*200 = 1000
-    const bearings = result.find((r) => r.category === 'Bearings');
-    const motors = result.find((r) => r.category === 'Motors');
+    // Bearings Co: 1000 + 300 = 1300, Motors Inc: 1000
+    const bearings = result.find((r) => r.category === 'Bearings Co');
+    const motors = result.find((r) => r.category === 'Motors Inc');
     expect(bearings!.amount).toBe(1300);
+    expect(bearings!.orderCount).toBe(2);
+    expect(bearings!.avgOrderValue).toBe(650);
     expect(motors!.amount).toBe(1000);
+    expect(motors!.orderCount).toBe(1);
   });
 
   it('returns empty array when no orders', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([]);
-    prismaMock.item.findMany.mockResolvedValue([]);
 
-    const result = await buyerAnalyticsService.getSpendByCategory('buyer-1', dates);
+    const result = await buyerAnalyticsService.getSpendBySupplier('buyer-1', dates);
     expect(result).toEqual([]);
   });
 
-  it('uses "Other" for orders with unknown item category', async () => {
+  it('uses "Unknown Supplier" for orders with unknown seller', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([
-      { itemId: 'item-unknown', quantity: 1, unitPrice: 50 },
+      { sellerId: 'seller-unknown', totalPrice: 50 },
     ]);
-    prismaMock.item.findMany.mockResolvedValue([]); // no items found
+    prismaMock.sellerProfile.findMany.mockResolvedValue([]); // no sellers found
 
-    const result = await buyerAnalyticsService.getSpendByCategory('buyer-1', dates);
-    expect(result[0].category).toBe('Other');
+    const result = await buyerAnalyticsService.getSpendBySupplier('buyer-1', dates);
+    expect(result[0].category).toBe('Unknown Supplier');
   });
 });
 

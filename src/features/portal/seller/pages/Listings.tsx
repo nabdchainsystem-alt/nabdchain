@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { portalApiLogger } from '../../../../utils/logger';
-import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import { Item } from '../../types/item.types';
 import {
@@ -66,6 +65,7 @@ interface Product {
   description: string;
   price: string;
   currency: string;
+  priceUnit: string;
   stock: number;
   minOrderQty: number;
   category: string;
@@ -223,7 +223,7 @@ const getPerformanceInsight = (product: Product): string => {
   if (product.visibility === 'hidden' || product.visibility === 'rfq_only') return 'Limited visibility';
 
   // New listing
-  if (product.views < 20 && product.rfqs === 0) return 'Building exposure';
+  if (product.views < 20 && product.rfqs === 0) return 'New listing';
 
   // Dormant
   if (rfqs === 0 && product.orders === 0) return 'No activity yet';
@@ -447,7 +447,6 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   // Convert Item API type to local Product type
@@ -459,6 +458,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     description: item.description || '',
     price: item.price.toString(),
     currency: item.currency,
+    priceUnit: item.priceUnit || 'per_unit',
     stock: item.stock,
     minOrderQty: item.minOrderQty,
     category: `category.${item.category}`,
@@ -486,6 +486,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     if ('description' in product) result.description = product.description;
     if ('price' in product && product.price) result.price = parseFloat(product.price);
     if ('currency' in product) result.currency = product.currency;
+    if ('priceUnit' in product) result.priceUnit = product.priceUnit;
     if ('stock' in product) result.stock = product.stock;
     if ('minOrderQty' in product) result.minOrderQty = product.minOrderQty;
     if ('category' in product) result.category = product.category?.replace('category.', '');
@@ -514,13 +515,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
   // Fetch products from API
   const fetchProducts = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (!token) {
-        setProducts([]);
-        setIsLoading(false);
-        return;
-      }
-      const items = await itemService.getSellerItems(token);
+      const items = await itemService.getSellerItems();
       setProducts(items.map(itemToProduct));
     } catch (err) {
       console.error('[Listings] Failed to fetch items:', err);
@@ -529,7 +524,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -541,16 +536,14 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     const status = stock === 0 ? 'out_of_stock' : productData.status === 'active' ? 'active' : 'draft';
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error('No token');
-
-      const item = await itemService.createItem(token, {
+      const item = await itemService.createItem({
         name: productData.name,
         sku: productData.sku,
         partNumber: productData.partNumber,
         description: productData.description,
         price: parseFloat(productData.price),
         currency: productData.currency,
+        priceUnit: productData.priceUnit as 'per_unit' | 'per_kg' | 'per_meter' | 'per_liter' | 'per_set' | 'per_box',
         stock,
         minOrderQty: parseInt(productData.minOrderQty) || 1,
         category: productData.category.replace('category.', ''),
@@ -594,9 +587,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     );
 
     try {
-      const token = await getToken();
-      if (!token) return;
-      await itemService.updateItem(token, id, productToItemData(updates) as Partial<Item>);
+      await itemService.updateItem(id, productToItemData(updates) as Partial<Item>);
     } catch (err) {
       console.error('Failed to update item:', err);
     }
@@ -607,9 +598,7 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
     setDeleteConfirm(null);
 
     try {
-      const token = await getToken();
-      if (!token) return;
-      await itemService.deleteItem(token, id);
+      await itemService.deleteItem(id);
     } catch (err) {
       console.error('Failed to delete item:', err);
     }
@@ -618,20 +607,13 @@ export const Listings: React.FC<ListingsProps> = ({ onNavigate }) => {
   const handleDuplicateProduct = async (product: Product) => {
     portalApiLogger.info('[Duplicate] Starting duplicate for:', product.name);
     try {
-      const token = await getToken();
-      portalApiLogger.debug('[Duplicate] Token obtained:', !!token);
-      if (!token) {
-        console.error('[Duplicate] No auth token available');
-        return;
-      }
-
       // Generate a short unique SKU - strip any existing COPY suffix and add new short one
       const baseSku = product.sku.replace(/-COPY-\d+/g, '').substring(0, 35);
       const shortId = Date.now().toString(36).toUpperCase(); // e.g., "M1ABC"
       const newSku = `${baseSku}-CP-${shortId}`;
 
       // Create duplicated item via API
-      const item = await itemService.createItem(token, {
+      const item = await itemService.createItem({
         name: product.name.replace(/ \(Copy\)$/g, '') + ' (Copy)',
         sku: newSku,
         partNumber: product.partNumber === '-' ? undefined : product.partNumber,

@@ -62,9 +62,16 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
     return calendar;
   };
 
+  const toLocalDateStr = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+
   const handleDateClick = (day: number) => {
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const isoDate = date.toISOString().split('T')[0];
+    const isoDate = toLocalDateStr(date);
 
     // Check min/max constraints
     if (minDate && isoDate < minDate) return;
@@ -76,7 +83,7 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
 
   const isDateDisabled = (day: number) => {
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const isoDate = date.toISOString().split('T')[0];
+    const isoDate = toLocalDateStr(date);
     if (minDate && isoDate < minDate) return true;
     if (maxDate && isoDate > maxDate) return true;
     return false;
@@ -190,7 +197,7 @@ export const PortalDatePicker: React.FC<PortalDatePickerProps> = ({
                 }
 
                 const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                const isoDate = date.toISOString().split('T')[0];
+                const isoDate = toLocalDateStr(date);
                 const isSelected = value === isoDate;
                 const isToday = date.toDateString() === today.toDateString();
                 const disabled = isDateDisabled(day);

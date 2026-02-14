@@ -280,14 +280,23 @@ export interface SellerDecisionSignals {
 /**
  * Get deadline urgency based on remaining time
  */
-export function getDeadlineUrgency(deadline: string): {
+export function getDeadlineUrgency(deadline: string | null | undefined): {
   urgency: DeadlineUrgency;
   daysRemaining: number;
   hoursRemaining: number;
   text: string;
 } {
+  if (!deadline) {
+    return { urgency: 'normal', daysRemaining: 30, hoursRemaining: 720, text: 'No deadline' };
+  }
+
   const now = new Date();
   const deadlineDate = new Date(deadline);
+
+  if (isNaN(deadlineDate.getTime())) {
+    return { urgency: 'normal', daysRemaining: 30, hoursRemaining: 720, text: 'No deadline' };
+  }
+
   const diffMs = deadlineDate.getTime() - now.getTime();
   const hoursRemaining = Math.floor(diffMs / (1000 * 60 * 60));
   const daysRemaining = Math.floor(hoursRemaining / 24);

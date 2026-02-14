@@ -1,21 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  ReactNode,
-} from 'react';
-import { useAuth } from '../../../auth-adapter';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useSocket } from '../../../contexts/SocketContext';
 import { notificationService } from '../services/notificationService';
 import { useToast } from '../components/Toast';
-import {
-  PortalNotification,
-  NotificationCounts,
-  PortalType,
-} from '../types/notification.types';
+import { PortalNotification, NotificationCounts, PortalType } from '../types/notification.types';
 
 // =============================================================================
 // Context Types
@@ -58,14 +45,12 @@ export const useNotifications = (): NotificationContextType => {
 interface NotificationProviderProps {
   children: ReactNode;
   portalType: PortalType;
+  onNavigate?: (page: string, data?: Record<string, unknown>) => void;
 }
 
-export const NotificationProvider: React.FC<NotificationProviderProps> = ({
-  children,
-  portalType,
-}) => {
-  const { getToken, userId } = useAuth();
+export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children, portalType, onNavigate }) => {
   const { socket, isConnected } = useSocket();
+  const userId = localStorage.getItem('portal_user_id');
   const toast = useToast();
 
   const [notifications, setNotifications] = useState<PortalNotification[]>([]);
@@ -81,12 +66,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   // Fetch notifications from API
   const refreshNotifications = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
       const [notifs, newCounts] = await Promise.all([
-        notificationService.getNotifications(token, portalType, { limit: 50 }),
-        notificationService.getUnreadCount(token, portalType),
+        notificationService.getNotifications(portalType, { limit: 50 }),
+        notificationService.getUnreadCount(portalType),
       ]);
 
       setNotifications(notifs);
@@ -98,92 +80,101 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, portalType]);
+  }, [portalType]);
 
   // Mark single notification as read
-  const markAsRead = useCallback(async (notificationId: string) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      try {
+        await notificationService.markAsRead(notificationId);
 
-      await notificationService.markAsRead(token, notificationId);
+        // Optimistic update
+        setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)));
 
-      // Optimistic update
-      setNotifications(prev =>
-        prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
-      );
-
-      // Update counts
-      const notification = notifications.find(n => n.id === notificationId);
-      if (notification && !notification.read) {
-        setCounts(prev => ({
-          total: Math.max(0, prev.total - 1),
-          actionRequired:
-            notification.priority === 'critical' || notification.priority === 'high'
-              ? Math.max(0, prev.actionRequired - 1)
-              : prev.actionRequired,
-        }));
+        // Update counts
+        const notification = notifications.find((n) => n.id === notificationId);
+        if (notification && !notification.read) {
+          setCounts((prev) => ({
+            total: Math.max(0, prev.total - 1),
+            actionRequired:
+              notification.priority === 'critical' || notification.priority === 'high'
+                ? Math.max(0, prev.actionRequired - 1)
+                : prev.actionRequired,
+          }));
+        }
+      } catch (err) {
+        console.error('[NotificationContext] Error marking as read:', err);
       }
-    } catch (err) {
-      console.error('[NotificationContext] Error marking as read:', err);
-    }
-  }, [getToken, notifications]);
+    },
+    [notifications],
+  );
 
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await notificationService.markAllAsRead(token, portalType);
+      await notificationService.markAllAsRead(portalType);
 
       // Optimistic update
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setCounts({ total: 0, actionRequired: 0 });
     } catch (err) {
       console.error('[NotificationContext] Error marking all as read:', err);
     }
-  }, [getToken, portalType]);
+  }, [portalType]);
 
   // Handle real-time notification from WebSocket
-  const handleNewNotification = useCallback((notification: PortalNotification) => {
-    // Only process notifications for this portal type
-    if (notification.portalType !== portalType) return;
+  const handleNewNotification = useCallback(
+    (notification: PortalNotification) => {
+      // Only process notifications for this portal type
+      if (notification.portalType !== portalType) return;
 
-    // Add to state (prepend)
-    setNotifications(prev => {
-      const exists = prev.some(n => n.id === notification.id);
-      if (exists) return prev;
-      return [notification, ...prev].slice(0, 50);
-    });
-
-    // Update counts
-    setCounts(prev => ({
-      total: prev.total + 1,
-      actionRequired:
-        notification.priority === 'critical' || notification.priority === 'high'
-          ? prev.actionRequired + 1
-          : prev.actionRequired,
-    }));
-
-    // Show toast for critical notifications only
-    if (notification.priority === 'critical' && toast) {
-      toast.addToast({
-        type: 'warning',
-        title: notification.title,
-        message: notification.body || undefined,
-        duration: 8000,
-        action: notification.actionUrl
-          ? {
-              label: 'View',
-              onClick: () => {
-                window.location.href = notification.actionUrl!;
-              },
-            }
-          : undefined,
+      // Add to state (prepend)
+      setNotifications((prev) => {
+        const exists = prev.some((n) => n.id === notification.id);
+        if (exists) return prev;
+        return [notification, ...prev].slice(0, 50);
       });
-    }
-  }, [portalType, toast]);
+
+      // Update counts
+      setCounts((prev) => ({
+        total: prev.total + 1,
+        actionRequired:
+          notification.priority === 'critical' || notification.priority === 'high'
+            ? prev.actionRequired + 1
+            : prev.actionRequired,
+      }));
+
+      // Show toast for critical notifications only
+      if (notification.priority === 'critical' && toast) {
+        const entityType = notification.entityType || notification.category;
+        const pageMap: Record<string, string> = {
+          rfq: portalType === 'buyer' ? 'my-rfqs' : 'rfqs',
+          order: 'orders',
+          invoice: 'invoices',
+          dispute: 'disputes',
+          payout: 'payouts',
+        };
+        const targetPage = entityType ? pageMap[entityType] : null;
+
+        toast.addToast({
+          type: 'warning',
+          title: notification.title,
+          message: notification.body || undefined,
+          duration: 8000,
+          action:
+            targetPage && onNavigate
+              ? {
+                  label: 'View',
+                  onClick: () => {
+                    onNavigate(targetPage);
+                  },
+                }
+              : undefined,
+        });
+      }
+    },
+    [portalType, toast, onNavigate],
+  );
 
   // Set up WebSocket listener
   useEffect(() => {

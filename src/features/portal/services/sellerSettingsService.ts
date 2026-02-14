@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -142,189 +142,61 @@ export interface SellerContactInput {
 }
 
 // =============================================================================
-// Service Methods
+// Service Methods (uses portalApiClient for automatic auth + token refresh)
 // =============================================================================
 
 export const sellerSettingsService = {
-  // Get full seller profile
-  async getProfile(token: string): Promise<SellerProfile> {
-    const response = await fetch(`${API_BASE}/api/seller/profile`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch seller profile');
-    }
-
-    return response.json();
+  async getProfile(_token: string): Promise<SellerProfile> {
+    return portalApiClient.get<SellerProfile>('/api/seller/profile');
   },
 
-  // Update seller profile
-  async updateProfile(token: string, data: SellerProfileInput): Promise<SellerProfile> {
-    const response = await fetch(`${API_BASE}/api/seller/profile`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update profile');
-    }
-
-    return response.json();
+  async updateProfile(_token: string, data: SellerProfileInput): Promise<SellerProfile> {
+    return portalApiClient.post<SellerProfile>('/api/seller/profile', data);
   },
 
-  // Update company info
-  async updateCompany(token: string, data: SellerCompanyInput): Promise<SellerCompany> {
-    const response = await fetch(`${API_BASE}/api/seller/company`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update company info');
-    }
-
-    return response.json();
+  async updateCompany(_token: string, data: SellerCompanyInput): Promise<SellerCompany> {
+    return portalApiClient.post<SellerCompany>('/api/seller/company', data);
   },
 
-  // Update address
-  async updateAddress(token: string, data: SellerAddressInput): Promise<SellerAddress> {
-    const response = await fetch(`${API_BASE}/api/seller/address`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update address');
-    }
-
-    return response.json();
+  async updateAddress(_token: string, data: SellerAddressInput): Promise<SellerAddress> {
+    return portalApiClient.post<SellerAddress>('/api/seller/address', data);
   },
 
-  // Update bank info
-  async updateBank(token: string, data: SellerBankInput): Promise<SellerBank> {
-    const response = await fetch(`${API_BASE}/api/seller/bank`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update bank info');
-    }
-
-    return response.json();
+  async updateBank(_token: string, data: SellerBankInput): Promise<SellerBank> {
+    return portalApiClient.post<SellerBank>('/api/seller/bank', data);
   },
 
-  // Update contact info
-  async updateContact(token: string, data: SellerContactInput): Promise<SellerContact> {
-    const response = await fetch(`${API_BASE}/api/seller/contact`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update contact info');
-    }
-
-    return response.json();
+  async updateContact(_token: string, data: SellerContactInput): Promise<SellerContact> {
+    return portalApiClient.post<SellerContact>('/api/seller/contact', data);
   },
 
-  // Upload document
   async uploadDocument(
-    token: string,
+    _token: string,
     documentType: string,
     fileName: string,
     fileUrl: string,
     fileSize?: number,
-    mimeType?: string
+    mimeType?: string,
   ): Promise<SellerDocument> {
-    const response = await fetch(`${API_BASE}/api/seller/documents/upload`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ documentType, fileName, fileUrl, fileSize, mimeType }),
+    return portalApiClient.post<SellerDocument>('/api/seller/documents/upload', {
+      documentType,
+      fileName,
+      fileUrl,
+      fileSize,
+      mimeType,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to upload document');
-    }
-
-    return response.json();
   },
 
-  // Get documents
-  async getDocuments(token: string): Promise<SellerDocument[]> {
-    const response = await fetch(`${API_BASE}/api/seller/documents`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch documents');
-    }
-
-    return response.json();
+  async getDocuments(_token: string): Promise<SellerDocument[]> {
+    return portalApiClient.get<SellerDocument[]>('/api/seller/documents');
   },
 
-  // Get verification status
-  async getVerificationStatus(token: string): Promise<VerificationStatus> {
-    const response = await fetch(`${API_BASE}/api/seller/verification-status`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch verification status');
-    }
-
-    return response.json();
+  async getVerificationStatus(_token: string): Promise<VerificationStatus> {
+    return portalApiClient.get<VerificationStatus>('/api/seller/verification-status');
   },
 
-  // Check slug availability
-  async checkSlugAvailability(token: string, slug: string): Promise<{ available: boolean }> {
-    const response = await fetch(`${API_BASE}/api/seller/check-slug/${encodeURIComponent(slug)}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to check slug availability');
-    }
-
-    return response.json();
+  async checkSlugAvailability(_token: string, slug: string): Promise<{ available: boolean }> {
+    return portalApiClient.get<{ available: boolean }>(`/api/seller/check-slug/${encodeURIComponent(slug)}`);
   },
 };
 

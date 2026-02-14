@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { HeroSection } from './components/HeroSection';
 import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { DashboardPreview } from './components/DashboardPreview';
@@ -12,10 +12,7 @@ import { LandingLanguage, getTranslation } from './translations';
 import { DeveloperLoginModal } from '../auth/DeveloperLoginModal';
 import { PortalLoginModal } from '../auth/PortalLoginModal';
 import { PortalSignupModal } from '../auth/PortalSignupModal';
-import { List, X, SignIn, UserPlus, ArrowRight, ArrowLeft, Translate } from 'phosphor-react';
-
-// Section background types for navbar color switching
-type SectionTheme = 'light' | 'dark';
+import { List, X, ArrowRight, ArrowLeft, Translate } from 'phosphor-react';
 
 // Language context for landing page
 interface LandingContextType {
@@ -44,13 +41,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavig
   const [isPortalSignupOpen, setIsPortalSignupOpen] = useState(false);
   const [portalTab, setPortalTab] = useState<'buyer' | 'seller'>('buyer');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [navTheme, setNavTheme] = useState<SectionTheme>('light');
+  const [scrolled, setScrolled] = useState(false);
   const [lang, setLang] = useState<LandingLanguage>('en');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const isRTL = lang === 'ar';
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  // Translation helper
   const t = (key: string): string => {
     try {
       return getTranslation(key as Parameters<typeof getTranslation>[0], lang);
@@ -59,60 +56,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavig
     }
   };
 
-  // Refs for sections to observe
-  const heroRef = useRef<HTMLDivElement>(null);
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const miniCompanyRef = useRef<HTMLDivElement>(null);
-  const dashboardRef = useRef<HTMLDivElement>(null);
-  const demoRef = useRef<HTMLDivElement>(null);
-  const marketplaceRef = useRef<HTMLDivElement>(null);
-  const toolsRef = useRef<HTMLDivElement>(null);
-  const boardViewsRef = useRef<HTMLDivElement | null>(null);
-  const pricingRef = useRef<HTMLDivElement>(null);
-
-  // Callback to receive boardViews element from ToolsShowcase
-  const handleBoardViewsMount = useCallback((el: HTMLDivElement | null) => {
-    boardViewsRef.current = el;
-  }, []);
-
-  // Track which section is in view and update navbar theme
+  // Track scroll for navbar background
   useEffect(() => {
-    const sectionThemes: { ref: React.RefObject<HTMLDivElement>; theme: SectionTheme }[] = [
-      { ref: heroRef, theme: 'light' },
-      { ref: featuresRef, theme: 'dark' },
-      { ref: miniCompanyRef, theme: 'light' },
-      { ref: dashboardRef, theme: 'dark' },
-      { ref: demoRef, theme: 'light' },
-      { ref: marketplaceRef, theme: 'dark' },
-      { ref: toolsRef, theme: 'dark' },
-      { ref: boardViewsRef, theme: 'light' },
-      { ref: pricingRef, theme: 'dark' },
-    ];
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-    const checkNavbarTheme = () => {
-      const navbarHeight = 60;
-
-      for (let i = sectionThemes.length - 1; i >= 0; i--) {
-        const section = sectionThemes[i];
-        if (section.ref.current) {
-          const rect = section.ref.current.getBoundingClientRect();
-          if (rect.top <= navbarHeight) {
-            setNavTheme(section.theme);
-            return;
-          }
-        }
-      }
-      setNavTheme('light');
+    const handleScroll = () => {
+      setScrolled(container.scrollTop > 50);
     };
 
-    const scrollContainer = document.querySelector('.h-screen.overflow-y-auto');
-
-    checkNavbarTheme();
-
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', checkNavbarTheme, { passive: true });
-      return () => scrollContainer.removeEventListener('scroll', checkNavbarTheme);
-    }
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleSignIn = () => {
@@ -135,182 +89,127 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavig
     setLang((prev) => (prev === 'en' ? 'ar' : 'en'));
   };
 
-  const navLinks = [
-    { key: 'features', href: '#features' },
-    { key: 'demo', href: '#demo' },
-    { key: 'pricing', href: '#pricing' },
-  ];
-
   return (
     <LandingContext.Provider value={{ lang, t, isRTL }}>
       <div
+        ref={scrollContainerRef}
         dir={isRTL ? 'rtl' : 'ltr'}
-        className={`h-screen overflow-y-auto bg-white dark:bg-black text-black dark:text-white selection:bg-zinc-200 dark:selection:bg-zinc-800 scroll-smooth ${isRTL ? 'font-arabic' : 'font-sans'}`}
-        style={isRTL ? { fontFamily: "'Noto Kufi Arabic', system-ui, sans-serif" } : undefined}
+        className={`h-screen overflow-y-auto bg-white text-zinc-900 scroll-smooth ${isRTL ? 'font-arabic' : ''}`}
+        style={
+          isRTL
+            ? { fontFamily: "'Noto Kufi Arabic', system-ui, sans-serif" }
+            : { fontFamily: "'SF Pro Display', 'SF Pro Text', 'Figtree', system-ui, -apple-system, sans-serif" }
+        }
       >
-        {/* Top Announcement Bar */}
-        <div className="fixed top-0 left-0 right-0 z-[60] bg-black text-white py-2 px-4 text-center text-sm">
-          <span className="text-zinc-300">{isRTL ? 'نبض الآن متاح للجميع' : 'Nabd is now available for everyone'}</span>
-          <span className="mx-2 text-zinc-500">·</span>
-          <a href="#pricing" className="text-white hover:underline font-medium">
-            {isRTL ? 'اعرف المزيد' : 'Learn more'} →
-          </a>
-        </div>
-
-        {/* Navbar - responsive width with dynamic theme */}
+        {/* ── Apple-style Navbar ── */}
         <nav
-          className={`fixed top-10 sm:top-12 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] md:w-[70%] max-w-4xl z-50 rounded-full
-                        backdrop-blur-md shadow-lg transition-all duration-300
-                        ${
-                          navTheme === 'light'
-                            ? 'bg-white/90 border border-zinc-200/50 shadow-black/5 text-zinc-900'
-                            : 'bg-zinc-900/90 border border-zinc-700/50 shadow-black/20 text-white'
-                        }`}
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500
+            ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-zinc-200/60' : 'bg-transparent'}`}
         >
-          <div className="w-full mx-auto px-3 sm:px-5 h-11 sm:h-12 flex items-center justify-between">
+          <div className="max-w-[1024px] mx-auto px-6 h-12 flex items-center justify-between">
             {/* Logo */}
             <div
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <div
-                className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold transition-colors duration-300
-                                ${navTheme === 'light' ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}`}
-              >
+              <div className="w-7 h-7 bg-zinc-900 rounded-lg flex items-center justify-center text-white text-xs font-bold">
                 N
               </div>
-              <span className="text-sm sm:text-base font-semibold tracking-tight">{isRTL ? 'نبض' : 'nabd'}</span>
+              <span className="text-[15px] font-semibold tracking-tight text-zinc-900">{isRTL ? 'نبض' : 'nabd'}</span>
             </div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-4 lg:gap-5">
-              {navLinks.map((link) => (
+            {/* Desktop nav links */}
+            <div className="hidden md:flex items-center gap-7">
+              {[
+                { key: 'features', href: '#features' },
+                { key: 'demo', href: '#demo' },
+                { key: 'pricing', href: '#pricing' },
+              ].map((link) => (
                 <a
                   key={link.key}
                   href={link.href}
-                  className={`text-sm transition-colors ${
-                    navTheme === 'light' ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className="text-xs text-zinc-500 hover:text-zinc-900 transition-colors"
                 >
                   {t(link.key)}
                 </a>
               ))}
             </div>
 
-            {/* Auth Buttons & Language Toggle */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Language Toggle - Desktop */}
+            {/* Right side */}
+            <div className="flex items-center gap-4">
               <button
                 onClick={toggleLanguage}
-                className={`hidden sm:flex items-center gap-1.5 text-xs sm:text-sm px-2.5 py-1.5 rounded-full transition-colors ${
-                  navTheme === 'light'
-                    ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                }`}
+                className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-900 transition-colors"
               >
                 <Translate size={14} />
                 {lang === 'en' ? 'AR' : 'EN'}
               </button>
 
-              {/* Desktop Buttons */}
-              <div className="hidden sm:flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={handleSignIn}
-                  className={`text-xs sm:text-sm transition-colors ${
-                    navTheme === 'light' ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
+              <div className="hidden sm:flex items-center gap-4">
+                <button onClick={handleSignIn} className="text-xs text-zinc-500 hover:text-zinc-900 transition-colors">
                   {t('signIn')}
                 </button>
                 <button
                   onClick={handleSignUp}
-                  className={`h-7 sm:h-8 px-3 sm:px-4 rounded-full text-xs sm:text-sm
-                                    transition-colors duration-200 flex items-center gap-1.5
-                                    ${
-                                      navTheme === 'light'
-                                        ? 'bg-zinc-900 text-white hover:bg-zinc-700'
-                                        : 'bg-white text-zinc-900 hover:bg-zinc-200'
-                                    }`}
+                  className="h-7 px-4 rounded-full bg-zinc-900 text-white text-xs font-medium
+                    hover:bg-zinc-700 transition-all duration-200 flex items-center gap-1.5"
                 >
-                  {t('signUp')}
-                  <ArrowIcon size={12} weight="bold" />
+                  {t('getStarted')}
+                  <ArrowIcon size={11} weight="bold" />
                 </button>
               </div>
 
-              {/* Mobile Menu Button */}
+              {/* Mobile menu toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`sm:hidden w-8 h-8 flex items-center justify-center rounded-md transition-colors
-                                    ${navTheme === 'light' ? 'hover:bg-zinc-100' : 'hover:bg-zinc-800'}`}
+                className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 transition-colors"
               >
-                {isMobileMenuOpen ? <X size={20} /> : <List size={20} />}
+                {isMobileMenuOpen ? <X size={18} /> : <List size={18} />}
               </button>
             </div>
           </div>
         </nav>
 
-        {/* Mobile Menu Dropdown */}
+        {/* ── Mobile Menu ── */}
         {isMobileMenuOpen && (
           <>
             <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setIsMobileMenuOpen(false)} />
-            <div
-              className={`fixed top-24 left-1/2 -translate-x-1/2 w-[92%] z-50 sm:hidden rounded-2xl shadow-lg transition-colors
-                            ${
-                              navTheme === 'light'
-                                ? 'bg-white border border-zinc-200'
-                                : 'bg-zinc-900 border border-zinc-800'
-                            }`}
-            >
-              <div className="p-4 space-y-1">
-                {navLinks.map((link) => (
+            <div className="fixed top-12 left-0 right-0 z-50 sm:hidden bg-white/95 backdrop-blur-xl border-b border-zinc-200">
+              <div className="max-w-[1024px] mx-auto p-5 space-y-1">
+                {[
+                  { key: 'features', href: '#features' },
+                  { key: 'demo', href: '#demo' },
+                  { key: 'pricing', href: '#pricing' },
+                ].map((link) => (
                   <a
                     key={link.key}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`block py-2.5 px-3 rounded-lg text-base font-medium transition-colors
-                                            ${
-                                              navTheme === 'light'
-                                                ? 'text-zinc-700 hover:bg-zinc-100'
-                                                : 'text-zinc-300 hover:bg-zinc-800'
-                                            }`}
+                    className="block py-2.5 text-base font-medium text-zinc-700 hover:text-zinc-900"
                   >
                     {t(link.key)}
                   </a>
                 ))}
 
-                {/* Language Toggle - Mobile */}
                 <button
                   onClick={() => {
                     toggleLanguage();
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full py-2.5 px-3 rounded-lg text-base font-medium transition-colors flex items-center gap-2
-                                        ${
-                                          navTheme === 'light'
-                                            ? 'text-zinc-700 hover:bg-zinc-100'
-                                            : 'text-zinc-300 hover:bg-zinc-800'
-                                        }`}
+                  className="w-full py-2.5 text-base font-medium text-zinc-700 flex items-center gap-2"
                 >
                   <Translate size={18} />
                   {lang === 'en' ? 'العربية' : 'English'}
                 </button>
 
-                <div
-                  className={`pt-3 mt-2 border-t space-y-2 ${navTheme === 'light' ? 'border-zinc-200' : 'border-zinc-800'}`}
-                >
+                <div className="pt-4 mt-3 border-t border-zinc-100 space-y-2">
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       handleSignIn();
                     }}
-                    className={`w-full h-11 rounded-xl border font-medium text-sm transition-colors flex items-center justify-center gap-2
-                                            ${
-                                              navTheme === 'light'
-                                                ? 'border-zinc-200 text-zinc-900 hover:bg-zinc-50'
-                                                : 'border-zinc-700 text-white hover:bg-zinc-800'
-                                            }`}
+                    className="w-full h-11 rounded-xl border border-zinc-200 text-zinc-900 text-sm font-medium"
                   >
-                    <SignIn size={16} />
                     {t('signIn')}
                   </button>
                   <button
@@ -318,14 +217,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavig
                       setIsMobileMenuOpen(false);
                       handleSignUp();
                     }}
-                    className={`w-full h-11 rounded-xl font-medium text-sm transition-colors flex items-center justify-center gap-2
-                                            ${
-                                              navTheme === 'light'
-                                                ? 'bg-zinc-900 text-white hover:bg-zinc-800'
-                                                : 'bg-white text-zinc-900 hover:bg-zinc-100'
-                                            }`}
+                    className="w-full h-11 rounded-xl bg-zinc-900 text-white text-sm font-medium"
                   >
-                    <UserPlus size={16} />
                     {t('getStarted')}
                   </button>
                 </div>
@@ -334,220 +227,241 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavig
           </>
         )}
 
-        {/* Main Content */}
+        {/* ── Main Content ── */}
         <main>
-          <div ref={heroRef}>
-            <HeroSection onEnterSystem={handleSignUp} />
-          </div>
+          <HeroSection onEnterSystem={handleSignUp} />
 
-          <div id="features" ref={featuresRef}>
+          <div id="features">
             <FeaturesShowcase />
           </div>
 
-          <div id="mini-company" ref={miniCompanyRef}>
+          <div id="mini-company">
             <MiniCompanyShowcase onExplore={handleSignUp} />
           </div>
 
-          <div id="dashboard" ref={dashboardRef}>
+          <div id="dashboard">
             <DashboardPreview />
           </div>
 
-          <div id="demo" ref={demoRef}>
+          <div id="demo">
             <LiveDemoSection onTryDemo={handleSignUp} />
           </div>
 
-          <div id="marketplace" ref={marketplaceRef}>
+          <div id="marketplace">
             <MarketplaceShowcase onExplore={handleSignUp} />
           </div>
 
-          <div id="testimonials" ref={toolsRef}>
-            <ToolsShowcase onBoardViewsMount={handleBoardViewsMount} />
+          <div id="testimonials">
+            <ToolsShowcase />
           </div>
 
-          <div id="pricing" ref={pricingRef}>
+          <div id="pricing">
             <PricingSection onGetStarted={handleSignUp} />
           </div>
+
+          {/* ── Final CTA Section (Apple-style) ── */}
+          <section className="py-32 sm:py-40 bg-zinc-950 text-white">
+            <div className="max-w-[980px] mx-auto px-6 text-center">
+              <h2
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] mb-6"
+                style={{ whiteSpace: 'pre-line' }}
+              >
+                {t('ctaHeadline')}
+              </h2>
+              <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-lg mx-auto">{t('ctaSub')}</p>
+              <div className="flex items-center justify-center gap-4 flex-wrap">
+                <button
+                  onClick={handleSignUp}
+                  className="h-12 px-8 rounded-full bg-white text-zinc-900 text-sm font-semibold
+                    hover:bg-zinc-200 transition-all duration-200 flex items-center gap-2"
+                >
+                  {t('getStarted')}
+                  <ArrowIcon size={14} weight="bold" />
+                </button>
+                <a
+                  href="#demo"
+                  className="h-12 px-8 rounded-full border border-zinc-700 text-white text-sm font-semibold
+                    hover:border-zinc-500 transition-all duration-200 flex items-center gap-2"
+                >
+                  {t('watchTheFilm')}
+                </a>
+              </div>
+            </div>
+          </section>
         </main>
 
-        {/* Footer */}
-        <footer className="bg-black text-white py-20 border-t border-zinc-900">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-16">
-              {/* Brand Column */}
-              <div className="col-span-2">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black text-lg font-bold">
-                    N
-                  </div>
-                  <span className="text-xl font-bold tracking-tight">{isRTL ? 'نبض' : 'Nabd'}</span>
-                </div>
-                <p className="text-zinc-500 text-sm mb-6 max-w-xs">{t('footerDesc')}</p>
-                <div className="flex gap-4">
-                  {['X', 'GH', 'in', 'YT'].map((social) => (
-                    <a
-                      key={social}
-                      href="#"
-                      className="w-10 h-10 rounded-lg bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      {social}
-                    </a>
+        {/* ── Footer (Apple-style with all auth links) ── */}
+        <footer className="bg-zinc-950 border-t border-zinc-800/50">
+          <div className="max-w-[980px] mx-auto px-6 pt-16 pb-8">
+            {/* Footer Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 mb-16">
+              {/* Product */}
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">{t('product')}</h4>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: t('features'), href: '#features' },
+                    { label: isRTL ? 'الشركة المصغرة' : 'Mini Company', href: '#mini-company' },
+                    { label: t('pricing'), href: '#pricing' },
+                    { label: t('changelog'), href: '#' },
+                  ].map((item) => (
+                    <li key={item.label}>
+                      <a href={item.href} className="text-sm text-zinc-500 hover:text-white transition-colors">
+                        {item.label}
+                      </a>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
 
-              {/* Links Columns */}
+              {/* Resources */}
               <div>
-                <h4 className="font-semibold mb-4">{t('product')}</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">{t('resources')}</h4>
+                <ul className="space-y-2.5">
+                  {[t('documentation'), t('apiReference'), t('guides'), t('helpCenter')].map((label) => (
+                    <li key={label}>
+                      <a href="#" className="text-sm text-zinc-500 hover:text-white transition-colors">
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Company */}
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">{t('company')}</h4>
+                <ul className="space-y-2.5">
+                  {[t('about'), t('blog'), t('careers')].map((label) => (
+                    <li key={label}>
+                      <a href="#" className="text-sm text-zinc-500 hover:text-white transition-colors">
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Portal */}
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">{t('portal')}</h4>
+                <ul className="space-y-2.5">
                   <li>
-                    <a href="#features" className="hover:text-white transition-colors">
-                      {t('features')}
-                    </a>
+                    <button
+                      onClick={() => {
+                        setPortalTab('buyer');
+                        setIsPortalLoginOpen(true);
+                      }}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
+                    >
+                      {t('buyerSignIn')}
+                    </button>
                   </li>
                   <li>
-                    <a href="#mini-company" className="hover:text-white transition-colors">
-                      {isRTL ? 'الشركة المصغرة' : 'Mini Company'}
-                    </a>
+                    <button
+                      onClick={() => {
+                        setPortalTab('buyer');
+                        setIsPortalSignupOpen(true);
+                      }}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
+                    >
+                      {t('buyerSignUp')}
+                    </button>
                   </li>
                   <li>
-                    <a href="#pricing" className="hover:text-white transition-colors">
-                      {t('pricing')}
-                    </a>
+                    <button
+                      onClick={() => {
+                        setPortalTab('seller');
+                        setIsPortalLoginOpen(true);
+                      }}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
+                    >
+                      {t('sellerSignIn')}
+                    </button>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('changelog')}
-                    </a>
+                    <button
+                      onClick={() => {
+                        setPortalTab('seller');
+                        setIsPortalSignupOpen(true);
+                      }}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
+                    >
+                      {t('sellerSignUp')}
+                    </button>
                   </li>
                 </ul>
               </div>
 
+              {/* Account */}
               <div>
-                <h4 className="font-semibold mb-4">{t('resources')}</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">{t('account')}</h4>
+                <ul className="space-y-2.5">
                   <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('documentation')}
-                    </a>
+                    <button
+                      onClick={handleSignIn}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
+                    >
+                      {t('appSignIn')}
+                    </button>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('apiReference')}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('guides')}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('helpCenter')}
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-4">{t('company')}</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('about')}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('blog')}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {t('careers')}
-                    </a>
+                    <button
+                      onClick={handleSignUp}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
+                    >
+                      {t('signUp')}
+                    </button>
                   </li>
                   <li>
                     <button
                       onClick={() => setIsDevLoginOpen(true)}
-                      className="hover:text-white transition-colors text-start"
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
                     >
                       {t('developerAccess')}
                     </button>
                   </li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-4">{isRTL ? 'البوابة' : 'Portal'}</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
                   <li>
                     <button
-                      onClick={() => {
-                        setPortalTab('buyer');
-                        setIsPortalLoginOpen(true);
-                      }}
-                      className="hover:text-white transition-colors text-start"
+                      onClick={() => setIsDevLoginOpen(true)}
+                      className="text-sm text-zinc-500 hover:text-white transition-colors text-start"
                     >
-                      {isRTL ? 'تسجيل دخول المشتري' : 'Buyer Sign In'}
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        setPortalTab('buyer');
-                        setIsPortalSignupOpen(true);
-                      }}
-                      className="hover:text-white transition-colors text-start"
-                    >
-                      {isRTL ? 'إنشاء حساب مشتري' : 'Buyer Sign Up'}
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        setPortalTab('seller');
-                        setIsPortalLoginOpen(true);
-                      }}
-                      className="hover:text-white transition-colors text-start"
-                    >
-                      {isRTL ? 'تسجيل دخول البائع' : 'Seller Sign In'}
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        setPortalTab('seller');
-                        setIsPortalSignupOpen(true);
-                      }}
-                      className="hover:text-white transition-colors text-start"
-                    >
-                      {isRTL ? 'إنشاء حساب بائع' : 'Seller Sign Up'}
+                      {t('adminLogin')}
                     </button>
                   </li>
                 </ul>
               </div>
             </div>
 
-            {/* Bottom Bar */}
-            <div className="pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-zinc-600">
-                &copy; 2026 {isRTL ? 'نظام نبض.' : 'Nabd Chain System.'} {t('allRightsReserved')}
-              </p>
-              <div className="flex gap-6 text-sm text-zinc-600">
-                <a href="#" className="hover:text-white transition-colors">
-                  {t('privacyPolicy')}
-                </a>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t('termsOfService')}
-                </a>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t('cookiePolicy')}
-                </a>
+            {/* Divider */}
+            <div className="border-t border-zinc-800/60 pt-6">
+              {/* Bottom row */}
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center text-zinc-900 text-[10px] font-bold">
+                    N
+                  </div>
+                  <p className="text-xs text-zinc-600">
+                    &copy; 2026 {isRTL ? 'نظام نبض.' : 'Nabd Chain System.'} {t('allRightsReserved')}
+                  </p>
+                </div>
+                <div className="flex gap-5 text-xs text-zinc-600">
+                  <a href="#" className="hover:text-zinc-400 transition-colors">
+                    {t('privacyPolicy')}
+                  </a>
+                  <a href="#" className="hover:text-zinc-400 transition-colors">
+                    {t('termsOfService')}
+                  </a>
+                  <a href="#" className="hover:text-zinc-400 transition-colors">
+                    {t('cookiePolicy')}
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </footer>
 
+        {/* ── Modals ── */}
         <DeveloperLoginModal isOpen={isDevLoginOpen} onClose={() => setIsDevLoginOpen(false)} />
         <PortalLoginModal
           isOpen={isPortalLoginOpen}

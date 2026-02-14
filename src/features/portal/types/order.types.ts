@@ -14,31 +14,31 @@ import { Item } from './item.types';
  */
 export type OrderStatus =
   | 'pending_confirmation' // Initial state - awaiting seller confirmation
-  | 'confirmed'            // Seller confirmed the order
-  | 'in_progress'          // Order is being prepared/processed
-  | 'shipped'              // Order has been shipped
-  | 'delivered'            // Order delivered to buyer
-  | 'cancelled'            // Terminal - Order cancelled
-  | 'failed'               // Terminal - Order failed
-  | 'refunded';            // Terminal - Order refunded
+  | 'confirmed' // Seller confirmed the order
+  | 'in_progress' // Order is being prepared/processed
+  | 'shipped' // Order has been shipped
+  | 'delivered' // Order delivered to buyer
+  | 'cancelled' // Terminal - Order cancelled
+  | 'failed' // Terminal - Order failed
+  | 'refunded'; // Terminal - Order refunded
 
 /**
  * Payment Status - Decoupled but state-synced
  */
 export type PaymentStatus =
   | 'unpaid'
+  | 'partial'
+  | 'pending_conf'
+  | 'unpaid_credit'
   | 'authorized'
   | 'paid'
+  | 'paid_cash'
   | 'refunded';
 
 /**
  * Fulfillment Status - Physical delivery stages
  */
-export type FulfillmentStatus =
-  | 'not_started'
-  | 'packing'
-  | 'out_for_delivery'
-  | 'delivered';
+export type FulfillmentStatus = 'not_started' | 'packing' | 'out_for_delivery' | 'delivered';
 
 // =============================================================================
 // Order Source Types
@@ -109,6 +109,11 @@ export interface Order {
 
   // Audit Trail (append-only)
   auditLog: OrderAuditEntry[];
+
+  // Invoice
+  invoiceId?: string | null;
+  invoiceStatus?: string | null;
+  invoiceNumber?: string | null;
 
   // Related Item (optional - populated on fetch)
   item?: Item;
@@ -202,12 +207,7 @@ export interface OrderFilters {
   buyerId?: string;
 }
 
-export type OrderSortOption =
-  | 'newest'
-  | 'oldest'
-  | 'total_high'
-  | 'total_low'
-  | 'status';
+export type OrderSortOption = 'newest' | 'oldest' | 'total_high' | 'total_low' | 'status';
 
 // =============================================================================
 // Business Logic Helpers
@@ -238,7 +238,7 @@ export function canTransitionTo(currentStatus: OrderStatus, targetStatus: OrderS
  * Check if order can be cancelled
  */
 export function canCancelOrder(order: Pick<Order, 'status'>): boolean {
-  return ['pending_confirmation', 'confirmed', 'in_progress'].includes(order.status);
+  return ['pending_confirmation', 'confirmed', 'in_progress', 'processing'].includes(order.status);
 }
 
 /**
@@ -252,7 +252,7 @@ export function canConfirmOrder(order: Pick<Order, 'status'>): boolean {
  * Check if order can be shipped
  */
 export function canShipOrder(order: Pick<Order, 'status'>): boolean {
-  return order.status === 'confirmed' || order.status === 'in_progress';
+  return order.status === 'confirmed' || order.status === 'in_progress' || (order.status as string) === 'processing';
 }
 
 /**
@@ -272,55 +272,64 @@ export function isTerminalStatus(status: OrderStatus): boolean {
 /**
  * Get status display configuration
  */
-export function getOrderStatusConfig(status: OrderStatus): {
+export function getOrderStatusConfig(status: string): {
   label: string;
   labelKey: string;
   color: 'warning' | 'info' | 'primary' | 'success' | 'error' | 'muted';
 } {
-  const configs: Record<OrderStatus, ReturnType<typeof getOrderStatusConfig>> = {
+  const configs: Record<string, ReturnType<typeof getOrderStatusConfig>> = {
     pending_confirmation: { label: 'Pending', labelKey: 'seller.orders.pendingConfirmation', color: 'warning' },
     confirmed: { label: 'Confirmed', labelKey: 'seller.orders.confirmed', color: 'info' },
     in_progress: { label: 'In Progress', labelKey: 'seller.orders.inProgress', color: 'primary' },
+    processing: { label: 'Processing', labelKey: 'seller.orders.inProgress', color: 'primary' },
     shipped: { label: 'Shipped', labelKey: 'seller.orders.shipped', color: 'info' },
     delivered: { label: 'Delivered', labelKey: 'seller.orders.delivered', color: 'success' },
+    closed: { label: 'Closed', labelKey: 'seller.orders.delivered', color: 'success' },
     cancelled: { label: 'Cancelled', labelKey: 'seller.orders.cancelled', color: 'error' },
     failed: { label: 'Failed', labelKey: 'seller.orders.failed', color: 'error' },
     refunded: { label: 'Refunded', labelKey: 'seller.orders.refunded', color: 'muted' },
   };
-  return configs[status];
+  return configs[status] || { label: status, labelKey: status, color: 'muted' };
 }
 
 /**
  * Get payment status display configuration
  */
-export function getPaymentStatusConfig(status: PaymentStatus): {
+export function getPaymentStatusConfig(status: string): {
   label: string;
   labelKey: string;
   color: 'warning' | 'info' | 'success' | 'error';
 } {
-  const configs: Record<PaymentStatus, ReturnType<typeof getPaymentStatusConfig>> = {
+  const configs: Record<string, ReturnType<typeof getPaymentStatusConfig>> = {
     unpaid: { label: 'Unpaid', labelKey: 'seller.orders.unpaid', color: 'warning' },
+    partial: { label: 'Partially Paid', labelKey: 'seller.orders.partial', color: 'warning' },
     authorized: { label: 'Authorized', labelKey: 'seller.orders.authorized', color: 'info' },
+    pending_conf: { label: 'Pending Confirmation', labelKey: 'seller.orders.pendingConf', color: 'info' },
+    unpaid_credit: { label: 'Credit (Unpaid)', labelKey: 'seller.orders.unpaidCredit', color: 'warning' },
     paid: { label: 'Paid', labelKey: 'seller.orders.paid', color: 'success' },
+    paid_cash: { label: 'Paid (Cash)', labelKey: 'seller.orders.paidCash', color: 'success' },
     refunded: { label: 'Refunded', labelKey: 'seller.orders.paymentRefunded', color: 'error' },
   };
-  return configs[status];
+  return configs[status] || { label: status, labelKey: status, color: 'warning' };
 }
 
 /**
  * Get fulfillment status display configuration
  */
-export function getFulfillmentStatusConfig(status: FulfillmentStatus): {
+export function getFulfillmentStatusConfig(status: string): {
   label: string;
   labelKey: string;
 } {
-  const configs: Record<FulfillmentStatus, ReturnType<typeof getFulfillmentStatusConfig>> = {
+  const configs: Record<string, ReturnType<typeof getFulfillmentStatusConfig>> = {
     not_started: { label: 'Not Started', labelKey: 'seller.orders.notStarted' },
+    picking: { label: 'Picking', labelKey: 'seller.orders.picking' },
     packing: { label: 'Packing', labelKey: 'seller.orders.packing' },
+    ready_to_ship: { label: 'Ready to Ship', labelKey: 'seller.orders.readyToShip' },
+    shipped: { label: 'Shipped', labelKey: 'seller.orders.shipped' },
     out_for_delivery: { label: 'Out for Delivery', labelKey: 'seller.orders.outForDelivery' },
     delivered: { label: 'Delivered', labelKey: 'seller.orders.fulfillmentDelivered' },
   };
-  return configs[status];
+  return configs[status] || { label: status, labelKey: status };
 }
 
 // =============================================================================
@@ -413,7 +422,7 @@ export interface OrderTimeline {
 export interface OrderWithHealth extends Order {
   // Health indicators
   healthStatus: OrderHealthStatus;
-  healthScore: number;  // 0-100, higher is healthier
+  healthScore: number; // 0-100, higher is healthier
   healthLastChecked?: string;
 
   // Exception data
@@ -463,8 +472,8 @@ export interface OrderHealthRules {
   confirmationSlaHours: number;
   shippingSlaDays: number;
   deliverySlaDays: number;
-  atRiskThreshold: number;   // percentage
-  delayedThreshold: number;  // percentage
+  atRiskThreshold: number; // percentage
+  delayedThreshold: number; // percentage
 }
 
 /**

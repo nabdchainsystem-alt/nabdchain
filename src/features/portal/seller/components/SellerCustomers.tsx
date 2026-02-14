@@ -332,7 +332,7 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ _onViewOrder }
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const data = await customerService.getSellerCustomers(token, {
+      const data = await customerService.getSellerCustomers({
         search: searchQuery || undefined,
       });
       setCustomers(data);
@@ -358,7 +358,7 @@ export const SellerCustomers: React.FC<SellerCustomersProps> = ({ _onViewOrder }
         const token = await getToken();
         if (!token) throw new Error('Not authenticated');
 
-        const details = await customerService.getCustomerDetails(token, customerId);
+        const details = await customerService.getCustomerDetails(customerId);
         setCustomerDetails(details);
       } catch (err) {
         console.error('Failed to load customer details:', err);

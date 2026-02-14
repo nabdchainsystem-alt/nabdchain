@@ -2,12 +2,12 @@
 // Order Tracking Stepper - Inline horizontal progress indicator
 // =============================================================================
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { XCircle } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import type { Order, OrderRole, StepperStep } from './orders.types';
 import { STEPPER_STEPS } from './orders.types';
-import { formatTimestamp, calculateSLARemaining } from './orders.utils';
+import { calculateSLARemaining } from './orders.utils';
 
 interface OrderTrackingStepperProps {
   order: Order;
@@ -16,14 +16,100 @@ interface OrderTrackingStepperProps {
 
 type StepState = 'completed' | 'active' | 'pending';
 
-const getStepState = (step: StepperStep, orderStatus: string): StepState => {
-  if (step.completedStatuses.includes(orderStatus)) return 'completed';
-  if (step.activeStatuses.includes(orderStatus)) return 'active';
+const getStepState = (step: StepperStep, order: Order): StepState => {
+  if (step.isCompleted?.(order)) return 'completed';
+  if (step.isActive?.(order)) return 'active';
+  if (step.completedStatuses.includes(order.status)) return 'completed';
+  if (step.activeStatuses.includes(order.status)) return 'active';
   return 'pending';
+};
+
+const getStepTimestamp = (step: StepperStep, order: Order): string | null => {
+  if (!step.timestampKey) return null;
+  const val = order[step.timestampKey];
+  if (!val || typeof val !== 'string') return null;
+  return new Date(val).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+// Tooltip component for step hover
+const StepTooltip: React.FC<{
+  step: StepperStep;
+  state: StepState;
+  order: Order;
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+  styles: ReturnType<typeof usePortal>['styles'];
+}> = ({ step, state, order, anchorRef, styles }) => {
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (anchorRef.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.top - 8,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  }, [anchorRef]);
+
+  if (!position) return null;
+
+  const timestamp = getStepTimestamp(step, order);
+  const stateLabel = state === 'completed' ? 'Completed' : state === 'active' ? 'In Progress' : 'Pending';
+  const stateColor = state === 'completed' ? styles.success : state === 'active' ? styles.info : styles.textMuted;
+
+  return (
+    <div
+      ref={tooltipRef}
+      className="fixed z-[9999] pointer-events-none"
+      style={{
+        top: position.top,
+        left: position.left,
+        transform: 'translate(-50%, -100%)',
+      }}
+    >
+      <div
+        className="px-3 py-2 rounded-lg shadow-lg border text-center min-w-[100px]"
+        style={{
+          backgroundColor: styles.bgCard,
+          borderColor: styles.border,
+          boxShadow: styles.isDark ? '0 4px 16px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.12)',
+        }}
+      >
+        <p className="text-[11px] font-semibold" style={{ color: styles.textPrimary }}>
+          {step.label}
+        </p>
+        <p className="text-[9px] font-medium mt-0.5" style={{ color: stateColor }}>
+          {stateLabel}
+        </p>
+        {timestamp && (
+          <p className="text-[9px] mt-0.5" style={{ color: styles.textMuted }}>
+            {timestamp}
+          </p>
+        )}
+      </div>
+      {/* Arrow */}
+      <div
+        className="w-0 h-0 mx-auto"
+        style={{
+          borderLeft: '5px solid transparent',
+          borderRight: '5px solid transparent',
+          borderTop: `5px solid ${styles.border}`,
+        }}
+      />
+    </div>
+  );
 };
 
 export const OrderTrackingStepper: React.FC<OrderTrackingStepperProps> = ({ order, role }) => {
   const { styles } = usePortal();
+  const [hoveredStep, setHoveredStep] = useState<string | null>(null);
+  const dotRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Terminal states: show cancelled/failed badge instead of stepper
   if (['cancelled', 'failed', 'refunded'].includes(order.status)) {
@@ -46,8 +132,7 @@ export const OrderTrackingStepper: React.FC<OrderTrackingStepperProps> = ({ orde
   return (
     <div className="flex items-center" style={{ minWidth: 140 }}>
       {STEPPER_STEPS.map((step, index) => {
-        const state = getStepState(step, order.status);
-        const timestamp = step.timestampKey ? (order[step.timestampKey] as string | undefined) : undefined;
+        const state = getStepState(step, order);
         const isLast = index === STEPPER_STEPS.length - 1;
 
         // Colors per state
@@ -68,12 +153,20 @@ export const OrderTrackingStepper: React.FC<OrderTrackingStepperProps> = ({ orde
         return (
           <React.Fragment key={step.key}>
             {/* Step dot */}
-            <div className="relative group flex-shrink-0">
+            <div
+              className="flex-shrink-0 relative cursor-pointer"
+              ref={(el) => {
+                dotRefs.current[step.key] = el;
+              }}
+              onMouseEnter={() => setHoveredStep(step.key)}
+              onMouseLeave={() => setHoveredStep(null)}
+            >
               <div
                 className="flex items-center justify-center transition-all"
                 style={{
                   width: state === 'active' ? 12 : 8,
                   height: state === 'active' ? 12 : 8,
+                  animation: state === 'active' ? 'softPulse 2s ease-in-out infinite' : undefined,
                   borderRadius: '50%',
                   backgroundColor: state === 'pending' ? 'transparent' : dotBg,
                   border:
@@ -98,48 +191,15 @@ export const OrderTrackingStepper: React.FC<OrderTrackingStepperProps> = ({ orde
                   </svg>
                 )}
               </div>
-
-              {/* Tooltip on hover */}
-              <div
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-center whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg"
-                style={{
-                  backgroundColor: styles.bgCard,
-                  border: `1px solid ${styles.border}`,
-                }}
-              >
-                <p className="text-[10px] font-semibold" style={{ color: styles.textPrimary }}>
-                  {step.label}
-                </p>
-                {timestamp && (
-                  <p className="text-[9px] mt-0.5" style={{ color: styles.textMuted }}>
-                    {formatTimestamp(timestamp)}
-                  </p>
-                )}
-                {state === 'active' && role === 'seller' && sla && (
-                  <p
-                    className="text-[9px] mt-0.5 font-medium"
-                    style={{
-                      color:
-                        sla.urgency === 'critical'
-                          ? styles.error
-                          : sla.urgency === 'warning'
-                            ? styles.warning
-                            : styles.success,
-                    }}
-                  >
-                    {sla.timeText}
-                  </p>
-                )}
-                {/* Tooltip arrow */}
-                <div
-                  className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0"
-                  style={{
-                    borderLeft: '4px solid transparent',
-                    borderRight: '4px solid transparent',
-                    borderTop: `4px solid ${styles.border}`,
-                  }}
+              {hoveredStep === step.key && dotRefs.current[step.key] && (
+                <StepTooltip
+                  step={step}
+                  state={state}
+                  order={order}
+                  anchorRef={{ current: dotRefs.current[step.key] }}
+                  styles={styles}
                 />
-              </div>
+              )}
             </div>
 
             {/* Connector line */}

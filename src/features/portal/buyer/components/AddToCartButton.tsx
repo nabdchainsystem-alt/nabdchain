@@ -34,6 +34,7 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
 
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [quantity, setQuantity] = useState(minOrderQty);
 
   const inCart = isItemInCart(itemId);
@@ -51,8 +52,10 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       await addToCart(itemId, showQuantity ? quantity : 1);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
-    } catch (_error) {
-      // Error handled by context
+    } catch (error) {
+      console.error('[AddToCart] Failed:', error);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
     } finally {
       setIsAdding(false);
     }
@@ -210,8 +213,8 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         isRtl ? 'flex-row-reverse' : ''
       } ${className}`}
       style={{
-        backgroundColor: styles.isDark ? '#fff' : '#000',
-        color: styles.isDark ? '#000' : '#fff',
+        backgroundColor: showError ? '#ef4444' : styles.isDark ? '#fff' : '#000',
+        color: showError ? '#fff' : styles.isDark ? '#000' : '#fff',
       }}
     >
       {isAdding ? (
@@ -221,7 +224,9 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       ) : (
         <ShoppingCart size={16} weight="bold" />
       )}
-      <span className="text-sm">{isAdding ? 'Adding...' : showSuccess ? 'Added!' : 'Add to Cart'}</span>
+      <span className="text-sm">
+        {isAdding ? 'Adding...' : showError ? 'Failed!' : showSuccess ? 'Added!' : 'Add to Cart'}
+      </span>
     </button>
   );
 };

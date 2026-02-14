@@ -4,7 +4,7 @@
 // Handles quote acceptance → order creation and order management
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import { portalApiLogger } from '../../../utils/logger';
 import {
   MarketplaceOrder,
@@ -24,369 +24,159 @@ import {
 } from '../types/item.types';
 
 // =============================================================================
+// Helper: build query string from filters
+// =============================================================================
+
+function buildOrderQS(filters: OrderFilters): string {
+  const p = new URLSearchParams();
+  if (filters.status) p.append('status', filters.status);
+  if (filters.source) p.append('source', filters.source);
+  if (filters.page) p.append('page', filters.page.toString());
+  if (filters.limit) p.append('limit', filters.limit.toString());
+  const qs = p.toString();
+  return qs ? `?${qs}` : '';
+}
+
+// =============================================================================
 // Marketplace Order Service
 // =============================================================================
 
 export const marketplaceOrderService = {
   /**
    * Accept a quote and create an order (Buyer action)
-   * Entry conditions: Quote.status = SENT, Quote.validUntil > now, RFQ.status = QUOTED
-   * Note: This endpoint requires an idempotency key to prevent duplicate orders
    */
-  async acceptQuote(token: string, quoteId: string, data: AcceptQuoteData = {}): Promise<MarketplaceOrder> {
-    // Generate idempotency key for this quote acceptance (prevents duplicate orders)
+  async acceptQuote(quoteId: string, data: AcceptQuoteData = {}): Promise<MarketplaceOrder> {
     const idempotencyKey = `accept-quote-${quoteId}-${Date.now()}`;
-    const url = `${API_URL}/items/quotes/${quoteId}/accept`;
 
     if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[MarketplaceOrder] POST ${url}`, { quoteId, data });
+      portalApiLogger.debug(`[MarketplaceOrder] acceptQuote`, { quoteId, data });
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        'Idempotency-Key': idempotencyKey,
-      },
-      body: JSON.stringify(data),
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/quotes/${quoteId}/accept`, data, {
+      headers: { 'Idempotency-Key': idempotencyKey },
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (import.meta.env.DEV) {
-        console.error(`[MarketplaceOrder] Accept quote failed:`, response.status, error);
-      }
-      throw new Error(error.error || 'Failed to accept quote');
-    }
-
-    const order = await response.json();
-    if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[MarketplaceOrder] Order created:`, order);
-    }
-    return order;
   },
 
   /**
    * Reject a quote (Buyer action)
    */
-  async rejectQuote(token: string, quoteId: string, data: RejectQuoteData): Promise<void> {
-    const url = `${API_URL}/items/quotes/${quoteId}/reject`;
-
-    if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[MarketplaceOrder] POST ${url}`, { quoteId, data });
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (import.meta.env.DEV) {
-        console.error(`[MarketplaceOrder] Reject quote failed:`, response.status, error);
-      }
-      throw new Error(error.error || 'Failed to reject quote');
-    }
-
-    if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[MarketplaceOrder] Quote rejected successfully`);
-    }
+  async rejectQuote(quoteId: string, data: RejectQuoteData): Promise<void> {
+    await portalApiClient.post(`/api/items/quotes/${quoteId}/reject`, data);
   },
 
   /**
    * Get orders for the buyer
    */
-  async getBuyerOrders(token: string, filters: OrderFilters = {}): Promise<OrdersResponse> {
-    const url = new URL(`${API_URL}/items/orders/buyer`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.source) url.searchParams.append('source', filters.source);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch orders');
-    }
-
-    return response.json();
+  async getBuyerOrders(filters: OrderFilters = {}): Promise<OrdersResponse> {
+    return portalApiClient.get<OrdersResponse>(`/api/items/orders/buyer${buildOrderQS(filters)}`);
   },
 
   /**
    * Get orders for the seller
    */
-  async getSellerOrders(token: string, filters: OrderFilters = {}): Promise<OrdersResponse> {
-    const url = new URL(`${API_URL}/items/orders/seller`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.source) url.searchParams.append('source', filters.source);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch orders');
-    }
-
-    return response.json();
+  async getSellerOrders(filters: OrderFilters = {}): Promise<OrdersResponse> {
+    return portalApiClient.get<OrdersResponse>(`/api/items/orders/seller${buildOrderQS(filters)}`);
   },
 
   /**
    * Get a specific order by ID
    */
-  async getOrder(token: string, orderId: string): Promise<MarketplaceOrder | null> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getOrder(orderId: string): Promise<MarketplaceOrder | null> {
+    try {
+      return await portalApiClient.get<MarketplaceOrder>(`/api/items/orders/${orderId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch order');
-    }
-
-    return response.json();
   },
 
   /**
    * Get audit history for an order
    */
-  async getOrderHistory(token: string, orderId: string): Promise<OrderAuditEvent[]> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getOrderHistory(orderId: string): Promise<OrderAuditEvent[]> {
+    try {
+      return await portalApiClient.get<OrderAuditEvent[]>(`/api/items/orders/${orderId}/history`);
+    } catch {
       return [];
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch order history');
-    }
-
-    return response.json();
   },
 
   /**
    * Seller confirms an order (pending_confirmation -> confirmed)
    */
-  async confirmOrder(token: string, orderId: string): Promise<MarketplaceOrder | null> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/confirm`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 404) {
+  async confirmOrder(orderId: string): Promise<MarketplaceOrder | null> {
+    try {
+      return await portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/confirm`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to confirm order');
-    }
-
-    return response.json();
   },
 
   /**
    * Get order statistics for buyer
    */
-  async getBuyerOrderStats(token: string): Promise<OrderStats> {
-    const response = await fetch(`${API_URL}/items/orders/stats/buyer`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch order statistics');
-    }
-
-    return response.json();
+  async getBuyerOrderStats(): Promise<OrderStats> {
+    return portalApiClient.get<OrderStats>(`/api/items/orders/stats/buyer`);
   },
 
   /**
    * Get order statistics for seller
    */
-  async getSellerOrderStats(token: string): Promise<OrderStats> {
-    const response = await fetch(`${API_URL}/items/orders/stats/seller`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch order statistics');
-    }
-
-    return response.json();
+  async getSellerOrderStats(): Promise<OrderStats> {
+    return portalApiClient.get<OrderStats>(`/api/items/orders/stats/seller`);
   },
 
   // ==========================================================================
   // Stage 5: Order Fulfillment Methods
   // ==========================================================================
 
-  /**
-   * Seller rejects an order (pending_confirmation -> cancelled)
-   */
-  async rejectOrder(token: string, orderId: string, data: RejectOrderData): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/reject`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to reject order');
-    }
-
-    return response.json();
+  async rejectOrder(orderId: string, data: RejectOrderData): Promise<MarketplaceOrder> {
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/reject`, data);
   },
 
-  /**
-   * Seller starts processing an order (confirmed -> processing)
-   */
-  async startProcessing(token: string, orderId: string, data: StartProcessingData = {}): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/process`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to start processing');
-    }
-
-    return response.json();
+  async startProcessing(orderId: string, data: StartProcessingData = {}): Promise<MarketplaceOrder> {
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/process`, data);
   },
 
-  /**
-   * Seller ships an order (processing -> shipped)
-   */
-  async shipOrder(token: string, orderId: string, data: ShipOrderData): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/ship`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to ship order');
-    }
-
-    return response.json();
+  async shipOrder(orderId: string, data: ShipOrderData): Promise<MarketplaceOrder> {
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/ship`, data);
   },
 
-  /**
-   * Buyer confirms delivery (shipped -> delivered)
-   */
-  async markDelivered(token: string, orderId: string, data: MarkDeliveredData = {}): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/deliver`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to confirm delivery');
-    }
-
-    return response.json();
+  async markDelivered(orderId: string, data: MarkDeliveredData = {}): Promise<MarketplaceOrder> {
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/deliver`, data);
   },
 
-  /**
-   * Close an order (delivered -> closed)
-   */
-  async closeOrder(token: string, orderId: string): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/close`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to close order');
-    }
-
-    return response.json();
+  async closeOrder(orderId: string): Promise<MarketplaceOrder> {
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/close`);
   },
 
-  /**
-   * Cancel an order (before shipping)
-   */
-  async cancelOrder(token: string, orderId: string, data: CancelOrderData): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/cancel`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to cancel order');
-    }
-
-    return response.json();
+  async cancelOrder(orderId: string, data: CancelOrderData): Promise<MarketplaceOrder> {
+    return portalApiClient.post<MarketplaceOrder>(`/api/items/orders/${orderId}/cancel`, data);
   },
 
-  /**
-   * Update tracking information
-   */
-  async updateTracking(token: string, orderId: string, data: UpdateTrackingData): Promise<MarketplaceOrder> {
-    const response = await fetch(`${API_URL}/items/orders/${orderId}/tracking`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
+  async updateTracking(orderId: string, data: UpdateTrackingData): Promise<MarketplaceOrder> {
+    return portalApiClient.patch<MarketplaceOrder>(`/api/items/orders/${orderId}/tracking`, data);
+  },
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update tracking');
-    }
+  // =========================================================================
+  // Tracking Stats
+  // =========================================================================
 
-    return response.json();
+  async getSellerTrackingStats(): Promise<{
+    inTransit: number;
+    outForDelivery: number;
+    deliveredToday: number;
+    delayed: number;
+  }> {
+    return portalApiClient.get(`/api/orders/seller/tracking-stats`);
+  },
+
+  async getBuyerTrackingStats(): Promise<{
+    inTransit: number;
+    outForDelivery: number;
+    deliveredToday: number;
+    delayed: number;
+  }> {
+    return portalApiClient.get(`/api/orders/buyer/tracking-stats`);
   },
 };
 

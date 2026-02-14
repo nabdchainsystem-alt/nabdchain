@@ -2,7 +2,7 @@
 // Dashboard Service - Frontend API Client for Dashboard Analytics
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -31,31 +31,15 @@ export const dashboardService = {
   /**
    * Get seller dashboard summary
    */
-  async getSellerSummary(token: string): Promise<DashboardSummary> {
-    const response = await fetch(`${API_URL}/dashboard/seller/summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dashboard summary');
-    }
-
-    return response.json();
+  async getSellerSummary(): Promise<DashboardSummary> {
+    return portalApiClient.get<DashboardSummary>('/api/dashboard/seller/summary');
   },
 
   /**
    * Get buyer dashboard summary
    */
-  async getBuyerSummary(token: string): Promise<DashboardSummary> {
-    const response = await fetch(`${API_URL}/dashboard/buyer/summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dashboard summary');
-    }
-
-    return response.json();
+  async getBuyerSummary(): Promise<DashboardSummary> {
+    return portalApiClient.get<DashboardSummary>('/api/dashboard/buyer/summary');
   },
 };
 

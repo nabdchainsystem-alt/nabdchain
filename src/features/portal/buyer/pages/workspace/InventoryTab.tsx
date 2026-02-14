@@ -37,7 +37,6 @@ import {
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
 import { Select } from '../../../components';
-import { useAuth } from '../../../../../auth-adapter';
 import {
   buyerWorkspaceService,
   InventoryItemWithForecast,
@@ -308,7 +307,6 @@ const ExpandedRowContent: React.FC<{
 
 export const InventoryTab: React.FC<InventoryTabProps> = () => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   const [inventory, setInventory] = useState<InventoryItemWithForecast[]>([]);
@@ -325,15 +323,13 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
   const fetchInventory = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = await getToken();
-      if (!token) return;
 
       const [data, alertsData] = await Promise.all([
-        buyerWorkspaceService.getInventoryWithForecast(token, {
+        buyerWorkspaceService.getInventoryWithForecast({
           status: statusFilter || undefined,
           search: globalFilter || undefined,
         }),
-        buyerWorkspaceService.getInventoryAlerts(token),
+        buyerWorkspaceService.getInventoryAlerts(),
       ]);
 
       setInventory(data);
@@ -343,7 +339,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, statusFilter, globalFilter]);
+  }, [statusFilter, globalFilter]);
 
   useEffect(() => {
     fetchInventory();
@@ -383,10 +379,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = () => {
 
   const handleSave = async (id: string) => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await buyerWorkspaceService.updateInventoryItem(token, id, { quantity: editingQty });
+      await buyerWorkspaceService.updateInventoryItem(id, { quantity: editingQty });
       setEditingId(null);
       fetchInventory();
     } catch (err) {

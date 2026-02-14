@@ -1,20 +1,13 @@
 import { useEffect, useRef, RefObject } from 'react';
 
 /**
- * Hook to detect clicks outside of a referenced element
- * Used to close dropdowns, menus, panels when clicking outside
- *
- * @param handler - Callback function to run when click outside is detected
- * @param enabled - Optional boolean to enable/disable the listener (default: true)
- * @returns RefObject to attach to the target element
- *
- * @example
- * const dropdownRef = useClickOutside(() => setIsOpen(false), isOpen);
- * return <div ref={dropdownRef}>...</div>
+ * Hook to detect clicks outside of a referenced element.
+ * Unlike the root useClickOutside (which takes a ref), this version
+ * creates and returns its own ref — more convenient for portal components.
  */
 export function useClickOutside<T extends HTMLElement = HTMLElement>(
   handler: () => void,
-  enabled: boolean = true
+  enabled: boolean = true,
 ): RefObject<T> {
   const ref = useRef<T>(null);
 
@@ -23,14 +16,11 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
-
-      // Ignore clicks on the element itself or its children
       if (ref.current && !ref.current.contains(target)) {
         handler();
       }
     };
 
-    // Use mousedown for faster response (before click completes)
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
 
@@ -45,10 +35,6 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
 
 /**
  * Hook to detect escape key press
- * Used to close dropdowns, menus, panels with keyboard
- *
- * @param handler - Callback function to run when Escape is pressed
- * @param enabled - Optional boolean to enable/disable the listener (default: true)
  */
 export function useEscapeKey(handler: () => void, enabled: boolean = true): void {
   useEffect(() => {
@@ -61,7 +47,6 @@ export function useEscapeKey(handler: () => void, enabled: boolean = true): void
     };
 
     document.addEventListener('keydown', handleEscape);
-
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
@@ -70,15 +55,10 @@ export function useEscapeKey(handler: () => void, enabled: boolean = true): void
 
 /**
  * Combined hook for both click outside and escape key
- * Most common pattern for dropdowns and modals
- *
- * @param handler - Callback function to close the dropdown/modal
- * @param enabled - Whether the dropdown/modal is open
- * @returns RefObject to attach to the dropdown container
  */
 export function useDropdownClose<T extends HTMLElement = HTMLElement>(
   handler: () => void,
-  enabled: boolean = true
+  enabled: boolean = true,
 ): RefObject<T> {
   useEscapeKey(handler, enabled);
   return useClickOutside<T>(handler, enabled);

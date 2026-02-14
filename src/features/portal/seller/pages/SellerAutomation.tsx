@@ -143,8 +143,8 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ _onNavigate 
       if (!token) return;
 
       const [rulesRes, templatesRes] = await Promise.all([
-        automationService.getRules(token, {}),
-        automationService.getTemplates(token),
+        automationService.getRules({}),
+        automationService.getTemplates(),
       ]);
 
       setRules(rulesRes.rules);
@@ -166,7 +166,7 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ _onNavigate 
       const token = await getToken();
       if (!token) return;
 
-      await automationService.toggleRule(token, rule.id, !rule.isEnabled);
+      await automationService.toggleRule(rule.id, !rule.isEnabled);
       fetchData();
     } catch (error) {
       console.error('Failed to toggle rule:', error);
@@ -181,7 +181,7 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ _onNavigate 
       const token = await getToken();
       if (!token) return;
 
-      await automationService.deleteRule(token, ruleId);
+      await automationService.deleteRule(ruleId);
       fetchData();
     } catch (error) {
       console.error('Failed to delete rule:', error);
@@ -194,7 +194,7 @@ export const SellerAutomation: React.FC<SellerAutomationProps> = ({ _onNavigate 
       const token = await getToken();
       if (!token) return;
 
-      await automationService.createFromTemplate(token, templateId);
+      await automationService.createFromTemplate(templateId);
       setShowTemplates(false);
       fetchData();
     } catch (error) {

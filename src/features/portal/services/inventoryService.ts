@@ -2,7 +2,7 @@
 // Inventory Service - Frontend API Client for Stock Management
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -50,57 +50,29 @@ export const inventoryService = {
   /**
    * Get all inventory items for the authenticated seller
    */
-  async getSellerInventory(token: string, filters: InventoryFilters = {}): Promise<InventoryItem[]> {
-    const url = new URL(`${API_URL}/inventory/seller`);
+  async getSellerInventory(filters: InventoryFilters = {}): Promise<InventoryItem[]> {
+    const params = new URLSearchParams();
 
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.category) url.searchParams.append('category', filters.category);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.category) params.append('category', filters.category);
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch inventory');
-    }
-
-    return response.json();
+    const qs = params.toString();
+    return portalApiClient.get<InventoryItem[]>(`/api/inventory/seller${qs ? `?${qs}` : ''}`);
   },
 
   /**
    * Get inventory summary stats
    */
-  async getInventorySummary(token: string): Promise<InventorySummary> {
-    const response = await fetch(`${API_URL}/inventory/seller/summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch inventory summary');
-    }
-
-    return response.json();
+  async getInventorySummary(): Promise<InventorySummary> {
+    return portalApiClient.get<InventorySummary>('/api/inventory/seller/summary');
   },
 
   /**
    * Update stock for a product
    */
-  async updateStock(token: string, productId: string, adjustment: StockAdjustment): Promise<InventoryItem> {
-    const response = await fetch(`${API_URL}/inventory/seller/${productId}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(adjustment),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to update stock');
-    }
-
-    return response.json();
+  async updateStock(productId: string, adjustment: StockAdjustment): Promise<InventoryItem> {
+    return portalApiClient.patch<InventoryItem>(`/api/inventory/seller/${productId}`, adjustment);
   },
 };
 

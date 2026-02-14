@@ -247,7 +247,7 @@ export const featureGatingService = {
 
     if (!context) {
       // Return all denied for non-existent seller
-      const allDenied: Record<GatedAction, GatingResult> = {} as any;
+      const allDenied = {} as Record<GatedAction, GatingResult>;
       for (const action of Object.keys(GATING_MATRIX) as GatedAction[]) {
         allDenied[action] = {
           allowed: false,
@@ -258,7 +258,7 @@ export const featureGatingService = {
       return { status: 'incomplete', features: allDenied };
     }
 
-    const features: Record<GatedAction, GatingResult> = {} as any;
+    const features = {} as Record<GatedAction, GatingResult>;
     for (const action of Object.keys(GATING_MATRIX) as GatedAction[]) {
       features[action] = this.checkAccess(context, action);
     }

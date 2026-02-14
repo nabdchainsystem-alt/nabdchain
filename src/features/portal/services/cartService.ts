@@ -2,9 +2,10 @@
 // Cart Service - Buyer Cart API Client
 // =============================================================================
 // RFQ aggregation cart - NOT a traditional checkout cart
+// Uses portalApiClient for automatic portal JWT auth
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import {
   Cart,
   CartSellerGroup,
@@ -72,22 +73,14 @@ export const cartService = {
   /**
    * Get cart with all items (uses local cache as fallback)
    */
-  async getCart(token: string, forceRefresh = false): Promise<Cart> {
+  async getCart(forceRefresh = false): Promise<Cart> {
     // Check local cache first if not forcing refresh
     if (!forceRefresh) {
       const cached = getLocalCart();
       if (cached) return cached;
     }
 
-    const response = await fetch(`${API_URL}/buyer-cart`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch cart');
-    }
-
-    const cart: Cart = await response.json();
+    const cart = await portalApiClient.get<Cart>('/api/buyer-cart');
     setLocalCart(cart);
     return cart;
   },
@@ -95,37 +88,15 @@ export const cartService = {
   /**
    * Get cart items grouped by seller
    */
-  async getCartGrouped(token: string): Promise<CartSellerGroup[]> {
-    const response = await fetch(`${API_URL}/buyer-cart/grouped`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch grouped cart');
-    }
-
-    return response.json();
+  async getCartGrouped(): Promise<CartSellerGroup[]> {
+    return portalApiClient.get<CartSellerGroup[]>('/api/buyer-cart/grouped');
   },
 
   /**
    * Add item to cart
    */
-  async addToCart(token: string, input: AddToCartInput): Promise<Cart> {
-    const response = await fetch(`${API_URL}/buyer-cart/items`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to add to cart' }));
-      throw new Error(error.error || 'Failed to add to cart');
-    }
-
-    const cart: Cart = await response.json();
+  async addToCart(input: AddToCartInput): Promise<Cart> {
+    const cart = await portalApiClient.post<Cart>('/api/buyer-cart/items', input);
     setLocalCart(cart);
     return cart;
   },
@@ -133,26 +104,8 @@ export const cartService = {
   /**
    * Update cart item quantity
    */
-  async updateCartItem(
-    token: string,
-    itemId: string,
-    input: UpdateCartItemInput
-  ): Promise<Cart> {
-    const response = await fetch(`${API_URL}/buyer-cart/items/${itemId}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to update item' }));
-      throw new Error(error.error || 'Failed to update item');
-    }
-
-    const cart: Cart = await response.json();
+  async updateCartItem(itemId: string, input: UpdateCartItemInput): Promise<Cart> {
+    const cart = await portalApiClient.patch<Cart>(`/api/buyer-cart/items/${itemId}`, input);
     setLocalCart(cart);
     return cart;
   },
@@ -160,18 +113,8 @@ export const cartService = {
   /**
    * Remove item from cart
    */
-  async removeFromCart(token: string, itemId: string): Promise<Cart> {
-    const response = await fetch(`${API_URL}/buyer-cart/items/${itemId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to remove item' }));
-      throw new Error(error.error || 'Failed to remove item');
-    }
-
-    const cart: Cart = await response.json();
+  async removeFromCart(itemId: string): Promise<Cart> {
+    const cart = await portalApiClient.delete<Cart>(`/api/buyer-cart/items/${itemId}`);
     setLocalCart(cart);
     return cart;
   },
@@ -179,18 +122,8 @@ export const cartService = {
   /**
    * Clear entire cart
    */
-  async clearCart(token: string): Promise<Cart> {
-    const response = await fetch(`${API_URL}/buyer-cart`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to clear cart' }));
-      throw new Error(error.error || 'Failed to clear cart');
-    }
-
-    const cart: Cart = await response.json();
+  async clearCart(): Promise<Cart> {
+    const cart = await portalApiClient.delete<Cart>('/api/buyer-cart');
     setLocalCart(cart);
     return cart;
   },
@@ -198,87 +131,41 @@ export const cartService = {
   /**
    * Create RFQ from all cart items
    */
-  async createRFQForAll(token: string): Promise<CreateRFQResult> {
-    const response = await fetch(`${API_URL}/buyer-cart/rfq`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to create RFQ' }));
-      throw new Error(error.error || 'Failed to create RFQ');
-    }
-
-    // Clear local cache since cart is now locked/cleared
+  async createRFQForAll(): Promise<CreateRFQResult> {
+    const result = await portalApiClient.post<CreateRFQResult>('/api/buyer-cart/rfq');
     clearLocalCart();
-
-    return response.json();
+    return result;
   },
 
   /**
    * Create RFQ for items from a specific seller
    */
-  async createRFQForSeller(token: string, sellerId: string): Promise<CreateRFQResult> {
-    const response = await fetch(`${API_URL}/buyer-cart/rfq/seller/${sellerId}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to create RFQ' }));
-      throw new Error(error.error || 'Failed to create RFQ');
-    }
-
-    // Clear local cache to force refresh
+  async createRFQForSeller(sellerId: string): Promise<CreateRFQResult> {
+    const result = await portalApiClient.post<CreateRFQResult>(`/api/buyer-cart/rfq/seller/${sellerId}`);
     clearLocalCart();
-
-    return response.json();
+    return result;
   },
 
   /**
    * Buy Now - Create order for all Buy Now eligible items
    */
-  async buyNowAll(token: string): Promise<BuyNowResult> {
-    const response = await fetch(`${API_URL}/buyer-cart/buy-now`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+  async buyNowAll(paymentMethod?: string): Promise<BuyNowResult> {
+    const result = await portalApiClient.post<BuyNowResult>('/api/buyer-cart/buy-now', {
+      paymentMethod: paymentMethod || 'bank_transfer',
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to process purchase' }));
-      throw new Error(error.error || 'Failed to process purchase');
-    }
-
-    // Clear local cache to force refresh
     clearLocalCart();
-
-    return response.json();
+    return result;
   },
 
   /**
    * Buy Now - Create order for Buy Now eligible items from a specific seller
    */
-  async buyNowForSeller(token: string, sellerId: string): Promise<BuyNowResult> {
-    const response = await fetch(`${API_URL}/buyer-cart/buy-now/seller/${sellerId}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+  async buyNowForSeller(sellerId: string, paymentMethod?: string): Promise<BuyNowResult> {
+    const result = await portalApiClient.post<BuyNowResult>(`/api/buyer-cart/buy-now/seller/${sellerId}`, {
+      paymentMethod: paymentMethod || 'bank_transfer',
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to process purchase' }));
-      throw new Error(error.error || 'Failed to process purchase');
-    }
-
-    // Clear local cache to force refresh
     clearLocalCart();
-
-    return response.json();
+    return result;
   },
 
   /**

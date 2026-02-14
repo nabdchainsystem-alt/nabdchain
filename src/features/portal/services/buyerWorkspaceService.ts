@@ -2,7 +2,7 @@
 // Buyer Workspace Service - Frontend API Client
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -97,7 +97,7 @@ export interface StockForecast {
   depletionRatePerDay: number;
   suggestedReorderDate: string;
   confidenceLevel: 'high' | 'medium' | 'low';
-  basedOnDays: number; // How many days of data used for forecast
+  basedOnDays: number;
 }
 
 export interface SupplierOption {
@@ -182,7 +182,7 @@ export interface BudgetVsActual {
 
 export interface CategoryInefficiency {
   category: ExpenseCategory;
-  inefficiencyScore: number; // 0-100, higher is worse
+  inefficiencyScore: number;
   topIssues: string[];
   recommendations: string[];
   potentialSavings: number;
@@ -196,7 +196,7 @@ export interface EnhancedExpenseSummary extends ExpenseSummary {
   categoryInefficiencies: CategoryInefficiency[];
   totalPotentialSavings: number;
   savingsCurrency: string;
-  healthScore: number; // 0-100, higher is better
+  healthScore: number;
 }
 
 export interface CreatePurchaseOrderData {
@@ -248,287 +248,130 @@ export const buyerWorkspaceService = {
   // Purchases
   // ---------------------------------------------------------------------------
 
-  async getPurchases(
-    token: string,
-    filters?: { status?: string; supplierId?: string; search?: string; dateFrom?: string; dateTo?: string },
-  ): Promise<PurchaseOrder[]> {
-    const url = new URL(`${API_URL}/buyer/purchases`);
-    if (filters?.status) url.searchParams.append('status', filters.status);
-    if (filters?.supplierId) url.searchParams.append('supplierId', filters.supplierId);
-    if (filters?.search) url.searchParams.append('search', filters.search);
-    if (filters?.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters?.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch purchases');
-    }
-
-    return response.json();
+  async getPurchases(filters?: {
+    status?: string;
+    supplierId?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<PurchaseOrder[]> {
+    const p = new URLSearchParams();
+    if (filters?.status) p.append('status', filters.status);
+    if (filters?.supplierId) p.append('supplierId', filters.supplierId);
+    if (filters?.search) p.append('search', filters.search);
+    if (filters?.dateFrom) p.append('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) p.append('dateTo', filters.dateTo);
+    const qs = p.toString();
+    return portalApiClient.get<PurchaseOrder[]>(`/api/buyer/purchases${qs ? `?${qs}` : ''}`);
   },
 
-  async createPurchase(token: string, data: CreatePurchaseOrderData): Promise<PurchaseOrder> {
-    const response = await fetch(`${API_URL}/buyer/purchases`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create purchase order');
-    }
-
-    return response.json();
+  async createPurchase(data: CreatePurchaseOrderData): Promise<PurchaseOrder> {
+    return portalApiClient.post<PurchaseOrder>(`/api/buyer/purchases`, data);
   },
 
-  async updatePurchaseStatus(token: string, id: string, status: PurchaseOrderStatus): Promise<PurchaseOrder> {
-    const response = await fetch(`${API_URL}/buyer/purchases/${id}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update status');
-    }
-
-    return response.json();
+  async updatePurchaseStatus(id: string, status: PurchaseOrderStatus): Promise<PurchaseOrder> {
+    return portalApiClient.patch<PurchaseOrder>(`/api/buyer/purchases/${id}/status`, { status });
   },
 
   // ---------------------------------------------------------------------------
   // Suppliers
   // ---------------------------------------------------------------------------
 
-  async getSuppliers(token: string, filters?: { search?: string; country?: string }): Promise<Supplier[]> {
-    const url = new URL(`${API_URL}/buyer/suppliers`);
-    if (filters?.search) url.searchParams.append('search', filters.search);
-    if (filters?.country) url.searchParams.append('country', filters.country);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch suppliers');
-    }
-
-    return response.json();
+  async getSuppliers(filters?: { search?: string; country?: string }): Promise<Supplier[]> {
+    const p = new URLSearchParams();
+    if (filters?.search) p.append('search', filters.search);
+    if (filters?.country) p.append('country', filters.country);
+    const qs = p.toString();
+    return portalApiClient.get<Supplier[]>(`/api/buyer/suppliers${qs ? `?${qs}` : ''}`);
   },
 
-  async createSupplier(token: string, data: CreateSupplierData): Promise<Supplier> {
-    const response = await fetch(`${API_URL}/buyer/suppliers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create supplier');
-    }
-
-    return response.json();
+  async createSupplier(data: CreateSupplierData): Promise<Supplier> {
+    return portalApiClient.post<Supplier>(`/api/buyer/suppliers`, data);
   },
 
   // ---------------------------------------------------------------------------
   // Inventory
   // ---------------------------------------------------------------------------
 
-  async getInventory(token: string, filters?: { status?: string; search?: string }): Promise<InventoryItem[]> {
-    const url = new URL(`${API_URL}/buyer/inventory`);
-    if (filters?.status) url.searchParams.append('status', filters.status);
-    if (filters?.search) url.searchParams.append('search', filters.search);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch inventory');
-    }
-
-    return response.json();
+  async getInventory(filters?: { status?: string; search?: string }): Promise<InventoryItem[]> {
+    const p = new URLSearchParams();
+    if (filters?.status) p.append('status', filters.status);
+    if (filters?.search) p.append('search', filters.search);
+    const qs = p.toString();
+    return portalApiClient.get<InventoryItem[]>(`/api/buyer/inventory${qs ? `?${qs}` : ''}`);
   },
 
-  async createInventoryItem(token: string, data: CreateInventoryData): Promise<InventoryItem> {
-    const response = await fetch(`${API_URL}/buyer/inventory`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create inventory item');
-    }
-
-    return response.json();
+  async createInventoryItem(data: CreateInventoryData): Promise<InventoryItem> {
+    return portalApiClient.post<InventoryItem>(`/api/buyer/inventory`, data);
   },
 
-  async updateInventoryItem(
-    token: string,
-    id: string,
-    data: { quantity?: number; reorderLevel?: number },
-  ): Promise<InventoryItem> {
-    const response = await fetch(`${API_URL}/buyer/inventory/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update inventory');
-    }
-
-    return response.json();
+  async updateInventoryItem(id: string, data: { quantity?: number; reorderLevel?: number }): Promise<InventoryItem> {
+    return portalApiClient.patch<InventoryItem>(`/api/buyer/inventory/${id}`, data);
   },
 
   // ---------------------------------------------------------------------------
   // Expenses
   // ---------------------------------------------------------------------------
 
-  async getExpenses(
-    token: string,
-    filters?: { category?: string; dateFrom?: string; dateTo?: string },
-  ): Promise<Expense[]> {
-    const url = new URL(`${API_URL}/buyer/expenses`);
-    if (filters?.category) url.searchParams.append('category', filters.category);
-    if (filters?.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters?.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch expenses');
-    }
-
-    return response.json();
+  async getExpenses(filters?: { category?: string; dateFrom?: string; dateTo?: string }): Promise<Expense[]> {
+    const p = new URLSearchParams();
+    if (filters?.category) p.append('category', filters.category);
+    if (filters?.dateFrom) p.append('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) p.append('dateTo', filters.dateTo);
+    const qs = p.toString();
+    return portalApiClient.get<Expense[]>(`/api/buyer/expenses${qs ? `?${qs}` : ''}`);
   },
 
-  async getExpenseSummary(token: string): Promise<ExpenseSummary> {
-    const response = await fetch(`${API_URL}/buyer/expenses/summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch expense summary');
-    }
-
-    return response.json();
+  async getExpenseSummary(): Promise<ExpenseSummary> {
+    return portalApiClient.get<ExpenseSummary>(`/api/buyer/expenses/summary`);
   },
 
-  async createExpense(token: string, data: CreateExpenseData): Promise<Expense> {
-    const response = await fetch(`${API_URL}/buyer/expenses`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create expense');
-    }
-
-    return response.json();
+  async createExpense(data: CreateExpenseData): Promise<Expense> {
+    return portalApiClient.post<Expense>(`/api/buyer/expenses`, data);
   },
 
   // ---------------------------------------------------------------------------
   // Predictive Intelligence - Inventory
   // ---------------------------------------------------------------------------
 
-  async getInventoryWithForecast(
-    token: string,
-    filters?: { status?: string; search?: string },
-  ): Promise<InventoryItemWithForecast[]> {
-    const url = new URL(`${API_URL}/buyer/inventory/forecast`);
-    if (filters?.status) url.searchParams.append('status', filters.status);
-    if (filters?.search) url.searchParams.append('search', filters.search);
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      // Return empty array - API endpoint not available
+  async getInventoryWithForecast(filters?: { status?: string; search?: string }): Promise<InventoryItemWithForecast[]> {
+    const p = new URLSearchParams();
+    if (filters?.status) p.append('status', filters.status);
+    if (filters?.search) p.append('search', filters.search);
+    const qs = p.toString();
+    try {
+      return await portalApiClient.get<InventoryItemWithForecast[]>(
+        `/api/buyer/inventory/forecast${qs ? `?${qs}` : ''}`,
+      );
+    } catch {
       return [];
     }
-
-    return response.json();
   },
 
-  async getInventoryAlerts(token: string): Promise<InventoryAlert[]> {
-    const response = await fetch(`${API_URL}/buyer/inventory/alerts`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      // Return mock alerts based on inventory status
+  async getInventoryAlerts(): Promise<InventoryAlert[]> {
+    try {
+      return await portalApiClient.get<InventoryAlert[]>(`/api/buyer/inventory/alerts`);
+    } catch {
       return [];
     }
-
-    return response.json();
   },
 
-  async simulateCostImpact(
-    token: string,
-    itemId: string,
-    orderQty: number,
-    supplierId?: string,
-  ): Promise<CostImpactSimulation> {
-    const response = await fetch(`${API_URL}/buyer/inventory/${itemId}/simulate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ orderQty, supplierId }),
+  async simulateCostImpact(itemId: string, orderQty: number, supplierId?: string): Promise<CostImpactSimulation> {
+    return portalApiClient.post<CostImpactSimulation>(`/api/buyer/inventory/${itemId}/simulate`, {
+      orderQty,
+      supplierId,
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to simulate cost impact');
-    }
-
-    return response.json();
   },
 
   // ---------------------------------------------------------------------------
   // Predictive Intelligence - Expenses
   // ---------------------------------------------------------------------------
 
-  async getEnhancedExpenseSummary(token: string): Promise<EnhancedExpenseSummary> {
-    const response = await fetch(`${API_URL}/buyer/expenses/enhanced-summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      // Return basic summary without analytics - API endpoint not available
-      const basicSummary = await this.getExpenseSummary(token);
+  async getEnhancedExpenseSummary(): Promise<EnhancedExpenseSummary> {
+    try {
+      return await portalApiClient.get<EnhancedExpenseSummary>(`/api/buyer/expenses/enhanced-summary`);
+    } catch {
+      const basicSummary = await this.getExpenseSummary();
       return {
         ...basicSummary,
         leakages: [],
@@ -540,36 +383,23 @@ export const buyerWorkspaceService = {
         healthScore: 50,
       };
     }
-
-    return response.json();
   },
 
-  async getSpendLeakages(token: string): Promise<SpendLeakage[]> {
-    const response = await fetch(`${API_URL}/buyer/expenses/leakages`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
+  async getSpendLeakages(): Promise<SpendLeakage[]> {
+    try {
+      return await portalApiClient.get<SpendLeakage[]>(`/api/buyer/expenses/leakages`);
+    } catch {
       return [];
     }
-
-    return response.json();
   },
 
-  async getPriceDriftAlerts(token: string): Promise<PriceDriftAlert[]> {
-    const response = await fetch(`${API_URL}/buyer/expenses/price-drift`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
+  async getPriceDriftAlerts(): Promise<PriceDriftAlert[]> {
+    try {
+      return await portalApiClient.get<PriceDriftAlert[]>(`/api/buyer/expenses/price-drift`);
+    } catch {
       return [];
     }
-
-    return response.json();
   },
-
-  // NOTE: Mock generators removed - see MOCK_REMOVAL_REPORT.md
-  // All data must come from API. Frontend handles empty states gracefully.
 };
 
 export default buyerWorkspaceService;

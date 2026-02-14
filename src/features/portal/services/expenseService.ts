@@ -2,7 +2,7 @@
 // Expense Service - Frontend API Client for Expense Tracking
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -48,71 +48,36 @@ export const expenseService = {
   /**
    * Get all expenses for the authenticated seller
    */
-  async getSellerExpenses(token: string, filters: ExpenseFilters = {}): Promise<Expense[]> {
-    const url = new URL(`${API_URL}/expenses/seller`);
+  async getSellerExpenses(filters: ExpenseFilters = {}): Promise<Expense[]> {
+    const params = new URLSearchParams();
 
-    if (filters.type) url.searchParams.append('type', filters.type);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
+    if (filters.type) params.append('type', filters.type);
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch expenses');
-    }
-
-    return response.json();
+    const qs = params.toString();
+    return portalApiClient.get<Expense[]>(`/api/expenses/seller${qs ? `?${qs}` : ''}`);
   },
 
   /**
    * Get expense summary
    */
-  async getExpenseSummary(token: string): Promise<ExpenseSummary> {
-    const response = await fetch(`${API_URL}/expenses/seller/summary`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch expense summary');
-    }
-
-    return response.json();
+  async getExpenseSummary(): Promise<ExpenseSummary> {
+    return portalApiClient.get<ExpenseSummary>('/api/expenses/seller/summary');
   },
 
   /**
    * Create a new expense
    */
-  async createExpense(token: string, input: CreateExpenseInput): Promise<Expense> {
-    const response = await fetch(`${API_URL}/expenses/seller`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to create expense');
-    }
-
-    return response.json();
+  async createExpense(input: CreateExpenseInput): Promise<Expense> {
+    return portalApiClient.post<Expense>('/api/expenses/seller', input);
   },
 
   /**
    * Delete an expense
    */
-  async deleteExpense(token: string, expenseId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/expenses/seller/${expenseId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete expense');
-    }
+  async deleteExpense(expenseId: string): Promise<void> {
+    return portalApiClient.delete<void>(`/api/expenses/seller/${expenseId}`);
   },
 };
 

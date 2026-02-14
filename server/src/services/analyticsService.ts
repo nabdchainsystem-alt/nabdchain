@@ -35,6 +35,8 @@ export interface SpendByCategory {
   category: string;
   amount: number;
   percentage: number;
+  orderCount?: number;
+  avgOrderValue?: number;
 }
 
 export interface SupplierPerformance {
@@ -70,6 +72,15 @@ export interface SellerKPIs {
     buyers: number;
     winRate: number;
   };
+}
+
+export interface SellerLifecycleMetrics {
+  outstandingReceivables: number;
+  avgDeliveryDays: number;
+  avgPaymentDelayDays: number;
+  fulfillmentRate: number;
+  ordersByStatus: Record<string, number>;
+  topBuyers: { buyerId: string; buyerName: string; totalSpend: number; orderCount: number }[];
 }
 
 export interface RevenueByCategory {
@@ -154,7 +165,7 @@ export const buyerAnalyticsService = {
 
     const [kpis, spendByCategory, topSuppliers, rfqFunnel, timeline] = await Promise.all([
       this.getKPIs(buyerId, dates),
-      this.getSpendByCategory(buyerId, dates),
+      this.getSpendBySupplier(buyerId, dates),
       this.getTopSuppliers(buyerId, dates),
       this.getRFQFunnel(buyerId, dates),
       this.getTimeline(buyerId, dates),
@@ -246,44 +257,78 @@ export const buyerAnalyticsService = {
   },
 
   /**
-   * Get spend breakdown by category
+   * Get spend breakdown by supplier
    */
-  async getSpendByCategory(buyerId: string, dates: AnalyticsPeriod): Promise<SpendByCategory[]> {
+  async getSpendBySupplier(buyerId: string, dates: AnalyticsPeriod): Promise<SpendByCategory[]> {
+    // Only count orders that represent real confirmed spend
+    // (exclude pending_confirmation, cancelled, failed, refunded)
+    const confirmedStatuses = ['confirmed', 'processing', 'shipped', 'delivered', 'closed'];
+
     const orders = await prisma.marketplaceOrder.findMany({
       where: {
         buyerId,
+        status: { in: confirmedStatuses },
         createdAt: { gte: dates.startDate, lte: dates.endDate },
       },
+      select: { sellerId: true, totalPrice: true },
     });
 
-    // Get item categories for all orders
-    const itemIds = [...new Set(orders.map(o => o.itemId))];
-    const items = await prisma.item.findMany({
-      where: { id: { in: itemIds } },
-      select: { id: true, category: true },
-    });
-    const itemCategoryMap = Object.fromEntries(items.map(i => [i.id, i.category]));
+    if (orders.length === 0) return [];
 
-    // Aggregate by category
-    const categorySpend: Record<string, number> = {};
+    // Get seller display names
+    const sellerIds = [...new Set(orders.map(o => o.sellerId))];
+    const sellers = await prisma.sellerProfile.findMany({
+      where: { userId: { in: sellerIds } },
+      select: { userId: true, displayName: true },
+    });
+    const sellerNameMap = Object.fromEntries(sellers.map(s => [s.userId, s.displayName]));
+
+    // Aggregate by supplier (keyed by sellerId to avoid name-collision issues)
+    const supplierAgg = new Map<string, { name: string; spend: number; count: number }>();
     let totalSpend = 0;
 
     for (const order of orders) {
-      const category = itemCategoryMap[order.itemId] || 'Other';
-      const amount = order.quantity * order.unitPrice;
-      categorySpend[category] = (categorySpend[category] || 0) + amount;
-      totalSpend += amount;
+      const existing = supplierAgg.get(order.sellerId);
+      if (existing) {
+        existing.spend += order.totalPrice;
+        existing.count += 1;
+      } else {
+        supplierAgg.set(order.sellerId, {
+          name: sellerNameMap[order.sellerId] || 'Unknown Supplier',
+          spend: order.totalPrice,
+          count: 1,
+        });
+      }
+      totalSpend += order.totalPrice;
     }
 
-    // Convert to array with percentages
-    const result: SpendByCategory[] = Object.entries(categorySpend)
-      .map(([category, amount]) => ({
-        category,
-        amount: Math.round(amount * 100) / 100,
-        percentage: totalSpend > 0 ? Math.round((amount / totalSpend) * 1000) / 10 : 0,
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 6);
+    // Sort by spend DESC
+    const sorted = [...supplierAgg.values()].sort((a, b) => b.spend - a.spend);
+
+    // Top 8 + "Others" bucket
+    const MAX_SUPPLIERS = 8;
+    const top = sorted.slice(0, MAX_SUPPLIERS);
+    const rest = sorted.slice(MAX_SUPPLIERS);
+
+    const result: SpendByCategory[] = top.map(s => ({
+      category: s.name,
+      amount: Math.round(s.spend * 100) / 100,
+      percentage: totalSpend > 0 ? Math.round((s.spend / totalSpend) * 1000) / 10 : 0,
+      orderCount: s.count,
+      avgOrderValue: s.count > 0 ? Math.round((s.spend / s.count) * 100) / 100 : 0,
+    }));
+
+    if (rest.length > 0) {
+      const othersSpend = rest.reduce((sum, s) => sum + s.spend, 0);
+      const othersCount = rest.reduce((sum, s) => sum + s.count, 0);
+      result.push({
+        category: 'Others',
+        amount: Math.round(othersSpend * 100) / 100,
+        percentage: totalSpend > 0 ? Math.round((othersSpend / totalSpend) * 1000) / 10 : 0,
+        orderCount: othersCount,
+        avgOrderValue: othersCount > 0 ? Math.round((othersSpend / othersCount) * 100) / 100 : 0,
+      });
+    }
 
     return result;
   },
@@ -463,12 +508,13 @@ export const sellerAnalyticsService = {
   async getOverview(sellerId: string, period: string = 'month') {
     const dates = getPeriodDates(period);
 
-    const [kpis, revenueByCategory, topProducts, conversionFunnel, regionDistribution] = await Promise.all([
+    const [kpis, revenueByCategory, topProducts, conversionFunnel, regionDistribution, lifecycleMetrics] = await Promise.all([
       this.getKPIs(sellerId, dates),
       this.getRevenueByCategory(sellerId, dates),
       this.getTopProducts(sellerId, dates),
       this.getConversionFunnel(sellerId, dates),
       this.getRegionDistribution(sellerId, dates),
+      this.getLifecycleMetrics(sellerId, dates),
     ]);
 
     return {
@@ -477,6 +523,7 @@ export const sellerAnalyticsService = {
       topProducts,
       conversionFunnel,
       regionDistribution,
+      lifecycleMetrics,
       period: dates.period,
     };
   },
@@ -665,6 +712,124 @@ export const sellerAnalyticsService = {
       { stage: 'Quotes Sent', value: quotesSent, percent: rfqsReceived > 0 ? Math.round((quotesSent / rfqsReceived) * 100) : 0 },
       { stage: 'Orders Won', value: ordersWon, percent: rfqsReceived > 0 ? Math.round((ordersWon / rfqsReceived) * 100) : 0 },
     ];
+  },
+
+  /**
+   * Get seller lifecycle metrics: receivables, delivery time, payment delays, top buyers
+   */
+  async getLifecycleMetrics(sellerId: string, dates: AnalyticsPeriod): Promise<SellerLifecycleMetrics> {
+    // Outstanding receivables: delivered orders that are not fully paid
+    const [receivableOrders, allOrders, invoices, payments] = await Promise.all([
+      prisma.marketplaceOrder.aggregate({
+        where: {
+          sellerId,
+          status: 'delivered',
+          paymentStatus: { in: ['unpaid', 'authorized', 'pending_conf'] },
+          createdAt: { gte: dates.startDate, lte: dates.endDate },
+        },
+        _sum: { totalPrice: true },
+      }),
+      prisma.marketplaceOrder.findMany({
+        where: {
+          sellerId,
+          createdAt: { gte: dates.startDate, lte: dates.endDate },
+        },
+        select: {
+          status: true,
+          shippedAt: true,
+          deliveredAt: true,
+          buyerId: true,
+          buyerName: true,
+          buyerCompany: true,
+          totalPrice: true,
+        },
+      }),
+      prisma.marketplaceInvoice.findMany({
+        where: {
+          sellerId,
+          createdAt: { gte: dates.startDate, lte: dates.endDate },
+        },
+        select: {
+          issuedAt: true,
+          paidAt: true,
+          status: true,
+        },
+      }),
+      prisma.marketplacePayment.findMany({
+        where: {
+          sellerId,
+          createdAt: { gte: dates.startDate, lte: dates.endDate },
+        },
+        select: {
+          createdAt: true,
+          confirmedAt: true,
+        },
+      }),
+    ]);
+
+    // Calculate avg delivery time (shipped → delivered)
+    let totalDeliveryDays = 0;
+    let deliveryCount = 0;
+    const statusCounts: Record<string, number> = {};
+
+    for (const order of allOrders) {
+      statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
+      if (order.shippedAt && order.deliveredAt) {
+        const days = (order.deliveredAt.getTime() - order.shippedAt.getTime()) / (1000 * 60 * 60 * 24);
+        totalDeliveryDays += days;
+        deliveryCount++;
+      }
+    }
+
+    // Calculate avg payment delay (invoice issued → payment confirmed)
+    let totalPaymentDelayDays = 0;
+    let paymentCount = 0;
+    for (const inv of invoices) {
+      if (inv.issuedAt && inv.paidAt) {
+        const days = (inv.paidAt.getTime() - inv.issuedAt.getTime()) / (1000 * 60 * 60 * 24);
+        totalPaymentDelayDays += days;
+        paymentCount++;
+      }
+    }
+
+    // Fulfillment rate: delivered+closed / total orders
+    const deliveredCount = (statusCounts['delivered'] || 0) + (statusCounts['closed'] || 0);
+    const fulfillmentRate = allOrders.length > 0
+      ? Math.round((deliveredCount / allOrders.length) * 100)
+      : 0;
+
+    // Top buyers by spend
+    const buyerSpend: Record<string, { name: string; spend: number; count: number }> = {};
+    for (const order of allOrders) {
+      if (!buyerSpend[order.buyerId]) {
+        buyerSpend[order.buyerId] = {
+          name: order.buyerCompany || order.buyerName || 'Unknown Buyer',
+          spend: 0,
+          count: 0,
+        };
+      }
+      buyerSpend[order.buyerId].spend += order.totalPrice;
+      buyerSpend[order.buyerId].count++;
+    }
+
+    const topBuyers = Object.entries(buyerSpend)
+      .map(([buyerId, data]) => ({
+        buyerId,
+        buyerName: data.name,
+        totalSpend: Math.round(data.spend * 100) / 100,
+        orderCount: data.count,
+      }))
+      .sort((a, b) => b.totalSpend - a.totalSpend)
+      .slice(0, 5);
+
+    return {
+      outstandingReceivables: receivableOrders._sum.totalPrice || 0,
+      avgDeliveryDays: deliveryCount > 0 ? Math.round((totalDeliveryDays / deliveryCount) * 10) / 10 : 0,
+      avgPaymentDelayDays: paymentCount > 0 ? Math.round((totalPaymentDelayDays / paymentCount) * 10) / 10 : 0,
+      fulfillmentRate,
+      ordersByStatus: statusCounts,
+      topBuyers,
+    };
   },
 
   /**

@@ -87,58 +87,6 @@ router.get('/buyer/stats', requireAuth, async (req, res: Response) => {
 });
 
 /**
- * GET /api/purchases/buyer/:id
- * Get single purchase with full details
- */
-router.get('/buyer/:id', requireAuth, async (req, res: Response) => {
-  try {
-    const buyerId = await resolveBuyerId(req);
-    if (!buyerId) {
-      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
-    }
-    const id = req.params.id as string;
-
-    const purchase = await buyerPurchaseService.getBuyerPurchase(buyerId, id);
-
-    if (!purchase) {
-      res.status(404).json({ error: 'Purchase not found' });
-      return;
-    }
-
-    res.json(purchase);
-  } catch (error) {
-    apiLogger.error('Error fetching buyer purchase:', error);
-    res.status(500).json({ error: 'Failed to fetch purchase' });
-  }
-});
-
-/**
- * GET /api/purchases/buyer/:id/timeline
- * Get detailed lifecycle timeline for a purchase
- */
-router.get('/buyer/:id/timeline', requireAuth, async (req, res: Response) => {
-  try {
-    const buyerId = await resolveBuyerId(req);
-    if (!buyerId) {
-      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
-    }
-    const id = req.params.id as string;
-
-    const timeline = await buyerPurchaseService.getPurchaseTimeline(buyerId, id);
-
-    if (timeline.length === 0) {
-      res.status(404).json({ error: 'Purchase not found' });
-      return;
-    }
-
-    res.json(timeline);
-  } catch (error) {
-    apiLogger.error('Error fetching purchase timeline:', error);
-    res.status(500).json({ error: 'Failed to fetch timeline' });
-  }
-});
-
-/**
  * GET /api/purchases/buyer/price-history/:sku
  * Get historical prices for an item SKU
  */
@@ -217,6 +165,155 @@ router.get('/buyer/supplier/:sellerId', requireAuth, async (req, res: Response) 
   } catch (error) {
     apiLogger.error('Error fetching supplier metrics:', error);
     res.status(500).json({ error: 'Failed to fetch supplier metrics' });
+  }
+});
+
+/**
+ * GET /api/purchases/buyer/intelligence
+ * Compute dashboard intelligence: purchase velocity, supplier risks, alerts
+ */
+router.get('/buyer/intelligence', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const intelligence = await buyerPurchaseService.getDashboardIntelligence(buyerId);
+    res.json(intelligence);
+  } catch (error) {
+    apiLogger.error('Error fetching dashboard intelligence:', error);
+    res.status(500).json({ error: 'Failed to fetch intelligence' });
+  }
+});
+
+/**
+ * GET /api/purchases/buyer/expenses
+ * Derive expenses from PAID marketplace orders (confirmed payments only).
+ * An expense exists only after payment is confirmed.
+ */
+router.get('/buyer/expenses', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const expenses = await buyerPurchaseService.getDerivedExpenses(buyerId);
+    res.json(expenses);
+  } catch (error) {
+    apiLogger.error('Error fetching derived expenses:', error);
+    res.status(500).json({ error: 'Failed to fetch expenses' });
+  }
+});
+
+/**
+ * GET /api/purchases/buyer/expenses/stats
+ * Aggregate expense stats (monthly grouping)
+ */
+router.get('/buyer/expenses/stats', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const stats = await buyerPurchaseService.getDerivedExpenseStats(buyerId);
+    res.json(stats);
+  } catch (error) {
+    apiLogger.error('Error fetching derived expense stats:', error);
+    res.status(500).json({ error: 'Failed to fetch expense stats' });
+  }
+});
+
+/**
+ * GET /api/purchases/buyer/suppliers
+ * Derive suppliers from actual marketplace order history
+ * Returns only sellers the buyer has transacted with, with real metrics
+ */
+router.get('/buyer/suppliers', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const suppliers = await buyerPurchaseService.getDerivedSuppliers(buyerId);
+    res.json(suppliers);
+  } catch (error) {
+    apiLogger.error('Error fetching derived suppliers:', error);
+    res.status(500).json({ error: 'Failed to fetch suppliers' });
+  }
+});
+
+/**
+ * GET /api/purchases/buyer/suppliers/stats
+ * Aggregate stats for derived suppliers
+ */
+router.get('/buyer/suppliers/stats', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const stats = await buyerPurchaseService.getDerivedSupplierStats(buyerId);
+    res.json(stats);
+  } catch (error) {
+    apiLogger.error('Error fetching derived supplier stats:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier stats' });
+  }
+});
+
+// =============================================================================
+// Parameterized routes MUST come AFTER all named routes above
+// (otherwise /buyer/:id catches /buyer/suppliers, /buyer/expenses, etc.)
+// =============================================================================
+
+/**
+ * GET /api/purchases/buyer/:id
+ * Get single purchase with full details
+ */
+router.get('/buyer/:id', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
+
+    const purchase = await buyerPurchaseService.getBuyerPurchase(buyerId, id);
+
+    if (!purchase) {
+      res.status(404).json({ error: 'Purchase not found' });
+      return;
+    }
+
+    res.json(purchase);
+  } catch (error) {
+    apiLogger.error('Error fetching buyer purchase:', error);
+    res.status(500).json({ error: 'Failed to fetch purchase' });
+  }
+});
+
+/**
+ * GET /api/purchases/buyer/:id/timeline
+ * Get detailed lifecycle timeline for a purchase
+ */
+router.get('/buyer/:id/timeline', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const id = req.params.id as string;
+
+    const timeline = await buyerPurchaseService.getPurchaseTimeline(buyerId, id);
+
+    if (timeline.length === 0) {
+      res.status(404).json({ error: 'Purchase not found' });
+      return;
+    }
+
+    res.json(timeline);
+  } catch (error) {
+    apiLogger.error('Error fetching purchase timeline:', error);
+    res.status(500).json({ error: 'Failed to fetch timeline' });
   }
 });
 

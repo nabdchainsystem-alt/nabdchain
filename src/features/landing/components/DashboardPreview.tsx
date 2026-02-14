@@ -1,301 +1,158 @@
-import React, { useRef, memo } from 'react';
-import { useInView } from 'framer-motion';
-import { CheckCircle, Circle, ArrowUp, ArrowDown } from 'phosphor-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { CheckCircle } from 'phosphor-react';
 import { useLandingContext } from '../LandingPage';
 
-// Animated bar with smooth grow animation
-const AnimatedBar: React.FC<{ width: string; index: number; isHighlighted?: boolean }> = memo(
-  ({ width, index, isHighlighted }) => (
-    <div className="h-6 sm:h-8 bg-zinc-800 rounded-lg overflow-hidden relative">
-      <div
-        className={`h-full rounded-lg ${isHighlighted ? 'bg-gradient-to-r from-white to-zinc-200' : 'bg-gradient-to-r from-zinc-600 to-zinc-500'}`}
-        style={{
-          width: width,
-          animation: `barGrow 1s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-          animationDelay: `${0.3 + index * 0.15}s`,
-          transform: 'scaleX(0)',
-          transformOrigin: 'left',
-        }}
-      />
-      {isHighlighted && (
-        <div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-          style={{ animation: 'shimmer 2s infinite', animationDelay: `${1 + index * 0.15}s` }}
-        />
-      )}
-      <style>{`
-            @keyframes barGrow {
-                from { transform: scaleX(0); }
-                to { transform: scaleX(1); }
-            }
-        `}</style>
-    </div>
-  ),
-);
-
-// Task item without individual useInView
-const TaskItem: React.FC<{ task: string; completed: boolean; index: number; avatar: string }> = memo(
-  ({ task, completed, index, avatar }) => (
-    <div
-      className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-zinc-800/50 transition-colors cursor-pointer group
-                   opacity-0 animate-fade-in-up"
-      style={{ animationDelay: `${0.4 + index * 0.08}s`, animationFillMode: 'forwards' }}
-    >
-      {completed ? (
-        <CheckCircle size={18} weight="fill" className="text-white flex-shrink-0" />
-      ) : (
-        <Circle size={18} className="text-zinc-600 group-hover:text-zinc-500 flex-shrink-0" />
-      )}
-      <span className={`flex-1 text-xs sm:text-sm ${completed ? 'text-zinc-500 line-through' : 'text-zinc-300'}`}>
-        {task}
-      </span>
-      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] sm:text-xs text-zinc-300 font-medium">
-        {avatar}
-      </div>
-    </div>
-  ),
-);
-
-// Stat card with smooth scale animation
-const StatCard: React.FC<{ label: string; value: string; change: number; index: number }> = memo(
-  ({ label, value, change, index }) => {
-    const isPositive = change >= 0;
-
-    return (
-      <div
-        className="bg-zinc-800/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-zinc-700/50
-                       hover:bg-zinc-800/70 hover:border-zinc-600/50 hover:shadow-lg
-                       transition-all duration-300"
-        style={{
-          animation: 'cardPop 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-          animationDelay: `${0.2 + index * 0.1}s`,
-          opacity: 0,
-          transform: 'scale(0.9)',
-        }}
-      >
-        <div className="text-[10px] sm:text-xs text-zinc-500 mb-0.5 sm:mb-1">{label}</div>
-        <div className="text-lg sm:text-2xl font-bold text-white mb-0.5 sm:mb-1">{value}</div>
-        <div className={`flex items-center text-[10px] sm:text-xs ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {isPositive ? <ArrowUp size={10} weight="bold" /> : <ArrowDown size={10} weight="bold" />}
-          <span className="ml-1">{Math.abs(change)}%</span>
-        </div>
-        <style>{`
-                @keyframes cardPop {
-                    from { opacity: 0; transform: scale(0.9) translateZ(0); }
-                    to { opacity: 1; transform: scale(1) translateZ(0); }
-                }
-            `}</style>
-      </div>
+const useScrollReveal = (threshold = 0.1) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setVisible(true);
+      },
+      { threshold },
     );
-  },
-);
-
-// Animated cursor - hidden on mobile
-const AnimatedCursor: React.FC = memo(() => (
-  <div
-    className="hidden md:block absolute pointer-events-none z-50"
-    style={{
-      left: 180,
-      top: 140,
-      animation: 'cursorMove 8s ease-in-out infinite',
-    }}
-  >
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="drop-shadow-lg">
-      <path d="M5.5 3L15 10.5L10 11.5L8 17L5.5 3Z" fill="white" stroke="#71717a" strokeWidth="1.5" />
-    </svg>
-    <div
-      className="ml-4 mt-1 px-2 py-1 bg-violet-600 text-white text-xs rounded-md whitespace-nowrap shadow-lg"
-      style={{ animation: 'cursorLabel 8s ease-in-out infinite' }}
-    >
-      Aya K.
-    </div>
-    <style>{`
-            @keyframes cursorMove {
-                0%, 100% { transform: translate(0, 0) translateZ(0); }
-                25% { transform: translate(60px, 40px) translateZ(0); }
-                50% { transform: translate(120px, -20px) translateZ(0); }
-                75% { transform: translate(40px, 60px) translateZ(0); }
-            }
-            @keyframes cursorLabel {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.7; }
-            }
-        `}</style>
-  </div>
-));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+};
 
 export const DashboardPreview: React.FC = () => {
   const { isRTL } = useLandingContext();
-  const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
-
-  const tasks = isRTL
-    ? [
-        { task: 'مراجعة التقارير المالية للربع الرابع', completed: true, avatar: 'JD' },
-        { task: 'تحديث الجدول الزمني للمشروع', completed: true, avatar: 'SK' },
-        { task: 'إعداد عرض مجلس الإدارة', completed: false, avatar: 'MR' },
-        { task: 'إنهاء عقود الموردين', completed: false, avatar: 'AL' },
-      ]
-    : [
-        { task: 'Review Q4 financial reports', completed: true, avatar: 'JD' },
-        { task: 'Update project timeline', completed: true, avatar: 'SK' },
-        { task: 'Prepare board presentation', completed: false, avatar: 'MR' },
-        { task: 'Finalize vendor contracts', completed: false, avatar: 'AL' },
-      ];
+  const { ref, visible } = useScrollReveal();
 
   const features = isRTL
     ? ['تتبع المشاريع في الوقت الفعلي', 'أدوات قابلة للتخصيص', 'تحليلات الفريق', 'تقارير آلية']
     : ['Real-time project tracking', 'Customizable widgets', 'Team analytics', 'Automated reports'];
 
   return (
-    <section ref={sectionRef} className="py-20 sm:py-28 md:py-36 bg-black relative overflow-hidden">
-      {/* Animated Spotlight Gradient */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-purple-500/15 rounded-full blur-3xl pointer-events-none"
-        style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }}
-      />
-      <div
-        className="absolute top-20 left-1/3 w-[400px] h-[300px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
-        style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }}
-      />
-      <style>{`
-                @keyframes spotlightPulse {
-                    0%, 100% { opacity: 0.6; transform: translate(-50%, 0) scale(1) translateZ(0); }
-                    50% { opacity: 1; transform: translate(-50%, 0) scale(1.1) translateZ(0); }
-                }
-            `}</style>
+    <section ref={ref} className="py-28 sm:py-36 bg-zinc-950 overflow-hidden">
+      <div className="max-w-[980px] mx-auto px-6">
+        {/* Header */}
+        <div
+          className={`text-center mb-16 sm:mb-20 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-medium mb-5">
+            {isRTL ? 'معاينة لوحة التحكم' : 'Dashboard Preview'}
+          </p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-white mb-6">
+            {isRTL ? (
+              <>
+                شاهد كل شيء
+                <br />
+                <span className="text-zinc-500">بنظرة واحدة</span>
+              </>
+            ) : (
+              <>
+                See everything
+                <br />
+                <span className="text-zinc-500">at a glance</span>
+              </>
+            )}
+          </h2>
+          <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+            {isRTL
+              ? 'لوحات معلومات بديهية توفر لك رؤية كاملة لأعمالك.'
+              : 'Intuitive dashboards give you complete visibility into your business.'}
+          </p>
+        </div>
 
-      <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
-          {/* Left Content - Title first on all screens */}
-          {isInView && (
-            <div className="opacity-0 animate-fade-in-up" style={{ animationFillMode: 'forwards' }}>
-              <span className="inline-block px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-semibold mb-6 sm:mb-8">
-                {isRTL ? 'معاينة لوحة التحكم' : 'Dashboard Preview'}
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6 sm:mb-8 leading-[1.1]">
-                {isRTL ? (
-                  <>
-                    شاهد كل شيء
-                    <br />
-                    <span className="text-zinc-500">بنظرة واحدة</span>
-                  </>
-                ) : (
-                  <>
-                    See everything
-                    <br />
-                    <span className="text-zinc-500">at a glance</span>
-                  </>
-                )}
-              </h2>
-              <p className="text-lg sm:text-xl text-zinc-400 mb-8 sm:mb-10 leading-relaxed">
-                {isRTL
-                  ? 'توفر لك لوحات المعلومات البديهية رؤية كاملة لأعمالك. تتبع المشاريع وراقب مؤشرات الأداء واتخذ قرارات مستنيرة بالبيانات الفورية.'
-                  : 'Our intuitive dashboards give you complete visibility into your business. Track projects, monitor KPIs, and make informed decisions with real-time data.'}
-              </p>
+        {/* Feature checklist */}
+        <div
+          className={`flex flex-wrap justify-center gap-4 sm:gap-6 mb-12 transition-all duration-700 delay-200
+          ${visible ? 'opacity-100' : 'opacity-0'}`}
+        >
+          {features.map((item) => (
+            <div key={item} className="flex items-center gap-2">
+              <CheckCircle size={16} weight="fill" className="text-zinc-600" />
+              <span className="text-sm text-zinc-400">{item}</span>
+            </div>
+          ))}
+        </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                {features.map((item, i) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-2 opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: `${0.2 + i * 0.08}s`, animationFillMode: 'forwards' }}
-                  >
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <CheckCircle size={12} weight="fill" className="text-zinc-400" />
+        {/* Dashboard mockup */}
+        <div
+          className={`transition-all duration-1000 delay-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+        >
+          <div className="rounded-2xl overflow-hidden border border-zinc-800/60 bg-zinc-900 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+            {/* Browser chrome */}
+            <div className="flex items-center gap-2 px-5 py-3.5 bg-zinc-900 border-b border-zinc-800">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-zinc-700" />
+                <div className="w-3 h-3 rounded-full bg-zinc-700" />
+                <div className="w-3 h-3 rounded-full bg-zinc-700" />
+              </div>
+              <div className="flex-1 flex justify-center">
+                <div className="h-6 w-44 rounded-md bg-zinc-800 flex items-center justify-center">
+                  <span className="text-[10px] text-zinc-500 font-medium">app.nabdchain.com/dashboard</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 sm:p-8">
+              {/* Stat cards */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {[
+                  { label: isRTL ? 'مكتمل' : 'Completed', value: '147', change: '+12%' },
+                  { label: isRTL ? 'المشاريع' : 'Projects', value: '23', change: '-3%' },
+                  { label: isRTL ? 'السرعة' : 'Velocity', value: '94%', change: '+8%' },
+                ].map((stat) => (
+                  <div key={stat.label} className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/30">
+                    <div className="text-[11px] text-zinc-500 mb-1">{stat.label}</div>
+                    <div className="text-xl sm:text-2xl font-semibold text-white mb-1">{stat.value}</div>
+                    <div className={`text-[11px] ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {stat.change}
                     </div>
-                    <span className="text-xs sm:text-sm text-zinc-400">{item}</span>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Right - Dashboard Mockup */}
-          {isInView && (
-            <div
-              className="relative opacity-0 animate-fade-in-up"
-              style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}
-            >
-              <div className="relative bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden">
-                {/* Window Header */}
-                <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-zinc-800">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700" />
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700" />
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700" />
+              {/* Chart area */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Bar chart */}
+                <div className="col-span-2 rounded-xl bg-zinc-800/40 p-4 border border-zinc-700/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="h-3 w-28 rounded bg-zinc-700" />
+                    <div className="flex gap-1.5">
+                      <div className="h-5 w-12 rounded bg-zinc-700/60" />
+                      <div className="h-5 w-12 rounded bg-zinc-700/60" />
+                    </div>
                   </div>
-                  <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
-                    <div className="w-2 h-2 rounded-full bg-zinc-400" />
-                    {isRTL ? '3 متعاونين' : '3 collaborators'}
+                  <div className="flex items-end gap-2 h-32">
+                    {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-t bg-gradient-to-t from-blue-500/60 to-blue-400/20 transition-all duration-700"
+                        style={{ height: visible ? `${h}%` : '8%', transitionDelay: `${600 + i * 50}ms` }}
+                      />
+                    ))}
                   </div>
                 </div>
 
-                {/* Dashboard Content */}
-                <div className="p-3 sm:p-4 md:p-6 relative">
-                  <AnimatedCursor />
-
-                  {/* Stats Row - responsive grid */}
-                  <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                    <StatCard label={isRTL ? 'مكتمل' : 'Completed'} value="147" change={12} index={0} />
-                    <StatCard label={isRTL ? 'المشاريع' : 'Projects'} value="23" change={-3} index={1} />
-                    <StatCard label={isRTL ? 'السرعة' : 'Velocity'} value="94%" change={8} index={2} />
-                  </div>
-
-                  {/* Chart Section */}
-                  <div className="mb-4 sm:mb-6">
-                    <div className="text-xs sm:text-sm text-zinc-400 mb-2 sm:mb-3">
-                      {isRTL ? 'التقدم الأسبوعي' : 'Weekly Progress'}
-                    </div>
-                    <div className="space-y-2 sm:space-y-3">
-                      <AnimatedBar width="85%" index={0} isHighlighted />
-                      <AnimatedBar width="72%" index={1} />
-                      <AnimatedBar width="93%" index={2} isHighlighted />
-                      <AnimatedBar width="61%" index={3} />
-                    </div>
-                  </div>
-
-                  {/* Tasks List */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2 sm:mb-3">
-                      <div className="text-xs sm:text-sm text-zinc-400">{isRTL ? 'مهام اليوم' : "Today's Tasks"}</div>
-                      <div className="text-[10px] sm:text-xs text-zinc-500 hover:text-white transition-colors cursor-pointer">
-                        {isRTL ? 'عرض الكل' : 'View all'}
+                {/* Side panel */}
+                <div className="rounded-xl bg-zinc-800/40 p-4 border border-zinc-700/20">
+                  <div className="h-3 w-16 rounded bg-zinc-700 mb-5" />
+                  <div className="space-y-4">
+                    {[70, 55, 85, 40].map((w, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="h-2 rounded bg-zinc-700" style={{ width: `${w}%` }} />
+                        <div className="h-1.5 w-full rounded-full bg-zinc-800">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-700"
+                            style={{ width: visible ? `${w}%` : '0%', transitionDelay: `${800 + i * 100}ms` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-0.5 sm:space-y-1">
-                      {tasks.map((task, i) => (
-                        <TaskItem key={task.task} {...task} index={i} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Elements - hidden on small mobile */}
-              <div
-                className={`hidden sm:block absolute -top-4 sm:-top-6 ${isRTL ? '-left-2 sm:-left-6' : '-right-2 sm:-right-6'} bg-black text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-lg text-xs sm:text-sm font-medium border border-zinc-800`}
-              >
-                {isRTL ? '+23% هذا الأسبوع' : '+23% this week'}
-              </div>
-
-              <div
-                className={`hidden sm:block absolute -bottom-3 sm:-bottom-4 ${isRTL ? '-right-2 sm:-right-4' : '-left-2 sm:-left-4'} bg-zinc-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-xl border border-zinc-700`}
-              >
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-zinc-700" />
-                  <div>
-                    <div className="text-[10px] sm:text-xs text-zinc-500">
-                      {isRTL ? 'إشعار جديد' : 'New notification'}
-                    </div>
-                    <div className="text-xs sm:text-sm font-medium text-white">
-                      {isRTL ? 'تم إكمال المهمة!' : 'Task completed!'}
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </section>

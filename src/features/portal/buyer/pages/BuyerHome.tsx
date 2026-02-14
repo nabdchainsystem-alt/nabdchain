@@ -14,12 +14,9 @@ import {
 import { Container, QuickActionCard } from '../../components';
 import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { buyerAnalyticsService } from '../../services/buyerAnalyticsService';
 import { BuyerAnalyticsSummary } from '../../types/analytics.types';
-import { MemoizedChart } from '../../../../components/common/MemoizedChart';
-import type { EChartsOption } from 'echarts';
-import { CallbackDataParams } from '../../../../types/echarts';
+import { ArrowRight } from 'phosphor-react';
 
 interface BuyerHomeProps {
   onNavigate: (page: string) => void;
@@ -38,7 +35,6 @@ const formatCurrency = (amount: number, currency: string = 'SAR'): string => {
 
 export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   const [analytics, setAnalytics] = useState<BuyerAnalyticsSummary | null>(null);
@@ -72,13 +68,7 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
   const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await getToken();
-      if (!token) {
-        // No token - just show empty state
-        setAnalytics(emptyAnalytics);
-        return;
-      }
-      const data = await buyerAnalyticsService.getAnalyticsSummary(token, { period: 'month' });
+      const data = await buyerAnalyticsService.getAnalyticsSummary({ period: 'month' });
       setAnalytics(data);
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
@@ -87,7 +77,7 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
@@ -129,80 +119,8 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
     };
   }, [analytics, t]);
 
-  // ECharts bar chart for spend by category
-  const chartOption = useMemo<EChartsOption>(() => {
-    if (!analytics || analytics.spendByCategory.length === 0) {
-      return {
-        title: {
-          text: t('buyer.home.noSpendData') || 'No spending data yet',
-          subtext: t('buyer.home.noSpendDataHint') || 'Your spend breakdown will appear here',
-          left: 'center',
-          top: 'center',
-          textStyle: { color: styles.textMuted, fontSize: 14 },
-          subtextStyle: { color: styles.textMuted, fontSize: 12 },
-        },
-      };
-    }
-
-    const categories = analytics.spendByCategory.map((c) => c.category);
-    const amounts = analytics.spendByCategory.map((c) => c.amount);
-
-    return {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' },
-        formatter: (params: CallbackDataParams | CallbackDataParams[]) => {
-          const data = (params as CallbackDataParams[])[0];
-          return `${data.name}<br/>SAR ${(data.value as number).toLocaleString()}`;
-        },
-      },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        top: '10%',
-        containLabel: true,
-      },
-      xAxis: {
-        type: 'category',
-        data: categories,
-        axisLabel: {
-          color: styles.textMuted,
-          fontSize: 11,
-          rotate: categories.length > 4 ? 30 : 0,
-        },
-        axisLine: { lineStyle: { color: styles.border } },
-        axisTick: { show: false },
-      },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          color: styles.textMuted,
-          fontSize: 11,
-          formatter: (value: number) => {
-            if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-            return value.toString();
-          },
-        },
-        axisLine: { show: false },
-        splitLine: { lineStyle: { color: styles.border, type: 'dashed' } },
-      },
-      series: [
-        {
-          type: 'bar',
-          data: amounts,
-          itemStyle: {
-            color: '#3b82f6',
-            borderRadius: [4, 4, 0, 0],
-          },
-          barWidth: '60%',
-          emphasis: {
-            itemStyle: { color: '#2563eb' },
-          },
-        },
-      ],
-    };
-  }, [analytics, styles]);
+  // RFQ-to-Order pipeline data
+  const funnel = analytics?.rfqFunnel;
 
   // Time-based greeting
   const greeting = useMemo(() => {
@@ -269,23 +187,120 @@ export const BuyerHome: React.FC<BuyerHomeProps> = ({ onNavigate }) => {
             />
           </div>
 
-          {/* Chart Section */}
+          {/* RFQ-to-Order Pipeline */}
           <div
             className="rounded-xl border p-4 mb-8"
             style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-                {t('buyer.home.spendByCategory') || 'Spend by Category'}
+                {t('buyer.home.pipeline') || 'RFQ to Order Pipeline'}
               </h2>
               <span className="text-xs" style={{ color: styles.textMuted }}>
                 {t('buyer.home.thisMonth') || 'This Month'}
               </span>
             </div>
             {loading ? (
-              <div className="h-64 rounded-lg animate-pulse" style={{ backgroundColor: styles.bgSecondary }} />
+              <div className="h-32 rounded-lg animate-pulse" style={{ backgroundColor: styles.bgSecondary }} />
+            ) : funnel && (funnel.rfqsSent > 0 || funnel.ordersPlaced > 0) ? (
+              <div>
+                {/* Funnel stages */}
+                <div className="flex items-stretch gap-2">
+                  {/* RFQs Sent */}
+                  <div className="flex-1 rounded-lg p-3" style={{ backgroundColor: styles.bgSecondary }}>
+                    <div
+                      className="text-[10px] uppercase tracking-wide font-medium mb-1"
+                      style={{ color: styles.textMuted }}
+                    >
+                      RFQs Sent
+                    </div>
+                    <div className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
+                      {funnel.rfqsSent}
+                    </div>
+                  </div>
+
+                  {/* Arrow + rate */}
+                  <div className="flex flex-col items-center justify-center px-1" style={{ minWidth: 48 }}>
+                    <ArrowRight size={16} style={{ color: styles.textMuted }} />
+                    <span
+                      className="text-[10px] font-medium mt-0.5"
+                      style={{ color: funnel.rfqToQuoteRate > 0 ? styles.success : styles.textMuted }}
+                    >
+                      {funnel.rfqToQuoteRate}%
+                    </span>
+                  </div>
+
+                  {/* Quotes Received */}
+                  <div className="flex-1 rounded-lg p-3" style={{ backgroundColor: styles.bgSecondary }}>
+                    <div
+                      className="text-[10px] uppercase tracking-wide font-medium mb-1"
+                      style={{ color: styles.textMuted }}
+                    >
+                      Quotes Received
+                    </div>
+                    <div className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
+                      {funnel.quotesReceived}
+                    </div>
+                  </div>
+
+                  {/* Arrow + rate */}
+                  <div className="flex flex-col items-center justify-center px-1" style={{ minWidth: 48 }}>
+                    <ArrowRight size={16} style={{ color: styles.textMuted }} />
+                    <span
+                      className="text-[10px] font-medium mt-0.5"
+                      style={{ color: funnel.quoteToOrderRate > 0 ? styles.success : styles.textMuted }}
+                    >
+                      {funnel.quoteToOrderRate}%
+                    </span>
+                  </div>
+
+                  {/* Orders Placed */}
+                  <div className="flex-1 rounded-lg p-3" style={{ backgroundColor: styles.bgSecondary }}>
+                    <div
+                      className="text-[10px] uppercase tracking-wide font-medium mb-1"
+                      style={{ color: styles.textMuted }}
+                    >
+                      Orders Placed
+                    </div>
+                    <div className="text-2xl font-bold" style={{ color: styles.textPrimary }}>
+                      {funnel.ordersPlaced}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conversion bar */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs" style={{ color: styles.textMuted }}>
+                      Overall Conversion
+                    </span>
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: funnel.overallConversionRate > 0 ? styles.success : styles.textMuted }}
+                    >
+                      {funnel.overallConversionRate}%
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: styles.bgSecondary }}>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(funnel.overallConversionRate, 100)}%`,
+                        backgroundColor: styles.success,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
             ) : (
-              <MemoizedChart option={chartOption} style={{ height: '256px', width: '100%' }} />
+              <div className="py-8 text-center">
+                <p className="text-sm" style={{ color: styles.textMuted }}>
+                  {t('buyer.home.noPipeline') || 'No activity this month yet'}
+                </p>
+                <p className="text-xs mt-1" style={{ color: styles.textMuted }}>
+                  Send RFQs or place orders to see your pipeline here
+                </p>
+              </div>
             )}
           </div>
 

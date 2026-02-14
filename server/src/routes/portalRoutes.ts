@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
@@ -54,7 +55,7 @@ router.get('/products', requireAuth, async (req, res: Response) => {
     const userId = (req as AuthRequest).auth.userId;
     const { status, category, search } = req.query;
 
-    const where: any = { userId };
+    const where: Prisma.PortalProductWhereInput = { userId };
     if (status) where.status = status as string;
     if (category) where.category = category as string;
     if (search) {

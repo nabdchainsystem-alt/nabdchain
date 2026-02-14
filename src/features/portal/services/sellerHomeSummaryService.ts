@@ -3,7 +3,7 @@
 // Consolidates all seller home data into a single request
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -78,6 +78,7 @@ export interface SellerHomeKPIs {
   rfqInbox: number;
   newRfqs: number;
   pendingPayout: number;
+  pendingCounterOffers: number;
   currency: string;
 }
 
@@ -123,6 +124,7 @@ const getMockSellerSummary = (days: number): SellerHomeSummary => ({
     rfqInbox: 1,
     newRfqs: 1,
     pendingPayout: 0,
+    pendingCounterOffers: 0,
     currency: 'USD',
   },
   alerts: [],
@@ -130,18 +132,20 @@ const getMockSellerSummary = (days: number): SellerHomeSummary => ({
     id: 'check-rfqs',
     priority: 'medium',
     title: 'Check your RFQ inbox',
-    titleAr: 'تحقق من صندوق طلبات الأسعار',
+    titleAr:
+      '\u062A\u062D\u0642\u0642 \u0645\u0646 \u0635\u0646\u062F\u0648\u0642 \u0637\u0644\u0628\u0627\u062A \u0627\u0644\u0623\u0633\u0639\u0627\u0631',
     description: 'You have new quote requests waiting',
-    descriptionAr: 'لديك طلبات أسعار جديدة في الانتظار',
+    descriptionAr:
+      '\u0644\u062F\u064A\u0643 \u0637\u0644\u0628\u0627\u062A \u0623\u0633\u0639\u0627\u0631 \u062C\u062F\u064A\u062F\u0629 \u0641\u064A \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631',
     ctaLabel: 'View RFQs',
-    ctaLabelAr: 'عرض الطلبات',
+    ctaLabelAr: '\u0639\u0631\u0636 \u0627\u0644\u0637\u0644\u0628\u0627\u062A',
     ctaRoute: 'rfqs',
     isEmpty: false,
   },
   systemHealth: {
     status: 'healthy',
     message: 'All systems operational',
-    messageAr: 'جميع الأنظمة تعمل',
+    messageAr: '\u062C\u0645\u064A\u0639 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u062A\u0639\u0645\u0644',
     issues: [],
   },
   onboarding: null,
@@ -163,23 +167,11 @@ export const sellerHomeSummaryService = {
    * Get complete seller home summary in a single request
    * This consolidates KPIs, alerts, focus, pulse, health, and onboarding
    */
-  async getSummary(token: string, days: number = 7): Promise<SellerHomeSummary> {
+  async getSummary(days: number = 7): Promise<SellerHomeSummary> {
     const isDevMode = localStorage.getItem('nabd_dev_mode') === 'true';
 
     try {
-      const response = await fetch(`${API_URL}/seller/home/summary?days=${days}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        // In dev mode, return mock data if API fails
-        if (isDevMode) {
-          return getMockSellerSummary(days);
-        }
-        throw new Error('Failed to fetch seller home summary');
-      }
-
-      const data = await response.json();
+      const data = await portalApiClient.get<SellerHomeSummary>(`/api/seller/home/summary?days=${days}`);
 
       // In dev mode, if user appears as "new" seller (from role switch), show active view
       if (isDevMode && data.sellerStatus === 'new') {
@@ -199,76 +191,36 @@ export const sellerHomeSummaryService = {
   /**
    * Get alerts only
    */
-  async getAlerts(token: string): Promise<SellerAlert[]> {
-    const response = await fetch(`${API_URL}/seller/home/alerts`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch alerts');
-    }
-
-    return response.json();
+  async getAlerts(): Promise<SellerAlert[]> {
+    return portalApiClient.get<SellerAlert[]>('/api/seller/home/alerts');
   },
 
   /**
    * Get focus item only
    */
-  async getFocus(token: string): Promise<SellerFocus> {
-    const response = await fetch(`${API_URL}/seller/home/focus`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch focus');
-    }
-
-    return response.json();
+  async getFocus(): Promise<SellerFocus> {
+    return portalApiClient.get<SellerFocus>('/api/seller/home/focus');
   },
 
   /**
    * Get business pulse data
    */
-  async getPulse(token: string, days: number = 7): Promise<BusinessPulseData> {
-    const response = await fetch(`${API_URL}/seller/home/pulse?days=${days}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch pulse data');
-    }
-
-    return response.json();
+  async getPulse(days: number = 7): Promise<BusinessPulseData> {
+    return portalApiClient.get<BusinessPulseData>(`/api/seller/home/pulse?days=${days}`);
   },
 
   /**
    * Get system health
    */
-  async getHealth(token: string): Promise<SystemHealth> {
-    const response = await fetch(`${API_URL}/seller/home/health`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch health');
-    }
-
-    return response.json();
+  async getHealth(): Promise<SystemHealth> {
+    return portalApiClient.get<SystemHealth>('/api/seller/home/health');
   },
 
   /**
    * Get onboarding progress
    */
-  async getOnboarding(token: string): Promise<OnboardingProgress | null> {
-    const response = await fetch(`${API_URL}/seller/home/onboarding`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch onboarding');
-    }
-
-    return response.json();
+  async getOnboarding(): Promise<OnboardingProgress | null> {
+    return portalApiClient.get<OnboardingProgress | null>('/api/seller/home/onboarding');
   },
 
   // Mock data generators removed during service consolidation - backend is single source of truth.

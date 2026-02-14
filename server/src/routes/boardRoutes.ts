@@ -1,4 +1,5 @@
 import express, { Response } from 'express';
+import type { Board } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
@@ -48,7 +49,7 @@ async function verifyWorkspaceAccess(userId: string, workspaceId: string): Promi
 }
 
 // Helper to verify board access
-async function verifyBoardAccess(userId: string, boardId: string): Promise<{ hasAccess: boolean; board: any }> {
+async function verifyBoardAccess(userId: string, boardId: string): Promise<{ hasAccess: boolean; board: Board | null }> {
     const board = await prisma.board.findUnique({ where: { id: boardId } });
 
     if (!board) {

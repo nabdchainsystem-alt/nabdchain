@@ -29,7 +29,6 @@ import {
   SortingState,
   RowSelectionState,
 } from '@tanstack/react-table';
-import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { Button, Select, EmptyState, SkeletonTableRow } from '../../components';
 import { rfqMarketplaceService } from '../../services/rfqMarketplaceService';
@@ -42,8 +41,6 @@ import {
   getCompetitionLevel,
   getCompetitionLevelConfig,
   formatQuantity,
-  formatCurrencyValue,
-  computeEstimatedValue,
   RFQ_CATEGORIES,
 } from '../../types/rfq-marketplace.types';
 import { SubmitMarketplaceQuoteModal } from '../components/SubmitMarketplaceQuoteModal';
@@ -69,7 +66,6 @@ const columnHelper = createColumnHelper<MarketplaceRFQ>();
 export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   // Data state
@@ -108,13 +104,6 @@ export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) =>
     setIsLoading(true);
     setError(null);
     try {
-      const token = await getToken();
-      if (!token) {
-        setError('Not authenticated');
-        setIsLoading(false);
-        return;
-      }
-
       const filters: MarketplaceFilters = {
         search: debouncedSearch || undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
@@ -126,7 +115,7 @@ export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) =>
         limit: 50,
       };
 
-      const response = await rfqMarketplaceService.getMarketplaceRFQs(token, filters);
+      const response = await rfqMarketplaceService.getMarketplaceRFQs(filters);
       setRfqs(response.rfqs);
       setStats(response.stats);
     } catch (err) {
@@ -135,32 +124,26 @@ export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, debouncedSearch, categoryFilter, deadlineFilter, sortBy, viewMode]);
+  }, [debouncedSearch, categoryFilter, deadlineFilter, sortBy, viewMode]);
 
   useEffect(() => {
     loadRFQs();
   }, [loadRFQs]);
 
   // Toggle save
-  const handleToggleSave = useCallback(
-    async (rfq: MarketplaceRFQ) => {
-      try {
-        const token = await getToken();
-        if (!token) return;
-
-        if (rfq.isSaved) {
-          await rfqMarketplaceService.unsaveRFQ(token, rfq.id);
-        } else {
-          await rfqMarketplaceService.saveRFQ(token, rfq.id);
-        }
-
-        setRfqs((prev) => prev.map((r) => (r.id === rfq.id ? { ...r, isSaved: !r.isSaved } : r)));
-      } catch (err) {
-        console.error('Failed to toggle save:', err);
+  const handleToggleSave = useCallback(async (rfq: MarketplaceRFQ) => {
+    try {
+      if (rfq.isSaved) {
+        await rfqMarketplaceService.unsaveRFQ(rfq.id);
+      } else {
+        await rfqMarketplaceService.saveRFQ(rfq.id);
       }
-    },
-    [getToken],
-  );
+
+      setRfqs((prev) => prev.map((r) => (r.id === rfq.id ? { ...r, isSaved: !r.isSaved } : r)));
+    } catch (err) {
+      console.error('Failed to toggle save:', err);
+    }
+  }, []);
 
   // Open quote modal
   const handleQuote = useCallback((rfq: MarketplaceRFQ) => {
@@ -270,20 +253,30 @@ export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) =>
         size: 100,
       }),
       columnHelper.display({
-        id: 'value',
+        id: 'targetPrice',
         meta: { align: 'center' as const },
-        header: 'Est. Value',
+        header: 'Target Price',
         cell: ({ row }) => {
           const rfq = row.original;
-          const value = computeEstimatedValue(rfq);
-
+          if (!rfq.targetPrice) {
+            return (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: styles.bgHover, color: styles.textMuted }}
+              >
+                Open
+              </span>
+            );
+          }
+          const currency = rfq.targetCurrency || 'SAR';
           return (
             <span className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.8rem' }}>
-              {formatCurrencyValue(value.min, value.currency)} - {formatCurrencyValue(value.max, value.currency)}
+              {rfq.targetPrice.toLocaleString()} {currency}
+              <span style={{ color: styles.textMuted, fontSize: '0.7rem' }}>/{rfq.unit || 'unit'}</span>
             </span>
           );
         },
-        size: 150,
+        size: 130,
       }),
       columnHelper.accessor('buyer', {
         meta: { align: 'center' as const },
@@ -336,6 +329,15 @@ export const RFQMarketplace: React.FC<RFQMarketplaceProps> = ({ onNavigate }) =>
         header: 'Deadline',
         cell: ({ row }) => {
           const rfq = row.original;
+
+          if (!rfq.deadline) {
+            return (
+              <span className="text-xs" style={{ color: styles.textMuted }}>
+                Open
+              </span>
+            );
+          }
+
           const urgency = getDeadlineUrgency(rfq.deadline);
 
           const urgencyColors = {

@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
 
@@ -28,9 +29,9 @@ router.get('/seller/:slug', async (req: Request, res: Response) => {
           contact: true,
         },
       });
-    } catch (dbError: any) {
+    } catch (dbError) {
       // Table may not exist - return 404
-      apiLogger.error('Database error (SellerProfile may not exist):', dbError.message);
+      apiLogger.error('Database error (SellerProfile may not exist):', dbError instanceof Error ? dbError.message : dbError);
       return res.status(404).json({ error: 'Seller not found' });
     }
 
@@ -114,8 +115,8 @@ router.get('/seller/:slug/products', async (req: Request, res: Response) => {
       seller = await prisma.sellerProfile.findUnique({
         where: { slug },
       });
-    } catch (dbError: any) {
-      apiLogger.error('Database error:', dbError.message);
+    } catch (dbError) {
+      apiLogger.error('Database error:', dbError instanceof Error ? dbError.message : dbError);
       return res.status(404).json({ error: 'Seller not found' });
     }
 
@@ -124,20 +125,20 @@ router.get('/seller/:slug/products', async (req: Request, res: Response) => {
     }
 
     // Build where clause
-    const where: any = {
-      sellerId: seller.userId,
+    const where: Prisma.ItemWhereInput = {
+      userId: seller.userId,
       status: 'active',
     };
 
     if (category) {
-      where.category = category;
+      where.category = category as string;
     }
 
     // Build order by
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: Prisma.ItemOrderByWithRelationInput = { createdAt: 'desc' };
     if (sort === 'price_low') orderBy = { price: 'asc' };
     if (sort === 'price_high') orderBy = { price: 'desc' };
-    if (sort === 'popular') orderBy = { viewCount: 'desc' };
+    if (sort === 'popular') orderBy = { createdAt: 'desc' }; // viewCount not in schema; fallback to newest
 
     try {
       const [products, total] = await Promise.all([
@@ -193,8 +194,8 @@ router.get('/seller/:slug/reviews', async (req: Request, res: Response) => {
       if (!seller) {
         return res.status(404).json({ error: 'Seller not found' });
       }
-    } catch (dbError: any) {
-      apiLogger.error('Database error:', dbError.message);
+    } catch (dbError) {
+      apiLogger.error('Database error:', dbError instanceof Error ? dbError.message : dbError);
       return res.status(404).json({ error: 'Seller not found' });
     }
 

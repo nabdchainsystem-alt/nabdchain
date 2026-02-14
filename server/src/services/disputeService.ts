@@ -8,7 +8,9 @@
 
 import { prisma } from '../lib/prisma';
 import type { MarketplaceDispute, Prisma } from '@prisma/client';
+import { portalNotificationService } from './portalNotificationService';
 import { apiLogger } from '../utils/logger';
+import { automationRulesService } from './automationRulesService';
 
 // =============================================================================
 // Types
@@ -303,6 +305,23 @@ async function createDispute(input: CreateDisputeInput): Promise<{ success: bool
       },
     });
 
+    // Notify seller: dispute opened
+    portalNotificationService.create({
+      userId: order.sellerId,
+      portalType: 'seller',
+      type: 'dispute_opened',
+      entityType: 'dispute',
+      entityId: dispute.id,
+      entityName: `Dispute ${disputeNumber} on Order ${order.orderNumber}`,
+      actorId: input.buyerId,
+      metadata: { disputeNumber, orderNumber: order.orderNumber, reason: input.reason },
+    }).catch(() => {});
+
+    // Fire-and-forget: trigger automation rules for dispute opened
+    automationRulesService.onDisputeOpened(dispute.id, order.sellerId).catch((err) => {
+      apiLogger.warn('Automation trigger failed for dispute opened:', err);
+    });
+
     return { success: true, dispute };
   } catch (error) {
     apiLogger.error('Error creating dispute:', error);
@@ -354,36 +373,25 @@ async function getBuyerDisputes(
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: any = { buyerId };
+  const dateFilter: Prisma.DateTimeFilter = {};
+  if (filters.dateFrom) dateFilter.gte = new Date(filters.dateFrom);
+  if (filters.dateTo) dateFilter.lte = new Date(filters.dateTo);
 
-  if (filters.status) {
-    where.status = filters.status;
-  }
-
-  if (filters.reason) {
-    where.reason = filters.reason;
-  }
-
-  if (filters.priority) {
-    where.priorityLevel = filters.priority;
-  }
-
-  if (filters.dateFrom) {
-    where.createdAt = { ...where.createdAt, gte: new Date(filters.dateFrom) };
-  }
-
-  if (filters.dateTo) {
-    where.createdAt = { ...where.createdAt, lte: new Date(filters.dateTo) };
-  }
-
-  if (filters.search) {
-    where.OR = [
-      { disputeNumber: { contains: filters.search, mode: 'insensitive' } },
-      { orderNumber: { contains: filters.search, mode: 'insensitive' } },
-      { itemName: { contains: filters.search, mode: 'insensitive' } },
-      { sellerName: { contains: filters.search, mode: 'insensitive' } },
-    ];
-  }
+  const where: Prisma.MarketplaceDisputeWhereInput = {
+    buyerId,
+    ...(filters.status && { status: filters.status }),
+    ...(filters.reason && { reason: filters.reason }),
+    ...(filters.priority && { priorityLevel: filters.priority }),
+    ...((filters.dateFrom || filters.dateTo) && { createdAt: dateFilter }),
+    ...(filters.search && {
+      OR: [
+        { disputeNumber: { contains: filters.search, mode: 'insensitive' as const } },
+        { orderNumber: { contains: filters.search, mode: 'insensitive' as const } },
+        { itemName: { contains: filters.search, mode: 'insensitive' as const } },
+        { sellerName: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
+  };
 
   const [disputes, total] = await Promise.all([
     prisma.marketplaceDispute.findMany({
@@ -422,36 +430,25 @@ async function getSellerDisputes(
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: any = { sellerId };
+  const dateFilter: Prisma.DateTimeFilter = {};
+  if (filters.dateFrom) dateFilter.gte = new Date(filters.dateFrom);
+  if (filters.dateTo) dateFilter.lte = new Date(filters.dateTo);
 
-  if (filters.status) {
-    where.status = filters.status;
-  }
-
-  if (filters.reason) {
-    where.reason = filters.reason;
-  }
-
-  if (filters.priority) {
-    where.priorityLevel = filters.priority;
-  }
-
-  if (filters.dateFrom) {
-    where.createdAt = { ...where.createdAt, gte: new Date(filters.dateFrom) };
-  }
-
-  if (filters.dateTo) {
-    where.createdAt = { ...where.createdAt, lte: new Date(filters.dateTo) };
-  }
-
-  if (filters.search) {
-    where.OR = [
-      { disputeNumber: { contains: filters.search, mode: 'insensitive' } },
-      { orderNumber: { contains: filters.search, mode: 'insensitive' } },
-      { itemName: { contains: filters.search, mode: 'insensitive' } },
-      { buyerName: { contains: filters.search, mode: 'insensitive' } },
-    ];
-  }
+  const where: Prisma.MarketplaceDisputeWhereInput = {
+    sellerId,
+    ...(filters.status && { status: filters.status }),
+    ...(filters.reason && { reason: filters.reason }),
+    ...(filters.priority && { priorityLevel: filters.priority }),
+    ...((filters.dateFrom || filters.dateTo) && { createdAt: dateFilter }),
+    ...(filters.search && {
+      OR: [
+        { disputeNumber: { contains: filters.search, mode: 'insensitive' as const } },
+        { orderNumber: { contains: filters.search, mode: 'insensitive' as const } },
+        { itemName: { contains: filters.search, mode: 'insensitive' as const } },
+        { buyerName: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
+  };
 
   const [disputes, total] = await Promise.all([
     prisma.marketplaceDispute.findMany({
@@ -699,6 +696,28 @@ async function sellerRespond(input: SellerRespondInput): Promise<{ success: bool
       }
     );
 
+    // Notify buyer about seller response
+    if (updated.status === 'resolved') {
+      // Seller accepted responsibility — notify both parties
+      portalNotificationService.create({
+        userId: dispute.buyerId,
+        portalType: 'buyer',
+        type: 'dispute_resolved',
+        entityType: 'dispute',
+        entityId: dispute.id,
+        entityName: `Dispute ${dispute.disputeNumber}`,
+        actorId: input.sellerId,
+      }).catch(() => {});
+      portalNotificationService.create({
+        userId: dispute.sellerId,
+        portalType: 'seller',
+        type: 'dispute_resolved',
+        entityType: 'dispute',
+        entityId: dispute.id,
+        entityName: `Dispute ${dispute.disputeNumber}`,
+      }).catch(() => {});
+    }
+
     return { success: true, dispute: updated };
   } catch (error) {
     apiLogger.error('Error submitting seller response:', error);
@@ -757,6 +776,25 @@ async function buyerAcceptResolution(
         amount: dispute.sellerProposedAmount,
       }
     );
+
+    // Notify both parties: dispute resolved
+    portalNotificationService.create({
+      userId: dispute.buyerId,
+      portalType: 'buyer',
+      type: 'dispute_resolved',
+      entityType: 'dispute',
+      entityId: dispute.id,
+      entityName: `Dispute ${dispute.disputeNumber}`,
+    }).catch(() => {});
+    portalNotificationService.create({
+      userId: dispute.sellerId,
+      portalType: 'seller',
+      type: 'dispute_resolved',
+      entityType: 'dispute',
+      entityId: dispute.id,
+      entityName: `Dispute ${dispute.disputeNumber}`,
+      actorId: buyerId,
+    }).catch(() => {});
 
     return { success: true, dispute: updated };
   } catch (error) {
@@ -863,6 +901,28 @@ async function escalateDispute(
       'escalated',
       { reason }
     );
+
+    // Notify both parties: dispute escalated
+    portalNotificationService.create({
+      userId: dispute.buyerId,
+      portalType: 'buyer',
+      type: 'dispute_escalated',
+      entityType: 'dispute',
+      entityId: dispute.id,
+      entityName: `Dispute ${dispute.disputeNumber}`,
+      actorId,
+      metadata: { reason },
+    }).catch(() => {});
+    portalNotificationService.create({
+      userId: dispute.sellerId,
+      portalType: 'seller',
+      type: 'dispute_escalated',
+      entityType: 'dispute',
+      entityId: dispute.id,
+      entityName: `Dispute ${dispute.disputeNumber}`,
+      actorId,
+      metadata: { reason },
+    }).catch(() => {});
 
     return { success: true, dispute: updated };
   } catch (error) {

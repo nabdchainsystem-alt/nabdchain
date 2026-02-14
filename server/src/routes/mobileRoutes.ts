@@ -1,7 +1,19 @@
 import { Router, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
+
+/** Represents a task parsed from Board.tasks JSON with board metadata */
+interface BoardTask {
+    id?: string;
+    status?: string;
+    priority?: string;
+    dueDate?: string;
+    boardId: string;
+    boardName: string;
+    [key: string]: unknown;
+}
 
 const router = Router();
 
@@ -12,7 +24,7 @@ router.get('/dashboard', requireAuth, async (req, res: Response) => {
         const { workspaceId } = req.query;
 
         // Get all boards for the user
-        const where: any = { userId };
+        const where: Prisma.BoardWhereInput = { userId };
         if (workspaceId) where.workspaceId = workspaceId as string;
 
         const boards = await prisma.board.findMany({
@@ -21,16 +33,16 @@ router.get('/dashboard', requireAuth, async (req, res: Response) => {
         });
 
         // Parse tasks from all boards
-        const allTasks: any[] = [];
+        const allTasks: BoardTask[] = [];
         for (const board of boards) {
             try {
-                const tasks = JSON.parse(board.tasks || '[]');
-                tasks.forEach((task: any) => {
+                const tasks = JSON.parse(board.tasks || '[]') as Record<string, unknown>[];
+                tasks.forEach((task) => {
                     allTasks.push({
                         ...task,
                         boardId: board.id,
                         boardName: board.name,
-                    });
+                    } as BoardTask);
                 });
             } catch {
                 // Skip boards with invalid task data
@@ -71,17 +83,17 @@ router.get('/dashboard', requireAuth, async (req, res: Response) => {
         });
 
         const inProgress = allTasks.filter((task) =>
-            ['Working on it', 'In Progress', 'Almost Done'].includes(task.status)
+            task.status && ['Working on it', 'In Progress', 'Almost Done'].includes(task.status)
         );
 
         const pending = allTasks.filter((task) =>
-            ['To Do', 'Not Started', 'Pending'].includes(task.status)
+            task.status && ['To Do', 'Not Started', 'Pending'].includes(task.status)
         );
 
         const completed = allTasks.filter((task) => task.status === 'Done');
 
         const highPriority = allTasks.filter((task) =>
-            ['Urgent', 'High'].includes(task.priority) && task.status !== 'Done'
+            task.priority && ['Urgent', 'High'].includes(task.priority) && task.status !== 'Done'
         );
 
         // Get GTD inbox count
@@ -126,25 +138,25 @@ router.get('/tasks', requireAuth, async (req, res: Response) => {
         const userId = (req as AuthRequest).auth.userId;
         const { workspaceId, status, priority, limit = '50', offset = '0' } = req.query;
 
-        const where: any = { userId };
-        if (workspaceId) where.workspaceId = workspaceId as string;
+        const where2: Prisma.BoardWhereInput = { userId };
+        if (workspaceId) where2.workspaceId = workspaceId as string;
 
         const boards = await prisma.board.findMany({
-            where,
+            where: where2,
             select: { id: true, name: true, tasks: true },
         });
 
         // Parse and flatten all tasks
-        let allTasks: any[] = [];
+        let allTasks: BoardTask[] = [];
         for (const board of boards) {
             try {
-                const tasks = JSON.parse(board.tasks || '[]');
-                tasks.forEach((task: any) => {
+                const tasks = JSON.parse(board.tasks || '[]') as Record<string, unknown>[];
+                tasks.forEach((task) => {
                     allTasks.push({
                         ...task,
                         boardId: board.id,
                         boardName: board.name,
-                    });
+                    } as BoardTask);
                 });
             } catch {
                 // Skip boards with invalid task data
@@ -214,8 +226,8 @@ router.patch('/tasks/:boardId/:taskId', requireAuth, async (req, res: Response) 
         }
 
         // Parse and update tasks
-        const tasks = JSON.parse(board.tasks || '[]');
-        const taskIndex = tasks.findIndex((t: any) => t.id === taskId);
+        const tasks = JSON.parse(board.tasks || '[]') as Record<string, unknown>[];
+        const taskIndex = tasks.findIndex((t) => t.id === taskId);
 
         if (taskIndex === -1) {
             return res.status(404).json({ error: 'Task not found' });

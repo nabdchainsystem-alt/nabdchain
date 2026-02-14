@@ -15,6 +15,13 @@ import { apiLogger } from '../utils/logger';
 
 export type QuoteStatus = 'draft' | 'sent' | 'revised' | 'expired' | 'accepted' | 'rejected';
 
+export interface CreateQuoteLineItemInput {
+  rfqLineItemId: string;
+  unitPrice: number;
+  quantity: number;
+  discount?: number;
+}
+
 export interface CreateQuoteInput {
   rfqId: string;
   sellerId: string;
@@ -30,6 +37,8 @@ export interface CreateQuoteInput {
   validUntil: Date;
   notes?: string;
   internalNotes?: string;
+  // Multi-item RFQ support: per-line-item pricing
+  lineItems?: CreateQuoteLineItemInput[];
 }
 
 export interface UpdateQuoteInput {
@@ -44,6 +53,8 @@ export interface UpdateQuoteInput {
   notes?: string;
   internalNotes?: string;
   changeReason?: string;
+  // Multi-item RFQ support: per-line-item pricing
+  lineItems?: CreateQuoteLineItemInput[];
 }
 
 // =============================================================================
@@ -131,6 +142,12 @@ async function createVersionSnapshot(
   createdBy: string,
   changeReason?: string
 ): Promise<void> {
+  // Snapshot line items if present
+  const quoteLineItems = await prisma.quoteLineItem.findMany({
+    where: { quoteId: quote.id },
+    orderBy: { position: 'asc' },
+  });
+
   await prisma.quoteVersion.create({
     data: {
       quoteId: quote.id,
@@ -148,6 +165,9 @@ async function createVersionSnapshot(
       status: quote.status,
       createdBy,
       changeReason,
+      lineItemsSnapshot: quoteLineItems.length > 0
+        ? JSON.stringify(quoteLineItems)
+        : null,
     },
   });
 }
@@ -213,6 +233,14 @@ export async function createDraft(input: CreateQuoteInput): Promise<{
     // Calculate total price
     const totalPrice = input.unitPrice * input.quantity - (input.discount || 0);
 
+    // Calculate total price: use line items if provided, otherwise use parent fields
+    let finalTotalPrice = totalPrice;
+    if (input.lineItems && input.lineItems.length > 0) {
+      finalTotalPrice = input.lineItems.reduce((sum, li) => {
+        return sum + (li.unitPrice * li.quantity - (li.discount || 0));
+      }, 0);
+    }
+
     // Create the quote
     const quote = await prisma.quote.create({
       data: {
@@ -222,7 +250,7 @@ export async function createDraft(input: CreateQuoteInput): Promise<{
         buyerId: input.buyerId,
         unitPrice: input.unitPrice,
         quantity: input.quantity,
-        totalPrice,
+        totalPrice: finalTotalPrice,
         currency: input.currency || 'SAR',
         discount: input.discount,
         discountPercent: input.discountPercent,
@@ -239,6 +267,30 @@ export async function createDraft(input: CreateQuoteInput): Promise<{
         rfq: true,
       },
     });
+
+    // Create QuoteLineItems for multi-item RFQs
+    if (input.lineItems && input.lineItems.length > 0) {
+      for (let i = 0; i < input.lineItems.length; i++) {
+        const li = input.lineItems[i];
+        const rfqLineItem = await prisma.rFQLineItem.findUnique({
+          where: { id: li.rfqLineItemId },
+        });
+        await prisma.quoteLineItem.create({
+          data: {
+            quoteId: quote.id,
+            rfqLineItemId: li.rfqLineItemId,
+            itemId: rfqLineItem?.itemId,
+            unitPrice: li.unitPrice,
+            quantity: li.quantity,
+            discount: li.discount,
+            totalPrice: li.unitPrice * li.quantity - (li.discount || 0),
+            itemName: rfqLineItem?.itemName,
+            itemSku: rfqLineItem?.itemSku,
+            position: i,
+          },
+        });
+      }
+    }
 
     // Create initial version snapshot
     await createVersionSnapshot(quote, input.sellerId, 'Initial draft created');
@@ -291,14 +343,47 @@ export async function updateQuote(
       return { success: false, error: 'Unauthorized: You do not own this quote' };
     }
 
+    // Helper: upsert line items if provided
+    const upsertLineItems = async (qId: string, lineItems: CreateQuoteLineItemInput[]) => {
+      // Delete existing and re-create for simplicity
+      await prisma.quoteLineItem.deleteMany({ where: { quoteId: qId } });
+      for (let i = 0; i < lineItems.length; i++) {
+        const li = lineItems[i];
+        const rfqLineItem = await prisma.rFQLineItem.findUnique({
+          where: { id: li.rfqLineItemId },
+        });
+        await prisma.quoteLineItem.create({
+          data: {
+            quoteId: qId,
+            rfqLineItemId: li.rfqLineItemId,
+            itemId: rfqLineItem?.itemId,
+            unitPrice: li.unitPrice,
+            quantity: li.quantity,
+            discount: li.discount,
+            totalPrice: li.unitPrice * li.quantity - (li.discount || 0),
+            itemName: rfqLineItem?.itemName,
+            itemSku: rfqLineItem?.itemSku,
+            position: i,
+          },
+        });
+      }
+    };
+
     // Handle based on current status
     if (existingQuote.status === 'draft') {
       // Direct update for drafts (increment version but stay in draft)
       const newVersion = existingQuote.version + 1;
-      const totalPrice =
+      let totalPrice =
         (input.unitPrice ?? existingQuote.unitPrice) *
           (input.quantity ?? existingQuote.quantity) -
         (input.discount ?? existingQuote.discount ?? 0);
+
+      // If line items provided, total = sum of line totals
+      if (input.lineItems && input.lineItems.length > 0) {
+        totalPrice = input.lineItems.reduce((sum, li) => {
+          return sum + (li.unitPrice * li.quantity - (li.discount || 0));
+        }, 0);
+      }
 
       const updatedQuote = await prisma.quote.update({
         where: { id: quoteId },
@@ -318,6 +403,11 @@ export async function updateQuote(
         },
         include: { rfq: true },
       });
+
+      // Upsert line items if provided
+      if (input.lineItems && input.lineItems.length > 0) {
+        await upsertLineItems(quoteId, input.lineItems);
+      }
 
       // Create version snapshot
       await createVersionSnapshot(updatedQuote, sellerId, input.changeReason || 'Draft updated');
@@ -338,10 +428,17 @@ export async function updateQuote(
     } else if (existingQuote.status === 'sent') {
       // For sent quotes, create a REVISED version
       const newVersion = existingQuote.version + 1;
-      const totalPrice =
+      let totalPrice =
         (input.unitPrice ?? existingQuote.unitPrice) *
           (input.quantity ?? existingQuote.quantity) -
         (input.discount ?? existingQuote.discount ?? 0);
+
+      // If line items provided, total = sum of line totals
+      if (input.lineItems && input.lineItems.length > 0) {
+        totalPrice = input.lineItems.reduce((sum, li) => {
+          return sum + (li.unitPrice * li.quantity - (li.discount || 0));
+        }, 0);
+      }
 
       const updatedQuote = await prisma.quote.update({
         where: { id: quoteId },
@@ -362,6 +459,11 @@ export async function updateQuote(
         },
         include: { rfq: true },
       });
+
+      // Upsert line items if provided
+      if (input.lineItems && input.lineItems.length > 0) {
+        await upsertLineItems(quoteId, input.lineItems);
+      }
 
       // Create version snapshot
       await createVersionSnapshot(
@@ -521,8 +623,10 @@ export async function getQuote(
         rfq: {
           include: {
             item: true,
+            lineItems: { orderBy: { position: 'asc' } },
           },
         },
+        lineItems: { orderBy: { position: 'asc' } },
         versions: {
           orderBy: { version: 'desc' },
         },
@@ -537,11 +641,33 @@ export async function getQuote(
     }
 
     // Verify user has access (seller or buyer)
-    if (quote.sellerId !== userId && quote.buyerId !== userId) {
+    // Check direct ID match first, then resolve buyer/seller profile ownership
+    let hasAccess = quote.sellerId === userId || quote.buyerId === userId;
+
+    if (!hasAccess) {
+      // Check if userId owns a BuyerProfile that matches the quote's buyerId
+      const buyerProfile = await prisma.buyerProfile.findFirst({
+        where: { userId, id: quote.buyerId },
+        select: { id: true },
+      });
+      if (buyerProfile) hasAccess = true;
+    }
+
+    if (!hasAccess) {
+      // Check if userId owns a SellerProfile that matches the quote's sellerId
+      const sellerProfile = await prisma.sellerProfile.findFirst({
+        where: { userId, id: quote.sellerId },
+        select: { id: true },
+      });
+      if (sellerProfile) hasAccess = true;
+    }
+
+    if (!hasAccess) {
       return { success: false, error: 'Unauthorized: You do not have access to this quote' };
     }
 
-    return { success: true, quote };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- extended include
+    return { success: true, quote: quote as any };
   } catch (error) {
     apiLogger.error('Error getting quote:', error);
     return { success: false, error: 'Failed to get quote' };
@@ -577,6 +703,7 @@ export async function getQuotesByRFQ(
     const quotes = await prisma.quote.findMany({
       where: { rfqId },
       include: {
+        lineItems: { orderBy: { position: 'asc' } },
         versions: {
           orderBy: { version: 'desc' },
         },
@@ -584,7 +711,8 @@ export async function getQuotesByRFQ(
       orderBy: { createdAt: 'desc' },
     });
 
-    return { success: true, quotes };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- extended include
+    return { success: true, quotes: quotes as any };
   } catch (error) {
     apiLogger.error('Error getting quotes for RFQ:', error);
     return { success: false, error: 'Failed to get quotes' };
@@ -625,8 +753,10 @@ export async function getSellerQuotes(
           rfq: {
             include: {
               item: true,
+              lineItems: { orderBy: { position: 'asc' } },
             },
           },
+          lineItems: { orderBy: { position: 'asc' } },
         },
         orderBy: { updatedAt: 'desc' },
         skip,
@@ -637,7 +767,8 @@ export async function getSellerQuotes(
 
     return {
       success: true,
-      quotes,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- extended include
+      quotes: quotes as any,
       pagination: {
         page,
         limit,

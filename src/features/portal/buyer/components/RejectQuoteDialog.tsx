@@ -4,13 +4,7 @@
 // =============================================================================
 
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  XCircle,
-  Spinner,
-  WarningCircle,
-} from 'phosphor-react';
-import { useAuth } from '../../../../auth-adapter';
+import { X, XCircle, Spinner, WarningCircle } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { marketplaceOrderService } from '../../services/marketplaceOrderService';
 import { Quote } from '../../types/item.types';
@@ -40,14 +34,8 @@ const REJECTION_REASONS = [
 // Component
 // =============================================================================
 
-export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
-  isOpen,
-  onClose,
-  quote,
-  onSuccess,
-}) => {
+export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({ isOpen, onClose, quote, onSuccess }) => {
   const { styles } = usePortal();
-  const { getToken } = useAuth();
 
   // Form state
   const [selectedReason, setSelectedReason] = useState('');
@@ -85,12 +73,7 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      await marketplaceOrderService.rejectQuote(token, quote.id, {
+      await marketplaceOrderService.rejectQuote(quote.id, {
         reason: reasonText,
       });
 
@@ -148,8 +131,7 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
         {/* Content */}
         <div className="p-6 space-y-4">
           <p className="text-sm" style={{ color: styles.textSecondary }}>
-            Please let the seller know why you're declining this quote. This helps them improve
-            their offerings.
+            Please let the seller know why you're declining this quote. This helps them improve their offerings.
           </p>
 
           {/* Reason Selection */}
@@ -159,11 +141,8 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
                 key={reason.value}
                 className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
                 style={{
-                  backgroundColor:
-                    selectedReason === reason.value ? `${styles.info}10` : styles.bgSecondary,
-                  border: `1px solid ${
-                    selectedReason === reason.value ? styles.info : 'transparent'
-                  }`,
+                  backgroundColor: selectedReason === reason.value ? `${styles.info}10` : styles.bgSecondary,
+                  border: `1px solid ${selectedReason === reason.value ? styles.info : 'transparent'}`,
                 }}
               >
                 <input
@@ -185,10 +164,7 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
           {/* Custom Reason Input */}
           {selectedReason === 'other' && (
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: styles.textPrimary }}
-              >
+              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
                 Please specify your reason
               </label>
               <textarea
@@ -208,10 +184,7 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div
-              className="flex items-center gap-2 p-3 rounded-lg"
-              style={{ backgroundColor: `${styles.error}15` }}
-            >
+            <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: `${styles.error}15` }}>
               <WarningCircle size={18} weight="fill" style={{ color: styles.error }} />
               <span className="text-sm" style={{ color: styles.error }}>
                 {error}
@@ -221,10 +194,7 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
         </div>
 
         {/* Footer */}
-        <div
-          className="flex gap-3 px-6 py-4 border-t"
-          style={{ borderColor: styles.borderLight }}
-        >
+        <div className="flex gap-3 px-6 py-4 border-t" style={{ borderColor: styles.borderLight }}>
           <button
             onClick={onClose}
             disabled={isSubmitting}
@@ -245,11 +215,7 @@ export const RejectQuoteDialog: React.FC<RejectQuoteDialogProps> = ({
               color: '#fff',
             }}
           >
-            {isSubmitting ? (
-              <Spinner size={20} className="animate-spin" />
-            ) : (
-              <XCircle size={20} weight="fill" />
-            )}
+            {isSubmitting ? <Spinner size={20} className="animate-spin" /> : <XCircle size={20} weight="fill" />}
             {isSubmitting ? 'Rejecting...' : 'Reject Quote'}
           </button>
         </div>

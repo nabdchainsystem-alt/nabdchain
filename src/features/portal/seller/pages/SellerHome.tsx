@@ -8,11 +8,11 @@ import {
   CheckCircle,
   Wallet,
   ChartLineUp,
+  Scales,
 } from 'phosphor-react';
-import { SkeletonStatCard, SkeletonBarChart, Skeleton, QuickActionCard } from '../../components';
+import { SkeletonStatCard, SkeletonBarChart, Skeleton } from '../../components';
 import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import {
   sellerHomeSummaryService,
   SellerHomeSummary,
@@ -35,7 +35,6 @@ type LoadingState = 'loading' | 'success' | 'error' | 'empty';
 
 export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
   const { styles, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   const [summary, setSummary] = useState<SellerHomeSummary | null>(null);
@@ -46,13 +45,7 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
   const fetchSummary = useCallback(async () => {
     setLoadingState('loading');
     try {
-      const token = await getToken();
-      if (!token) {
-        setLoadingState('error');
-        return;
-      }
-
-      const data = await sellerHomeSummaryService.getSummary(token, pulseDays);
+      const data = await sellerHomeSummaryService.getSummary(pulseDays);
       setSummary(data);
       setLoadingState(data.sellerStatus === 'new' ? 'empty' : 'success');
     } catch (err) {
@@ -60,19 +53,17 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
       setLoadingState('error');
       setSummary(null);
     }
-  }, [getToken, pulseDays]);
+  }, [pulseDays]);
 
   const fetchPulse = useCallback(async () => {
     if (!summary) return;
     try {
-      const token = await getToken();
-      if (!token) return;
-      const pulse = await sellerHomeSummaryService.getPulse(token, pulseDays);
+      const pulse = await sellerHomeSummaryService.getPulse(pulseDays);
       setSummary((prev) => (prev ? { ...prev, pulse } : prev));
     } catch {
       // Keep existing pulse data
     }
-  }, [getToken, pulseDays, summary]);
+  }, [pulseDays, summary]);
 
   useEffect(() => {
     fetchSummary();
@@ -142,9 +133,6 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
         {/* Success State - Calm Dashboard */}
         {loadingState === 'success' && summary && (
           <div className="space-y-8 pb-12">
-            {/* Quick Tools - Soft Buttons */}
-            <QuickToolsSection kpis={summary.kpis} styles={styles} isRtl={isRtl} onNavigate={handleNavigate} />
-
             {/* KPI Cards - Polished */}
             <KPISection kpis={summary.kpis} styles={styles} isRtl={isRtl} />
 
@@ -166,98 +154,12 @@ export const SellerHome: React.FC<SellerHomeProps> = ({ onNavigate }) => {
               </Suspense>
             </section>
 
-            {/* Quick Actions - Minimal */}
-            <QuickActionsSection styles={styles} isRtl={isRtl} onNavigate={handleNavigate} />
+            {/* Quick Actions */}
+            <QuickActionsSection kpis={summary.kpis} styles={styles} isRtl={isRtl} onNavigate={handleNavigate} />
           </div>
         )}
       </div>
     </div>
-  );
-};
-
-// =============================================================================
-// Quick Tools Section - Soft Ghost Buttons
-// =============================================================================
-
-const QuickToolsSection: React.FC<{
-  kpis: SellerHomeSummary['kpis'];
-  styles: Record<string, string>;
-  isRtl: boolean;
-  onNavigate: (route: string, filter?: string) => void;
-}> = ({ kpis, styles, isRtl, onNavigate }) => {
-  const tools = [
-    {
-      id: 'rfqs',
-      label: isRtl ? 'طلبات الأسعار' : 'RFQs',
-      badge: kpis.newRfqs > 0 ? kpis.newRfqs : null,
-      route: 'rfqs',
-      filter: kpis.newRfqs > 0 ? 'unread' : undefined,
-      icon: FileText,
-    },
-    {
-      id: 'orders',
-      label: isRtl ? 'الطلبات' : 'Orders',
-      badge: kpis.ordersNeedingAction > 0 ? kpis.ordersNeedingAction : null,
-      route: 'orders',
-      filter: kpis.ordersNeedingAction > 0 ? 'at_risk' : undefined,
-      icon: Package,
-    },
-    {
-      id: 'payouts',
-      label: isRtl ? 'المدفوعات' : 'Payouts',
-      badge: null,
-      route: 'payouts',
-      icon: Wallet,
-    },
-    {
-      id: 'listings',
-      label: isRtl ? 'المنتجات' : 'Listings',
-      badge: null,
-      route: 'listings',
-      icon: Storefront,
-    },
-  ];
-
-  return (
-    <section>
-      <h2
-        className={`text-xs font-medium uppercase tracking-wider mb-3 ${isRtl ? 'text-right' : ''}`}
-        style={{ color: styles.textMuted }}
-      >
-        {isRtl ? 'أدوات سريعة' : 'Quick tools'}
-      </h2>
-      <div className={`flex flex-wrap gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
-        {tools.map((tool) => (
-          <button
-            key={tool.id}
-            onClick={() => onNavigate(tool.route, tool.filter)}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${isRtl ? 'flex-row-reverse' : ''}`}
-            style={{
-              color: styles.textSecondary,
-              backgroundColor: 'transparent',
-              border: `1px solid ${styles.border}`,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = styles.bgSecondary;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <tool.icon size={14} weight="regular" />
-            <span>{tool.label}</span>
-            {tool.badge && (
-              <span
-                className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                style={{ backgroundColor: styles.bgSecondary, color: styles.textPrimary }}
-              >
-                {tool.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-    </section>
   );
 };
 
@@ -354,19 +256,73 @@ const KPISection: React.FC<{
 KPISection.displayName = 'KPISection';
 
 // =============================================================================
-// Quick Actions Section - Smaller & Calmer
+// Quick Actions Section - Unified, no duplicates
 // =============================================================================
 
 const QuickActionsSection: React.FC<{
+  kpis: SellerHomeSummary['kpis'];
   styles: Record<string, string>;
   isRtl: boolean;
-  onNavigate: (route: string) => void;
-}> = React.memo(({ styles, isRtl, onNavigate }) => {
+  onNavigate: (route: string, filter?: string) => void;
+}> = React.memo(({ kpis, styles, isRtl, onNavigate }) => {
   const actions = [
-    { id: 'rfqs', label: isRtl ? 'صندوق الطلبات' : 'RFQ Inbox', route: 'rfqs', icon: FileText },
-    { id: 'orders', label: isRtl ? 'الطلبات' : 'Orders', route: 'orders', icon: Package },
-    { id: 'listings', label: isRtl ? 'المنتجات' : 'Listings', route: 'listings', icon: Storefront },
-    { id: 'analytics', label: isRtl ? 'التحليلات' : 'Analytics', route: 'analytics', icon: ChartLineUp },
+    {
+      id: 'rfqs',
+      label: isRtl ? 'طلبات الأسعار' : 'RFQ Inbox',
+      desc: isRtl ? 'راجع واستجب للطلبات' : 'Review & respond to quotes',
+      route: 'rfqs',
+      filter: kpis.newRfqs > 0 ? 'unread' : (kpis.pendingCounterOffers || 0) > 0 ? 'counter-offers' : undefined,
+      icon: FileText,
+      color: '#7c3aed',
+      badge:
+        kpis.newRfqs + (kpis.pendingCounterOffers || 0) > 0 ? kpis.newRfqs + (kpis.pendingCounterOffers || 0) : null,
+    },
+    {
+      id: 'orders',
+      label: isRtl ? 'الطلبات' : 'Orders',
+      desc: isRtl ? 'تتبع وأدر طلباتك' : 'Track & manage orders',
+      route: 'orders',
+      filter: kpis.ordersNeedingAction > 0 ? 'at_risk' : undefined,
+      icon: Package,
+      color: '#2563eb',
+      badge: kpis.ordersNeedingAction > 0 ? kpis.ordersNeedingAction : null,
+    },
+    {
+      id: 'listings',
+      label: isRtl ? 'المنتجات' : 'Listings',
+      desc: isRtl ? 'أدر كتالوج منتجاتك' : 'Manage your products',
+      route: 'listings',
+      icon: Storefront,
+      color: '#059669',
+      badge: null,
+    },
+    {
+      id: 'payouts',
+      label: isRtl ? 'المدفوعات' : 'Payouts',
+      desc: isRtl ? 'عرض الأرباح والمدفوعات' : 'View earnings & payouts',
+      route: 'payouts',
+      icon: Wallet,
+      color: '#d97706',
+      badge: null,
+    },
+    {
+      id: 'disputes',
+      label: isRtl ? 'النزاعات' : 'Disputes',
+      desc: isRtl ? 'حل المشكلات مع المشترين' : 'Resolve buyer issues',
+      route: 'disputes',
+      icon: Scales,
+      color: '#dc2626',
+      badge: null,
+    },
+    {
+      id: 'analytics',
+      label: isRtl ? 'التحليلات' : 'Analytics',
+      desc: isRtl ? 'تقارير المبيعات والأداء' : 'Sales insights & reports',
+      route: 'analytics',
+      icon: ChartLineUp,
+      color: '#6366f1',
+      badge: null,
+    },
   ];
 
   return (
@@ -377,15 +333,48 @@ const QuickActionsSection: React.FC<{
       >
         {isRtl ? 'إجراءات سريعة' : 'Quick actions'}
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {actions.map((action) => (
-          <QuickActionCard
+          <button
             key={action.id}
-            icon={action.icon}
-            title={action.label}
-            onClick={() => onNavigate(action.route)}
-            variant="compact"
-          />
+            onClick={() => onNavigate(action.route, action.filter)}
+            className={`group flex items-center gap-3.5 p-4 rounded-xl border transition-all hover:shadow-sm ${isRtl ? 'flex-row-reverse text-right' : 'text-left'}`}
+            style={{
+              backgroundColor: styles.bgCard,
+              borderColor: styles.border,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = action.color;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = styles.border;
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${action.color}12` }}
+            >
+              <action.icon size={20} weight="duotone" style={{ color: action.color }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                  {action.label}
+                </span>
+                {action.badge && (
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                    style={{ backgroundColor: action.color, color: '#fff' }}
+                  >
+                    {action.badge}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs mt-0.5 truncate" style={{ color: styles.textMuted }}>
+                {action.desc}
+              </p>
+            </div>
+          </button>
         ))}
       </div>
     </section>

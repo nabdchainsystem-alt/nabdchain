@@ -1,14 +1,5 @@
 import React, { ReactNode, useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import {
-  MagnifyingGlass,
-  User,
-  Moon,
-  Sun,
-  GearSix,
-  ArrowsLeftRight,
-  SignOut,
-  Scales,
-} from 'phosphor-react';
+import { MagnifyingGlass, User, Moon, Sun, GearSix, ArrowsLeftRight, SignOut, Scales } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 import { NotificationBell } from './NotificationBell';
 import { ManualCompareModal } from './ManualCompareModal';
@@ -72,30 +63,33 @@ export const ContentTopBar: React.FC<ContentTopBarProps> = ({
   }, [onNavigate]);
 
   // Memoized menu items array
-  const accountMenuItems = useMemo(() => [
-    {
-      id: 'profile',
-      icon: User,
-      label: t('common.profile') || 'Profile',
-      onClick: handleProfileClick,
-    },
-    {
-      id: 'switch',
-      icon: ArrowsLeftRight,
-      label: t('common.switchAccount') || 'Switch Account',
-      sublabel: role === 'seller' ? t('common.buyer') : t('common.seller'),
-      onClick: handleRoleSwitchClick,
-    },
-    {
-      id: 'settings',
-      icon: GearSix,
-      label:
-        role === 'seller'
-          ? t('seller.settings.title') || 'Seller Settings'
-          : t('buyer.settings.title') || 'Buyer Settings',
-      onClick: handleSettingsClick,
-    },
-  ], [t, role, handleProfileClick, handleRoleSwitchClick, handleSettingsClick]);
+  const accountMenuItems = useMemo(
+    () => [
+      {
+        id: 'profile',
+        icon: User,
+        label: t('common.profile') || 'Profile',
+        onClick: handleProfileClick,
+      },
+      {
+        id: 'switch',
+        icon: ArrowsLeftRight,
+        label: t('common.switchAccount') || 'Switch Account',
+        sublabel: role === 'seller' ? t('common.buyer') : t('common.seller'),
+        onClick: handleRoleSwitchClick,
+      },
+      {
+        id: 'settings',
+        icon: GearSix,
+        label:
+          role === 'seller'
+            ? t('seller.settings.title') || 'Seller Settings'
+            : t('buyer.settings.title') || 'Buyer Settings',
+        onClick: handleSettingsClick,
+      },
+    ],
+    [t, role, handleProfileClick, handleRoleSwitchClick, handleSettingsClick],
+  );
 
   return (
     <header
@@ -108,10 +102,7 @@ export const ContentTopBar: React.FC<ContentTopBarProps> = ({
       {/* Left: Page Title (optional) */}
       <div className="flex items-center">
         {title && (
-          <h1
-            className="text-lg font-semibold"
-            style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}
-          >
+          <h1 className="text-lg font-semibold" style={{ color: styles.textPrimary, fontFamily: styles.fontHeading }}>
             {title}
           </h1>
         )}
@@ -196,7 +187,7 @@ export const ContentTopBar: React.FC<ContentTopBarProps> = ({
         {actions}
 
         {/* Notifications */}
-        <NotificationBell />
+        <NotificationBell onNavigate={onNavigate} />
 
         {/* User Avatar with Dropdown */}
         <div className="relative" ref={accountRef}>
@@ -287,10 +278,7 @@ export const ContentTopBar: React.FC<ContentTopBarProps> = ({
 
       {/* Manual Compare Modal - Buyer only */}
       {role === 'buyer' && (
-        <ManualCompareModal
-          isOpen={isManualCompareOpen}
-          onClose={() => setIsManualCompareOpen(false)}
-        />
+        <ManualCompareModal isOpen={isManualCompareOpen} onClose={() => setIsManualCompareOpen(false)} />
       )}
     </header>
   );

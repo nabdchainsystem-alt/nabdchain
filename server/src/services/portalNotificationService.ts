@@ -17,9 +17,14 @@ export type NotificationCategory = 'rfq' | 'order' | 'invoice' | 'dispute' | 'pa
 export type PortalNotificationType =
   // RFQ Notifications
   | 'rfq_received'
+  | 'rfq_declined'
   | 'rfq_expiring_soon'
   | 'rfq_expired'
   | 'rfq_quote_received'
+  // Counter-Offer Notifications
+  | 'counter_offer_received'
+  | 'counter_offer_accepted'
+  | 'counter_offer_rejected'
   // Order Notifications
   | 'order_created'
   | 'order_confirmed'
@@ -70,6 +75,11 @@ const NOTIFICATION_TEMPLATES: Record<PortalNotificationType, {
     priority: 'high',
     category: 'rfq',
   },
+  rfq_declined: {
+    title: 'Your RFQ was declined by seller',
+    priority: 'high',
+    category: 'rfq',
+  },
   rfq_expiring_soon: {
     title: 'RFQ expires in 24 hours',
     priority: 'high',
@@ -85,6 +95,22 @@ const NOTIFICATION_TEMPLATES: Record<PortalNotificationType, {
   rfq_quote_received: {
     title: 'Quote received for your RFQ',
     priority: 'high',
+    category: 'rfq',
+  },
+  // Counter-Offer
+  counter_offer_received: {
+    title: 'New counter-offer on your quote',
+    priority: 'high',
+    category: 'rfq',
+  },
+  counter_offer_accepted: {
+    title: 'Your counter-offer was accepted',
+    priority: 'high',
+    category: 'rfq',
+  },
+  counter_offer_rejected: {
+    title: 'Your counter-offer was declined',
+    priority: 'normal',
     category: 'rfq',
   },
   // Order
@@ -256,6 +282,44 @@ function groupNotifications(notifications: NotificationRecord[]): NotificationRe
 }
 
 // =============================================================================
+// User ID Resolution
+// =============================================================================
+
+/**
+ * Resolve a profile ID (BuyerProfile.id or SellerProfile.id) to the User.id.
+ * If the ID already exists in the User table, return it as-is.
+ * Otherwise, look it up in BuyerProfile or SellerProfile.
+ */
+async function resolveUserId(profileOrUserId: string, portalType: PortalType): Promise<string> {
+  // Fast path: if it looks like a Clerk-style user ID, it's already a User.id
+  if (profileOrUserId.startsWith('usr_') || profileOrUserId.startsWith('user_')) {
+    return profileOrUserId;
+  }
+
+  // Check BuyerProfile or SellerProfile to find the User.id
+  try {
+    if (portalType === 'buyer') {
+      const buyer = await prisma.buyerProfile.findUnique({
+        where: { id: profileOrUserId },
+        select: { userId: true },
+      });
+      if (buyer?.userId) return buyer.userId;
+    } else {
+      const seller = await prisma.sellerProfile.findUnique({
+        where: { id: profileOrUserId },
+        select: { userId: true },
+      });
+      if (seller?.userId) return seller.userId;
+    }
+  } catch {
+    // Fall through to return original ID
+  }
+
+  // If lookup fails, return original (may be a User.id already)
+  return profileOrUserId;
+}
+
+// =============================================================================
 // Service Methods
 // =============================================================================
 
@@ -278,6 +342,9 @@ export const portalNotificationService = {
       return;
     }
 
+    // Resolve profile ID → User.id so notifications match the JWT userId
+    const resolvedUserId = await resolveUserId(input.userId, input.portalType);
+
     // Build action URL based on entity type
     const actionUrl = buildActionUrl(input.portalType, input.entityType, input.entityId);
 
@@ -293,7 +360,7 @@ export const portalNotificationService = {
       // Create notification in database
       const notification = await prisma.notification.create({
         data: {
-          userId: input.userId,
+          userId: resolvedUserId,
           type: input.type,
           title: template.title,
           body: input.entityName || null,
@@ -313,11 +380,11 @@ export const portalNotificationService = {
         },
       });
 
-      apiLogger.debug(`[PortalNotificationService] Created notification ${notification.id} for user ${input.userId}`);
+      apiLogger.debug(`[PortalNotificationService] Created notification ${notification.id} for user ${resolvedUserId}`);
 
       // Emit real-time notification via WebSocket
       if (io) {
-        io.to(`user:${input.userId}`).emit('portal-notification', {
+        io.to(`user:${resolvedUserId}`).emit('portal-notification', {
           id: notification.id,
           type: input.type,
           title: template.title,

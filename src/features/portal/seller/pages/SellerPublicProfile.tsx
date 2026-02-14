@@ -683,23 +683,26 @@ const ListingsPreview: React.FC<ListingsPreviewProps> = ({
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {products.map((product) => (
           <div
             key={product.id}
             onClick={() => onNavigateToProduct?.(product.id)}
-            className="rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md group"
+            className="rounded-lg overflow-hidden cursor-pointer transition-all group"
             style={{
-              backgroundColor: styles.bgSecondary as string,
+              backgroundColor: styles.bgCard as string,
               border: `1px solid ${styles.border}`,
             }}
           >
-            {/* Product Image */}
-            <div className="aspect-[4/3] overflow-hidden relative">
+            {/* Product Image — fixed height, contained */}
+            <div
+              className="h-[160px] overflow-hidden relative flex items-center justify-center"
+              style={{ backgroundColor: styles.isDark ? (styles.bgSecondary as string) : '#f7f7f7' }}
+            >
               <img
                 src={product.imageUrl || defaultImage}
                 alt={isRtl && product.nameAr ? product.nameAr : product.name}
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                className="max-w-full max-h-full object-contain"
               />
               {/* Visibility Badge */}
               {product.status === 'rfq_only' && (
@@ -714,16 +717,19 @@ const ListingsPreview: React.FC<ListingsPreviewProps> = ({
                 </span>
               )}
             </div>
-            {/* Product Info */}
-            <div className="p-3">
-              <h3 className="font-medium text-sm line-clamp-2 mb-2" style={{ color: styles.textPrimary as string }}>
+            {/* Product Info — dense layout */}
+            <div className="px-2.5 py-2">
+              <h3
+                className="font-medium text-[13px] leading-tight line-clamp-2 min-h-[2.25rem]"
+                style={{ color: styles.textPrimary as string }}
+              >
                 {isRtl && product.nameAr ? product.nameAr : product.name}
               </h3>
-              <div className="flex items-center justify-between">
-                <div className="font-bold" style={{ color: styles.info as string }}>
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-sm font-bold" style={{ color: styles.textPrimary as string }}>
                   {product.currency} {product.price.toLocaleString()}
                 </div>
-                <div className="text-xs" style={{ color: styles.textMuted as string }}>
+                <div className="text-[10px]" style={{ color: styles.textMuted as string }}>
                   MOQ: {product.moq}
                 </div>
               </div>

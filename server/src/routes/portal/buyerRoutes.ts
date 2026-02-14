@@ -12,8 +12,8 @@ import { apiLogger } from '../../utils/logger';
 // Import existing services
 import itemService from '../../services/itemService';
 import { quoteService } from '../../services/quoteService';
-import { marketplaceOrderService } from '../../services/marketplaceOrderService';
-import { marketplaceInvoiceService } from '../../services/marketplaceInvoiceService';
+import { marketplaceOrderService, OrderStatus } from '../../services/marketplaceOrderService';
+import { marketplaceInvoiceService, InvoiceStatus } from '../../services/marketplaceInvoiceService';
 import { counterOfferService } from '../../services/counterOfferService';
 
 // Import cart service - exports functions directly
@@ -309,7 +309,7 @@ router.get('/orders', requireAuth, async (req, res: Response) => {
     const { status, page, limit } = req.query;
 
     const result = await marketplaceOrderService.getBuyerOrders(buyerId, {
-      status: status as any,
+      status: status as OrderStatus | undefined,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
     });
@@ -369,7 +369,7 @@ router.get('/invoices', requireAuth, async (req, res: Response) => {
     const { status, page, limit } = req.query;
 
     const result = await marketplaceInvoiceService.getBuyerInvoices(buyerId, {
-      status: status as any,
+      status: status as InvoiceStatus | undefined,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
     });

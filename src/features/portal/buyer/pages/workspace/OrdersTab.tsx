@@ -27,7 +27,6 @@ import {
   Handshake,
   Spinner,
 } from 'phosphor-react';
-import { useAuth } from '../../../../../auth-adapter';
 import { Select, EmptyState } from '../../../components';
 import { usePortal } from '../../../context/PortalContext';
 import { marketplaceOrderService } from '../../../services/marketplaceOrderService';
@@ -204,7 +203,6 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   initialHealthFilter = 'all',
 }) => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   // State for API data
@@ -225,12 +223,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
       try {
         setIsLoading(true);
         setError(null);
-        const token = await getToken();
-        if (!token) {
-          setError('Authentication required');
-          return;
-        }
-        const response = await marketplaceOrderService.getBuyerOrders(token, { limit: 100 });
+        const response = await marketplaceOrderService.getBuyerOrders({ limit: 100 });
         setOrders(response.orders);
       } catch (err) {
         console.error('Failed to fetch orders:', err);
@@ -240,7 +233,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
       }
     };
     fetchOrders();
-  }, [getToken]);
+  }, []);
 
   // Filtered data
   const filteredData = useMemo(() => {
@@ -331,13 +324,13 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
         header: () => <span className="w-full text-center block">{t('common.actions')}</span>,
         cell: (info) => {
           const order = info.row.original;
-          const canTrack = !['cancelled', 'failed', 'refunded'].includes(order.status);
+          const canTrack = ['shipped', 'delivered'].includes(order.status);
 
           return (
             <div className="flex items-center justify-center gap-1">
               {canTrack && onNavigate && (
                 <button
-                  onClick={() => onNavigate('order-tracking', { orderId: order.id })}
+                  onClick={() => onNavigate('tracking')}
                   className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80"
                   style={{
                     backgroundColor: styles.isDark ? '#1e3a5f' : '#dbeafe',

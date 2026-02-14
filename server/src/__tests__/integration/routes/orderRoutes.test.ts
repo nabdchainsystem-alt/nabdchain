@@ -68,6 +68,16 @@ vi.mock('../../../lib/prisma', () => ({
     marketplaceOrderAudit: {
       create: vi.fn(),
     },
+    buyerProfile: {
+      findUnique: vi.fn().mockResolvedValue({ id: 'test-buyer-id' }),
+      findFirst: vi.fn().mockResolvedValue({ id: 'test-buyer-id' }),
+    },
+  },
+}));
+
+vi.mock('../../../services/marketplaceInvoiceService', () => ({
+  marketplaceInvoiceService: {
+    createFromDeliveredOrder: vi.fn().mockResolvedValue({ success: true, invoice: { id: 'inv-1', invoiceNumber: 'INV-001' } }),
   },
 }));
 
@@ -93,7 +103,10 @@ import { prisma } from '../../../lib/prisma';
 // ---------------------------------------------------------------------------
 
 const sellerApp = createTestApp(orderRouter, '/api/orders', { userId: TEST_SELLER_ID });
-const buyerApp = createTestApp(orderRouter, '/api/orders', { userId: TEST_BUYER_ID });
+const buyerApp = createTestApp(orderRouter, '/api/orders', {
+  userId: TEST_BUYER_ID,
+  portalAuth: { userId: TEST_BUYER_ID, portalRole: 'buyer', buyerId: TEST_BUYER_ID },
+});
 
 const mockOrder = {
   id: 'order-1',

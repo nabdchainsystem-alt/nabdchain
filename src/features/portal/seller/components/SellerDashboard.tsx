@@ -27,7 +27,7 @@ export const SellerDashboard: React.FC = () => {
       if (!token) {
         throw new Error('Not authenticated');
       }
-      const data = await dashboardService.getSellerSummary(token);
+      const data = await dashboardService.getSellerSummary();
       setSummary(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard');

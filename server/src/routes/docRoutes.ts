@@ -1,4 +1,5 @@
 import express, { Response } from 'express';
+import { DocPage } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
@@ -55,7 +56,7 @@ async function verifyRoomAccess(userId: string, roomId: string): Promise<boolean
 }
 
 // Helper to verify page access via its container (room or board)
-async function verifyPageAccess(userId: string, pageId: string): Promise<{ hasAccess: boolean; page: any }> {
+async function verifyPageAccess(userId: string, pageId: string): Promise<{ hasAccess: boolean; page: DocPage | null }> {
     const page = await prisma.docPage.findUnique({ where: { id: pageId } });
     if (!page) return { hasAccess: false, page: null };
 

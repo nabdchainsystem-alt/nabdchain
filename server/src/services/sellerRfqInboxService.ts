@@ -6,6 +6,7 @@
 
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { portalNotificationService } from './portalNotificationService';
 
 // =============================================================================
 // Types
@@ -444,6 +445,7 @@ export const sellerRfqInboxService = {
               leadTimeDays: true,
             },
           },
+          lineItems: { orderBy: { position: 'asc' } },
           labels: {
             include: {
               label: {
@@ -660,6 +662,7 @@ export const sellerRfqInboxService = {
             leadTimeDays: true,
           },
         },
+        lineItems: { orderBy: { position: 'asc' } },
         events: {
           orderBy: { createdAt: 'desc' },
           take: 50, // Limit history
@@ -741,7 +744,7 @@ export const sellerRfqInboxService = {
       ignoredReason: rfq.ignoredReason,
       timeSinceReceived: formatTimeSinceReceived(rfq.createdAt),
       slaWarning: false, // Not a warning once viewed
-      rfqType: (rfq as any).rfqType as 'DIRECT' | 'MARKETPLACE' || 'MARKETPLACE',
+      rfqType: (rfq.rfqType as 'DIRECT' | 'MARKETPLACE') || 'MARKETPLACE',
       // Gmail-style fields
       isRead: rfq.viewedAt != null,
       isArchived: rfq.ignoredAt != null,
@@ -874,6 +877,32 @@ export const sellerRfqInboxService = {
         },
       }),
     ]);
+
+    // Send notification to buyer when seller declines
+    if (newStatus === 'ignored') {
+      // Resolve seller name for notification
+      const sellerProfile = await prisma.sellerProfile.findFirst({
+        where: { OR: [{ id: actualSellerId }, { userId: actualSellerId }] },
+        select: { displayName: true, userId: true },
+      });
+      const sellerName = sellerProfile?.displayName || 'Seller';
+
+      const itemName = updatedRfq.item?.name || rfq.rfqNumber || rfq.id.slice(0, 8);
+
+      portalNotificationService.create({
+        userId: rfq.buyerId,
+        portalType: 'buyer',
+        type: 'rfq_declined',
+        entityType: 'rfq',
+        entityId: rfq.id,
+        entityName: `${itemName} — ${options?.reason || 'No reason provided'}`,
+        actorId: actualSellerId,
+        actorName: sellerName,
+        metadata: { reason: options?.reason, sellerName },
+      }).catch(() => {
+        // Non-blocking: don't fail the decline if notification fails
+      });
+    }
 
     // Transform and return
     const statusResult = await this._transformRfqForResponse(updatedRfq);

@@ -5,6 +5,7 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
 import { apiLogger } from '../utils/logger';
+import { automationRulesService } from './automationRulesService';
 
 // =============================================================================
 // Types
@@ -213,6 +214,12 @@ export const orderService = {
       const orders = await prisma.marketplaceOrder.findMany({
         where,
         orderBy: { createdAt: 'desc' },
+        include: {
+          lineItems: { orderBy: { position: 'asc' } },
+          invoice: {
+            select: { id: true, status: true, invoiceNumber: true, totalAmount: true },
+          },
+        },
       });
 
       // Get audit logs for each order
@@ -233,6 +240,9 @@ export const orderService = {
         ...order,
         shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
         auditLog: auditMap.get(order.id) || [],
+        invoiceId: order.invoice?.id || null,
+        invoiceStatus: order.invoice?.status || null,
+        invoiceNumber: order.invoice?.invoiceNumber || null,
       }));
 
       // Return actual data (empty array if no orders - production mode)
@@ -249,6 +259,12 @@ export const orderService = {
   async getSellerOrder(sellerId: string, orderId: string) {
     const order = await prisma.marketplaceOrder.findFirst({
       where: { id: orderId, sellerId },
+      include: {
+        lineItems: { orderBy: { position: 'asc' } },
+        invoice: {
+          select: { id: true, status: true, invoiceNumber: true, totalAmount: true },
+        },
+      },
     });
 
     if (!order) return null;
@@ -262,6 +278,9 @@ export const orderService = {
       ...order,
       shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
       auditLog,
+      invoiceId: order.invoice?.id || null,
+      invoiceStatus: order.invoice?.status || null,
+      invoiceNumber: order.invoice?.invoiceNumber || null,
     };
   },
 
@@ -404,6 +423,11 @@ export const orderService = {
         previousValue: order.status,
         newValue: newStatus,
       },
+    });
+
+    // Fire-and-forget: trigger automation rules for order status change
+    automationRulesService.onOrderStatusChange(orderId, sellerId, newStatus).catch((err) => {
+      apiLogger.warn('Automation trigger failed for order status change:', err);
     });
 
     return updated;
@@ -598,11 +622,20 @@ export const orderService = {
     const orders = await prisma.marketplaceOrder.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        lineItems: { orderBy: { position: 'asc' } },
+        invoice: {
+          select: { id: true, status: true, invoiceNumber: true, totalAmount: true },
+        },
+      },
     });
 
     return orders.map((order) => ({
       ...order,
       shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
+      invoiceId: order.invoice?.id || null,
+      invoiceStatus: order.invoice?.status || null,
+      invoiceNumber: order.invoice?.invoiceNumber || null,
     }));
   },
 
@@ -612,6 +645,12 @@ export const orderService = {
   async getBuyerOrder(buyerId: string, orderId: string) {
     const order = await prisma.marketplaceOrder.findFirst({
       where: { id: orderId, buyerId },
+      include: {
+        lineItems: { orderBy: { position: 'asc' } },
+        invoice: {
+          select: { id: true, status: true, invoiceNumber: true, totalAmount: true },
+        },
+      },
     });
 
     if (!order) return null;
@@ -619,6 +658,9 @@ export const orderService = {
     return {
       ...order,
       shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
+      invoiceId: order.invoice?.id || null,
+      invoiceStatus: order.invoice?.status || null,
+      invoiceNumber: order.invoice?.invoiceNumber || null,
     };
   },
 

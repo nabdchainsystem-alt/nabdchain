@@ -20,7 +20,6 @@ import {
   Storefront,
   CaretDown,
 } from 'phosphor-react';
-import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { PortalDatePicker } from '../../components';
 import { itemService } from '../../services/itemService';
@@ -89,7 +88,6 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, direction, t } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   // Form state
@@ -178,11 +176,6 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
     setSubmitStatus('idle');
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       // Convert date from YYYY-MM-DD to ISO datetime format if provided
       let isoDeliveryDate: string | undefined;
       if (formData.requiredDeliveryDate) {
@@ -205,7 +198,7 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
 
       portalApiLogger.debug('Creating RFQ with data:', JSON.stringify(rfqData, null, 2));
 
-      const rfq = await itemService.createRFQ(token, rfqData);
+      const rfq = await itemService.createRFQ(rfqData);
 
       setSubmitStatus('success');
       setSubmitMessage(`RFQ sent successfully! Reference: ${rfq.id.slice(0, 8).toUpperCase()}`);
@@ -228,7 +221,10 @@ export const RFQFormPanel: React.FC<RFQFormPanelProps> = ({
   const getMinDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 
   // Animation states for smooth enter/exit

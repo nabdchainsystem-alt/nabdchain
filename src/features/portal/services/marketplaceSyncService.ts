@@ -1,8 +1,8 @@
 // =============================================================================
-// Marketplace Sync Service - Buyer ↔ Marketplace Integration
+// Marketplace Sync Service - Buyer <-> Marketplace Integration
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import { Item } from '../types/item.types';
 
 // =============================================================================
@@ -57,29 +57,22 @@ export const marketplaceSyncService = {
    * - Have items in the requested category
    * - Meet quality criteria
    */
-  async getEligibleSuppliers(
-    token: string,
-    filters: SupplierEligibilityFilters = {}
-  ): Promise<EligibleSupplier[]> {
-    const url = new URL(`${API_URL}/marketplace/eligible-suppliers`);
+  async getEligibleSuppliers(filters: SupplierEligibilityFilters = {}): Promise<EligibleSupplier[]> {
+    const params = new URLSearchParams();
 
-    if (filters.category) url.searchParams.append('category', filters.category);
-    if (filters.itemId) url.searchParams.append('itemId', filters.itemId);
-    if (filters.country) url.searchParams.append('country', filters.country);
-    if (filters.minRating) url.searchParams.append('minRating', filters.minRating.toString());
-    if (filters.verifiedOnly) url.searchParams.append('verifiedOnly', 'true');
-    if (filters.maxResponseTime) url.searchParams.append('maxResponseTime', filters.maxResponseTime.toString());
+    if (filters.category) params.append('category', filters.category);
+    if (filters.itemId) params.append('itemId', filters.itemId);
+    if (filters.country) params.append('country', filters.country);
+    if (filters.minRating) params.append('minRating', filters.minRating.toString());
+    if (filters.verifiedOnly) params.append('verifiedOnly', 'true');
+    if (filters.maxResponseTime) params.append('maxResponseTime', filters.maxResponseTime.toString());
+
+    const query = params.toString();
 
     try {
-      const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch eligible suppliers');
-      }
-
-      return response.json();
+      return await portalApiClient.get<EligibleSupplier[]>(
+        `/api/marketplace/eligible-suppliers${query ? `?${query}` : ''}`,
+      );
     } catch {
       // Fallback to mock data
       return this.getMockEligibleSuppliers(filters);
@@ -89,22 +82,11 @@ export const marketplaceSyncService = {
   /**
    * Check if a specific supplier is eligible for an RFQ
    */
-  async checkSupplierEligibility(
-    token: string,
-    supplierId: string,
-    itemId?: string
-  ): Promise<{ eligible: boolean; reason?: string }> {
+  async checkSupplierEligibility(supplierId: string, itemId?: string): Promise<{ eligible: boolean; reason?: string }> {
     try {
-      const response = await fetch(
-        `${API_URL}/marketplace/check-eligibility/${supplierId}${itemId ? `?itemId=${itemId}` : ''}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      return await portalApiClient.get<{ eligible: boolean; reason?: string }>(
+        `/api/marketplace/check-eligibility/${supplierId}${itemId ? `?itemId=${itemId}` : ''}`,
       );
-
-      if (!response.ok) {
-        return { eligible: false, reason: 'Unable to verify eligibility' };
-      }
-
-      return response.json();
     } catch {
       // Assume eligible on network error
       return { eligible: true };
@@ -123,28 +105,21 @@ export const marketplaceSyncService = {
    * - From active sellers
    */
   async getDiscoverableItems(
-    token: string,
-    filters: { category?: string; search?: string; page?: number } = {}
+    filters: { category?: string; search?: string; page?: number } = {},
   ): Promise<{ items: Item[]; totalCount: number }> {
-    const url = new URL(`${API_URL}/marketplace/discoverable`);
+    const params = new URLSearchParams();
 
-    if (filters.category) url.searchParams.append('category', filters.category);
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
+    if (filters.category) params.append('category', filters.category);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', filters.page.toString());
 
     // Add filter to exclude inactive sellers
-    url.searchParams.append('activeOnly', 'true');
+    params.append('activeOnly', 'true');
 
     try {
-      const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch discoverable items');
-      }
-
-      return response.json();
+      return await portalApiClient.get<{ items: Item[]; totalCount: number }>(
+        `/api/marketplace/discoverable?${params.toString()}`,
+      );
     } catch {
       return { items: [], totalCount: 0 };
     }
@@ -157,17 +132,9 @@ export const marketplaceSyncService = {
   /**
    * Get marketplace sync status
    */
-  async getSyncStatus(token: string): Promise<MarketplaceSyncStatus> {
+  async getSyncStatus(): Promise<MarketplaceSyncStatus> {
     try {
-      const response = await fetch(`${API_URL}/marketplace/sync-status`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch sync status');
-      }
-
-      return response.json();
+      return await portalApiClient.get<MarketplaceSyncStatus>('/api/marketplace/sync-status');
     } catch {
       return this.getMockSyncStatus();
     }
@@ -184,30 +151,17 @@ export const marketplaceSyncService = {
    * - Have the capability to fulfill the request
    * - Meet quality thresholds
    */
-  async routeRFQToSuppliers(
-    token: string,
-    rfqData: {
-      itemId?: string;
-      category: string;
-      quantity: number;
-      targetSupplierIds?: string[];
-    }
-  ): Promise<{ supplierIds: string[]; excludedCount: number }> {
+  async routeRFQToSuppliers(rfqData: {
+    itemId?: string;
+    category: string;
+    quantity: number;
+    targetSupplierIds?: string[];
+  }): Promise<{ supplierIds: string[]; excludedCount: number }> {
     try {
-      const response = await fetch(`${API_URL}/marketplace/route-rfq`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(rfqData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to route RFQ');
-      }
-
-      return response.json();
+      return await portalApiClient.post<{ supplierIds: string[]; excludedCount: number }>(
+        '/api/marketplace/route-rfq',
+        rfqData,
+      );
     } catch {
       // Fallback: return all target suppliers (validation done on backend)
       return {
@@ -295,22 +249,22 @@ export const marketplaceSyncService = {
     ];
 
     // Apply filters
-    let filtered = baseSuppliers.filter(s => s.isActive);
+    let filtered = baseSuppliers.filter((s) => s.isActive);
 
     if (filters.verifiedOnly) {
-      filtered = filtered.filter(s => s.verified);
+      filtered = filtered.filter((s) => s.verified);
     }
 
     if (filters.country) {
-      filtered = filtered.filter(s => s.country === filters.country);
+      filtered = filtered.filter((s) => s.country === filters.country);
     }
 
     if (filters.minRating) {
-      filtered = filtered.filter(s => (s.rating || 0) >= filters.minRating!);
+      filtered = filtered.filter((s) => (s.rating || 0) >= filters.minRating!);
     }
 
     if (filters.maxResponseTime) {
-      filtered = filtered.filter(s => s.responseTime <= filters.maxResponseTime!);
+      filtered = filtered.filter((s) => s.responseTime <= filters.maxResponseTime!);
     }
 
     return filtered;

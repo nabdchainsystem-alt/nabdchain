@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { TrendUp, ShoppingCart, Users, Percent } from 'phosphor-react';
+import { TrendUp, ShoppingCart, Users, Percent, Timer, CurrencyDollar, Truck, CheckCircle } from 'phosphor-react';
 import {
   Container,
   PageHeader,
@@ -13,7 +13,6 @@ import {
 } from '../../components';
 import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { sellerAnalyticsService, SellerAnalyticsSummary } from '../../services/sellerAnalyticsService';
 
 interface AnalyticsProps {
@@ -25,20 +24,16 @@ type TimeRange = '7d' | '30d' | '90d' | '12m';
 // Category colors for charts
 const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#6b7280'];
 
-export const Analytics: React.FC<AnalyticsProps> = ({ _onNavigate }) => {
+export const Analytics: React.FC<AnalyticsProps> = ({ onNavigate }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [analytics, setAnalytics] = useState<SellerAnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { styles, t } = usePortal();
-  const { getToken } = useAuth();
 
   const fetchAnalytics = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = await getToken();
-      if (!token) return;
-
-      const data = await sellerAnalyticsService.getAnalyticsSummary(token, timeRange);
+      const data = await sellerAnalyticsService.getAnalyticsSummary(timeRange);
       setAnalytics(data);
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
@@ -46,7 +41,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ _onNavigate }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, timeRange]);
+  }, [timeRange]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -183,6 +178,54 @@ export const Analytics: React.FC<AnalyticsProps> = ({ _onNavigate }) => {
           </div>
         )}
 
+        {/* Lifecycle KPIs Row */}
+        {!isLoading && analytics?.lifecycleMetrics && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <KPICard
+              id="receivables"
+              label="Outstanding Receivables"
+              value={`${analytics.kpis.currency} ${analytics.lifecycleMetrics.outstandingReceivables.toLocaleString()}`}
+              change="Delivered, unpaid"
+              trend="neutral"
+              icon={<CurrencyDollar size={18} />}
+              color="rose"
+            />
+            <KPICard
+              id="deliveryTime"
+              label="Avg Delivery Time"
+              value={`${analytics.lifecycleMetrics.avgDeliveryDays} days`}
+              change="Ship to deliver"
+              trend="neutral"
+              icon={<Truck size={18} />}
+              color="blue"
+            />
+            <KPICard
+              id="paymentDelay"
+              label="Avg Payment Delay"
+              value={`${analytics.lifecycleMetrics.avgPaymentDelayDays} days`}
+              change="Invoice to payment"
+              trend="neutral"
+              icon={<Timer size={18} />}
+              color="amber"
+            />
+            <KPICard
+              id="fulfillment"
+              label="Fulfillment Rate"
+              value={`${analytics.lifecycleMetrics.fulfillmentRate}%`}
+              change="Delivered + closed"
+              trend={
+                analytics.lifecycleMetrics.fulfillmentRate >= 80
+                  ? 'up'
+                  : analytics.lifecycleMetrics.fulfillmentRate >= 50
+                    ? 'neutral'
+                    : 'down'
+              }
+              icon={<CheckCircle size={18} />}
+              color="emerald"
+            />
+          </div>
+        )}
+
         {/* Charts Row */}
         {!isLoading && analytics && (
           <>
@@ -197,7 +240,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ _onNavigate }) => {
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <ChartCard title={t('seller.analytics.rfqConversion')}>
                 <ConversionFunnel data={conversionData} />
               </ChartCard>
@@ -210,6 +253,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ _onNavigate }) => {
                 <RegionalDistribution data={regionData} />
               </ChartCard>
             </div>
+
+            {/* Top Buyers Section */}
+            {analytics.lifecycleMetrics?.topBuyers && analytics.lifecycleMetrics.topBuyers.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ChartCard title="Top Buyers by Spend">
+                  <TopBuyersList
+                    data={analytics.lifecycleMetrics.topBuyers}
+                    currency={analytics.kpis.currency}
+                    onNavigate={onNavigate}
+                  />
+                </ChartCard>
+                <ChartCard title="Order Status Distribution">
+                  <OrderStatusChart data={analytics.lifecycleMetrics.ordersByStatus} />
+                </ChartCard>
+              </div>
+            )}
           </>
         )}
       </Container>
@@ -513,6 +572,134 @@ const RegionalDistribution: React.FC<{ data: { region: string; value: number; or
             return `${params.value}% (${regionItem?.orders || 0})`;
           },
         },
+      },
+    ],
+  };
+
+  return <ReactECharts option={option} style={{ height: '200px' }} />;
+};
+
+// Top Buyers List Component
+const TopBuyersList: React.FC<{
+  data: { buyerId: string; buyerName: string; totalSpend: number; orderCount: number }[];
+  currency: string;
+  onNavigate: (page: string) => void;
+}> = ({ data, currency, onNavigate }) => {
+  const { styles } = usePortal();
+
+  return (
+    <div className="space-y-3">
+      {data.map((buyer, index) => (
+        <div
+          key={buyer.buyerId}
+          className="flex items-center justify-between cursor-pointer rounded-lg p-2 transition-colors"
+          onClick={() => onNavigate('orders')}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgSecondary)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
+              style={{
+                backgroundColor: index === 0 ? '#dbeafe' : styles.bgSecondary,
+                color: index === 0 ? '#2563eb' : styles.textMuted,
+              }}
+            >
+              {index + 1}
+            </div>
+            <div>
+              <div className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                {buyer.buyerName}
+              </div>
+              <div className="text-xs" style={{ color: styles.textMuted }}>
+                {buyer.orderCount} orders
+              </div>
+            </div>
+          </div>
+          <div className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+            {currency} {buyer.totalSpend.toLocaleString()}
+          </div>
+        </div>
+      ))}
+      {data.length === 0 && (
+        <p className="text-sm text-center py-4" style={{ color: styles.textMuted }}>
+          No buyer data yet
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Order Status Distribution Chart
+const OrderStatusChart: React.FC<{ data: Record<string, number> }> = ({ data }) => {
+  const { styles } = usePortal();
+
+  const statusLabels: Record<string, string> = {
+    pending_confirmation: 'Pending',
+    confirmed: 'Confirmed',
+    processing: 'Processing',
+    shipped: 'Shipped',
+    delivered: 'Delivered',
+    closed: 'Closed',
+    cancelled: 'Cancelled',
+  };
+
+  const statusColors: Record<string, string> = {
+    pending_confirmation: '#f59e0b',
+    confirmed: '#3b82f6',
+    processing: '#8b5cf6',
+    shipped: '#06b6d4',
+    delivered: '#10b981',
+    closed: '#6b7280',
+    cancelled: '#ef4444',
+  };
+
+  const entries = Object.entries(data)
+    .filter(([, count]) => (count as number) > 0)
+    .map(([status, count]) => ({
+      name: statusLabels[status] || status,
+      value: count as number,
+      color: statusColors[status] || '#6b7280',
+    }));
+
+  if (entries.length === 0) {
+    return (
+      <p className="text-sm text-center py-8" style={{ color: styles.textMuted }}>
+        No order data yet
+      </p>
+    );
+  }
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: styles.bgCard,
+      borderColor: styles.border,
+      textStyle: { color: styles.textPrimary, fontSize: 12 },
+      formatter: (params: any) => `${params.name}: <b>${params.value}</b> orders`,
+    },
+    legend: {
+      orient: 'vertical' as const,
+      right: '5%',
+      top: 'center',
+      textStyle: { color: styles.textMuted, fontSize: 11 },
+      itemWidth: 12,
+      itemHeight: 12,
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['45%', '70%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 4, borderColor: styles.bgCard, borderWidth: 2 },
+        label: { show: false },
+        labelLine: { show: false },
+        data: entries.map((e) => ({
+          value: e.value,
+          name: e.name,
+          itemStyle: { color: e.color },
+        })),
       },
     ],
   };

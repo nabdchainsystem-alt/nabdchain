@@ -5,34 +5,8 @@
 import type { Order, OrderRole, SLAResult, DeliveryResult } from './orders.types';
 import { SLA_CONFIG } from './orders.types';
 
-// =============================================================================
-// Formatting
-// =============================================================================
-
-export const formatRelativeTime = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-};
-
-export const formatCurrency = (amount: number, currency: string): string => {
-  return `${currency} ${amount.toLocaleString()}`;
-};
-
-export const formatTimestamp = (dateStr?: string): string => {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-};
+// Re-export formatters from canonical source
+export { formatRelativeTime, formatCurrency, formatTimestamp } from '../../utils/formatters';
 
 // =============================================================================
 // SLA Calculation (Seller)
@@ -167,6 +141,18 @@ export const needsAttention = (order: Order): boolean => {
 
 export const orderNeedsAction = (order: Order, role: OrderRole): boolean => {
   return role === 'seller' ? needsActionToday(order) : needsAttention(order);
+};
+
+// =============================================================================
+// Order Completion Check
+// =============================================================================
+
+export const isOrderFullyComplete = (order: Order): boolean => {
+  return (
+    ['delivered', 'closed'].includes(order.status) &&
+    ['paid', 'paid_cash'].includes(order.paymentStatus) &&
+    !!order.invoiceId
+  );
 };
 
 // =============================================================================

@@ -28,6 +28,8 @@ export interface SpendByCategory {
   percentage: number;
   previousAmount?: number;
   trend?: number;
+  orderCount?: number;
+  avgOrderValue?: number;
 }
 
 /**

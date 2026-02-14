@@ -17,10 +17,16 @@ import {
   ShoppingCart,
   NoteBlank,
 } from 'phosphor-react';
-import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { marketplaceOrderService } from '../../services/marketplaceOrderService';
-import { Quote, MarketplaceOrder, AcceptQuoteData, getQuoteValidityStatus } from '../../types/item.types';
+import {
+  Quote,
+  MarketplaceOrder,
+  AcceptQuoteData,
+  getQuoteValidityStatus,
+  OrderPaymentMethod,
+} from '../../types/item.types';
+import { PaymentMethodSelector } from '../../components/orders/PaymentMethodSelector';
 
 // =============================================================================
 // Types
@@ -32,6 +38,7 @@ interface AcceptQuoteDialogProps {
   quote: Quote;
   sellerName?: string;
   itemName?: string;
+  creditEnabled?: boolean;
   onSuccess?: (order: MarketplaceOrder) => void;
 }
 
@@ -45,14 +52,15 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
   quote,
   sellerName,
   itemName,
+  creditEnabled,
   onSuccess,
 }) => {
   const { styles, direction } = usePortal();
-  const { getToken } = useAuth();
   const _isRtl = direction === 'rtl';
 
   // Form state
   const [buyerNotes, setBuyerNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<OrderPaymentMethod>('bank_transfer');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +71,7 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
   React.useEffect(() => {
     if (isOpen) {
       setBuyerNotes('');
+      setPaymentMethod('bank_transfer');
       setError(null);
     }
   }, [isOpen]);
@@ -73,16 +82,12 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       const acceptData: AcceptQuoteData = {
         buyerNotes: buyerNotes.trim() || undefined,
+        paymentMethod,
       };
 
-      const order = await marketplaceOrderService.acceptQuote(token, quote.id, acceptData);
+      const order = await marketplaceOrderService.acceptQuote(quote.id, acceptData);
 
       onSuccess?.(order);
       onClose();
@@ -281,6 +286,14 @@ export const AcceptQuoteDialog: React.FC<AcceptQuoteDialogProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Payment Method Selection */}
+          <PaymentMethodSelector
+            value={paymentMethod}
+            onChange={setPaymentMethod}
+            creditEnabled={creditEnabled}
+            disabled={isSubmitting}
+          />
 
           {/* Buyer Notes (Optional) */}
           <div>

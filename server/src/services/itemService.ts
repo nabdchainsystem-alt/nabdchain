@@ -5,6 +5,7 @@
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
 import { apiLogger } from '../utils/logger';
+import { automationRulesService } from './automationRulesService';
 
 // =============================================================================
 // Types
@@ -592,7 +593,7 @@ export const itemService = {
     const count = await prisma.itemRFQ.count();
     const rfqNumber = `RFQ-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
 
-    return prisma.itemRFQ.create({
+    const rfq = await prisma.itemRFQ.create({
       data: {
         rfqNumber,
         itemId: itemId || null,
@@ -613,6 +614,15 @@ export const itemService = {
         item: true,
       },
     });
+
+    // Fire-and-forget: trigger automation rules for new RFQ (only for DIRECT RFQs with a seller)
+    if (sellerId) {
+      automationRulesService.onRFQReceived(rfq.id, sellerId).catch((err) => {
+        apiLogger.warn('Automation trigger failed for RFQ received:', err);
+      });
+    }
+
+    return rfq;
   },
 
   /**
@@ -633,6 +643,7 @@ export const itemService = {
       orderBy: { createdAt: 'desc' },
       include: {
         item: true,
+        lineItems: { orderBy: { position: 'asc' } },
       },
     });
   },
@@ -651,6 +662,7 @@ export const itemService = {
       orderBy: { createdAt: 'desc' },
       include: {
         item: true,
+        lineItems: { orderBy: { position: 'asc' } },
         // Include quotes for this RFQ (buyer needs to see them)
         quotes: {
           where: {
@@ -659,6 +671,9 @@ export const itemService = {
             isLatest: true,
           },
           orderBy: { createdAt: 'desc' },
+          include: {
+            lineItems: { orderBy: { position: 'asc' } },
+          },
         },
       },
     });
@@ -706,7 +721,7 @@ export const itemService = {
         id: rfqId,
         OR: [
           { sellerId },
-          { sellerId: { equals: null as any } }, // Broadcast RFQs can be claimed by any seller
+          { sellerId: null }, // Broadcast RFQs can be claimed by any seller
         ],
       },
     });

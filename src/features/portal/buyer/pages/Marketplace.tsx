@@ -34,7 +34,6 @@ import {
 } from 'phosphor-react';
 import { Container, PageHeader, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
 import {
   Item,
@@ -44,6 +43,7 @@ import {
   getStockAvailability,
   getStockAvailabilityConfig,
   isOutOfStockRFQOnly,
+  parseImageUrls,
 } from '../../types/item.types';
 import { RFQFormPanel } from '../components/RFQFormPanel';
 import { AddToCartButton } from '../components/AddToCartButton';
@@ -160,7 +160,6 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
   // RFQ Panel State
   const [selectedItemForRFQ, setSelectedItemForRFQ] = useState<Item | null>(null);
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
 
   // Close sort dropdown on click outside or escape key
   const sortDropdownRef = useDropdownClose<HTMLDivElement>(() => setShowFilters(false), showFilters);
@@ -215,8 +214,6 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
     try {
       setLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
 
       const filters: MarketplaceFilters = {
         sortBy,
@@ -224,7 +221,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
         ...(searchQuery && { search: searchQuery }),
       };
 
-      const response = await itemService.getMarketplaceItems(token, filters);
+      const response = await itemService.getMarketplaceItems(filters);
       setItems(response.items);
     } catch (err) {
       console.error('Error fetching marketplace items:', err);
@@ -232,7 +229,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
     } finally {
       setLoading(false);
     }
-  }, [getToken, sortBy, activeCategory, searchQuery]);
+  }, [sortBy, activeCategory, searchQuery]);
 
   useEffect(() => {
     fetchItems();
@@ -294,7 +291,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
             </button>
             {showFilters && (
               <div
-                className={`absolute top-full mt-1 w-48 rounded-lg border shadow-lg z-10 py-1 ${isRTL ? 'left-0' : 'right-0'}`}
+                className={`absolute top-full mt-1 w-48 rounded-lg border shadow-lg z-30 py-1 ${isRTL ? 'left-0' : 'right-0'}`}
                 style={{ backgroundColor: styles.bgCard, borderColor: styles.border }}
               >
                 {SORT_OPTIONS.map((option) => (
@@ -364,18 +361,18 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
         {/* Preloader Animation */}
         {showPreloader && (
           <div className="py-8">
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {[...Array(10)].map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-xl overflow-hidden animate-pulse"
+                  className="rounded-lg overflow-hidden animate-pulse"
                   style={{ backgroundColor: styles.bgCard }}
                 >
-                  <div className="aspect-square" style={{ backgroundColor: styles.bgSecondary }} />
-                  <div className="p-4 space-y-3">
+                  <div className="h-[160px]" style={{ backgroundColor: styles.bgSecondary }} />
+                  <div className="px-2.5 py-2 space-y-2">
                     <div className="h-4 rounded-full w-3/4" style={{ backgroundColor: styles.bgSecondary }} />
+                    <div className="h-4 rounded-full w-1/3" style={{ backgroundColor: styles.bgSecondary }} />
                     <div className="h-3 rounded-full w-1/2" style={{ backgroundColor: styles.bgSecondary }} />
-                    <div className="h-5 rounded-full w-2/3" style={{ backgroundColor: styles.bgSecondary }} />
                   </div>
                 </div>
               ))}
@@ -447,7 +444,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onNavigate }) => {
 
         {/* Product Grid */}
         {!showPreloader && !loading && !error && smartSortedItems.length > 0 && viewMode === 'grid' && (
-          <div className="grid gap-3 pb-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-2 pb-8 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {smartSortedItems.map((item) => (
               <ProductCard
                 key={item.id}
@@ -628,8 +625,8 @@ const ProductTable: React.FC<ProductTableProps> = ({
             {items.map((item, _index) => {
               const isRfqOnly = requiresRFQ(item);
               const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
-              const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-              const firstImage = images?.[0];
+              const images = parseImageUrls(item.images);
+              const firstImage = images[0];
               const intel = getSupplierIntelligence(item);
               const isSelected = selectedForCompare.some((i) => i.id === item.id);
 
@@ -671,10 +668,10 @@ const ProductTable: React.FC<ProductTableProps> = ({
                     <div className="flex items-center gap-3">
                       <div
                         className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center overflow-hidden"
-                        style={{ backgroundColor: styles.bgSecondary }}
+                        style={{ backgroundColor: styles.isDark ? styles.bgSecondary : '#f7f7f7' }}
                       >
                         {firstImage ? (
-                          <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
+                          <img src={firstImage} alt={displayName} className="max-w-full max-h-full object-contain" />
                         ) : (
                           <Package size={16} style={{ color: styles.textMuted }} />
                         )}
@@ -926,8 +923,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const intel = getSupplierIntelligence(item);
 
   // Parse images if needed
-  const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-  const firstImage = images?.[0];
+  const images = parseImageUrls(item.images);
+  const firstImage = images[0];
 
   // Grid view - compact cards with flex layout for alignment
   return (
@@ -943,7 +940,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         if (!isSelectedForCompare) {
           e.currentTarget.style.borderColor = styles.textMuted;
         }
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
       }}
       onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
         if (!isSelectedForCompare) {
@@ -969,15 +966,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </button>
       )}
 
-      {/* Image - reduced by 25% using aspect-[4/3] instead of aspect-square */}
+      {/* Image — fixed height, contained, Amazon-style */}
       <div
-        className="aspect-[4/3] relative flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: styles.bgSecondary }}
+        className="h-[160px] relative flex items-center justify-center overflow-hidden"
+        style={{ backgroundColor: styles.isDark ? styles.bgSecondary : '#f7f7f7' }}
       >
         {firstImage ? (
-          <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
+          <img src={firstImage} alt={displayName} className="max-w-full max-h-full object-contain" />
         ) : (
-          <Package size={36} style={{ color: styles.textMuted }} />
+          <Package size={32} style={{ color: styles.textMuted }} />
         )}
 
         {/* RFQ Badge */}
@@ -991,7 +988,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Quick Action */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
             style={{ backgroundColor: '#fff', color: '#000' }}
@@ -1006,41 +1003,28 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* Content - reduced padding, flex layout for alignment */}
-      <div className="p-3 flex flex-col flex-1">
-        {/* Trust Badges Row */}
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px]" style={{ color: styles.textMuted }}>
-            {item.category}
-          </span>
-          <TrustBadges intel={intel} compact />
-        </div>
-
-        {/* Name */}
-        <h3 className="font-medium text-xs mt-0.5 line-clamp-2 min-h-[2.5rem]" style={{ color: styles.textPrimary }}>
+      {/* Content — tight Amazon-style density */}
+      <div className="px-2.5 pt-2 pb-2 flex flex-col flex-1">
+        {/* Name — primary focus */}
+        <h3
+          className="font-medium text-[13px] leading-tight line-clamp-2 min-h-[2.25rem]"
+          style={{ color: styles.textPrimary }}
+        >
           {displayName}
         </h3>
 
-        {/* Manufacturer - fixed height slot */}
-        <p className="text-[10px] mt-0.5 line-clamp-1 min-h-[1rem]" style={{ color: styles.textMuted }}>
-          {item.manufacturer || '\u00A0'}
-        </p>
-
-        {/* Spacer to push content below to bottom */}
-        <div className="flex-1" />
-
-        {/* Price */}
-        <div className="mt-2 flex items-center justify-between">
+        {/* Price — strong emphasis */}
+        <div className="mt-1 flex items-center justify-between">
           {isRfqOnly ? (
             <button
               onClick={onRequestQuote}
-              className="text-xs font-medium hover:underline transition-colors"
+              className="text-xs font-semibold hover:underline transition-colors"
               style={{ color: styles.info }}
             >
               Request Quote
             </button>
           ) : (
-            <span className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
+            <span className="text-sm font-bold" style={{ color: styles.textPrimary }}>
               {formatPrice(item.price, item.currency)}
             </span>
           )}
@@ -1049,9 +1033,36 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <SupplyBadge item={item} compact />
         </div>
 
+        {/* Seller / Manufacturer — muted */}
+        <p className="text-[10px] mt-1 line-clamp-1" style={{ color: styles.textMuted }}>
+          {item.manufacturer || item.category || '\u00A0'}
+        </p>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Trust + Meta row */}
+        <div className="mt-1 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px]" style={{ color: styles.textMuted }}>
+            {item.origin && (
+              <span className="flex items-center gap-0.5">
+                <MapPin size={8} />
+                {item.origin}
+              </span>
+            )}
+            {item.leadTimeDays && (
+              <span className="flex items-center gap-0.5">
+                <Clock size={8} />
+                {item.leadTimeDays}d
+              </span>
+            )}
+          </div>
+          <TrustBadges intel={intel} compact />
+        </div>
+
         {/* Add to Cart Button (for non-RFQ items) */}
         {!isRfqOnly && (
-          <div className="mt-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+          <div className="mt-1.5" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <AddToCartButton
               itemId={item.id}
               size="sm"
@@ -1063,22 +1074,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
             />
           </div>
         )}
-
-        {/* Meta */}
-        <div className="mt-1.5 flex items-center gap-2 text-[10px]" style={{ color: styles.textMuted }}>
-          {item.origin && (
-            <span className="flex items-center gap-0.5">
-              <MapPin size={8} />
-              {item.origin}
-            </span>
-          )}
-          {item.leadTimeDays && (
-            <span className="flex items-center gap-0.5">
-              <Clock size={8} />
-              {item.leadTimeDays}d
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -1122,8 +1117,8 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ items, onRemove, onCl
             <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               {items.map((item) => {
                 const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
-                const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-                const firstImage = images?.[0];
+                const images = parseImageUrls(item.images);
+                const firstImage = images[0];
                 return (
                   <div
                     key={item.id}
@@ -1135,7 +1130,7 @@ const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ items, onRemove, onCl
                       style={{ backgroundColor: styles.bgHover }}
                     >
                       {firstImage ? (
-                        <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
+                        <img src={firstImage} alt={displayName} className="max-w-full max-h-full object-contain" />
                       ) : (
                         <Package size={12} style={{ color: styles.textMuted }} />
                       )}
@@ -1592,8 +1587,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                       <th className="p-3 text-left" style={{ color: styles.textMuted, width: '18%' }}></th>
                       {items.map((item) => {
                         const displayName = language === 'ar' && item.nameAr ? item.nameAr : item.name;
-                        const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-                        const firstImage = images?.[0];
+                        const images = parseImageUrls(item.images);
+                        const firstImage = images[0];
                         const intel = getSupplierIntelligence(item);
                         const isBestPick = recommendation?.bestPickId === item.id;
                         return (
@@ -1621,7 +1616,11 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                                 }}
                               >
                                 {firstImage ? (
-                                  <img src={firstImage} alt={displayName} className="w-full h-full object-cover" />
+                                  <img
+                                    src={firstImage}
+                                    alt={displayName}
+                                    className="max-w-full max-h-full object-contain"
+                                  />
                                 ) : (
                                   <Package size={24} style={{ color: styles.textMuted }} />
                                 )}

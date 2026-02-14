@@ -55,6 +55,8 @@ export const prismaMock = {
   marketplaceDisputeEvent: createModelMock(),
   // Invoice model (marketplace)
   marketplaceInvoice: createModelMock(),
+  marketplacePayment: createModelMock(),
+  marketplaceInvoiceEvent: createModelMock(),
   // Payout models
   sellerPayout: createModelMock(),
   payoutEvent: createModelMock(),
@@ -88,6 +90,22 @@ export const prismaMock = {
   rFQ: createModelMock(),
   // Seller audit
   sellerAuditLog: createModelMock(),
+  // Buyer models
+  buyerExpense: createModelMock(),
+  buyerInventory: createModelMock(),
+  // Multi-line-item RFQ models
+  rFQLineItem: createModelMock(),
+  quoteLineItem: createModelMock(),
+  orderLineItem: createModelMock(),
+  // Marketplace RFQ
+  marketplaceRFQ: createModelMock(),
+  // Ratings
+  marketplaceRating: createModelMock(),
+  // AI usage
+  aIUsageLog: createModelMock(),
+  fileMapping: createModelMock(),
+  // Workspace Intelligence
+  workspaceInsightEvent: createModelMock(),
   $queryRaw: vi.fn(),
   $transaction: vi.fn((fn: (tx: typeof prismaMock) => Promise<unknown>) => fn(prismaMock)),
 };
@@ -111,4 +129,9 @@ export function resetMocks(): void {
   prismaMock.$transaction.mockImplementation(
     (fn: (tx: typeof prismaMock) => Promise<unknown>) => fn(prismaMock),
   );
+  // Default findMany to return empty arrays for line-item models
+  // (called by services like createVersionSnapshot and acceptQuote)
+  prismaMock.quoteLineItem.findMany.mockResolvedValue([]);
+  prismaMock.rFQLineItem.findMany.mockResolvedValue([]);
+  prismaMock.orderLineItem.findMany.mockResolvedValue([]);
 }

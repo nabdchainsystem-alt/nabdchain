@@ -24,7 +24,6 @@ import {
 } from '../../components';
 import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { buyerAnalyticsService } from '../../services/buyerAnalyticsService';
 import { BuyerAnalyticsSummary, SpendByCategory, SupplierPerformance, RFQFunnel } from '../../types/analytics.types';
 
@@ -48,7 +47,6 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [_error, setError] = useState<string | null>(null);
   const { styles, t, direction, language } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   // Close dropdown on click outside or escape key
@@ -58,13 +56,8 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
     try {
       setIsLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
 
-      const data = await buyerAnalyticsService.getAnalyticsSummary(token, { period });
+      const data = await buyerAnalyticsService.getAnalyticsSummary({ period });
       setAnalytics(data);
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
@@ -73,7 +66,7 @@ export const BuyerAnalytics: React.FC<BuyerAnalyticsProps> = ({ onNavigate }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, period]);
+  }, [period]);
 
   useEffect(() => {
     fetchAnalytics();

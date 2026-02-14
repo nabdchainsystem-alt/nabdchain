@@ -4,8 +4,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { RowSelectionState } from '@tanstack/react-table';
-import { useAuth } from '../../../../auth-adapter';
 import { marketplaceOrderService } from '../../services/marketplaceOrderService';
+import { marketplacePaymentService } from '../../services/marketplacePaymentService';
 import type { OrderHealthStatus } from '../../types/item.types';
 import type {
   Order,
@@ -42,22 +42,17 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const { getToken } = useAuth();
-
   // ==========================================================================
   // Fetch orders
   // ==========================================================================
 
   const fetchOrders = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
       let response;
       if (role === 'seller') {
-        response = await marketplaceOrderService.getSellerOrders(token);
+        response = await marketplaceOrderService.getSellerOrders();
       } else {
-        response = await marketplaceOrderService.getBuyerOrders(token, { limit: 100 });
+        response = await marketplaceOrderService.getBuyerOrders({ limit: 100 });
       }
 
       const ordersWithDisplay = response.orders.map((order: Order) => {
@@ -89,7 +84,7 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, role]);
+  }, [role]);
 
   useEffect(() => {
     fetchOrders();
@@ -221,15 +216,11 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
       setIsActionLoading(true);
       setActionError(null);
       try {
-        const token = await getToken();
-        if (!token) return;
-        const updated = await marketplaceOrderService.confirmOrder(token, order.id);
+        const updated = await marketplaceOrderService.confirmOrder(order.id);
         if (updated) {
           updateOrderInState({
             ...order,
             ...updated,
-            status: 'confirmed',
-            confirmedAt: new Date().toISOString(),
           } as Order);
         }
       } catch (err) {
@@ -240,7 +231,7 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
         setIsActionLoading(false);
       }
     },
-    [getToken, updateOrderInState, fetchOrders],
+    [updateOrderInState, fetchOrders],
   );
 
   const handleStartProcessing = useCallback(
@@ -248,16 +239,12 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
       setIsActionLoading(true);
       setActionError(null);
       try {
-        const token = await getToken();
-        if (!token) return;
-        const updated = await marketplaceOrderService.startProcessing(token, order.id, {
+        const updated = await marketplaceOrderService.startProcessing(order.id, {
           sellerNotes: 'Order processing started',
         });
         updateOrderInState({
           ...order,
           ...updated,
-          status: 'processing',
-          processingAt: new Date().toISOString(),
         } as Order);
       } catch (err) {
         console.error('Failed to start processing:', err);
@@ -267,7 +254,7 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
         setIsActionLoading(false);
       }
     },
-    [getToken, updateOrderInState, fetchOrders],
+    [updateOrderInState, fetchOrders],
   );
 
   const handleShipOrder = useCallback(
@@ -275,14 +262,12 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
       setIsActionLoading(true);
       setActionError(null);
       try {
-        const token = await getToken();
-        if (!token) return;
-        const updated = await marketplaceOrderService.shipOrder(token, order.id, {
+        const updated = await marketplaceOrderService.shipOrder(order.id, {
           trackingNumber,
           carrier: carrier || '',
           estimatedDelivery: estimatedDelivery || undefined,
         });
-        updateOrderInState({ ...order, ...updated, status: 'shipped', shippedAt: new Date().toISOString() } as Order);
+        updateOrderInState({ ...order, ...updated } as Order);
       } catch (err) {
         console.error('Failed to ship order:', err);
         setActionError(err instanceof Error ? err.message : 'Failed to ship order');
@@ -291,7 +276,7 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
         setIsActionLoading(false);
       }
     },
-    [getToken, updateOrderInState, fetchOrders],
+    [updateOrderInState, fetchOrders],
   );
 
   const handleMarkDelivered = useCallback(
@@ -299,14 +284,10 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
       setIsActionLoading(true);
       setActionError(null);
       try {
-        const token = await getToken();
-        if (!token) return;
-        const updated = await marketplaceOrderService.markDelivered(token, order.id, {});
+        const updated = await marketplaceOrderService.markDelivered(order.id, {});
         updateOrderInState({
           ...order,
           ...updated,
-          status: 'delivered',
-          deliveredAt: new Date().toISOString(),
         } as Order);
       } catch (err) {
         console.error('Failed to mark delivered:', err);
@@ -316,7 +297,7 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
         setIsActionLoading(false);
       }
     },
-    [getToken, updateOrderInState, fetchOrders],
+    [updateOrderInState, fetchOrders],
   );
 
   const handleRejectOrder = useCallback(
@@ -324,10 +305,8 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
       setIsActionLoading(true);
       setActionError(null);
       try {
-        const token = await getToken();
-        if (!token) return;
-        const updated = await marketplaceOrderService.rejectOrder(token, order.id, { reason });
-        updateOrderInState({ ...order, ...updated, status: 'cancelled', rejectionReason: reason } as Order);
+        const updated = await marketplaceOrderService.rejectOrder(order.id, { reason });
+        updateOrderInState({ ...order, ...updated } as Order);
       } catch (err) {
         console.error('Failed to reject order:', err);
         setActionError(err instanceof Error ? err.message : 'Failed to reject order');
@@ -336,7 +315,7 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
         setIsActionLoading(false);
       }
     },
-    [getToken, updateOrderInState, fetchOrders],
+    [updateOrderInState, fetchOrders],
   );
 
   const handleCancelOrder = useCallback(
@@ -344,14 +323,10 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
       setIsActionLoading(true);
       setActionError(null);
       try {
-        const token = await getToken();
-        if (!token) return;
-        const updated = await marketplaceOrderService.cancelOrder(token, order.id, { reason });
+        const updated = await marketplaceOrderService.cancelOrder(order.id, { reason });
         updateOrderInState({
           ...order,
           ...updated,
-          status: 'cancelled',
-          cancelledAt: new Date().toISOString(),
         } as Order);
       } catch (err) {
         console.error('Failed to cancel order:', err);
@@ -361,7 +336,47 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
         setIsActionLoading(false);
       }
     },
-    [getToken, updateOrderInState, fetchOrders],
+    [updateOrderInState, fetchOrders],
+  );
+
+  const handleRecordPayment = useCallback(
+    async (
+      order: Order,
+      data: { method: 'bank_transfer'; reference: string; amount?: number; bankName?: string; notes?: string },
+    ) => {
+      setIsActionLoading(true);
+      setActionError(null);
+      try {
+        await marketplacePaymentService.recordOrderPayment(order.id, data);
+        // Refetch to get updated paymentStatus
+        await fetchOrders();
+      } catch (err) {
+        console.error('Failed to record payment:', err);
+        setActionError(err instanceof Error ? err.message : 'Failed to record payment');
+        throw err; // Let the modal know it failed
+      } finally {
+        setIsActionLoading(false);
+      }
+    },
+    [fetchOrders],
+  );
+
+  const handleConfirmCOD = useCallback(
+    async (order: Order, notes?: string) => {
+      setIsActionLoading(true);
+      setActionError(null);
+      try {
+        await marketplacePaymentService.confirmCODPayment(order.id, { notes });
+        await fetchOrders();
+      } catch (err) {
+        console.error('Failed to confirm COD payment:', err);
+        setActionError(err instanceof Error ? err.message : 'Failed to confirm COD payment');
+        throw err;
+      } finally {
+        setIsActionLoading(false);
+      }
+    },
+    [fetchOrders],
   );
 
   return {
@@ -398,6 +413,8 @@ export function useOrdersData({ role }: UseOrdersDataOptions) {
     handleMarkDelivered,
     handleRejectOrder,
     handleCancelOrder,
+    handleRecordPayment,
+    handleConfirmCOD,
     updateOrderInState,
     refreshOrders: fetchOrders,
   };

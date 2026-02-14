@@ -33,6 +33,7 @@ import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import aiRoutes from './routes/aiRoutes';
+import aiGatewayRoutes from './routes/aiGatewayRoutes';
 import gtdRoutes from './routes/gtdRoutes';
 import notesRoutes from './routes/notesRoutes';
 import mobileRoutes from './routes/mobileRoutes';
@@ -69,6 +70,8 @@ import buyerCartRoutes from './routes/buyerCartRoutes';
 import orderTimelineRoutes from './routes/orderTimelineRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import monitoringRoutes from './routes/monitoringRoutes';
+import workspaceIntelligenceRoutes from './routes/workspaceIntelligenceRoutes';
+import ratingRoutes from './routes/ratingRoutes';
 
 function handleError(res: express.Response, error: unknown) {
     serverLogger.error('Request error:', error);
@@ -303,6 +306,8 @@ export function createApp() {
     app.use('/api/user', userRoutes);
     app.use('/api/upload', rateLimiters.upload, uploadRoutes);
     app.use('/api/ai', aiRoutes);
+    app.use('/api/ai', aiGatewayRoutes);
+    app.use('/api/workspace/intelligence', workspaceIntelligenceRoutes);
     app.use('/api/gtd', gtdRoutes);
     app.use('/api/notes', notesRoutes);
     app.use('/api/mobile', mobileRoutes);
@@ -350,6 +355,9 @@ export function createApp() {
     app.use('/api/disputes', rateLimiters.standard, disputeRoutes);
     app.use('/api/returns', rateLimiters.standard, returnRoutes);
     app.use('/api/payouts', rateLimiters.strict, payoutRoutes);
+
+    // Ratings
+    app.use('/api/ratings', ratingRoutes);
 
     // Automation, trust, feature gating
     app.use('/api/automation', automationRoutes);

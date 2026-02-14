@@ -9,7 +9,7 @@ import {
   PaymentStatus,
   OrderHealthStatus,
 } from '../../types/item.types';
-import { Package, CheckCircle, ArrowsClockwise, Truck } from 'phosphor-react';
+import { Package, CheckCircle, ArrowsClockwise, Truck, CurrencyDollar, FileText } from 'phosphor-react';
 
 export type { Order, OrderStatus, PaymentStatus };
 export type { OrderHealthStatus };
@@ -59,6 +59,8 @@ export interface StepperStep {
   activeStatuses: string[];
   completedStatuses: string[];
   timestampKey?: keyof Order;
+  isCompleted?: (order: Order) => boolean;
+  isActive?: (order: Order) => boolean;
 }
 
 export const STEPPER_STEPS: StepperStep[] = [
@@ -101,6 +103,25 @@ export const STEPPER_STEPS: StepperStep[] = [
     activeStatuses: ['shipped'],
     completedStatuses: ['delivered', 'closed'],
     timestampKey: 'deliveredAt',
+  },
+  {
+    key: 'paid',
+    label: 'Paid',
+    icon: CurrencyDollar,
+    activeStatuses: [],
+    completedStatuses: [],
+    isCompleted: (order) => ['paid', 'paid_cash'].includes(order.paymentStatus),
+    isActive: (order) =>
+      ['delivered', 'closed'].includes(order.status) && !['paid', 'paid_cash'].includes(order.paymentStatus),
+  },
+  {
+    key: 'invoiced',
+    label: 'Invoiced',
+    icon: FileText,
+    activeStatuses: [],
+    completedStatuses: [],
+    isCompleted: (order) => !!order.invoiceId,
+    isActive: (order) => ['paid', 'paid_cash'].includes(order.paymentStatus) && !order.invoiceId,
   },
 ];
 

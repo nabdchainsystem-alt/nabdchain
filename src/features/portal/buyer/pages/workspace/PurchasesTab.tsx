@@ -11,7 +11,6 @@ import {
 } from '@tanstack/react-table';
 import { MagnifyingGlass, CaretLeft, CaretRight, Eye, Check, X, Plus, Funnel, NoteBlank } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
-import { useAuth } from '../../../../../auth-adapter';
 import { PortalDatePicker, Select } from '../../../components';
 import {
   buyerWorkspaceService,
@@ -36,7 +35,6 @@ const STATUS_COLORS: Record<PurchaseOrderStatus, { bg: string; text: string }> =
 
 export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   const [purchases, setPurchases] = useState<PurchaseOrder[]>([]);
@@ -59,10 +57,8 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
   const fetchPurchases = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = await getToken();
-      if (!token) return;
 
-      const data = await buyerWorkspaceService.getPurchases(token, {
+      const data = await buyerWorkspaceService.getPurchases({
         status: statusFilter || undefined,
         search: globalFilter || undefined,
       });
@@ -72,7 +68,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, statusFilter, globalFilter]);
+  }, [statusFilter, globalFilter]);
 
   useEffect(() => {
     fetchPurchases();
@@ -80,10 +76,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
 
   const handleStatusChange = async (id: string, newStatus: PurchaseOrderStatus) => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await buyerWorkspaceService.updatePurchaseStatus(token, id, newStatus);
+      await buyerWorkspaceService.updatePurchaseStatus(id, newStatus);
       fetchPurchases();
     } catch (err) {
       console.error('Failed to update status:', err);
@@ -93,13 +86,11 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = () => {
   const handleCreatePO = async () => {
     try {
       setIsSubmitting(true);
-      const token = await getToken();
-      if (!token) return;
 
       // Calculate total from items
       const total = newPO.items?.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) || newPO.totalAmount;
 
-      await buyerWorkspaceService.createPurchase(token, {
+      await buyerWorkspaceService.createPurchase({
         ...newPO,
         totalAmount: total,
       });

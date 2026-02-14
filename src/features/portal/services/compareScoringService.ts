@@ -17,7 +17,7 @@
 // - scoreManualCompare() - Manual comparison scoring
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types (kept for frontend consumption)
@@ -187,67 +187,33 @@ export const compareScoringService = {
    * Calculate recommendation scores via backend API
    */
   async calculateRecommendation(
-    tokenOrProducts: string | ProductScoreInput[],
-    productsOrWeights?: ProductScoreInput[] | Partial<ScoringWeights>,
+    products: ProductScoreInput[],
     customWeights?: Partial<ScoringWeights>,
   ): Promise<RecommendationResult> {
-    const token = typeof tokenOrProducts === 'string' ? tokenOrProducts : '';
-    const products = typeof tokenOrProducts === 'string' ? (productsOrWeights as ProductScoreInput[]) : tokenOrProducts;
-    const weights =
-      typeof tokenOrProducts === 'string' ? customWeights : (productsOrWeights as Partial<ScoringWeights> | undefined);
-
-    const response = await fetch(`${API_URL}/compare/score`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify({ products, weights }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to calculate recommendation');
-    }
-
-    return response.json();
+    return portalApiClient.post<RecommendationResult>('/api/compare/score', { products, weights: customWeights });
   },
 
   /**
    * Calculate recommendation using a weight preset
    */
   async calculateRecommendationWithPreset(
-    token: string,
     products: ProductScoreInput[],
     presetKey: keyof typeof WEIGHT_PRESETS,
   ): Promise<RecommendationResult> {
     const preset = WEIGHT_PRESETS[presetKey];
-    return this.calculateRecommendation(token, products, preset?.weights);
+    return this.calculateRecommendation(products, preset?.weights);
   },
 
   /**
    * Score manual comparison data
    */
   async scoreManualCompare(
-    tokenOrData: string | ManualCompareData,
-    data?: ManualCompareData,
+    data: ManualCompareData,
   ): Promise<{ columnScores: Record<string, number>; bestColumnId: string | null }> {
-    const token = typeof tokenOrData === 'string' ? tokenOrData : '';
-    const actualData = typeof tokenOrData === 'string' ? data! : tokenOrData;
-
-    const response = await fetch(`${API_URL}/compare/manual`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify(actualData),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to score manual comparison');
-    }
-
-    return response.json();
+    return portalApiClient.post<{ columnScores: Record<string, number>; bestColumnId: string | null }>(
+      '/api/compare/manual',
+      data,
+    );
   },
 
   /**

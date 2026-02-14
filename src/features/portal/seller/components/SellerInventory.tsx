@@ -247,7 +247,7 @@ export const SellerInventory: React.FC = () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const data = await inventoryService.getSellerInventory(token, {
+      const data = await inventoryService.getSellerInventory({
         search: searchQuery || undefined,
         status: statusFilter !== 'all' ? (statusFilter as StockStatus) : undefined,
       });
@@ -289,7 +289,7 @@ export const SellerInventory: React.FC = () => {
       try {
         const token = await getToken();
         if (!token) throw new Error('Not authenticated');
-        await inventoryService.updateStock(token, productId, { stockQty: newStock });
+        await inventoryService.updateStock(productId, { stockQty: newStock });
         setEditingId(null);
       } catch (err) {
         // Rollback

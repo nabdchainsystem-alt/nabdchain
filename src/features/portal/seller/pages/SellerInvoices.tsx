@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useAuth } from '../../../../auth-adapter';
 import { marketplaceInvoiceService } from '../../services/marketplaceInvoiceService';
 import { marketplacePaymentService } from '../../services/marketplacePaymentService';
 import {
@@ -26,6 +25,7 @@ import {
   Spinner,
   CaretRight,
   DotsThreeVertical,
+  FilePdf,
 } from 'phosphor-react';
 import { Button, EmptyState } from '../../components';
 import {
@@ -137,7 +137,6 @@ const StatusBadge: React.FC<{ status: InvoiceStatus; styles: ReturnType<typeof u
 const columnHelper = createColumnHelper<MarketplaceInvoice>();
 
 export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) => {
-  const { getToken } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, direction } = usePortal();
   const isRtl = direction === 'rtl';
@@ -164,6 +163,19 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
+  // PDF download
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+  const handleDownloadPdf = async (invoice: MarketplaceInvoice) => {
+    try {
+      setDownloadingPdf(invoice.id);
+      await marketplaceInvoiceService.downloadPdf(invoice.id, invoice.invoiceNumber);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download PDF');
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
+
   // Check if any filters are active
   const hasActiveFilters = searchQuery || statusFilter !== 'all';
 
@@ -177,18 +189,13 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
     try {
       setLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
 
       const [invoicesRes, statsRes] = await Promise.all([
-        marketplaceInvoiceService.getSellerInvoices(token, {
+        marketplaceInvoiceService.getSellerInvoices({
           status: statusFilter === 'all' ? undefined : (statusFilter as InvoiceStatus),
           search: searchQuery || undefined,
         }),
-        marketplaceInvoiceService.getSellerInvoiceStats(token),
+        marketplaceInvoiceService.getSellerInvoiceStats(),
       ]);
 
       setInvoices(invoicesRes.invoices);
@@ -198,26 +205,21 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
     } finally {
       setLoading(false);
     }
-  }, [getToken, statusFilter, searchQuery]);
+  }, [statusFilter, searchQuery]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   // Load payments when invoice selected
-  const loadInvoicePayments = useCallback(
-    async (invoiceId: string) => {
-      try {
-        const token = await getToken();
-        if (!token) return;
-        const payments = await marketplacePaymentService.getInvoicePayments(token, invoiceId);
-        setSelectedPayments(payments);
-      } catch (err) {
-        console.error('Failed to load payments:', err);
-      }
-    },
-    [getToken],
-  );
+  const loadInvoicePayments = useCallback(async (invoiceId: string) => {
+    try {
+      const payments = await marketplacePaymentService.getInvoicePayments(invoiceId);
+      setSelectedPayments(payments);
+    } catch (err) {
+      console.error('Failed to load payments:', err);
+    }
+  }, []);
 
   // Handle view invoice
   const handleViewInvoice = async (invoice: MarketplaceInvoice) => {
@@ -230,12 +232,10 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
   const handleIssueInvoice = async (invoiceId: string) => {
     try {
       setActionLoading(invoiceId);
-      const token = await getToken();
-      if (!token) return;
-      await marketplaceInvoiceService.issueInvoice(token, invoiceId);
+      await marketplaceInvoiceService.issueInvoice(invoiceId);
       await loadData();
       if (selectedInvoice?.id === invoiceId) {
-        const updated = await marketplaceInvoiceService.getSellerInvoice(token, invoiceId);
+        const updated = await marketplaceInvoiceService.getSellerInvoice(invoiceId);
         if (updated) setSelectedInvoice(updated);
       }
     } catch (err) {
@@ -250,9 +250,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
     if (!selectedInvoice || !cancelReason.trim()) return;
     try {
       setActionLoading(selectedInvoice.id);
-      const token = await getToken();
-      if (!token) return;
-      await marketplaceInvoiceService.cancelInvoice(token, selectedInvoice.id, cancelReason);
+      await marketplaceInvoiceService.cancelInvoice(selectedInvoice.id, cancelReason);
       setShowCancelDialog(false);
       setCancelReason('');
       await loadData();
@@ -269,13 +267,11 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
   const handleConfirmPayment = async (paymentId: string) => {
     try {
       setActionLoading(paymentId);
-      const token = await getToken();
-      if (!token) return;
-      await marketplacePaymentService.confirmPayment(token, paymentId);
+      await marketplacePaymentService.confirmPayment(paymentId);
       await loadData();
       if (selectedInvoice) {
         await loadInvoicePayments(selectedInvoice.id);
-        const updated = await marketplaceInvoiceService.getSellerInvoice(token, selectedInvoice.id);
+        const updated = await marketplaceInvoiceService.getSellerInvoice(selectedInvoice.id);
         if (updated) setSelectedInvoice(updated);
       }
     } catch (err) {
@@ -327,6 +323,27 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
           </div>
         ),
         size: 100,
+      }),
+      columnHelper.display({
+        id: 'paidBalance',
+        meta: { align: 'end' as const },
+        header: 'Paid / Balance',
+        cell: (info) => {
+          const inv = info.row.original;
+          const paid = inv.paidAmount || 0;
+          const balance = inv.balanceDue ?? inv.totalAmount - paid;
+          return (
+            <div style={{ fontSize: '0.75rem' }}>
+              <div style={{ color: paid > 0 ? styles.success : styles.textMuted }}>
+                {formatInvoiceAmount(paid, inv.currency)}
+              </div>
+              {balance > 0 && inv.status !== 'cancelled' && (
+                <div style={{ color: styles.warning }}>{formatInvoiceAmount(balance, inv.currency)} due</div>
+              )}
+            </div>
+          );
+        },
+        size: 120,
       }),
       columnHelper.accessor('status', {
         meta: { align: 'center' as const },
@@ -384,6 +401,28 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
           const invoice = info.row.original;
           return (
             <div className="flex items-center justify-center gap-1">
+              {/* Download PDF */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownloadPdf(invoice);
+                }}
+                disabled={downloadingPdf === invoice.id}
+                className="p-1.5 rounded transition-colors"
+                style={{ color: styles.textMuted }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = styles.bgHover;
+                  e.currentTarget.style.color = styles.error;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = styles.textMuted;
+                }}
+                title="Download PDF"
+              >
+                {downloadingPdf === invoice.id ? <Spinner size={16} className="animate-spin" /> : <FilePdf size={16} />}
+              </button>
+              {/* View details */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -455,7 +494,7 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
         size: 80,
       }),
     ],
-    [styles, actionLoading, isRtl],
+    [styles, actionLoading, isRtl, downloadingPdf],
   );
 
   // Filter invoices
@@ -806,10 +845,23 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
                 <span>{formatInvoiceAmount(selectedInvoice.totalAmount, selectedInvoice.currency)}</span>
               </div>
               {selectedInvoice.paidAmount !== undefined && selectedInvoice.paidAmount > 0 && (
-                <div className="flex justify-between text-sm mt-2" style={{ color: styles.success }}>
-                  <span>Paid</span>
-                  <span>-{formatInvoiceAmount(selectedInvoice.paidAmount, selectedInvoice.currency)}</span>
-                </div>
+                <>
+                  <div className="flex justify-between text-sm mt-2" style={{ color: styles.success }}>
+                    <span>Paid</span>
+                    <span>-{formatInvoiceAmount(selectedInvoice.paidAmount, selectedInvoice.currency)}</span>
+                  </div>
+                  {(selectedInvoice.balanceDue ?? selectedInvoice.totalAmount - selectedInvoice.paidAmount) > 0 && (
+                    <div className="flex justify-between text-sm font-semibold mt-1" style={{ color: styles.warning }}>
+                      <span>Balance Due</span>
+                      <span>
+                        {formatInvoiceAmount(
+                          selectedInvoice.balanceDue ?? selectedInvoice.totalAmount - selectedInvoice.paidAmount,
+                          selectedInvoice.currency,
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -949,6 +1001,27 @@ export const SellerInvoices: React.FC<SellerInvoicesProps> = ({ _onNavigate }) =
                 ))}
               </div>
             </div>
+
+            {/* Download PDF */}
+            <button
+              onClick={() => handleDownloadPdf(selectedInvoice)}
+              disabled={downloadingPdf === selectedInvoice.id}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-colors"
+              style={{
+                borderColor: styles.border,
+                color: styles.textPrimary,
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              {downloadingPdf === selectedInvoice.id ? (
+                <Spinner size={16} className="animate-spin" />
+              ) : (
+                <FilePdf size={16} weight="bold" />
+              )}
+              Download PDF
+            </button>
 
             {/* Timestamps */}
             <div className="text-xs space-y-1" style={{ color: styles.textMuted }}>

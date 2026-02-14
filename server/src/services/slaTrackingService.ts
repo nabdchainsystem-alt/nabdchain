@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
+import type { Prisma, SLARecord } from '@prisma/client';
 import { apiLogger } from '../utils/logger';
 
 // =============================================================================
@@ -187,7 +188,7 @@ async function getSellerSLAMetrics(
     }
   }
 
-  const where: any = {
+  const where: Prisma.SLARecordWhereInput = {
     sellerId,
     actualAt: { not: null }, // Only completed SLAs
   };
@@ -296,12 +297,12 @@ async function getSellerSLAHistory(
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ records: any[]; total: number; page: number; limit: number }> {
+): Promise<{ records: SLARecord[]; total: number; page: number; limit: number }> {
   const page = filters.page || 1;
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: any = { sellerId };
+  const where: Prisma.SLARecordWhereInput = { sellerId };
 
   if (filters.slaType) {
     where.slaType = filters.slaType;

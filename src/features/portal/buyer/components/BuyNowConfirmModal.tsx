@@ -4,15 +4,17 @@
 // Displays purchase summary and requests confirmation before checkout
 // =============================================================================
 
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Lightning, Package, Storefront, ShieldCheck, SpinnerGap, WarningCircle, CheckCircle } from 'phosphor-react';
 import { usePortal } from '../../context/PortalContext';
 import { CartItem, CartSellerGroup } from '../../types/cart.types';
+import { parseImageUrls, type OrderPaymentMethod } from '../../types/item.types';
+import { PaymentMethodSelector } from '../../components/orders/PaymentMethodSelector';
 
 interface BuyNowConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (paymentMethod: OrderPaymentMethod) => void;
   isProcessing: boolean;
   // Summary data
   items: CartItem[];
@@ -23,6 +25,7 @@ interface BuyNowConfirmModalProps {
   currency: string;
   // Optional: for single seller
   sellerName?: string;
+  creditEnabled?: boolean;
 }
 
 export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
@@ -37,9 +40,11 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
   sellerCount,
   currency,
   sellerName,
+  creditEnabled,
 }) => {
   const { styles, t, direction } = usePortal();
   const isRtl = direction === 'rtl';
+  const [paymentMethod, setPaymentMethod] = useState<OrderPaymentMethod>('bank_transfer');
 
   if (!isOpen) return null;
 
@@ -154,17 +159,16 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
                       className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0"
                       style={{ backgroundColor: styles.bgCard }}
                     >
-                      {item.item?.images ? (
-                        <img
-                          src={JSON.parse(item.item.images)[0]}
-                          alt={item.item?.name || ''}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package size={16} style={{ color: styles.textMuted }} />
-                        </div>
-                      )}
+                      {(() => {
+                        const urls = parseImageUrls(item.item?.images);
+                        return urls.length > 0 ? (
+                          <img src={urls[0]} alt={item.item?.name || ''} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package size={16} style={{ color: styles.textMuted }} />
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Item Details */}
@@ -194,6 +198,14 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Payment Method Selection */}
+          <PaymentMethodSelector
+            value={paymentMethod}
+            onChange={setPaymentMethod}
+            creditEnabled={creditEnabled}
+            disabled={isProcessing}
+          />
 
           {/* Total Amount */}
           <div
@@ -242,7 +254,7 @@ export const BuyNowConfirmModal: React.FC<BuyNowConfirmModalProps> = ({
             {t('common.cancel') || 'Cancel'}
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => onConfirm(paymentMethod)}
             disabled={isProcessing}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-70 ${
               isRtl ? 'flex-row-reverse' : ''

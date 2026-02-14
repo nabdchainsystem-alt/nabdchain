@@ -149,7 +149,7 @@ export interface CartContextState {
 }
 
 export interface CartContextActions {
-  refreshCart: () => Promise<void>;
+  refreshCart: (showLoading?: boolean) => Promise<void>;
   addToCart: (itemId: string, quantity?: number) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -160,8 +160,8 @@ export interface CartContextActions {
   getItemQuantity: (itemId: string) => number;
   // Dual purchase flow
   setItemPurchaseMethod: (itemId: string, method: PurchaseMethod) => void;
-  buyNowForSeller: (sellerId: string) => Promise<BuyNowResult>;
-  buyNowAll: () => Promise<BuyNowResult>;
+  buyNowForSeller: (sellerId: string, paymentMethod?: string) => Promise<BuyNowResult>;
+  buyNowAll: (paymentMethod?: string) => Promise<BuyNowResult>;
   getItemEligibility: (item: CartItem) => CartItemEligibility;
 }
 

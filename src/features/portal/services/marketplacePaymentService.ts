@@ -2,15 +2,32 @@
 // Marketplace Payment Service - Frontend API Client (Stage 6)
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import {
   MarketplacePayment,
   PaymentFilters,
   PaymentsResponse,
   RecordPaymentData,
+  RecordOrderPaymentData,
   ConfirmPaymentData,
   FailPaymentData,
 } from '../types/invoice.types';
+
+// =============================================================================
+// Helper
+// =============================================================================
+
+function buildPaymentQS(filters: PaymentFilters): string {
+  const p = new URLSearchParams();
+  if (filters.status) p.append('status', filters.status);
+  if (filters.invoiceId) p.append('invoiceId', filters.invoiceId);
+  if (filters.dateFrom) p.append('dateFrom', filters.dateFrom);
+  if (filters.dateTo) p.append('dateTo', filters.dateTo);
+  if (filters.page) p.append('page', filters.page.toString());
+  if (filters.limit) p.append('limit', filters.limit.toString());
+  const qs = p.toString();
+  return qs ? `?${qs}` : '';
+}
 
 // =============================================================================
 // Payment Service
@@ -21,195 +38,60 @@ export const marketplacePaymentService = {
   // Invoice Payment Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get all payments for an invoice
-   */
-  async getInvoicePayments(token: string, invoiceId: string): Promise<MarketplacePayment[]> {
-    const response = await fetch(`${API_URL}/payments/invoice/${invoiceId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch payments');
-    }
-
-    return response.json();
+  async getInvoicePayments(invoiceId: string): Promise<MarketplacePayment[]> {
+    return portalApiClient.get<MarketplacePayment[]>(`/api/payments/invoice/${invoiceId}`);
   },
 
   // ---------------------------------------------------------------------------
   // Buyer Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get all payments for the authenticated buyer
-   */
-  async getBuyerPayments(
-    token: string,
-    filters: PaymentFilters = {}
-  ): Promise<PaymentsResponse> {
-    const url = new URL(`${API_URL}/payments/buyer`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.invoiceId) url.searchParams.append('invoiceId', filters.invoiceId);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch payments');
-    }
-
-    return response.json();
+  async getBuyerPayments(filters: PaymentFilters = {}): Promise<PaymentsResponse> {
+    return portalApiClient.get<PaymentsResponse>(`/api/payments/buyer${buildPaymentQS(filters)}`);
   },
 
-  /**
-   * Record a payment (buyer provides bank transfer reference)
-   */
-  async recordPayment(token: string, data: RecordPaymentData): Promise<MarketplacePayment> {
-    const response = await fetch(`${API_URL}/payments/buyer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to record payment');
-    }
-
-    return response.json();
+  async recordPayment(data: RecordPaymentData): Promise<MarketplacePayment> {
+    return portalApiClient.post<MarketplacePayment>(`/api/payments/buyer`, data);
   },
 
-  /**
-   * Get single payment for buyer
-   */
-  async getBuyerPayment(token: string, paymentId: string): Promise<MarketplacePayment | null> {
-    const response = await fetch(`${API_URL}/payments/buyer/${paymentId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  async recordOrderPayment(orderId: string, data: RecordOrderPaymentData): Promise<MarketplacePayment> {
+    return portalApiClient.post<MarketplacePayment>(`/api/items/orders/buyer/${orderId}/payments`, data);
+  },
 
-    if (response.status === 404) {
+  async getBuyerPayment(paymentId: string): Promise<MarketplacePayment | null> {
+    try {
+      return await portalApiClient.get<MarketplacePayment>(`/api/payments/buyer/${paymentId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch payment');
-    }
-
-    return response.json();
   },
 
   // ---------------------------------------------------------------------------
   // Seller Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get all payments for the authenticated seller
-   */
-  async getSellerPayments(
-    token: string,
-    filters: PaymentFilters = {}
-  ): Promise<PaymentsResponse> {
-    const url = new URL(`${API_URL}/payments/seller`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.invoiceId) url.searchParams.append('invoiceId', filters.invoiceId);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch payments');
-    }
-
-    return response.json();
+  async getSellerPayments(filters: PaymentFilters = {}): Promise<PaymentsResponse> {
+    return portalApiClient.get<PaymentsResponse>(`/api/payments/seller${buildPaymentQS(filters)}`);
   },
 
-  /**
-   * Get single payment for seller
-   */
-  async getSellerPayment(token: string, paymentId: string): Promise<MarketplacePayment | null> {
-    const response = await fetch(`${API_URL}/payments/seller/${paymentId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getSellerPayment(paymentId: string): Promise<MarketplacePayment | null> {
+    try {
+      return await portalApiClient.get<MarketplacePayment>(`/api/payments/seller/${paymentId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch payment');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Confirm a payment (seller verifies bank transfer received)
-   */
-  async confirmPayment(
-    token: string,
-    paymentId: string,
-    data: ConfirmPaymentData = {}
-  ): Promise<MarketplacePayment> {
-    const response = await fetch(`${API_URL}/payments/seller/${paymentId}/confirm`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to confirm payment');
-    }
-
-    return response.json();
+  async confirmPayment(paymentId: string, data: ConfirmPaymentData = {}): Promise<MarketplacePayment> {
+    return portalApiClient.post<MarketplacePayment>(`/api/payments/seller/${paymentId}/confirm`, data);
   },
 
-  /**
-   * Mark a payment as failed
-   */
-  async failPayment(
-    token: string,
-    paymentId: string,
-    data: FailPaymentData
-  ): Promise<MarketplacePayment> {
-    const response = await fetch(`${API_URL}/payments/seller/${paymentId}/fail`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
+  async failPayment(paymentId: string, data: FailPaymentData): Promise<MarketplacePayment> {
+    return portalApiClient.post<MarketplacePayment>(`/api/payments/seller/${paymentId}/fail`, data);
+  },
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update payment');
-    }
-
-    return response.json();
+  async confirmCODPayment(orderId: string, data: { notes?: string } = {}): Promise<void> {
+    await portalApiClient.post(`/api/orders/buyer/${orderId}/confirm-cod`, data);
   },
 };
 

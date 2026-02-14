@@ -85,10 +85,11 @@ export default defineConfig(({ mode }) => {
             'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
             // Framer Motion - animations (large)
             'vendor-animation': ['framer-motion'],
-            // Icons
+            // Icons - split to isolate large icon library
             'vendor-icons': ['phosphor-react'],
-            // Charts - heavy, lazy load
-            'vendor-charts': ['echarts', 'echarts-for-react', 'recharts'],
+            // Charts - split echarts (heavy) from recharts for better loading
+            'vendor-echarts': ['echarts', 'echarts-for-react'],
+            'vendor-recharts': ['recharts'],
             // Excel/spreadsheet
             'vendor-xlsx': ['xlsx'],
             // Socket.io - real-time features
@@ -101,8 +102,9 @@ export default defineConfig(({ mode }) => {
             'vendor-ai': ['@google/generative-ai'],
             // Markdown
             'vendor-markdown': ['react-markdown'],
-            // PDF generation
-            'vendor-pdf': ['html2canvas', 'html2pdf.js'],
+            // PDF - split canvas from pdf for better loading
+            'vendor-canvas': ['html2canvas'],
+            'vendor-pdf': ['html2pdf.js'],
           }
         }
       }

@@ -5,7 +5,7 @@
 // Every update creates a new version; old versions are immutable.
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import { portalApiLogger } from '../../../utils/logger';
 import {
   Quote,
@@ -21,257 +21,108 @@ import {
 } from '../types/item.types';
 
 // =============================================================================
+// Helper
+// =============================================================================
+
+function buildQuoteQS(filters: QuoteFilters): string {
+  const p = new URLSearchParams();
+  if (filters.status) p.append('status', filters.status);
+  if (filters.page) p.append('page', filters.page.toString());
+  if (filters.limit) p.append('limit', filters.limit.toString());
+  const qs = p.toString();
+  return qs ? `?${qs}` : '';
+}
+
+// =============================================================================
 // Quote Service
 // =============================================================================
 
 export const quoteService = {
-  /**
-   * Create a new draft quote for an RFQ
-   * Entry condition: RFQ must be in UNDER_REVIEW status
-   */
-  async createDraft(token: string, data: CreateQuoteData): Promise<QuoteWithRFQ> {
-    const url = `${API_URL}/items/quotes`;
-
+  async createDraft(data: CreateQuoteData): Promise<QuoteWithRFQ> {
     if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[QuoteService] POST ${url}`, data);
+      portalApiLogger.debug(`[QuoteService] createDraft`, data);
     }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (import.meta.env.DEV) {
-        console.error(`[QuoteService] Create draft failed:`, response.status, error);
-      }
-      throw new Error(error.error || 'Failed to create quote');
-    }
-
-    const quote = await response.json();
-    if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[QuoteService] Draft created:`, quote);
-    }
-    return quote;
+    return portalApiClient.post<QuoteWithRFQ>(`/api/items/quotes`, data);
   },
 
-  /**
-   * Get all quotes for the authenticated seller
-   */
-  async getQuotes(token: string, filters: QuoteFilters = {}): Promise<QuotesResponse> {
-    const url = new URL(`${API_URL}/items/quotes`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch quotes');
-    }
-
-    return response.json();
+  async getQuotes(filters: QuoteFilters = {}): Promise<QuotesResponse> {
+    return portalApiClient.get<QuotesResponse>(`/api/items/quotes${buildQuoteQS(filters)}`);
   },
 
-  /**
-   * Get a specific quote by ID
-   */
-  async getQuote(token: string, quoteId: string): Promise<QuoteWithRFQ | null> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getQuote(quoteId: string): Promise<QuoteWithRFQ | null> {
+    try {
+      return await portalApiClient.get<QuoteWithRFQ>(`/api/items/quotes/${quoteId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch quote');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Get all quotes for an RFQ
-   */
-  async getQuotesByRFQ(token: string, rfqId: string): Promise<Quote[]> {
-    const response = await fetch(`${API_URL}/items/quotes/rfq/${rfqId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getQuotesByRFQ(rfqId: string): Promise<Quote[]> {
+    try {
+      return await portalApiClient.get<Quote[]>(`/api/items/quotes/rfq/${rfqId}`);
+    } catch {
       return [];
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch quotes for RFQ');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Update a quote (draft or create revision for sent)
-   */
-  async updateQuote(token: string, quoteId: string, data: UpdateQuoteData): Promise<QuoteWithRFQ | null> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (response.status === 404) {
+  async updateQuote(quoteId: string, data: UpdateQuoteData): Promise<QuoteWithRFQ | null> {
+    try {
+      return await portalApiClient.put<QuoteWithRFQ>(`/api/items/quotes/${quoteId}`, data);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to update quote');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Send a quote to the buyer (DRAFT → SENT)
-   * This also updates the RFQ status to QUOTED
-   */
-  async sendQuote(token: string, quoteId: string): Promise<QuoteWithRFQ | null> {
-    const url = `${API_URL}/items/quotes/${quoteId}/send`;
-
+  async sendQuote(quoteId: string): Promise<QuoteWithRFQ | null> {
     if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[QuoteService] POST ${url}`);
+      portalApiLogger.debug(`[QuoteService] sendQuote ${quoteId}`);
     }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 404) {
-      if (import.meta.env.DEV) {
-        console.error(`[QuoteService] Quote not found: ${quoteId}`);
-      }
+    try {
+      return await portalApiClient.post<QuoteWithRFQ>(`/api/items/quotes/${quoteId}/send`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (import.meta.env.DEV) {
-        console.error(`[QuoteService] Send quote failed:`, response.status, error);
-      }
-      throw new Error(error.error || 'Failed to send quote');
-    }
-
-    const quote = await response.json();
-    if (import.meta.env.DEV) {
-      portalApiLogger.debug(`[QuoteService] Quote sent:`, quote);
-    }
-    return quote;
   },
 
-  /**
-   * Get version history for a quote
-   */
-  async getQuoteVersions(token: string, quoteId: string): Promise<QuoteVersion[]> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/versions`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getQuoteVersions(quoteId: string): Promise<QuoteVersion[]> {
+    try {
+      return await portalApiClient.get<QuoteVersion[]>(`/api/items/quotes/${quoteId}/versions`);
+    } catch {
       return [];
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch quote versions');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Get event history for a quote
-   */
-  async getQuoteHistory(token: string, quoteId: string): Promise<QuoteEvent[]> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getQuoteHistory(quoteId: string): Promise<QuoteEvent[]> {
+    try {
+      return await portalApiClient.get<QuoteEvent[]>(`/api/items/quotes/${quoteId}/history`);
+    } catch {
       return [];
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch quote history');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Delete a draft quote (only drafts can be deleted)
-   */
-  async deleteDraft(token: string, quoteId: string): Promise<boolean> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 404) {
+  async deleteDraft(quoteId: string): Promise<boolean> {
+    try {
+      await portalApiClient.delete(`/api/items/quotes/${quoteId}`);
+      return true;
+    } catch {
       return false;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to delete quote');
-    }
-
-    return true;
   },
 
   // =============================================================================
   // Attachment Methods
   // =============================================================================
 
-  /**
-   * Add an attachment to a quote
-   */
-  async addAttachment(
-    token: string,
-    quoteId: string,
-    file: File,
-    type: QuoteAttachmentType = 'other',
-  ): Promise<QuoteAttachment> {
+  async addAttachment(quoteId: string, file: File, type: QuoteAttachmentType = 'other'): Promise<QuoteAttachment> {
+    // FormData requires raw fetch (portalApiClient auto-sets Content-Type: application/json)
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
 
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/attachments`, {
+    const token = portalApiClient.getAccessToken();
+    const response = await fetch(`${portalApiClient.baseUrl}/api/items/quotes/${quoteId}/attachments`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
@@ -283,47 +134,21 @@ export const quoteService = {
     return response.json();
   },
 
-  /**
-   * Get all attachments for a quote
-   */
-  async getAttachments(token: string, quoteId: string): Promise<QuoteAttachment[]> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/attachments`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getAttachments(quoteId: string): Promise<QuoteAttachment[]> {
+    try {
+      return await portalApiClient.get<QuoteAttachment[]>(`/api/items/quotes/${quoteId}/attachments`);
+    } catch {
       return [];
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to fetch attachments');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Remove an attachment from a quote
-   */
-  async removeAttachment(token: string, quoteId: string, attachmentId: string): Promise<boolean> {
-    const response = await fetch(`${API_URL}/items/quotes/${quoteId}/attachments/${attachmentId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 404) {
+  async removeAttachment(quoteId: string, attachmentId: string): Promise<boolean> {
+    try {
+      await portalApiClient.delete(`/api/items/quotes/${quoteId}/attachments/${attachmentId}`);
+      return true;
+    } catch {
       return false;
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to remove attachment');
-    }
-
-    return true;
   },
 };
 

@@ -17,6 +17,7 @@ import {
 import { scaleSafetyService } from '../services/scaleSafetyService';
 import { apiLogger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
+import { getPeriodStartDate } from '../utils/dates';
 const router = Router();
 
 // =============================================================================
@@ -78,23 +79,8 @@ router.get('/performance', requireAuth, async (req: Request, res: Response) => {
 
     const filters = performanceSchema.parse(req.query);
 
-    // Calculate period start date
     const now = new Date();
-    let startDate: Date;
-    switch (filters.period) {
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case 'quarter':
-        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      case 'year':
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        break;
-    }
+    const startDate = getPeriodStartDate(filters.period);
 
     // Get seller intelligence profile
     const profile = await prisma.sellerIntelligenceProfile.findUnique({

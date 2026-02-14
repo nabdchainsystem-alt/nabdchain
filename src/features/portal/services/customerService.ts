@@ -2,7 +2,7 @@
 // Customer Service - Frontend API Client for Customer Data
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -48,41 +48,27 @@ export const customerService = {
   /**
    * Get all customers for the authenticated seller
    */
-  async getSellerCustomers(token: string, filters: CustomerFilters = {}): Promise<Customer[]> {
-    const url = new URL(`${API_URL}/customers/seller`);
+  async getSellerCustomers(filters: CustomerFilters = {}): Promise<Customer[]> {
+    const params = new URLSearchParams();
 
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.sortBy) url.searchParams.append('sortBy', filters.sortBy);
-    if (filters.sortOrder) url.searchParams.append('sortOrder', filters.sortOrder);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch customers');
-    }
-
-    return response.json();
+    const qs = params.toString();
+    return portalApiClient.get<Customer[]>(`/api/customers/seller${qs ? `?${qs}` : ''}`);
   },
 
   /**
    * Get customer details with order history
    */
-  async getCustomerDetails(token: string, customerId: string): Promise<CustomerDetails | null> {
-    const response = await fetch(`${API_URL}/customers/seller/${customerId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getCustomerDetails(customerId: string): Promise<CustomerDetails | null> {
+    try {
+      return await portalApiClient.get<CustomerDetails>(`/api/customers/seller/${customerId}`);
+    } catch {
+      // Return null on 404 or any error fetching details
       return null;
     }
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch customer details');
-    }
-
-    return response.json();
   },
 };
 

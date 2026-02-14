@@ -1,20 +1,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import {
-  Bell,
-  CaretRight,
-  FileText,
-  Package,
-  Receipt,
-  ShieldWarning,
-  CurrencyDollar,
-} from 'phosphor-react';
+import { Bell, CaretRight, FileText, Package, Receipt, ShieldWarning, CurrencyDollar } from 'phosphor-react';
 import { usePortal } from '../context/PortalContext';
 import { useNotifications } from '../context/NotificationContext';
-import {
-  PortalNotification,
-  NotificationCategory,
-  PRIORITY_COLORS,
-} from '../types/notification.types';
+import { PortalNotification, NotificationCategory, PRIORITY_COLORS } from '../types/notification.types';
 
 // =============================================================================
 // Icon Mapping
@@ -52,7 +40,34 @@ function formatTimeAgo(dateString: string): string {
 // NotificationBell Component
 // =============================================================================
 
-export const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  onNavigate?: (page: string, data?: Record<string, unknown>) => void;
+}
+
+/**
+ * Map notification entityType + portalType to a portal page name.
+ */
+function resolveNotificationTarget(
+  notification: PortalNotification,
+): { page: string; data?: Record<string, unknown> } | null {
+  const entityType = notification.entityType || notification.category;
+  if (!entityType) return null;
+
+  const pageMap: Record<string, string> = {
+    rfq: notification.portalType === 'buyer' ? 'my-rfqs' : 'rfqs',
+    order: 'orders',
+    invoice: 'invoices',
+    dispute: 'disputes',
+    payout: 'payouts',
+  };
+
+  const page = pageMap[entityType];
+  if (!page) return null;
+
+  return { page };
+}
+
+export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
   const { styles, direction } = usePortal();
   const {
     notifications,
@@ -102,21 +117,27 @@ export const NotificationBell: React.FC = () => {
   // Filter notifications based on active tab
   const filteredNotifications =
     activeTab === 'action'
-      ? notifications.filter(
-          n => !n.read && (n.priority === 'critical' || n.priority === 'high')
-        )
+      ? notifications.filter((n) => !n.read && (n.priority === 'critical' || n.priority === 'high'))
       : notifications;
 
-  const handleNotificationClick = useCallback(async (notification: PortalNotification) => {
-    if (!notification.read) {
-      await markAsRead(notification.id);
-    }
-    if (notification.actionUrl) {
-      // Navigate within the app by updating the URL
-      window.location.href = notification.actionUrl;
-    }
-    setPanelOpen(false);
-  }, [markAsRead, setPanelOpen]);
+  const handleNotificationClick = useCallback(
+    async (notification: PortalNotification) => {
+      if (!notification.read) {
+        await markAsRead(notification.id);
+      }
+
+      // Use in-app navigation instead of window.location.href
+      if (onNavigate) {
+        const target = resolveNotificationTarget(notification);
+        if (target) {
+          onNavigate(target.page, target.data);
+        }
+      }
+
+      setPanelOpen(false);
+    },
+    [markAsRead, setPanelOpen, onNavigate],
+  );
 
   return (
     <div className="relative">
@@ -126,8 +147,8 @@ export const NotificationBell: React.FC = () => {
         onClick={() => setPanelOpen(!isPanelOpen)}
         className="relative p-2 rounded-lg transition-all duration-100"
         style={{ color: styles.textSecondary }}
-        onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         aria-label={`Notifications${counts.total > 0 ? ` (${counts.total} unread)` : ''}`}
       >
         <Bell size={20} weight={isPanelOpen ? 'fill' : 'regular'} />
@@ -161,10 +182,7 @@ export const NotificationBell: React.FC = () => {
           }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: styles.border }}
-          >
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: styles.border }}>
             <h3 className="text-sm font-semibold" style={{ color: styles.textPrimary }}>
               Notifications
             </h3>
@@ -186,10 +204,7 @@ export const NotificationBell: React.FC = () => {
               className="flex-1 px-4 py-2 text-sm font-medium transition-colors"
               style={{
                 color: activeTab === 'all' ? styles.info : styles.textMuted,
-                borderBottom:
-                  activeTab === 'all'
-                    ? `2px solid ${styles.info}`
-                    : '2px solid transparent',
+                borderBottom: activeTab === 'all' ? `2px solid ${styles.info}` : '2px solid transparent',
               }}
             >
               All
@@ -199,10 +214,7 @@ export const NotificationBell: React.FC = () => {
               className="flex-1 px-4 py-2 text-sm font-medium transition-colors"
               style={{
                 color: activeTab === 'action' ? styles.info : styles.textMuted,
-                borderBottom:
-                  activeTab === 'action'
-                    ? `2px solid ${styles.info}`
-                    : '2px solid transparent',
+                borderBottom: activeTab === 'action' ? `2px solid ${styles.info}` : '2px solid transparent',
               }}
             >
               Action Required
@@ -222,17 +234,11 @@ export const NotificationBell: React.FC = () => {
             {isLoading ? (
               <div className="p-4 text-center">
                 <div className="animate-pulse flex flex-col gap-3">
-                  {[1, 2, 3].map(i => (
+                  {[1, 2, 3].map((i) => (
                     <div key={i} className="flex gap-3">
-                      <div
-                        className="w-8 h-8 rounded-full"
-                        style={{ backgroundColor: styles.bgSecondary }}
-                      />
+                      <div className="w-8 h-8 rounded-full" style={{ backgroundColor: styles.bgSecondary }} />
                       <div className="flex-1">
-                        <div
-                          className="h-3 rounded"
-                          style={{ backgroundColor: styles.bgSecondary, width: '70%' }}
-                        />
+                        <div className="h-3 rounded" style={{ backgroundColor: styles.bgSecondary, width: '70%' }} />
                         <div
                           className="h-2 mt-2 rounded"
                           style={{ backgroundColor: styles.bgSecondary, width: '40%' }}
@@ -250,7 +256,7 @@ export const NotificationBell: React.FC = () => {
                 </p>
               </div>
             ) : (
-              filteredNotifications.map(notification => (
+              filteredNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
@@ -288,71 +294,59 @@ interface NotificationItemProps {
   onClick: () => void;
 }
 
-const NotificationItem = React.memo<NotificationItemProps>(({ notification, onClick }) => {
-  const { styles } = usePortal();
-  const category = (notification.category || 'system') as NotificationCategory;
-  const Icon = CategoryIcons[category] || Bell;
-  const priorityColors = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.normal;
+const NotificationItem = React.memo<NotificationItemProps>(
+  ({ notification, onClick }) => {
+    const { styles } = usePortal();
+    const category = (notification.category || 'system') as NotificationCategory;
+    const Icon = CategoryIcons[category] || Bell;
+    const priorityColors = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.normal;
 
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors"
-      style={{
-        backgroundColor: notification.read ? 'transparent' : `${styles.bgSecondary}40`,
-      }}
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = styles.bgHover)}
-      onMouseLeave={e =>
-        (e.currentTarget.style.backgroundColor = notification.read
-          ? 'transparent'
-          : `${styles.bgSecondary}40`)
-      }
-    >
-      {/* Icon */}
-      <div
-        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: priorityColors.bg }}
+    return (
+      <button
+        onClick={onClick}
+        className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors"
+        style={{
+          backgroundColor: notification.read ? 'transparent' : `${styles.bgSecondary}40`,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = styles.bgHover)}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = notification.read ? 'transparent' : `${styles.bgSecondary}40`)
+        }
       >
-        <Icon size={16} style={{ color: priorityColors.text }} />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p
-            className="text-sm font-medium truncate"
-            style={{ color: styles.textPrimary }}
-          >
-            {notification.title}
-          </p>
-          {!notification.read && (
-            <span
-              className="flex-shrink-0 w-2 h-2 rounded-full"
-              style={{ backgroundColor: priorityColors.dot }}
-            />
-          )}
+        {/* Icon */}
+        <div
+          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: priorityColors.bg }}
+        >
+          <Icon size={16} style={{ color: priorityColors.text }} />
         </div>
-        {notification.body && (
-          <p className="text-xs mt-0.5 truncate" style={{ color: styles.textMuted }}>
-            {notification.body}
-          </p>
-        )}
-        <p className="text-[10px] mt-1" style={{ color: styles.textMuted }}>
-          {formatTimeAgo(notification.createdAt)}
-        </p>
-      </div>
 
-      {/* Arrow */}
-      <CaretRight
-        size={14}
-        style={{ color: styles.textMuted }}
-        className="flex-shrink-0 mt-1"
-      />
-    </button>
-  );
-}, (prev, next) =>
-  prev.notification.id === next.notification.id &&
-  prev.notification.read === next.notification.read
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium truncate" style={{ color: styles.textPrimary }}>
+              {notification.title}
+            </p>
+            {!notification.read && (
+              <span className="flex-shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: priorityColors.dot }} />
+            )}
+          </div>
+          {notification.body && (
+            <p className="text-xs mt-0.5 truncate" style={{ color: styles.textMuted }}>
+              {notification.body}
+            </p>
+          )}
+          <p className="text-[10px] mt-1" style={{ color: styles.textMuted }}>
+            {formatTimeAgo(notification.createdAt)}
+          </p>
+        </div>
+
+        {/* Arrow */}
+        <CaretRight size={14} style={{ color: styles.textMuted }} className="flex-shrink-0 mt-1" />
+      </button>
+    );
+  },
+  (prev, next) => prev.notification.id === next.notification.id && prev.notification.read === next.notification.read,
 );
 
 export default NotificationBell;

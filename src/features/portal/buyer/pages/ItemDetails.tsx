@@ -21,9 +21,8 @@ import {
 } from 'phosphor-react';
 import { Container, EmptyState } from '../../components';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { itemService } from '../../services/itemService';
-import { Item, ItemDocument } from '../../types/item.types';
+import { Item, ItemDocument, parseImageUrls } from '../../types/item.types';
 import { RFQFormPanel } from '../components/RFQFormPanel';
 import { AddToCartButton } from '../components/AddToCartButton';
 
@@ -37,7 +36,6 @@ type TabId = 'overview' | 'specs' | 'compatibility' | 'packaging';
 
 export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate, itemId }) => {
   const { styles, t, direction, language } = usePortal();
-  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [item, setItem] = useState<Item | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,10 +55,8 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate, itemId }) 
       try {
         setLoading(true);
         setError(null);
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
 
-        const fetchedItem = await itemService.getMarketplaceItem(token, itemId);
+        const fetchedItem = await itemService.getMarketplaceItem(itemId);
         setItem(fetchedItem);
         if (fetchedItem?.minOrderQty) {
           setQuantity(fetchedItem.minOrderQty);
@@ -74,13 +70,13 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ onNavigate, itemId }) 
     };
 
     fetchItem();
-  }, [itemId, getToken]);
+  }, [itemId]);
 
   // Memoized product data
   const product = useMemo(() => {
     if (!item) return null;
 
-    const images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images || [];
+    const images = parseImageUrls(item.images);
     const specs = typeof item.specifications === 'string' ? JSON.parse(item.specifications) : item.specifications || {};
     const docs = typeof item.documents === 'string' ? JSON.parse(item.documents) : item.documents || [];
 

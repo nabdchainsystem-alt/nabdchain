@@ -707,3 +707,453 @@ export async function populateSupplierSnapshot(
     supplierTotalOrders: metrics.totalOrders,
   };
 }
+
+// =============================================================================
+// Dashboard Intelligence (computed from real order data)
+// =============================================================================
+
+export async function getDashboardIntelligence(buyerId: string) {
+  const orders = await prisma.marketplaceOrder.findMany({
+    where: { buyerId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Purchase velocity: orders per week for the last 8 weeks
+  const now = new Date();
+  const weeklyData: number[] = [];
+  for (let w = 7; w >= 0; w--) {
+    const weekStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000);
+    const weekEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+    const count = orders.filter(o => {
+      const d = new Date(o.createdAt);
+      return d >= weekStart && d < weekEnd;
+    }).length;
+    weeklyData.push(count);
+  }
+
+  const current = weeklyData[weeklyData.length - 1];
+  const previous = weeklyData[weeklyData.length - 2] || 0;
+  const trend = current > previous ? 'accelerating' as const
+    : current < previous ? 'slowing' as const
+    : 'steady' as const;
+
+  const purchaseVelocity = {
+    current,
+    previous,
+    trend,
+    insight: current === 0 ? 'No orders this week'
+      : trend === 'accelerating' ? `Order rate increased from ${previous} to ${current}/week`
+      : trend === 'slowing' ? `Order rate decreased from ${previous} to ${current}/week`
+      : `Steady at ${current} order${current !== 1 ? 's' : ''}/week`,
+    weeklyData,
+  };
+
+  // Supplier risk: dependency analysis
+  const sellerMap = new Map<string, typeof orders>();
+  for (const o of orders) {
+    const existing = sellerMap.get(o.sellerId) || [];
+    existing.push(o);
+    sellerMap.set(o.sellerId, existing);
+  }
+
+  const totalSpend = orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.totalPrice, 0);
+
+  // Fetch seller names
+  const sellerIds = Array.from(sellerMap.keys());
+  const sellerProfiles = await prisma.sellerProfile.findMany({
+    where: { id: { in: sellerIds } },
+    select: { id: true, displayName: true },
+  });
+  const sellerNameMap = new Map<string, string>();
+  for (const sp of sellerProfiles) {
+    sellerNameMap.set(sp.id, sp.displayName || 'Unknown');
+  }
+
+  const supplierRisks = Array.from(sellerMap.entries()).map(([sellerId, sellerOrders]) => {
+    const sellerSpend = sellerOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.totalPrice, 0);
+    const spendShare = totalSpend > 0 ? Math.round((sellerSpend / totalSpend) * 100) : 0;
+    const issues = sellerOrders.filter(o => o.hasException).length;
+    const lateDeliveries = sellerOrders.filter(o =>
+      o.deliveredAt && o.deliveryDeadline && new Date(o.deliveredAt) > new Date(o.deliveryDeadline)
+    ).length;
+
+    const dependencyScore = Math.min(100, spendShare + (issues * 5) + (lateDeliveries * 3));
+    const riskLevel = dependencyScore >= 70 ? 'high' as const
+      : dependencyScore >= 40 ? 'medium' as const
+      : 'low' as const;
+
+    const factors: string[] = [];
+    if (spendShare > 50) factors.push(`${spendShare}% of total spend`);
+    if (lateDeliveries > 0) factors.push(`${lateDeliveries} late deliveries`);
+    if (issues > 0) factors.push(`${issues} exceptions`);
+    if (factors.length === 0) factors.push('Healthy relationship');
+
+    return {
+      supplierId: sellerId,
+      supplierName: sellerNameMap.get(sellerId) || 'Unknown',
+      dependencyScore,
+      spendShare,
+      riskLevel,
+      factors,
+      alternativeCount: Math.max(0, sellerIds.length - 1),
+    };
+  }).filter(r => r.riskLevel !== 'low').sort((a, b) => b.dependencyScore - a.dependencyScore);
+
+  // Smart alerts: generated from order data
+  const alerts: Array<{
+    id: string;
+    type: string;
+    severity: string;
+    title: string;
+    message: string;
+    supplierName?: string;
+    actionLabel?: string;
+    actionTarget?: string;
+    createdAt: string;
+  }> = [];
+
+  // Late delivery alerts
+  const lateOrders = orders.filter(o =>
+    ['shipped', 'confirmed', 'in_progress'].includes(o.status) &&
+    o.deliveryDeadline && new Date(o.deliveryDeadline) < now
+  );
+  for (const o of lateOrders.slice(0, 3)) {
+    alerts.push({
+      id: `delay-${o.id}`,
+      type: 'delay_risk',
+      severity: 'high',
+      title: 'Delivery Delayed',
+      message: `Order ${o.orderNumber} (${o.itemName}) is past its delivery deadline`,
+      supplierName: sellerNameMap.get(o.sellerId),
+      actionLabel: 'Track',
+      actionTarget: 'tracking',
+      createdAt: now.toISOString(),
+    });
+  }
+
+  // Unpaid delivered orders
+  const unpaidDelivered = orders.filter(o => o.status === 'delivered' && o.paymentStatus !== 'paid');
+  if (unpaidDelivered.length > 0) {
+    alerts.push({
+      id: 'unpaid-delivered',
+      type: 'supplier_issue',
+      severity: 'medium',
+      title: 'Payments Due',
+      message: `${unpaidDelivered.length} delivered order${unpaidDelivered.length > 1 ? 's' : ''} awaiting payment`,
+      actionLabel: 'Pay Now',
+      actionTarget: 'invoices',
+      createdAt: now.toISOString(),
+    });
+  }
+
+  // Pending confirmation alerts
+  const pendingConfirm = orders.filter(o => o.status === 'pending_confirmation');
+  if (pendingConfirm.length > 0) {
+    alerts.push({
+      id: 'pending-confirm',
+      type: 'stockout_warning',
+      severity: 'low',
+      title: 'Awaiting Confirmation',
+      message: `${pendingConfirm.length} order${pendingConfirm.length > 1 ? 's' : ''} waiting for seller confirmation`,
+      actionLabel: 'View Orders',
+      actionTarget: 'orders',
+      createdAt: now.toISOString(),
+    });
+  }
+
+  return {
+    purchaseVelocity,
+    supplierRisks,
+    alerts,
+  };
+}
+
+// =============================================================================
+// Derived Expenses (from PAID marketplace orders)
+// =============================================================================
+
+export interface DerivedExpense {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  itemName: string;
+  itemSku: string;
+  category: string;
+  sellerName: string;
+  sellerId: string;
+  amount: number;
+  currency: string;
+  paidAt: string;
+  deliveredAt: string | null;
+  month: string; // YYYY-MM for grouping
+}
+
+/**
+ * Derive expenses from PAID marketplace orders.
+ * Expenses only exist for orders where paymentStatus = 'paid'.
+ */
+export async function getDerivedExpenses(buyerId: string): Promise<DerivedExpense[]> {
+  const orders = await prisma.marketplaceOrder.findMany({
+    where: {
+      buyerId,
+      paymentStatus: 'paid',
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  if (orders.length === 0) return [];
+
+  // Fetch seller names
+  const sellerIds = [...new Set(orders.map(o => o.sellerId))];
+  const sellerProfiles = await prisma.sellerProfile.findMany({
+    where: { id: { in: sellerIds } },
+    select: { id: true, displayName: true },
+  });
+  const sellerNameMap = new Map<string, string>();
+  for (const sp of sellerProfiles) {
+    sellerNameMap.set(sp.id, sp.displayName || 'Unknown Seller');
+  }
+
+  return orders.map(order => {
+    const paidDate = order.updatedAt;
+    return {
+      id: order.id,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      itemName: order.itemName,
+      itemSku: order.itemSku || '',
+      category: inferCategory(order.itemName),
+      sellerName: sellerNameMap.get(order.sellerId) || 'Unknown Seller',
+      sellerId: order.sellerId,
+      amount: order.totalPrice,
+      currency: order.currency,
+      paidAt: paidDate.toISOString(),
+      deliveredAt: order.deliveredAt?.toISOString() || null,
+      month: `${paidDate.getFullYear()}-${String(paidDate.getMonth() + 1).padStart(2, '0')}`,
+    };
+  });
+}
+
+/**
+ * Aggregate expense stats with monthly grouping
+ */
+export async function getDerivedExpenseStats(buyerId: string) {
+  const expenses = await getDerivedExpenses(buyerId);
+
+  const totalSpend = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const transactionCount = expenses.length;
+
+  // Group by month
+  const monthlyMap = new Map<string, { amount: number; count: number }>();
+  for (const e of expenses) {
+    const existing = monthlyMap.get(e.month) || { amount: 0, count: 0 };
+    existing.amount += e.amount;
+    existing.count++;
+    monthlyMap.set(e.month, existing);
+  }
+
+  const monthlyBreakdown = Array.from(monthlyMap.entries())
+    .map(([month, data]) => ({ month, ...data }))
+    .sort((a, b) => b.month.localeCompare(a.month));
+
+  // Group by category
+  const categoryMap = new Map<string, number>();
+  for (const e of expenses) {
+    categoryMap.set(e.category, (categoryMap.get(e.category) || 0) + e.amount);
+  }
+  const categoryBreakdown = Array.from(categoryMap.entries())
+    .map(([category, amount]) => ({ category, amount, percentage: totalSpend > 0 ? (amount / totalSpend) * 100 : 0 }))
+    .sort((a, b) => b.amount - a.amount);
+
+  // Group by supplier
+  const supplierMap = new Map<string, { name: string; amount: number }>();
+  for (const e of expenses) {
+    const existing = supplierMap.get(e.sellerId) || { name: e.sellerName, amount: 0 };
+    existing.amount += e.amount;
+    supplierMap.set(e.sellerId, existing);
+  }
+  const topSuppliers = Array.from(supplierMap.entries())
+    .map(([sellerId, data]) => ({ sellerId, ...data }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  // Current vs previous month comparison
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const currentMonthData = monthlyMap.get(currentMonth) || { amount: 0, count: 0 };
+  const prevMonthData = monthlyMap.get(prevMonth) || { amount: 0, count: 0 };
+  const changePercent = prevMonthData.amount > 0
+    ? ((currentMonthData.amount - prevMonthData.amount) / prevMonthData.amount) * 100
+    : 0;
+
+  return {
+    totalSpend,
+    transactionCount,
+    currency: 'SAR',
+    currentMonth: currentMonthData,
+    previousMonth: prevMonthData,
+    changePercent: Math.round(changePercent * 10) / 10,
+    monthlyBreakdown,
+    categoryBreakdown,
+    topSuppliers,
+  };
+}
+
+/**
+ * Infer expense category from item name
+ */
+function inferCategory(itemName: string): string {
+  const name = itemName.toLowerCase();
+  if (name.includes('ship') || name.includes('freight') || name.includes('deliver')) return 'Shipping';
+  if (name.includes('custom') || name.includes('duty') || name.includes('tariff')) return 'Customs';
+  if (name.includes('storage') || name.includes('warehouse')) return 'Storage';
+  if (name.includes('raw') || name.includes('material') || name.includes('fabric')) return 'Raw Materials';
+  if (name.includes('part') || name.includes('component')) return 'Components';
+  if (name.includes('equip') || name.includes('machine') || name.includes('tool')) return 'Equipment';
+  if (name.includes('pack') || name.includes('box') || name.includes('container')) return 'Packaging';
+  return 'Goods';
+}
+
+// =============================================================================
+// Derived Suppliers (from marketplace order history)
+// =============================================================================
+
+export interface DerivedSupplier {
+  sellerId: string;
+  sellerName: string;
+  totalOrders: number;
+  totalSpend: number;
+  avgOrderValue: number;
+  currency: string;
+  onTimeDeliveryRate: number;
+  avgDeliveryDays: number | null;
+  qualityScore: number;
+  openDisputes: number;
+  firstOrderDate: string;
+  lastOrderDate: string;
+  orderStatuses: Record<string, number>;
+}
+
+/**
+ * Derive suppliers from actual marketplace orders (NOT from a static supplier table).
+ * A supplier appears only if the buyer has at least 1 order with them.
+ */
+export async function getDerivedSuppliers(buyerId: string): Promise<DerivedSupplier[]> {
+  const orders = await prisma.marketplaceOrder.findMany({
+    where: { buyerId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (orders.length === 0) return [];
+
+  // Group orders by seller
+  const sellerMap = new Map<string, typeof orders>();
+  for (const order of orders) {
+    const existing = sellerMap.get(order.sellerId) || [];
+    existing.push(order);
+    sellerMap.set(order.sellerId, existing);
+  }
+
+  // Fetch seller names
+  const sellerIds = Array.from(sellerMap.keys());
+  const sellerProfiles = await prisma.sellerProfile.findMany({
+    where: { id: { in: sellerIds } },
+    select: { id: true, displayName: true },
+  });
+  const sellerNameMap = new Map<string, string>();
+  for (const sp of sellerProfiles) {
+    sellerNameMap.set(sp.id, sp.displayName || 'Unknown Seller');
+  }
+
+  // Count open disputes per seller
+  const disputes = await prisma.marketplaceDispute.findMany({
+    where: {
+      buyerId,
+      status: { in: ['open', 'under_review', 'seller_responded', 'escalated'] },
+    },
+    select: { sellerId: true },
+  });
+  const disputeCountMap = new Map<string, number>();
+  for (const d of disputes) {
+    disputeCountMap.set(d.sellerId, (disputeCountMap.get(d.sellerId) || 0) + 1);
+  }
+
+  // Build supplier list
+  const suppliers: DerivedSupplier[] = [];
+  for (const [sellerId, sellerOrders] of sellerMap) {
+    const delivered = sellerOrders.filter(o => o.status === 'delivered');
+    const totalSpend = delivered.reduce((sum, o) => sum + o.totalPrice, 0);
+
+    // On-time delivery rate
+    let onTimeCount = 0;
+    let deliveryDaysTotal = 0;
+    let deliveryDaysCount = 0;
+    for (const o of delivered) {
+      if (o.deliveredAt && o.deliveryDeadline) {
+        if (new Date(o.deliveredAt) <= new Date(o.deliveryDeadline)) {
+          onTimeCount++;
+        }
+      }
+      if (o.daysToDeliver) {
+        deliveryDaysTotal += o.daysToDeliver;
+        deliveryDaysCount++;
+      }
+    }
+
+    // Order status counts
+    const orderStatuses: Record<string, number> = {};
+    for (const o of sellerOrders) {
+      orderStatuses[o.status] = (orderStatuses[o.status] || 0) + 1;
+    }
+
+    suppliers.push({
+      sellerId,
+      sellerName: sellerNameMap.get(sellerId) || 'Unknown Seller',
+      totalOrders: sellerOrders.length,
+      totalSpend,
+      avgOrderValue: sellerOrders.length > 0 ? totalSpend / sellerOrders.length : 0,
+      currency: sellerOrders[0]?.currency || 'SAR',
+      onTimeDeliveryRate: delivered.length > 0
+        ? Math.round((onTimeCount / delivered.length) * 100)
+        : 0,
+      avgDeliveryDays: deliveryDaysCount > 0
+        ? Math.round((deliveryDaysTotal / deliveryDaysCount) * 10) / 10
+        : null,
+      qualityScore: calculateQualityScore(sellerOrders),
+      openDisputes: disputeCountMap.get(sellerId) || 0,
+      firstOrderDate: sellerOrders[sellerOrders.length - 1]?.createdAt.toISOString(),
+      lastOrderDate: sellerOrders[0]?.createdAt.toISOString(),
+      orderStatuses,
+    });
+  }
+
+  // Sort by total spend descending
+  suppliers.sort((a, b) => b.totalSpend - a.totalSpend);
+  return suppliers;
+}
+
+/**
+ * Aggregate stats for derived suppliers
+ */
+export async function getDerivedSupplierStats(buyerId: string) {
+  const suppliers = await getDerivedSuppliers(buyerId);
+
+  const totalSpend = suppliers.reduce((sum, s) => sum + s.totalSpend, 0);
+  const totalOrders = suppliers.reduce((sum, s) => sum + s.totalOrders, 0);
+  const avgOnTime = suppliers.length > 0
+    ? Math.round(suppliers.reduce((sum, s) => sum + s.onTimeDeliveryRate, 0) / suppliers.length)
+    : 0;
+  const totalDisputes = suppliers.reduce((sum, s) => sum + s.openDisputes, 0);
+
+  return {
+    totalSuppliers: suppliers.length,
+    totalSpend,
+    totalOrders,
+    avgOnTimeDelivery: avgOnTime,
+    openDisputes: totalDisputes,
+    currency: 'SAR',
+  };
+}

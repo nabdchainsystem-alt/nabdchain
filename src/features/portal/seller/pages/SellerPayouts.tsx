@@ -726,7 +726,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
       const token = await getToken();
       if (!token) return;
 
-      const timelineRes = await payoutService.getTimeline(token, 10);
+      const timelineRes = await payoutService.getTimeline(10);
       setTimelineEntries(timelineRes.entries);
     } catch (error) {
       console.error('Failed to fetch timeline:', error);
@@ -743,10 +743,10 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
       if (!token) return;
 
       const [payoutsRes, statsRes, eligibleRes, settingsRes] = await Promise.all([
-        payoutService.getPayouts(token, { ...filters, page, limit: 10 }),
-        payoutService.getStats(token),
-        payoutService.getEligible(token),
-        payoutService.getSettings(token),
+        payoutService.getPayouts({ ...filters, page, limit: 10 }),
+        payoutService.getStats(),
+        payoutService.getEligible(),
+        payoutService.getSettings(),
       ]);
 
       setPayouts(payoutsRes.payouts);
@@ -782,7 +782,7 @@ export const SellerPayouts: React.FC<SellerPayoutsProps> = ({ onNavigate }) => {
       const token = await getToken();
       if (!token) return;
 
-      const updated = await payoutService.updateSettings(token, newSettings);
+      const updated = await payoutService.updateSettings(newSettings);
       setSettings(updated);
       setShowSettings(false);
     } catch (error) {
@@ -1326,7 +1326,7 @@ const PayoutDetailsModal: React.FC<PayoutDetailsModalProps> = ({ payout, onClose
     try {
       const token = await getToken();
       if (!token) return;
-      const events = await payoutService.getPayoutHistory(token, payout.id);
+      const events = await payoutService.getPayoutHistory(payout.id);
       setAuditEvents(events);
     } catch (error) {
       console.error('Failed to fetch audit trail:', error);

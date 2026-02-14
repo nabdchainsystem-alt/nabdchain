@@ -15,6 +15,30 @@ export type ItemStatus = 'draft' | 'active' | 'out_of_stock' | 'archived';
 export type PriceUnit = 'per_unit' | 'per_kg' | 'per_meter' | 'per_liter' | 'per_set' | 'per_box';
 
 // =============================================================================
+// Image URL Utilities
+// =============================================================================
+
+/** Safely parse images JSON string into validated URL array */
+export function parseImageUrls(images: string | string[] | null | undefined): string[] {
+  if (!images) return [];
+  if (Array.isArray(images)) return images.filter(isValidImageUrl);
+  try {
+    const parsed: unknown = JSON.parse(images);
+    if (Array.isArray(parsed)) return parsed.filter(isValidImageUrl);
+  } catch {
+    /* malformed JSON */
+  }
+  return [];
+}
+
+function isValidImageUrl(url: unknown): url is string {
+  if (typeof url !== 'string') return false;
+  return (
+    url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/') || url.startsWith('data:image/')
+  );
+}
+
+// =============================================================================
 // Core Item Interface
 // =============================================================================
 
@@ -191,13 +215,71 @@ export interface MarketplaceFilters {
 // =============================================================================
 
 // RFQ Status - starts as 'new' at creation
-export type RFQStatus = 'new' | 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired';
+export type RFQStatus = 'new' | 'pending' | 'quoted' | 'accepted' | 'rejected' | 'expired' | 'ignored' | 'cancelled';
 
 // RFQ Source - tracks entry point
 export type RFQSource = 'item' | 'profile' | 'listing';
 
 // RFQ Priority levels
 export type RFQPriority = 'normal' | 'urgent' | 'critical';
+
+// =============================================================================
+// Line Item Models (Multi-Line RFQ/Quote/Order)
+// =============================================================================
+
+export interface RFQLineItem {
+  id: string;
+  rfqId: string;
+  itemId: string | null;
+  quantity: number;
+  message?: string;
+  itemName?: string;
+  itemSku?: string;
+  itemImage?: string;
+  priceAtRequest?: number;
+  position: number;
+  createdAt: string;
+  item?: Item;
+}
+
+export interface QuoteLineItem {
+  id: string;
+  quoteId: string;
+  rfqLineItemId: string;
+  itemId?: string;
+  unitPrice: number;
+  quantity: number;
+  discount?: number;
+  totalPrice: number;
+  itemName?: string;
+  itemSku?: string;
+  position: number;
+  createdAt: string;
+}
+
+export interface OrderLineItem {
+  id: string;
+  orderId: string;
+  itemId?: string;
+  itemName: string;
+  itemSku: string;
+  itemImage?: string;
+  unitPrice: number;
+  quantity: number;
+  discount?: number;
+  totalPrice: number;
+  rfqLineItemId?: string;
+  quoteLineItemId?: string;
+  position: number;
+  createdAt: string;
+}
+
+export interface CreateQuoteLineItemData {
+  rfqLineItemId: string;
+  unitPrice: number;
+  quantity: number;
+  discount?: number;
+}
 
 export interface ItemRFQ {
   id: string;
@@ -231,6 +313,7 @@ export interface ItemRFQ {
 
   // Relations
   item?: Item;
+  lineItems?: RFQLineItem[];
 
   // Quotes (populated by backend when fetching buyer RFQs)
   // Uses inline type to avoid circular reference with Quote interface defined later
@@ -260,7 +343,12 @@ export interface ItemRFQ {
     expiredAt?: string | null;
     acceptedAt?: string | null;
     rejectedAt?: string | null;
+    lineItems?: QuoteLineItem[];
   }>;
+
+  // Decline info (populated when seller declines/ignores)
+  ignoredReason?: string;
+  ignoredAt?: string;
 
   // Seller info (populated for buyer views)
   sellerCompanyName?: string;
@@ -1119,6 +1207,7 @@ export interface Quote {
   rfq?: SellerInboxRFQ;
   versions?: QuoteVersion[];
   events?: QuoteEvent[];
+  lineItems?: QuoteLineItem[];
 }
 
 /**
@@ -1145,6 +1234,7 @@ export interface CreateQuoteData {
   validUntil: string; // ISO datetime string
   notes?: string;
   internalNotes?: string;
+  lineItems?: CreateQuoteLineItemData[];
 }
 
 /**
@@ -1162,6 +1252,7 @@ export interface UpdateQuoteData {
   notes?: string;
   internalNotes?: string;
   changeReason?: string;
+  lineItems?: CreateQuoteLineItemData[];
 }
 
 /**
@@ -1397,7 +1488,32 @@ export type MarketplaceOrderStatus =
 /**
  * Payment status
  */
-export type PaymentStatus = 'unpaid' | 'authorized' | 'paid' | 'refunded';
+export type PaymentStatus =
+  | 'unpaid'
+  | 'partial'
+  | 'authorized'
+  | 'pending_conf'
+  | 'unpaid_credit'
+  | 'paid'
+  | 'paid_cash'
+  | 'refunded';
+
+/**
+ * Order payment method (selected at order creation, immutable)
+ */
+export type OrderPaymentMethod = 'bank_transfer' | 'cod' | 'credit';
+
+/**
+ * Get payment method display label
+ */
+export function getPaymentMethodConfig(method: string): { label: string; icon: 'bank' | 'money' | 'credit' } {
+  const configs: Record<string, { label: string; icon: 'bank' | 'money' | 'credit' }> = {
+    bank_transfer: { label: 'Bank Transfer', icon: 'bank' },
+    cod: { label: 'Cash on Delivery', icon: 'money' },
+    credit: { label: 'Credit / Pay Later', icon: 'credit' },
+  };
+  return configs[method] || configs['bank_transfer'];
+}
 
 /**
  * Fulfillment status
@@ -1485,6 +1601,9 @@ export interface MarketplaceOrder {
   // Source
   source: OrderSource;
 
+  // Payment Method (selected at order creation)
+  paymentMethod?: OrderPaymentMethod;
+
   // Shipping
   shippingAddress?: string;
   trackingNumber?: string;
@@ -1518,6 +1637,22 @@ export interface MarketplaceOrder {
   shipmentDate?: string; // When shipment was dispatched
   deliveryConfirmedBy?: 'buyer' | 'system';
 
+  // Payment aggregates (populated by order endpoints)
+  paidAmount?: number;
+  remainingAmount?: number;
+  pendingAmount?: number;
+  paymentCount?: number;
+  lastPaymentAt?: string | null;
+  lastPaymentReference?: string | null;
+
+  // Invoice info (populated by buyer orders endpoint)
+  invoiceId?: string | null;
+  invoiceStatus?: string | null;
+  invoiceNumber?: string | null;
+
+  // Line items (multi-item orders)
+  lineItems?: OrderLineItem[];
+
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -1535,6 +1670,7 @@ export interface MarketplaceOrder {
 export interface AcceptQuoteData {
   shippingAddress?: string;
   buyerNotes?: string;
+  paymentMethod?: OrderPaymentMethod;
 }
 
 /**

@@ -274,6 +274,7 @@ describe('getBuyerOrders', () => {
   it('returns paginated orders for buyer', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([createMockOrder()]);
     prismaMock.marketplaceOrder.count.mockResolvedValue(1);
+    prismaMock.marketplacePayment.findMany.mockResolvedValue([]);
 
     const result = await getBuyerOrders('buyer-1');
 
@@ -285,6 +286,7 @@ describe('getBuyerOrders', () => {
   it('applies status filter', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([]);
     prismaMock.marketplaceOrder.count.mockResolvedValue(0);
+    prismaMock.marketplacePayment.findMany.mockResolvedValue([]);
 
     await getBuyerOrders('buyer-1', { status: 'shipped' });
 
@@ -301,6 +303,7 @@ describe('getSellerOrders', () => {
   it('returns orders for seller with string ID', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([createMockOrder()]);
     prismaMock.marketplaceOrder.count.mockResolvedValue(1);
+    prismaMock.marketplacePayment.findMany.mockResolvedValue([]);
 
     const result = await getSellerOrders('seller-1');
 
@@ -311,6 +314,7 @@ describe('getSellerOrders', () => {
   it('returns orders for seller with array of IDs', async () => {
     prismaMock.marketplaceOrder.findMany.mockResolvedValue([createMockOrder()]);
     prismaMock.marketplaceOrder.count.mockResolvedValue(1);
+    prismaMock.marketplacePayment.findMany.mockResolvedValue([]);
 
     const result = await getSellerOrders(['seller-1', 'profile-1']);
 

@@ -7,6 +7,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
+import { portalNotificationService } from './portalNotificationService';
 import { apiLogger } from '../utils/logger';
 
 // =============================================================================
@@ -168,8 +169,8 @@ export const marketplaceInvoiceService = {
         return { success: false, error: 'Order not found' };
       }
 
-      if (order.status !== 'delivered') {
-        return { success: false, error: 'Order must be in delivered status' };
+      if (!['delivered', 'closed'].includes(order.status)) {
+        return { success: false, error: 'Order must be in delivered or closed status' };
       }
 
       // 2. Check if invoice already exists for this order
@@ -195,22 +196,48 @@ export const marketplaceInvoiceService = {
       const platformFeeAmount = Math.round(totalAmount * (platformFeeRate / 100) * 100) / 100;
       const netToSeller = Math.round((totalAmount - platformFeeAmount) * 100) / 100;
 
-      // 5. Build line items from order
-      const lineItems: InvoiceLineItem[] = [
-        {
-          sku: order.itemSku,
-          name: order.itemName,
-          quantity: order.quantity,
-          unitPrice: order.unitPrice,
-          total: order.totalPrice,
-        },
-      ];
+      // 5. Build line items from order (multi-item support)
+      const orderLineItems = await prisma.orderLineItem.findMany({
+        where: { orderId },
+        orderBy: { position: 'asc' },
+      });
+      const lineItems: InvoiceLineItem[] = orderLineItems.length > 0
+        ? orderLineItems.map((oli) => ({
+            sku: oli.itemSku,
+            name: oli.itemName,
+            quantity: oli.quantity,
+            unitPrice: oli.unitPrice,
+            total: oli.totalPrice,
+          }))
+        : [{
+            sku: order.itemSku,
+            name: order.itemName,
+            quantity: order.quantity,
+            unitPrice: order.unitPrice,
+            total: order.totalPrice,
+          }];
 
       // 6. Default payment terms
       const paymentTerms: PaymentTerms = 'NET_30';
       const dueDate = calculateDueDate(paymentTerms);
 
-      // 7. Create invoice in DRAFT status
+      // 6b. Resolve seller profile for snapshot
+      const sellerProfile = await prisma.sellerProfile.findUnique({
+        where: { id: order.sellerId },
+        select: {
+          displayName: true,
+          company: { select: { legalName: true, vatNumber: true } },
+        },
+      });
+
+      // 6c. Resolve buyer profile for snapshot
+      const buyerProfile = await prisma.buyerProfile.findUnique({
+        where: { id: order.buyerId },
+        select: { companyName: true, fullName: true },
+      });
+
+      // 7. Create invoice in ISSUED status (auto-issue on delivery)
+      const now = new Date();
       const invoice = await prisma.marketplaceInvoice.create({
         data: {
           invoiceNumber,
@@ -218,14 +245,14 @@ export const marketplaceInvoiceService = {
           orderNumber: order.orderNumber,
           sellerId: order.sellerId,
           buyerId: order.buyerId,
-          // Seller snapshot
-          sellerName: 'Seller', // Will be enhanced with seller profile
-          sellerCompany: null,
-          sellerVatNumber: null,
+          // Seller snapshot from profile
+          sellerName: sellerProfile?.displayName || 'Seller',
+          sellerCompany: sellerProfile?.company?.legalName || null,
+          sellerVatNumber: sellerProfile?.company?.vatNumber || null,
           sellerAddress: null,
-          // Buyer snapshot
-          buyerName: order.buyerName || 'Buyer',
-          buyerCompany: order.buyerCompany,
+          // Buyer snapshot from profile + order
+          buyerName: buyerProfile?.fullName || order.buyerName || 'Buyer',
+          buyerCompany: buyerProfile?.companyName || order.buyerCompany,
           buyerAddress: order.shippingAddress,
           // Line items
           lineItems: JSON.stringify(lineItems),
@@ -242,8 +269,10 @@ export const marketplaceInvoiceService = {
           // Payment terms
           paymentTerms,
           dueDate,
-          // Status
-          status: 'draft',
+          // Auto-issue: status = 'issued' so it's visible to buyer immediately
+          status: 'issued',
+          issuedAt: now,
+          issuedBy: 'system',
         },
       });
 
@@ -254,13 +283,22 @@ export const marketplaceInvoiceService = {
         'system',
         'INVOICE_CREATED',
         null,
-        'draft',
+        'issued',
         {
           orderId,
           orderNumber: order.orderNumber,
           totalAmount,
+          autoIssued: true,
         }
       );
+
+      // 9. Auto-associate any orphan payments that were recorded before invoice existed
+      try {
+        const { marketplacePaymentService } = await import('./marketplacePaymentService');
+        await marketplacePaymentService.associatePaymentsWithInvoice(orderId, invoice.id);
+      } catch (err) {
+        apiLogger.error('Error associating payments with invoice:', err);
+      }
 
       return {
         success: true,
@@ -272,6 +310,152 @@ export const marketplaceInvoiceService = {
     } catch (error) {
       apiLogger.error('Error creating invoice from order:', error);
       return { success: false, error: 'Failed to create invoice' };
+    }
+  },
+
+  /**
+   * Create and auto-issue an invoice from a confirmed credit order
+   * Called when a credit-method order is confirmed by the seller
+   */
+  async createFromConfirmedOrder(orderId: string): Promise<{
+    success: boolean;
+    invoice?: { id: string; invoiceNumber: string };
+    error?: string;
+  }> {
+    try {
+      const order = await prisma.marketplaceOrder.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        return { success: false, error: 'Order not found' };
+      }
+
+      if (order.status !== 'confirmed') {
+        return { success: false, error: 'Order must be in confirmed status' };
+      }
+
+      if ((order.paymentMethod || 'bank_transfer') !== 'credit') {
+        return { success: false, error: 'Only credit-method orders get immediate invoices' };
+      }
+
+      // Check if invoice already exists
+      const existingInvoice = await prisma.marketplaceInvoice.findUnique({
+        where: { orderId },
+      });
+      if (existingInvoice) {
+        return { success: false, error: 'Invoice already exists for this order' };
+      }
+
+      const invoiceNumber = await generateInvoiceNumber(order.sellerId);
+
+      const subtotal = order.totalPrice;
+      const vatRate = 15;
+      const vatAmount = Math.round(subtotal * (vatRate / 100) * 100) / 100;
+      const totalAmount = Math.round((subtotal + vatAmount) * 100) / 100;
+      const platformFeeRate = 0;
+      const platformFeeAmount = 0;
+      const netToSeller = totalAmount;
+
+      // Build line items from order (multi-item support)
+      const creditOrderLineItems = await prisma.orderLineItem.findMany({
+        where: { orderId },
+        orderBy: { position: 'asc' },
+      });
+      const lineItems: InvoiceLineItem[] = creditOrderLineItems.length > 0
+        ? creditOrderLineItems.map((oli) => ({
+            sku: oli.itemSku,
+            name: oli.itemName,
+            quantity: oli.quantity,
+            unitPrice: oli.unitPrice,
+            total: oli.totalPrice,
+          }))
+        : [{
+            sku: order.itemSku,
+            name: order.itemName,
+            quantity: order.quantity,
+            unitPrice: order.unitPrice,
+            total: order.totalPrice,
+          }];
+
+      const paymentTerms: PaymentTerms = 'NET_30';
+      const dueDate = calculateDueDate(paymentTerms);
+
+      // Resolve seller + buyer profiles for snapshots
+      const creditSellerProfile = await prisma.sellerProfile.findUnique({
+        where: { id: order.sellerId },
+        select: { displayName: true, company: { select: { legalName: true, vatNumber: true } } },
+      });
+      const creditBuyerProfile = await prisma.buyerProfile.findUnique({
+        where: { id: order.buyerId },
+        select: { companyName: true, fullName: true },
+      });
+
+      // Create invoice directly in 'issued' status (skip draft for credit)
+      const invoice = await prisma.marketplaceInvoice.create({
+        data: {
+          invoiceNumber,
+          orderId,
+          orderNumber: order.orderNumber,
+          sellerId: order.sellerId,
+          buyerId: order.buyerId,
+          sellerName: creditSellerProfile?.displayName || 'Seller',
+          sellerCompany: creditSellerProfile?.company?.legalName || null,
+          sellerVatNumber: creditSellerProfile?.company?.vatNumber || null,
+          sellerAddress: null,
+          buyerName: creditBuyerProfile?.fullName || order.buyerName || 'Buyer',
+          buyerCompany: creditBuyerProfile?.companyName || order.buyerCompany,
+          buyerAddress: order.shippingAddress,
+          lineItems: JSON.stringify(lineItems),
+          subtotal,
+          vatRate,
+          vatAmount,
+          totalAmount,
+          currency: order.currency,
+          platformFeeRate,
+          platformFeeAmount,
+          netToSeller,
+          paymentTerms,
+          dueDate,
+          status: 'issued',
+          issuedAt: new Date(),
+          issuedBy: 'system',
+        },
+      });
+
+      await logInvoiceEvent(
+        invoice.id,
+        null,
+        'system',
+        'INVOICE_CREATED_AND_ISSUED',
+        null,
+        'issued',
+        {
+          orderId,
+          orderNumber: order.orderNumber,
+          totalAmount,
+          paymentMethod: 'credit',
+        }
+      );
+
+      // Auto-associate any orphan payments
+      try {
+        const { marketplacePaymentService } = await import('./marketplacePaymentService');
+        await marketplacePaymentService.associatePaymentsWithInvoice(orderId, invoice.id);
+      } catch (err) {
+        apiLogger.error('Error associating payments with credit invoice:', err);
+      }
+
+      return {
+        success: true,
+        invoice: {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+        },
+      };
+    } catch (error) {
+      apiLogger.error('Error creating credit invoice from confirmed order:', error);
+      return { success: false, error: 'Failed to create credit invoice' };
     }
   },
 
@@ -331,12 +515,16 @@ export const marketplaceInvoiceService = {
       prisma.marketplaceInvoice.count({ where }),
     ]);
 
-    // Parse line items and calculate paid amount
-    const parsedInvoices = invoices.map((inv) => ({
-      ...inv,
-      lineItems: JSON.parse(inv.lineItems as string),
-      paidAmount: inv.payments.reduce((sum, p) => sum + p.amount, 0),
-    }));
+    // Parse line items and calculate paid/balance amounts
+    const parsedInvoices = invoices.map((inv) => {
+      const paidAmount = inv.payments.reduce((sum, p) => sum + p.amount, 0);
+      return {
+        ...inv,
+        lineItems: JSON.parse(inv.lineItems as string),
+        paidAmount,
+        balanceDue: Math.max(0, inv.totalAmount - paidAmount),
+      };
+    });
 
     return {
       invoices: parsedInvoices,
@@ -408,12 +596,16 @@ export const marketplaceInvoiceService = {
       prisma.marketplaceInvoice.count({ where }),
     ]);
 
-    // Parse line items and calculate paid amount
-    const parsedInvoices = invoices.map((inv) => ({
-      ...inv,
-      lineItems: JSON.parse(inv.lineItems as string),
-      paidAmount: inv.payments.reduce((sum, p) => sum + p.amount, 0),
-    }));
+    // Parse line items and calculate paid/balance amounts
+    const parsedInvoices = invoices.map((inv) => {
+      const paidAmount = inv.payments.reduce((sum, p) => sum + p.amount, 0);
+      return {
+        ...inv,
+        lineItems: JSON.parse(inv.lineItems as string),
+        paidAmount,
+        balanceDue: Math.max(0, inv.totalAmount - paidAmount),
+      };
+    });
 
     return {
       invoices: parsedInvoices,
@@ -456,12 +648,15 @@ export const marketplaceInvoiceService = {
       return null;
     }
 
+    const paidAmount = invoice.payments
+      .filter((p) => p.status === 'confirmed')
+      .reduce((sum, p) => sum + p.amount, 0);
+
     return {
       ...invoice,
       lineItems: JSON.parse(invoice.lineItems as string),
-      paidAmount: invoice.payments
-        .filter((p) => p.status === 'confirmed')
-        .reduce((sum, p) => sum + p.amount, 0),
+      paidAmount,
+      balanceDue: Math.max(0, invoice.totalAmount - paidAmount),
     };
   },
 
@@ -492,12 +687,15 @@ export const marketplaceInvoiceService = {
       return null;
     }
 
+    const paidAmountByOrder = invoice.payments
+      .filter((p) => p.status === 'confirmed')
+      .reduce((sum, p) => sum + p.amount, 0);
+
     return {
       ...invoice,
       lineItems: JSON.parse(invoice.lineItems as string),
-      paidAmount: invoice.payments
-        .filter((p) => p.status === 'confirmed')
-        .reduce((sum, p) => sum + p.amount, 0),
+      paidAmount: paidAmountByOrder,
+      balanceDue: Math.max(0, invoice.totalAmount - paidAmountByOrder),
     };
   },
 
@@ -551,6 +749,18 @@ export const marketplaceInvoiceService = {
           dueDate: dueDate.toISOString(),
         }
       );
+
+      // Notify buyer: invoice issued
+      portalNotificationService.create({
+        userId: invoice.buyerId,
+        portalType: 'buyer',
+        type: 'invoice_issued',
+        entityType: 'invoice',
+        entityId: invoice.id,
+        entityName: `Invoice ${invoice.invoiceNumber}`,
+        actorId: input.sellerId,
+        metadata: { invoiceNumber: invoice.invoiceNumber, dueDate: dueDate.toISOString() },
+      }).catch(() => {});
 
       return {
         success: true,

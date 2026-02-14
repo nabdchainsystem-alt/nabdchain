@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendUp,
   TrendDown,
@@ -22,12 +22,13 @@ import {
   Storefront,
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
+import { useAuth } from '../../../../../auth-adapter';
+import { API_URL } from '../../../../../config/api';
 import { BuyerDashboardSummary } from '../../../types/order.types';
 
 interface DashboardTabProps {
   onNavigate?: (tab: string) => void;
-  dashboardData: BuyerDashboardSummary | null;
-  isLoading: boolean;
+  onSwitchTab?: (tab: string) => void;
 }
 
 // =============================================================================
@@ -102,13 +103,61 @@ const emptyPurchaseVelocity: PurchaseVelocity = {
 // Dashboard Tab Component
 // =============================================================================
 
-export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigate, dashboardData, isLoading }) => {
+export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
+  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
+  // Fetch dashboard data internally
+  const [dashboardData, setDashboardData] = useState<BuyerDashboardSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchDashboard = async () => {
+      try {
+        setIsLoading(true);
+        const token = await getToken();
+        if (!token || cancelled) return;
+
+        // Fetch dashboard summary and intelligence in parallel
+        const [dashRes, intelRes] = await Promise.all([
+          fetch(`${API_URL}/orders/buyer/dashboard`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/purchases/buyer/intelligence`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        if (!dashRes.ok) throw new Error('Failed to fetch dashboard');
+        const data = await dashRes.json();
+        if (!cancelled) setDashboardData(data);
+
+        // Intelligence data (graceful degradation)
+        if (intelRes.ok) {
+          const intel = await intelRes.json();
+          if (!cancelled) {
+            setPurchaseVelocity(intel.purchaseVelocity || emptyPurchaseVelocity);
+            setSupplierRisks(intel.supplierRisks || []);
+            setAlerts(intel.alerts || []);
+          }
+        }
+      } catch {
+        if (!cancelled) setDashboardData(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    fetchDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken]);
+
   // State
-  const [purchaseVelocity] = useState<PurchaseVelocity>(emptyPurchaseVelocity);
-  const [supplierRisks] = useState<SupplierRisk[]>([]);
+  const [purchaseVelocity, setPurchaseVelocity] = useState<PurchaseVelocity>(emptyPurchaseVelocity);
+  const [supplierRisks, setSupplierRisks] = useState<SupplierRisk[]>([]);
   const [burnRates] = useState<InventoryBurnRate[]>([]);
   const [alerts, setAlerts] = useState<SmartAlert[]>([]);
   const [snackbars, setSnackbars] = useState<Snackbar[]>([]);
@@ -148,9 +197,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigate, dashboar
     },
     [onNavigate, showSnackbar],
   );
-
-  // Calculate high priority count
-  const _highPriorityCount = useMemo(() => alerts.filter((a) => a.severity === 'high').length, [alerts]);
 
   return (
     <div className="space-y-6" dir={direction}>
@@ -380,7 +426,7 @@ interface InsightPanelProps {
 }
 
 const InsightPanel: React.FC<InsightPanelProps> = ({
-  _id,
+  id: _id,
   title,
   subtitle,
   icon: Icon,
@@ -710,7 +756,7 @@ interface QuickStatsPanelProps {
   t: (key: string) => string;
 }
 
-const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ data, isLoading, styles, isRTL, _t }) => {
+const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ data, isLoading, styles, isRTL, t: _t }) => {
   const stats = [
     {
       label: 'Total Spend',

@@ -75,6 +75,7 @@ export interface MarketplaceInvoice {
 
   // Computed fields from API
   paidAmount?: number;
+  balanceDue?: number;
 
   // Relations
   payments?: MarketplacePayment[];
@@ -131,12 +132,12 @@ export interface InvoiceEvent {
 // =============================================================================
 
 export type PaymentStatus = 'pending' | 'confirmed' | 'failed';
-export type PaymentMethod = 'bank_transfer' | 'card' | 'wallet' | 'cod';
+export type PaymentMethod = 'bank_transfer' | 'card' | 'wallet' | 'cod' | 'credit';
 
 export interface MarketplacePayment {
   id: string;
   paymentNumber: string;
-  invoiceId: string;
+  invoiceId?: string | null;
   orderId: string;
 
   buyerId: string;
@@ -197,6 +198,14 @@ export interface RecordPaymentData {
   paymentMethod: PaymentMethod;
   bankReference?: string;
   bankName?: string;
+}
+
+export interface RecordOrderPaymentData {
+  method: PaymentMethod;
+  reference: string;
+  amount?: number;
+  bankName?: string;
+  notes?: string;
 }
 
 export interface ConfirmPaymentData {
@@ -297,6 +306,7 @@ export function getPaymentMethodLabel(method: PaymentMethod): string {
     card: 'Credit/Debit Card',
     wallet: 'Digital Wallet',
     cod: 'Cash on Delivery',
+    credit: 'Credit / Pay Later',
   };
   return labels[method];
 }

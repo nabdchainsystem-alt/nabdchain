@@ -2,18 +2,18 @@
 // Cart Context - Buyer Cart State Management
 // =============================================================================
 // Provides cart state with optimistic updates and localStorage sync
+// Uses portalApiClient for auth (no token passing needed)
+//
+// Key design decisions:
+// - Uses a requestGeneration counter to prevent stale fetches from overwriting
+//   fresh data (race condition fix)
+// - Separates isLoading (initial load) from pendingOperations (mutations)
+//   so the cart badge stays visible during add/remove operations
+// - Optimistic updates include placeholder items in the items[] array
+//   so isItemInCart() works immediately after clicking "Add to Cart"
 // =============================================================================
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  ReactNode,
-} from 'react';
-import { useAuth } from '../../../auth-adapter';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { cartService } from '../services/cartService';
 import {
   Cart,
@@ -40,39 +40,44 @@ interface CartProviderProps {
 }
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
-  const { getToken } = useAuth();
-
   // State
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingOperations, setPendingOperations] = useState<Set<string>>(new Set());
 
+  // Generation counter: incremented on every mutation so stale refreshCart
+  // responses (started before the mutation) don't overwrite fresh data.
+  const generationRef = useRef(0);
+
   // =============================================================================
   // Cart Fetching
   // =============================================================================
 
-  const refreshCart = useCallback(async () => {
+  const refreshCart = useCallback(async (showLoading = true) => {
+    const myGeneration = ++generationRef.current;
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        setCart(null);
-        return;
+      const fetchedCart = await cartService.getCart(true);
+      // Only apply if no newer operation has occurred
+      if (generationRef.current === myGeneration) {
+        setCart(fetchedCart);
       }
-      const fetchedCart = await cartService.getCart(token, true);
-      setCart(fetchedCart);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch cart');
+      console.error('[Cart] refreshCart failed:', err);
+      if (generationRef.current === myGeneration) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch cart');
+      }
     } finally {
+      // Always clear loading - even if generation changed, we don't want isLoading stuck
       setIsLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   // Initial fetch
   useEffect(() => {
-    refreshCart();
+    refreshCart(true);
   }, [refreshCart]);
 
   // =============================================================================
@@ -84,6 +89,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const operationId = `add-${itemId}`;
       setPendingOperations((prev) => new Set(prev).add(operationId));
 
+      // Bump generation so any in-flight refreshCart is ignored
+      generationRef.current++;
+
+      // Store previous state for rollback
+      const previousCart = cart;
+
       // Optimistic update
       if (cart) {
         const existingItem = cart.items.find((i) => i.itemId === itemId);
@@ -91,31 +102,51 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           // Update existing item quantity
           setCart({
             ...cart,
-            items: cart.items.map((i) =>
-              i.itemId === itemId ? { ...i, quantity: i.quantity + quantity } : i
-            ),
+            items: cart.items.map((i) => (i.itemId === itemId ? { ...i, quantity: i.quantity + quantity } : i)),
             itemCount: cart.itemCount + quantity,
           });
         } else {
-          // Add new item (placeholder)
+          // Add new item placeholder so isItemInCart() returns true immediately
+          const placeholderItem: CartItem = {
+            id: `pending-${itemId}`,
+            itemId,
+            sellerId: '',
+            quantity,
+            priceAtAdd: null,
+            itemName: null,
+            itemSku: null,
+            addedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
           setCart({
             ...cart,
+            items: [...cart.items, placeholderItem],
             itemCount: cart.itemCount + quantity,
-            sellerCount: cart.sellerCount, // May change, but we'll correct on refresh
+            sellerCount: cart.sellerCount,
           });
         }
       }
 
       try {
         setError(null);
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
-        const updatedCart = await cartService.addToCart(token, { itemId, quantity });
+        const updatedCart = await cartService.addToCart({ itemId, quantity });
+        // Bump generation again — this is the authoritative state
+        generationRef.current++;
         setCart(updatedCart);
+        setIsLoading(false);
       } catch (err) {
-        // Revert optimistic update
-        await refreshCart();
-        setError(err instanceof Error ? err.message : 'Failed to add to cart');
+        // Revert optimistic update to previous state
+        generationRef.current++;
+        if (previousCart) {
+          setCart(previousCart);
+        } else {
+          // If we had no previous cart, fetch fresh
+          await refreshCart(false);
+        }
+        const errMsg = err instanceof Error ? err.message : 'Failed to add to cart';
+        console.error('[Cart] addToCart failed:', errMsg, err);
+        setError(errMsg);
+        setIsLoading(false);
         throw err;
       } finally {
         setPendingOperations((prev) => {
@@ -125,13 +156,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       }
     },
-    [cart, getToken, refreshCart]
+    [cart, refreshCart],
   );
 
   const updateQuantity = useCallback(
     async (itemId: string, quantity: number) => {
       const operationId = `update-${itemId}`;
       setPendingOperations((prev) => new Set(prev).add(operationId));
+
+      generationRef.current++;
 
       // Store previous state for rollback
       const previousCart = cart;
@@ -151,9 +184,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           } else {
             setCart({
               ...cart,
-              items: cart.items.map((i) =>
-                i.itemId === itemId ? { ...i, quantity } : i
-              ),
+              items: cart.items.map((i) => (i.itemId === itemId ? { ...i, quantity } : i)),
               itemCount: cart.itemCount + quantityDiff,
             });
           }
@@ -162,12 +193,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       try {
         setError(null);
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
-        const updatedCart = await cartService.updateCartItem(token, itemId, { quantity });
+        const updatedCart = await cartService.updateCartItem(itemId, { quantity });
+        generationRef.current++;
         setCart(updatedCart);
       } catch (err) {
         // Revert optimistic update
+        generationRef.current++;
         setCart(previousCart);
         setError(err instanceof Error ? err.message : 'Failed to update quantity');
         throw err;
@@ -179,13 +210,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       }
     },
-    [cart, getToken]
+    [cart],
   );
 
   const removeFromCart = useCallback(
     async (itemId: string) => {
       const operationId = `remove-${itemId}`;
       setPendingOperations((prev) => new Set(prev).add(operationId));
+
+      generationRef.current++;
 
       // Store previous state for rollback
       const previousCart = cart;
@@ -207,12 +240,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       try {
         setError(null);
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
-        const updatedCart = await cartService.removeFromCart(token, itemId);
+        const updatedCart = await cartService.removeFromCart(itemId);
+        generationRef.current++;
         setCart(updatedCart);
       } catch (err) {
         // Revert optimistic update
+        generationRef.current++;
         setCart(previousCart);
         setError(err instanceof Error ? err.message : 'Failed to remove item');
         throw err;
@@ -224,12 +257,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       }
     },
-    [cart, getToken]
+    [cart],
   );
 
   const clearCart = useCallback(async () => {
     const operationId = 'clear';
     setPendingOperations((prev) => new Set(prev).add(operationId));
+
+    generationRef.current++;
 
     // Store previous state for rollback
     const previousCart = cart;
@@ -250,12 +285,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setError(null);
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      const updatedCart = await cartService.clearCart(token);
+      const updatedCart = await cartService.clearCart();
+      generationRef.current++;
       setCart(updatedCart);
     } catch (err) {
       // Revert optimistic update
+      generationRef.current++;
       setCart(previousCart);
       setError(err instanceof Error ? err.message : 'Failed to clear cart');
       throw err;
@@ -266,7 +301,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return next;
       });
     }
-  }, [cart, getToken]);
+  }, [cart]);
 
   // =============================================================================
   // RFQ Creation
@@ -279,11 +314,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       try {
         setError(null);
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
-        const result = await cartService.createRFQForSeller(token, sellerId);
+        const result = await cartService.createRFQForSeller(sellerId);
         // Refresh cart after RFQ creation
-        await refreshCart();
+        await refreshCart(false);
         return result;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create RFQ');
@@ -296,7 +329,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       }
     },
-    [getToken, refreshCart]
+    [refreshCart],
   );
 
   const createRFQForAll = useCallback(async (): Promise<CreateRFQResult> => {
@@ -305,11 +338,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setError(null);
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      const result = await cartService.createRFQForAll(token);
+      const result = await cartService.createRFQForAll();
       // Refresh cart after RFQ creation
-      await refreshCart();
+      await refreshCart(false);
       return result;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create RFQ');
@@ -321,7 +352,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return next;
       });
     }
-  }, [getToken, refreshCart]);
+  }, [refreshCart]);
 
   // =============================================================================
   // Utility Functions
@@ -332,7 +363,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       if (!cart) return cartService.isItemInLocalCart(itemId);
       return cart.items.some((i) => i.itemId === itemId);
     },
-    [cart]
+    [cart],
   );
 
   const getItemQuantity = useCallback(
@@ -341,7 +372,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const item = cart.items.find((i) => i.itemId === itemId);
       return item?.quantity ?? 0;
     },
-    [cart]
+    [cart],
   );
 
   // =============================================================================
@@ -355,12 +386,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       // Update local cart state with the selected method
       setCart({
         ...cart,
-        items: cart.items.map((item) =>
-          item.itemId === itemId ? { ...item, selectedMethod: method } : item
-        ),
+        items: cart.items.map((item) => (item.itemId === itemId ? { ...item, selectedMethod: method } : item)),
       });
     },
-    [cart]
+    [cart],
   );
 
   // =============================================================================
@@ -415,17 +444,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, []);
 
   const buyNowForSeller = useCallback(
-    async (sellerId: string): Promise<BuyNowResult> => {
+    async (sellerId: string, paymentMethod?: string): Promise<BuyNowResult> => {
       const operationId = `buy-now-seller-${sellerId}`;
       setPendingOperations((prev) => new Set(prev).add(operationId));
 
       try {
         setError(null);
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
-        const result = await cartService.buyNowForSeller(token, sellerId);
+        const result = await cartService.buyNowForSeller(sellerId, paymentMethod);
         // Refresh cart after buy now
-        await refreshCart();
+        await refreshCart(false);
         return result;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to process purchase');
@@ -438,32 +465,33 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       }
     },
-    [getToken, refreshCart]
+    [refreshCart],
   );
 
-  const buyNowAll = useCallback(async (): Promise<BuyNowResult> => {
-    const operationId = 'buy-now-all';
-    setPendingOperations((prev) => new Set(prev).add(operationId));
+  const buyNowAll = useCallback(
+    async (paymentMethod?: string): Promise<BuyNowResult> => {
+      const operationId = 'buy-now-all';
+      setPendingOperations((prev) => new Set(prev).add(operationId));
 
-    try {
-      setError(null);
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
-      const result = await cartService.buyNowAll(token);
-      // Refresh cart after buy now
-      await refreshCart();
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process purchase');
-      throw err;
-    } finally {
-      setPendingOperations((prev) => {
-        const next = new Set(prev);
-        next.delete(operationId);
-        return next;
-      });
-    }
-  }, [getToken, refreshCart]);
+      try {
+        setError(null);
+        const result = await cartService.buyNowAll(paymentMethod);
+        // Refresh cart after buy now
+        await refreshCart(false);
+        return result;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to process purchase');
+        throw err;
+      } finally {
+        setPendingOperations((prev) => {
+          const next = new Set(prev);
+          next.delete(operationId);
+          return next;
+        });
+      }
+    },
+    [refreshCart],
+  );
 
   // =============================================================================
   // Context Value
@@ -508,7 +536,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       buyNowForSeller,
       buyNowAll,
       getItemEligibility,
-    ]
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

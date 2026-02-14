@@ -3,7 +3,8 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
-import type { SellerPayout } from '@prisma/client';
+import type { SellerPayout, Prisma } from '@prisma/client';
+import { portalNotificationService } from './portalNotificationService';
 
 // =============================================================================
 // Types
@@ -526,6 +527,17 @@ async function settlePayout(
     return updated;
   });
 
+  // Notify seller: payout settled
+  portalNotificationService.create({
+    userId: payout.sellerId,
+    portalType: 'seller',
+    type: 'payout_processed',
+    entityType: 'payout',
+    entityId: payout.id,
+    entityName: `Payout ${payout.payoutNumber}`,
+    metadata: { payoutNumber: payout.payoutNumber, amount: payout.netAmount, bankReference },
+  }).catch(() => {});
+
   return { success: true, payout: updatedPayout };
 }
 
@@ -573,6 +585,17 @@ async function failPayout(
 
     return updated;
   });
+
+  // Notify seller: payout failed
+  portalNotificationService.create({
+    userId: payout.sellerId,
+    portalType: 'seller',
+    type: 'payout_failed',
+    entityType: 'payout',
+    entityId: payout.id,
+    entityName: `Payout ${payout.payoutNumber}`,
+    metadata: { payoutNumber: payout.payoutNumber, reason },
+  }).catch(() => {});
 
   return { success: true, payout: updatedPayout };
 }
@@ -623,6 +646,17 @@ async function holdPayout(
     return updated;
   });
 
+  // Notify seller: payout on hold
+  portalNotificationService.create({
+    userId: payout.sellerId,
+    portalType: 'seller',
+    type: 'payout_on_hold',
+    entityType: 'payout',
+    entityId: payout.id,
+    entityName: `Payout ${payout.payoutNumber}`,
+    metadata: { payoutNumber: payout.payoutNumber, reason },
+  }).catch(() => {});
+
   return { success: true, payout: updatedPayout };
 }
 
@@ -635,7 +669,7 @@ async function getSellerPayouts(
 ): Promise<{ payouts: SellerPayout[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
   const { status, dateFrom, dateTo, page = 1, limit = 20 } = filters;
 
-  const where: any = { sellerId };
+  const where: Prisma.SellerPayoutWhereInput = { sellerId };
 
   if (status) {
     where.status = status;

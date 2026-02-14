@@ -8,6 +8,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
+import { portalNotificationService } from './portalNotificationService';
 
 // =============================================================================
 // Types
@@ -82,8 +83,9 @@ export async function createCounterOffer(input: CreateCounterOfferInput): Promis
       return { success: false, error: 'Unauthorized: You are not the buyer for this quote' };
     }
 
-    // Can only counter-offer on SENT or REVISED quotes
-    if (quote.status !== 'sent' && quote.status !== 'revised') {
+    // Can only counter-offer on SENT, REVISED, or NEGOTIATING quotes
+    const allowedStatuses = ['sent', 'revised', 'negotiating'];
+    if (!allowedStatuses.includes(quote.status)) {
       return {
         success: false,
         error: `Cannot counter-offer a quote in "${quote.status}" status. Quote must be "sent" or "revised".`,
@@ -140,6 +142,20 @@ export async function createCounterOffer(input: CreateCounterOfferInput): Promis
       },
     });
 
+    // Update RFQ status to negotiation
+    if (quote.rfq && quote.rfq.status !== 'negotiation') {
+      await prisma.itemRFQ.update({
+        where: { id: quote.rfq.id },
+        data: { status: 'negotiation' },
+      });
+    }
+
+    // Update quote status to indicate negotiation
+    await prisma.quote.update({
+      where: { id: quote.id },
+      data: { status: 'negotiating' },
+    });
+
     // Log the event
     await logCounterOfferEvent(
       counterOffer.id,
@@ -168,6 +184,22 @@ export async function createCounterOffer(input: CreateCounterOfferInput): Promis
         }),
       },
     });
+
+    // Notify seller about the counter-offer
+    portalNotificationService.create({
+      userId: quote.sellerId,
+      portalType: 'seller',
+      type: 'counter_offer_received',
+      entityType: 'rfq',
+      entityId: quote.rfqId || quote.id,
+      entityName: `Counter-offer on Quote #${quote.quoteNumber} — ${input.proposedPrice} ${quote.currency}`,
+      actorId: input.buyerId,
+      metadata: {
+        counterOfferId: counterOffer.id,
+        proposedPrice: input.proposedPrice,
+        originalPrice: quote.totalPrice,
+      },
+    }).catch(err => apiLogger.error('Failed to create counter-offer notification:', err));
 
     return { success: true, counterOffer };
   } catch (error) {
@@ -325,6 +357,22 @@ export async function acceptCounterOffer(
       },
     });
 
+    // Notify buyer that counter-offer was accepted
+    portalNotificationService.create({
+      userId: counterOffer.buyerId,
+      portalType: 'buyer',
+      type: 'counter_offer_accepted',
+      entityType: 'rfq',
+      entityId: counterOffer.quote.rfqId || counterOffer.quote.id,
+      entityName: `Counter-offer accepted — Quote #${counterOffer.quote.quoteNumber} revised`,
+      actorId: sellerId,
+      metadata: {
+        counterOfferId,
+        revisedQuoteId: result.revisedQuote.id,
+        acceptedPrice: counterOffer.proposedPrice,
+      },
+    }).catch(err => apiLogger.error('Failed to create counter-offer accepted notification:', err));
+
     return {
       success: true,
       counterOffer: result.updatedCounterOffer,
@@ -408,6 +456,21 @@ export async function rejectCounterOffer(
         }),
       },
     });
+
+    // Notify buyer that counter-offer was rejected
+    portalNotificationService.create({
+      userId: counterOffer.buyerId,
+      portalType: 'buyer',
+      type: 'counter_offer_rejected',
+      entityType: 'rfq',
+      entityId: counterOffer.quote.rfqId || counterOffer.quote.id,
+      entityName: `Counter-offer declined — Quote #${counterOffer.quote.quoteNumber}`,
+      actorId: sellerId,
+      metadata: {
+        counterOfferId,
+        response,
+      },
+    }).catch(err => apiLogger.error('Failed to create counter-offer rejected notification:', err));
 
     return { success: true, counterOffer: updatedCounterOffer };
   } catch (error) {

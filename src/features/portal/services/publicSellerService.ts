@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { portalApiClient } from './portalApiClient';
 
 // =============================================================================
 // Types
@@ -110,25 +110,15 @@ export interface ReviewsResponse {
 }
 
 // =============================================================================
-// Service Methods
+// Service Methods (uses portalApiClient)
 // =============================================================================
 
 export const publicSellerService = {
-  // Get public seller profile by slug
+  // Public endpoints use noAuth: true
   async getProfile(slug: string): Promise<PublicSellerProfile> {
-    const response = await fetch(`${API_BASE}/api/public/seller/${encodeURIComponent(slug)}`);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Seller not found');
-      }
-      throw new Error('Failed to fetch seller profile');
-    }
-
-    return response.json();
+    return portalApiClient.get<PublicSellerProfile>(`/api/public/seller/${encodeURIComponent(slug)}`, { noAuth: true });
   },
 
-  // Get seller's products
   async getProducts(
     slug: string,
     options?: {
@@ -136,7 +126,7 @@ export const publicSellerService = {
       limit?: number;
       category?: string;
       sort?: 'newest' | 'price_low' | 'price_high' | 'popular';
-    }
+    },
   ): Promise<ProductsResponse> {
     const params = new URLSearchParams();
     if (options?.page) params.append('page', options.page.toString());
@@ -144,77 +134,42 @@ export const publicSellerService = {
     if (options?.category) params.append('category', options.category);
     if (options?.sort) params.append('sort', options.sort);
 
-    const response = await fetch(
-      `${API_BASE}/api/public/seller/${encodeURIComponent(slug)}/products?${params.toString()}`
+    const query = params.toString();
+    return portalApiClient.get<ProductsResponse>(
+      `/api/public/seller/${encodeURIComponent(slug)}/products${query ? `?${query}` : ''}`,
+      { noAuth: true },
     );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch seller products');
-    }
-
-    return response.json();
   },
 
-  // Get seller reviews (Phase 2)
   async getReviews(
     slug: string,
     options?: {
       page?: number;
       limit?: number;
-    }
+    },
   ): Promise<ReviewsResponse> {
     const params = new URLSearchParams();
     if (options?.page) params.append('page', options.page.toString());
     if (options?.limit) params.append('limit', options.limit.toString());
 
-    const response = await fetch(
-      `${API_BASE}/api/public/seller/${encodeURIComponent(slug)}/reviews?${params.toString()}`
+    const query = params.toString();
+    return portalApiClient.get<ReviewsResponse>(
+      `/api/public/seller/${encodeURIComponent(slug)}/reviews${query ? `?${query}` : ''}`,
+      { noAuth: true },
     );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch seller reviews');
-    }
-
-    return response.json();
   },
 
-  // Save/unsave seller
-  async toggleSaveSeller(sellerId: string, token?: string): Promise<{ saved: boolean }> {
-    const response = await fetch(`${API_BASE}/api/buyer/saved-sellers/${sellerId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to save seller');
-    }
-
-    return response.json();
+  // Authenticated endpoints
+  async toggleSaveSeller(sellerId: string, _token?: string): Promise<{ saved: boolean }> {
+    return portalApiClient.post<{ saved: boolean }>(`/api/buyer/saved-sellers/${sellerId}`);
   },
 
-  // Contact seller (send message)
   async contactSeller(
     sellerId: string,
     message: string,
-    token?: string
+    _token?: string,
   ): Promise<{ success: boolean; messageId: string }> {
-    const response = await fetch(`${API_BASE}/api/buyer/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ sellerId, message }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to send message');
-    }
-
-    return response.json();
+    return portalApiClient.post<{ success: boolean; messageId: string }>('/api/buyer/messages', { sellerId, message });
   },
 };
 

@@ -7,6 +7,7 @@
 
 import { prisma } from '../lib/prisma';
 import { marketplaceInvoiceService } from './marketplaceInvoiceService';
+import { portalNotificationService } from './portalNotificationService';
 import { apiLogger } from '../utils/logger';
 
 // =============================================================================
@@ -23,6 +24,16 @@ export interface RecordPaymentInput {
   paymentMethod: PaymentMethod;
   bankReference?: string;
   bankName?: string;
+}
+
+export interface RecordOrderPaymentInput {
+  orderId: string;
+  buyerId: string;
+  amount?: number;
+  paymentMethod: PaymentMethod;
+  bankReference: string;
+  bankName?: string;
+  notes?: string;
 }
 
 export interface ConfirmPaymentInput {
@@ -44,6 +55,17 @@ export interface PaymentFilters {
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+export interface OrderPaymentSummary {
+  paidAmount: number;
+  pendingAmount: number;
+  remainingAmount: number;
+  totalPrice: number;
+  paymentCount: number;
+  latestPaymentStatus: string;
+  lastPaymentAt: string | null;
+  lastPaymentReference: string | null;
 }
 
 // =============================================================================
@@ -312,60 +334,128 @@ export const marketplacePaymentService = {
           },
         });
 
-        // Check if invoice is fully paid
-        const allPayments = await tx.marketplacePayment.findMany({
-          where: {
-            invoiceId: payment.invoiceId,
-            status: 'confirmed',
-          },
-        });
-
-        const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
-        const isFullyPaid = totalPaid >= payment.invoice.totalAmount;
-
-        // Mark invoice as paid if fully covered
-        if (isFullyPaid && payment.invoice.status !== 'paid') {
-          await tx.marketplaceInvoice.update({
-            where: { id: payment.invoiceId },
-            data: {
-              status: 'paid',
-              paidAt: new Date(),
+        // Check if invoice is fully paid (only if invoice exists)
+        let isFullyPaid = false;
+        if (payment.invoiceId && payment.invoice) {
+          const allPayments = await tx.marketplacePayment.findMany({
+            where: {
+              invoiceId: payment.invoiceId,
+              status: 'confirmed',
             },
           });
+
+          const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
+          isFullyPaid = totalPaid >= payment.invoice.totalAmount;
+
+          // Mark invoice as paid if fully covered
+          if (isFullyPaid && payment.invoice.status !== 'paid') {
+            await tx.marketplaceInvoice.update({
+              where: { id: payment.invoiceId },
+              data: {
+                status: 'paid',
+                paidAt: new Date(),
+              },
+            });
+          }
         }
 
-        return { updatedPayment, isFullyPaid };
+        // Update order paymentStatus based on confirmed + pending payments
+        const orderPayments = await tx.marketplacePayment.findMany({
+          where: { orderId: payment.orderId, status: { in: ['confirmed', 'pending'] } },
+        });
+        const orderConfirmedTotal = orderPayments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + p.amount, 0);
+        const orderPendingTotal = orderPayments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+        const orderAllTotal = orderConfirmedTotal + orderPendingTotal;
+        const order = await tx.marketplaceOrder.findUnique({
+          where: { id: payment.orderId },
+          select: { totalPrice: true, paymentStatus: true, buyerId: true },
+        });
+
+        if (order) {
+          let newStatus: string;
+          if (orderConfirmedTotal >= order.totalPrice) {
+            newStatus = 'paid';
+          } else if (orderAllTotal >= order.totalPrice) {
+            newStatus = 'authorized';
+          } else if (orderConfirmedTotal > 0) {
+            newStatus = 'partial';
+          } else if (orderPendingTotal > 0) {
+            newStatus = 'pending_conf';
+          } else {
+            newStatus = 'unpaid';
+          }
+
+          if (newStatus !== order.paymentStatus) {
+            await tx.marketplaceOrder.update({
+              where: { id: payment.orderId },
+              data: { paymentStatus: newStatus },
+            });
+          }
+        }
+
+        return { updatedPayment, isFullyPaid, order };
       });
 
       // Log events outside transaction (non-critical)
-      await logInvoiceEvent(
-        payment.invoiceId,
-        input.sellerId,
-        'seller',
-        'PAYMENT_CONFIRMED',
-        'pending',
-        'confirmed',
-        {
-          paymentId: payment.id,
-          paymentNumber: payment.paymentNumber,
-          amount: payment.amount,
-          confirmationNote: input.confirmationNote,
-        }
-      );
-
-      if (result.isFullyPaid) {
+      if (payment.invoiceId) {
         await logInvoiceEvent(
           payment.invoiceId,
           input.sellerId,
-          'system',
-          'INVOICE_PAID',
-          payment.invoice.status,
-          'paid',
+          'seller',
+          'PAYMENT_CONFIRMED',
+          'pending',
+          'confirmed',
           {
-            triggeredBy: 'payment_confirmation',
             paymentId: payment.id,
+            paymentNumber: payment.paymentNumber,
+            amount: payment.amount,
+            confirmationNote: input.confirmationNote,
           }
         );
+
+        if (result.isFullyPaid && payment.invoice) {
+          await logInvoiceEvent(
+            payment.invoiceId,
+            input.sellerId,
+            'system',
+            'INVOICE_PAID',
+            payment.invoice.status,
+            'paid',
+            {
+              triggeredBy: 'payment_confirmation',
+              paymentId: payment.id,
+            }
+          );
+        }
+      }
+
+      // Notify seller: payment confirmed (invoice_paid)
+      portalNotificationService.create({
+        userId: payment.sellerId,
+        portalType: 'seller',
+        type: 'invoice_paid',
+        entityType: 'invoice',
+        entityId: payment.invoiceId || payment.orderId,
+        entityName: `Payment ${payment.paymentNumber} confirmed`,
+        actorId: payment.buyerId,
+        metadata: { paymentNumber: payment.paymentNumber, amount: payment.amount, isFullyPaid: result.isFullyPaid },
+      }).catch(() => {});
+
+      // Create buyer expense when fully paid
+      if (result.isFullyPaid && result.order) {
+        prisma.buyerExpense.create({
+          data: {
+            buyerId: result.order.buyerId,
+            category: 'purchase',
+            amount: result.order.totalPrice,
+            currency: 'SAR',
+            date: new Date(),
+            notes: `Auto-created from payment confirmation (${payment.paymentNumber})`,
+            purchaseOrderId: payment.orderId,
+          },
+        }).catch((err) => {
+          apiLogger.error('Failed to create buyer expense on payment confirmation:', err);
+        });
       }
 
       return { success: true, payment: result.updatedPayment };
@@ -414,21 +504,23 @@ export const marketplacePaymentService = {
         },
       });
 
-      // Log event
-      await logInvoiceEvent(
-        payment.invoiceId,
-        input.sellerId,
-        'seller',
-        'PAYMENT_FAILED',
-        'pending',
-        'failed',
-        {
-          paymentId: payment.id,
-          paymentNumber: payment.paymentNumber,
-          amount: payment.amount,
+      // Log event (only if invoice exists)
+      if (payment.invoiceId) {
+        await logInvoiceEvent(
+          payment.invoiceId,
+          input.sellerId,
+          'seller',
+          'PAYMENT_FAILED',
+          'pending',
+          'failed',
+          {
+            paymentId: payment.id,
+            paymentNumber: payment.paymentNumber,
+            amount: payment.amount,
           reason: input.reason,
         }
-      );
+        );
+      }
 
       return { success: true, payment: updatedPayment };
     } catch (error) {
@@ -638,6 +730,386 @@ export const marketplacePaymentService = {
 
     const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
     return totalPaid >= invoice.totalAmount;
+  },
+
+  /**
+   * Record a payment directly against an order (before invoice exists)
+   * Buyer records bank transfer reference; when invoice is generated, it auto-links.
+   */
+  async recordOrderPayment(input: RecordOrderPaymentInput): Promise<{
+    success: boolean;
+    payment?: unknown;
+    error?: string;
+    code?: string;
+  }> {
+    try {
+      // 1. Verify order exists and belongs to buyer
+      const order = await prisma.marketplaceOrder.findUnique({
+        where: { id: input.orderId },
+      });
+
+      if (!order) {
+        return { success: false, error: 'Order not found', code: 'ORDER_NOT_FOUND' };
+      }
+
+      if (order.buyerId !== input.buyerId) {
+        return { success: false, error: 'Not authorized to pay this order', code: 'UNAUTHORIZED' };
+      }
+
+      // Guardrail: COD orders cannot have bank transfer payments recorded
+      if ((order.paymentMethod || 'bank_transfer') === 'cod') {
+        return { success: false, error: 'COD orders use the cash confirmation flow, not bank transfer payments', code: 'INVALID_PAYMENT_METHOD' };
+      }
+
+      if (order.status === 'cancelled' || order.status === 'refunded') {
+        return { success: false, error: 'Cannot pay a cancelled or refunded order', code: 'ORDER_NOT_PAYABLE' };
+      }
+
+      if (order.paymentStatus === 'paid' || order.paymentStatus === 'paid_cash') {
+        return { success: false, error: 'Order is already fully paid', code: 'ALREADY_PAID' };
+      }
+
+      // 2. Check for duplicate bank reference on same order
+      if (input.bankReference) {
+        const existingPayment = await prisma.marketplacePayment.findFirst({
+          where: {
+            orderId: input.orderId,
+            bankReference: input.bankReference,
+          },
+        });
+
+        if (existingPayment) {
+          return {
+            success: false,
+            error: 'A payment with this bank reference already exists for this order',
+            code: 'DUPLICATE_BANK_REFERENCE',
+          };
+        }
+      }
+
+      // 3. Determine amount (default to order total)
+      const amount = input.amount ?? order.totalPrice;
+      if (amount <= 0) {
+        return { success: false, error: 'Payment amount must be positive', code: 'INVALID_AMOUNT' };
+      }
+
+      // Check existing confirmed payments
+      const confirmedPayments = await prisma.marketplacePayment.findMany({
+        where: { orderId: input.orderId, status: 'confirmed' },
+      });
+      const totalPaid = confirmedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const remaining = order.totalPrice - totalPaid;
+
+      if (amount > remaining * 1.001) { // small tolerance for floating point
+        return {
+          success: false,
+          error: `Payment amount exceeds remaining balance of ${remaining.toFixed(2)}`,
+          code: 'AMOUNT_EXCEEDS_BALANCE',
+        };
+      }
+
+      // 4. Check if an invoice already exists for this order
+      const invoice = await prisma.marketplaceInvoice.findUnique({
+        where: { orderId: input.orderId },
+      });
+
+      // 5. Generate payment number
+      const paymentNumber = await generatePaymentNumber();
+
+      // 6. Create payment — auto-confirmed (no seller verification step needed)
+      const now = new Date();
+      const payment = await prisma.marketplacePayment.create({
+        data: {
+          paymentNumber,
+          invoiceId: invoice?.id || null,
+          orderId: input.orderId,
+          buyerId: input.buyerId,
+          sellerId: order.sellerId,
+          amount,
+          currency: order.currency,
+          paymentMethod: input.paymentMethod,
+          bankReference: input.bankReference,
+          bankName: input.bankName || null,
+          notes: input.notes || null,
+          status: 'confirmed',
+          confirmedAt: now,
+          confirmedBy: 'auto',
+        },
+      });
+
+      // 7. Update order paymentStatus deterministically
+      const allPayments = await prisma.marketplacePayment.findMany({
+        where: { orderId: input.orderId, status: 'confirmed' },
+      });
+      const confirmedTotal = allPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      let newPaymentStatus: string;
+      if (confirmedTotal >= order.totalPrice) {
+        newPaymentStatus = 'paid';
+      } else if (confirmedTotal > 0) {
+        newPaymentStatus = 'partial';
+      } else {
+        newPaymentStatus = 'unpaid';
+      }
+
+      if (newPaymentStatus !== order.paymentStatus) {
+        await prisma.marketplaceOrder.update({
+          where: { id: input.orderId },
+          data: { paymentStatus: newPaymentStatus },
+        });
+      }
+
+      // 7b. If invoice exists and fully paid, mark invoice as paid too
+      if (invoice && confirmedTotal >= order.totalPrice && invoice.status !== 'paid') {
+        await prisma.marketplaceInvoice.update({
+          where: { id: invoice.id },
+          data: { status: 'paid', paidAt: now },
+        });
+      }
+
+      // 8. Log audit trail
+      await prisma.marketplaceOrderAudit.create({
+        data: {
+          orderId: input.orderId,
+          action: 'payment_updated',
+          actor: 'buyer',
+          actorId: input.buyerId,
+          metadata: JSON.stringify({
+            paymentId: payment.id,
+            paymentNumber,
+            amount,
+            paymentMethod: input.paymentMethod,
+            bankReference: input.bankReference,
+            hasInvoice: !!invoice,
+          }),
+        },
+      });
+
+      // 9. If invoice exists, log invoice event too
+      if (invoice) {
+        await logInvoiceEvent(
+          invoice.id,
+          input.buyerId,
+          'buyer',
+          'PAYMENT_CONFIRMED',
+          null,
+          null,
+          {
+            paymentId: payment.id,
+            paymentNumber,
+            amount,
+            paymentMethod: input.paymentMethod,
+            bankReference: input.bankReference,
+            autoConfirmed: true,
+          }
+        );
+
+        // If invoice is now fully paid, log that too
+        if (confirmedTotal >= order.totalPrice && invoice.status !== 'paid') {
+          await logInvoiceEvent(
+            invoice.id,
+            input.buyerId,
+            'system',
+            'INVOICE_PAID',
+            invoice.status,
+            'paid',
+            { triggeredBy: 'auto_confirmed_payment', paymentId: payment.id }
+          );
+        }
+      }
+
+      // 10. Create buyer expense when fully paid
+      if (newPaymentStatus === 'paid') {
+        prisma.buyerExpense.create({
+          data: {
+            buyerId: input.buyerId,
+            category: 'purchase',
+            amount: order.totalPrice,
+            currency: order.currency,
+            date: now,
+            notes: `Auto-created from payment (${paymentNumber})`,
+            purchaseOrderId: input.orderId,
+          },
+        }).catch((err) => {
+          apiLogger.error('Failed to create buyer expense on order payment:', err);
+        });
+      }
+
+      return { success: true, payment };
+    } catch (error) {
+      apiLogger.error('Error recording order payment:', error);
+
+      if (error instanceof Error && error.message.includes('Unique constraint')) {
+        return {
+          success: false,
+          error: 'A payment with this bank reference already exists',
+          code: 'DUPLICATE_BANK_REFERENCE',
+        };
+      }
+
+      return { success: false, error: 'Failed to record payment', code: 'PAYMENT_FAILED' };
+    }
+  },
+
+  /**
+   * Associate orphan payments (no invoiceId) with a newly created invoice.
+   * Called when an invoice is generated for an order.
+   */
+  async associatePaymentsWithInvoice(orderId: string, invoiceId: string): Promise<number> {
+    const result = await prisma.marketplacePayment.updateMany({
+      where: {
+        orderId,
+        invoiceId: null,
+      },
+      data: {
+        invoiceId,
+      },
+    });
+    if (result.count > 0) {
+      apiLogger.info(`Associated ${result.count} orphan payment(s) with invoice ${invoiceId} for order ${orderId}`);
+    }
+    return result.count;
+  },
+
+  /**
+   * Confirm COD payment — called after delivery when cash is received
+   */
+  async confirmCODPayment(input: {
+    orderId: string;
+    actorId: string;
+    actorRole: 'buyer' | 'seller';
+    notes?: string;
+  }): Promise<{ success: boolean; error?: string; code?: string }> {
+    try {
+      const order = await prisma.marketplaceOrder.findUnique({
+        where: { id: input.orderId },
+      });
+
+      if (!order) {
+        return { success: false, error: 'Order not found', code: 'ORDER_NOT_FOUND' };
+      }
+
+      if ((order.paymentMethod || 'bank_transfer') !== 'cod') {
+        return { success: false, error: 'This order is not a COD order', code: 'NOT_COD' };
+      }
+
+      if (order.status !== 'delivered') {
+        return { success: false, error: 'COD can only be confirmed after delivery', code: 'NOT_DELIVERED' };
+      }
+
+      if (order.paymentStatus === 'paid_cash' || order.paymentStatus === 'paid') {
+        return { success: false, error: 'COD payment already confirmed', code: 'ALREADY_PAID' };
+      }
+
+      // Verify actor is buyer or seller of this order
+      if (input.actorRole === 'buyer' && order.buyerId !== input.actorId) {
+        return { success: false, error: 'Not authorized', code: 'UNAUTHORIZED' };
+      }
+      if (input.actorRole === 'seller' && order.sellerId !== input.actorId) {
+        return { success: false, error: 'Not authorized', code: 'UNAUTHORIZED' };
+      }
+
+      // Generate payment number
+      const lastPayment = await prisma.marketplacePayment.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: { paymentNumber: true },
+      });
+      let nextNum = 1;
+      if (lastPayment?.paymentNumber) {
+        const match = lastPayment.paymentNumber.match(/PAY-\d{4}-(\d+)/);
+        if (match) nextNum = parseInt(match[1], 10) + 1;
+      }
+      const paymentNumber = `PAY-${new Date().getFullYear()}-${String(nextNum).padStart(5, '0')}`;
+
+      // Create confirmed payment record
+      await prisma.marketplacePayment.create({
+        data: {
+          paymentNumber,
+          orderId: input.orderId,
+          invoiceId: null,
+          buyerId: order.buyerId,
+          sellerId: order.sellerId,
+          amount: order.totalPrice,
+          currency: order.currency,
+          paymentMethod: 'cod',
+          bankReference: `COD-${input.orderId.slice(0, 8).toUpperCase()}`,
+          status: 'confirmed',
+          confirmedAt: new Date(),
+          confirmedBy: input.actorId,
+          confirmationNote: input.notes || `Cash confirmed by ${input.actorRole}`,
+        },
+      });
+
+      // Update order paymentStatus
+      await prisma.marketplaceOrder.update({
+        where: { id: input.orderId },
+        data: { paymentStatus: 'paid_cash' },
+      });
+
+      // If invoice exists, mark it paid too
+      const invoice = await prisma.marketplaceInvoice.findUnique({
+        where: { orderId: input.orderId },
+      });
+      if (invoice && invoice.status !== 'paid') {
+        await prisma.marketplaceInvoice.update({
+          where: { id: invoice.id },
+          data: { status: 'paid', paidAt: new Date() },
+        });
+      }
+
+      apiLogger.info(`COD payment confirmed for order ${order.orderNumber} by ${input.actorRole} ${input.actorId}`);
+
+      // Create buyer expense for COD
+      prisma.buyerExpense.create({
+        data: {
+          buyerId: order.buyerId,
+          category: 'purchase',
+          amount: order.totalPrice,
+          currency: order.currency,
+          date: new Date(),
+          notes: `Auto-created from COD confirmation`,
+          purchaseOrderId: order.id,
+        },
+      }).catch((err) => {
+        apiLogger.error('Failed to create buyer expense from COD:', err);
+      });
+
+      return { success: true };
+    } catch (error) {
+      apiLogger.error('Error confirming COD payment:', error);
+      return { success: false, error: 'Failed to confirm COD payment' };
+    }
+  },
+
+  /**
+   * Get payment summary for an order (aggregated data)
+   */
+  async getOrderPaymentSummary(orderId: string): Promise<OrderPaymentSummary | null> {
+    const order = await prisma.marketplaceOrder.findUnique({
+      where: { id: orderId },
+      select: { totalPrice: true, paymentStatus: true },
+    });
+    if (!order) return null;
+
+    const payments = await prisma.marketplacePayment.findMany({
+      where: { orderId, status: { in: ['pending', 'confirmed'] } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const confirmedTotal = payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + p.amount, 0);
+    const pendingTotal = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+    const lastPayment = payments[0] || null;
+
+    return {
+      paidAmount: confirmedTotal,
+      pendingAmount: pendingTotal,
+      remainingAmount: Math.max(0, order.totalPrice - confirmedTotal),
+      totalPrice: order.totalPrice,
+      paymentCount: payments.length,
+      latestPaymentStatus: order.paymentStatus,
+      lastPaymentAt: lastPayment?.createdAt?.toISOString() || null,
+      lastPaymentReference: lastPayment?.bankReference || null,
+    };
   },
 };
 

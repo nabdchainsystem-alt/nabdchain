@@ -31,7 +31,6 @@ import {
   Package,
   Scales,
 } from 'phosphor-react';
-import { useAuth } from '../../../../auth-adapter';
 import { Container, PageHeader, Button, EmptyState, Select } from '../../components';
 import { usePortal } from '../../context/PortalContext';
 import { KPICard } from '../../../../features/board/components/dashboard/KPICard';
@@ -126,7 +125,6 @@ const DeadlineBadge: React.FC<{ deadline: string | undefined }> = ({ deadline })
 export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
 
   // State for API data
   const [disputes, setDisputes] = useState<MarketplaceDispute[]>([]);
@@ -158,15 +156,10 @@ export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
       try {
         setIsLoading(true);
         setError(null);
-        const token = await getToken();
-        if (!token) {
-          setError('Authentication required');
-          return;
-        }
 
         const [disputesRes, statsRes] = await Promise.all([
-          disputeService.getBuyerDisputes(token, { limit: 100 }),
-          disputeService.getBuyerDisputeStats(token),
+          disputeService.getBuyerDisputes({ limit: 100 }),
+          disputeService.getBuyerDisputeStats(),
         ]);
 
         setDisputes(disputesRes.disputes);
@@ -179,7 +172,7 @@ export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
       }
     };
     fetchData();
-  }, [getToken]);
+  }, []);
 
   // Open dispute detail modal
   const openDetail = useCallback((dispute: MarketplaceDispute) => {
@@ -197,10 +190,7 @@ export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
     setActionError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Authentication required');
-
-      const updated = await disputeService.acceptResolution(token, selectedDispute.id);
+      const updated = await disputeService.acceptResolution(selectedDispute.id);
 
       setDisputes((prev) => prev.map((d) => (d.id === selectedDispute.id ? { ...d, ...updated } : d)));
       setSelectedDispute({ ...selectedDispute, ...updated });
@@ -220,10 +210,7 @@ export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
     setActionError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Authentication required');
-
-      const updated = await disputeService.rejectResolution(token, selectedDispute.id, {
+      const updated = await disputeService.rejectResolution(selectedDispute.id, {
         reason: rejectReason,
       });
 
@@ -247,10 +234,7 @@ export const DisputeCenter: React.FC<DisputeCenterProps> = ({ onNavigate }) => {
     setActionError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Authentication required');
-
-      const updated = await disputeService.buyerEscalate(token, selectedDispute.id, {
+      const updated = await disputeService.buyerEscalate(selectedDispute.id, {
         reason: escalateReason,
       });
 
@@ -715,7 +699,6 @@ const DisputeDetailModal: React.FC<{
 }> = ({ dispute, activeTab, onTabChange, onClose, onAccept, onReject, onEscalate, isAccepting, actionError }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, direction } = usePortal();
-  const { getToken } = useAuth();
   const [timeline, setTimeline] = useState<DisputeEvent[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
 
@@ -730,11 +713,8 @@ const DisputeDetailModal: React.FC<{
       const fetchTimeline = async () => {
         try {
           setLoadingTimeline(true);
-          const token = await getToken();
-          if (token) {
-            const events = await disputeService.getDisputeHistory(token, dispute.id);
-            setTimeline(events);
-          }
+          const events = await disputeService.getDisputeHistory(dispute.id);
+          setTimeline(events);
         } catch (err) {
           console.error('Failed to fetch timeline:', err);
         } finally {
@@ -743,7 +723,7 @@ const DisputeDetailModal: React.FC<{
       };
       fetchTimeline();
     }
-  }, [activeTab, dispute.id, getToken, timeline.length]);
+  }, [activeTab, dispute.id, timeline.length]);
 
   const tabs = [
     { id: 'details' as const, label: 'Details', icon: FileText },

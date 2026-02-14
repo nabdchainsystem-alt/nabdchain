@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useAuth } from '../../../../../auth-adapter';
 import { marketplaceInvoiceService } from '../../../services/marketplaceInvoiceService';
 import {
   useReactTable,
@@ -75,7 +74,6 @@ const StatusBadge: React.FC<{ status: InvoiceStatus }> = ({ status }) => {
 
 export const InvoicesTab: React.FC<InvoicesTabProps> = ({ _onNavigate, initialStatusFilter = 'all' }) => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   // State
@@ -94,13 +92,8 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({ _onNavigate, initialSt
     try {
       setLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
 
-      const invoicesRes = await marketplaceInvoiceService.getBuyerInvoices(token, {
+      const invoicesRes = await marketplaceInvoiceService.getBuyerInvoices({
         status: statusFilter === 'all' ? undefined : statusFilter,
         search: searchQuery || undefined,
       });
@@ -111,7 +104,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({ _onNavigate, initialSt
     } finally {
       setLoading(false);
     }
-  }, [getToken, statusFilter, searchQuery]);
+  }, [statusFilter, searchQuery]);
 
   useEffect(() => {
     loadData();

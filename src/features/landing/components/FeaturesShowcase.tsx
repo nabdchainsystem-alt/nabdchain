@@ -1,239 +1,26 @@
-import React, { useRef, memo, useState, useEffect } from 'react';
-import { useInView } from 'framer-motion';
-import {
-  Lightning,
-  ChartLineUp,
-  ShieldCheck,
-  UsersThree,
-  Robot,
-  Cube,
-  ArrowRight,
-  ArrowLeft,
-  TrendUp,
-  CaretLeft,
-  CaretRight,
-} from 'phosphor-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Lightning, ChartLineUp, ShieldCheck, UsersThree, Robot, ArrowRight, ArrowLeft } from 'phosphor-react';
 import { useLandingContext } from '../LandingPage';
 
-// Animated mini chart component - styled to match "See everything at a glance" section
-const AnimatedChart: React.FC<{ type: 'bar' | 'line' | 'progress'; delay?: number; isHighlighted?: boolean }> = memo(
-  ({ type, delay = 0, _isHighlighted = false }) => {
-    const [animate, setAnimate] = useState(false);
-
-    useEffect(() => {
-      const timer = setTimeout(() => setAnimate(true), delay * 1000);
-      return () => clearTimeout(timer);
-    }, [delay]);
-
-    if (type === 'bar') {
-      const bars = [65, 85, 45, 95, 70, 80];
-      return (
-        <div className="flex items-end gap-1.5 h-12">
-          {bars.map((height, i) => (
-            <div
-              key={i}
-              className={`flex-1 rounded-sm transition-all duration-700 ease-out ${
-                i === 3 || i === 5
-                  ? 'bg-gradient-to-t from-white to-zinc-200'
-                  : 'bg-gradient-to-t from-zinc-500 to-zinc-400'
-              }`}
-              style={{
-                height: animate ? `${height}%` : '0%',
-                transitionDelay: `${i * 100}ms`,
-              }}
-            />
-          ))}
-        </div>
-      );
-    }
-
-    if (type === 'line') {
-      return (
-        <svg viewBox="0 0 100 40" className="w-full h-10">
-          <defs>
-            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#a1a1aa" />
-              <stop offset="100%" stopColor="#ffffff" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0,35 Q10,30 20,25 T40,20 T60,15 T80,10 T100,5"
-            fill="none"
-            stroke="url(#lineGradient)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeDasharray="200"
-            strokeDashoffset={animate ? 0 : 200}
-            style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
-          />
-          <circle
-            cx={animate ? '100' : '0'}
-            cy={animate ? '5' : '35'}
-            r="4"
-            className="fill-white"
-            style={{ transition: 'all 1.5s ease-out' }}
-          />
-        </svg>
-      );
-    }
-
-    // Progress type - styled like dashboard bars
-    return (
-      <div className="space-y-2.5">
-        {[85, 72, 93].map((value, i) => (
-          <div key={i} className="h-2 bg-zinc-700 rounded-lg overflow-hidden">
-            <div
-              className={`h-full rounded-lg transition-all duration-1000 ease-out ${
-                i === 0 || i === 2
-                  ? 'bg-gradient-to-r from-white to-zinc-200'
-                  : 'bg-gradient-to-r from-zinc-500 to-zinc-400'
-              }`}
-              style={{
-                width: animate ? `${value}%` : '0%',
-                transitionDelay: `${i * 200}ms`,
-              }}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  },
-);
-
-// Feature card with animated chart
-interface FeatureCardProps {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  metric: string;
-  metricLabel: string;
-  chartType: 'bar' | 'line' | 'progress';
-  index: number;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = memo(
-  ({ icon: Icon, title, description, metric, metricLabel, chartType, index }) => {
-    return (
-      <div
-        className="flex-shrink-0 w-[280px] sm:w-auto sm:flex-1 p-5 sm:p-6 rounded-2xl
-                bg-zinc-800/50 border border-zinc-700/50
-                hover:border-zinc-600/50 hover:bg-zinc-800/70 hover:shadow-lg
-                transition-all duration-300 group"
-        style={{
-          opacity: 0,
-          animation: 'fadeInUp 0.5s ease-out forwards',
-          animationDelay: `${0.1 + index * 0.1}s`,
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div
-            className="w-10 h-10 rounded-xl bg-zinc-700/50 border border-zinc-600/50
-                    flex items-center justify-center
-                    group-hover:bg-white group-hover:border-white transition-all duration-300"
-          >
-            <Icon size={20} weight="duotone" className="text-zinc-300 group-hover:text-zinc-900 transition-colors" />
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-white">{metric}</div>
-            <div className="text-[10px] text-zinc-400 uppercase tracking-wide">{metricLabel}</div>
-          </div>
-        </div>
-
-        {/* Chart */}
-        <div className="mb-4 p-3 rounded-xl bg-zinc-900/80 border border-zinc-700/30">
-          <AnimatedChart type={chartType} delay={0.3 + index * 0.15} />
-        </div>
-
-        {/* Content */}
-        <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
-        <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
-      </div>
-    );
-  },
-);
-
-// Hero feature card - styled to match "See everything at a glance" section
-const HeroFeatureCard: React.FC<{ isRTL: boolean }> = memo(({ isRTL }) => {
-  const [count, setCount] = useState(0);
-
+const useScrollReveal = (threshold = 0.15) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCount((prev) => (prev < 85 ? prev + 1 : prev));
-    }, 30);
-    return () => clearInterval(interval);
-  }, []);
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setVisible(true);
+      },
+      { threshold },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+};
 
-  return (
-    <div
-      className="flex-shrink-0 w-[320px] sm:w-auto sm:col-span-2 p-6 sm:p-8 rounded-2xl
-                bg-zinc-800/50 border border-zinc-700/50
-                relative overflow-hidden group"
-      style={{
-        opacity: 0,
-        animation: 'fadeInUp 0.5s ease-out forwards',
-      }}
-    >
-      {/* Background spotlight gradients - matching dashboard preview */}
-      <div
-        className="absolute top-0 right-0 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl
-                group-hover:bg-purple-500/25 transition-all duration-700"
-        style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }}
-      />
-      <div
-        className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl
-                group-hover:bg-blue-500/20 transition-all duration-700"
-        style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }}
-      />
-
-      <div className="relative z-10">
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-                    bg-zinc-700/50 border border-zinc-600/50 mb-5"
-        >
-          <TrendUp size={14} weight="bold" className="text-white" />
-          <span className="text-xs font-medium text-zinc-300">{isRTL ? 'الميزة الأساسية' : 'Core Benefit'}</span>
-        </div>
-
-        <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
-          {isRTL ? (
-            <>
-              ضاعف إنتاجية
-              <br />
-              <span className="text-zinc-400">فريقك 10 أضعاف</span>
-            </>
-          ) : (
-            <>
-              10x Your Team's
-              <br />
-              <span className="text-zinc-400">Productivity</span>
-            </>
-          )}
-        </h3>
-
-        <p className="text-zinc-400 text-sm mb-6 max-w-sm">
-          {isRTL
-            ? 'استبدل الأدوات المتفرقة بمنصة موحدة واحدة. شاهد الكفاءة ترتفع بينما يركز فريقك على ما يهم.'
-            : 'Replace scattered tools with one unified platform. Watch efficiency soar as your team focuses on what matters.'}
-        </p>
-
-        {/* Live counter animation - styled like dashboard stat cards */}
-        <div className="flex gap-4">
-          <div className="bg-zinc-900/80 border border-zinc-700/30 rounded-xl p-4">
-            <div className="text-2xl sm:text-3xl font-bold text-white">{count}%</div>
-            <div className="text-xs text-zinc-400">{isRTL ? 'تنقل أقل' : 'Less switching'}</div>
-          </div>
-          <div className="bg-zinc-900/80 border border-zinc-700/30 rounded-xl p-4">
-            <div className="text-2xl sm:text-3xl font-bold text-white">{isRTL ? '٣ س' : '3hrs'}</div>
-            <div className="text-xs text-zinc-400">{isRTL ? 'توفير يومي' : 'Saved daily'}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-const getFeaturesData = (isRTL: boolean): FeatureCardProps[] => [
+const getFeaturesData = (isRTL: boolean) => [
   {
     icon: UsersThree,
     title: isRTL ? 'تعاون في الوقت الفعلي' : 'Real-time Collaboration',
@@ -241,9 +28,6 @@ const getFeaturesData = (isRTL: boolean): FeatureCardProps[] => [
       ? 'شاهد التغييرات فور حدوثها. اعمل مع فريقك بسلاسة.'
       : 'See changes as they happen. Work together seamlessly.',
     metric: isRTL ? 'مباشر' : 'Live',
-    metricLabel: isRTL ? 'مزامنة' : 'Sync',
-    chartType: 'line',
-    index: 1,
   },
   {
     icon: Robot,
@@ -252,9 +36,6 @@ const getFeaturesData = (isRTL: boolean): FeatureCardProps[] => [
       ? 'الذكاء الاصطناعي يتعامل مع العمل المتكرر تلقائياً.'
       : 'AI handles repetitive work automatically.',
     metric: '50+',
-    metricLabel: isRTL ? 'سير العمل' : 'Workflows',
-    chartType: 'bar',
-    index: 2,
   },
   {
     icon: Lightning,
@@ -263,202 +44,107 @@ const getFeaturesData = (isRTL: boolean): FeatureCardProps[] => [
       ? 'لوحات معلومات في الوقت الفعلي تُظهر ما يهم.'
       : 'Real-time dashboards that surface what matters.',
     metric: '< 1s',
-    metricLabel: isRTL ? 'التحديثات' : 'Updates',
-    chartType: 'progress',
-    index: 3,
   },
   {
     icon: ChartLineUp,
     title: isRTL ? 'تحليلات تنبؤية' : 'Predictive Analytics',
     description: isRTL ? 'توقع الاتجاهات قبل حدوثها.' : 'Forecast trends before they happen.',
     metric: '95%',
-    metricLabel: isRTL ? 'الدقة' : 'Accuracy',
-    chartType: 'line',
-    index: 4,
   },
   {
     icon: ShieldCheck,
     title: isRTL ? 'أمان المؤسسات' : 'Enterprise Security',
     description: isRTL ? 'تشفير بمستوى البنوك. متوافق مع SOC 2.' : 'Bank-grade encryption. SOC 2 compliant.',
     metric: '99.9%',
-    metricLabel: isRTL ? 'وقت التشغيل' : 'Uptime',
-    chartType: 'bar',
-    index: 5,
   },
 ];
 
 export const FeaturesShowcase: React.FC = () => {
-  const { isRTL } = useLandingContext();
-  const sectionRef = useRef(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
+  const { t, isRTL } = useLandingContext();
+  const { ref, visible } = useScrollReveal(0.1);
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
   const FEATURES = getFeaturesData(isRTL);
 
-  const checkScroll = () => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  };
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const scrollAmount = 300;
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
-  };
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) {
-      el.addEventListener('scroll', checkScroll);
-      checkScroll();
-      return () => el.removeEventListener('scroll', checkScroll);
-    }
-  }, []);
-
   return (
-    <section ref={sectionRef} className="py-20 sm:py-28 md:py-32 bg-black relative overflow-hidden">
-      {/* Animated Spotlight Gradients - matching "See everything at a glance" */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-purple-500/15 rounded-full blur-3xl pointer-events-none"
-        style={{ animation: 'spotlightPulse 8s ease-in-out infinite' }}
-      />
-      <div
-        className="absolute top-40 left-1/4 w-[400px] h-[300px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
-        style={{ animation: 'spotlightPulse 10s ease-in-out infinite', animationDelay: '-4s' }}
-      />
-      <div
-        className="absolute bottom-20 right-1/4 w-[350px] h-[250px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none"
-        style={{ animation: 'spotlightPulse 12s ease-in-out infinite', animationDelay: '-2s' }}
-      />
-
-      <div className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+    <section ref={ref} className="py-28 sm:py-36 bg-zinc-950 text-white overflow-hidden">
+      <div className="max-w-[980px] mx-auto px-6">
         {/* Header */}
-        {isInView && (
-          <div
-            className="text-center mb-12 sm:mb-16"
-            style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards' }}
+        <div
+          className={`text-center mb-16 sm:mb-20 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-medium mb-5">{t('featureTagline')}</p>
+          <h2
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] mb-6"
+            style={{ whiteSpace: 'pre-line' }}
           >
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full
-                            bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm font-semibold mb-6"
-            >
-              <Cube size={16} weight="duotone" />
-              {isRTL ? 'لماذا نبض' : 'Why NABD'}
-            </div>
-
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-5 leading-[1.05]">
-              {isRTL ? (
-                <>
-                  <span className="text-white">أدِر إمبراطوريتك </span>
-                  <span className="text-zinc-500">بكل سهولة</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-white">Orchestrate Your </span>
-                  <span className="text-zinc-500">Empire</span>
-                </>
-              )}
-            </h2>
-
-            <p className="text-lg sm:text-xl text-zinc-500 max-w-2xl mx-auto">
-              {isRTL
-                ? 'منصة واحدة لتوحيد العمليات وتسريع القرارات وإطلاق العنان لإمكانات فريقك الكاملة.'
-                : "One platform to unify operations, accelerate decisions, and unlock your team's full potential."}
-            </p>
-          </div>
-        )}
-
-        {/* Mobile scroll navigation */}
-        <div className="sm:hidden flex items-center justify-between mb-4">
-          <span className="text-xs text-zinc-500">{isRTL ? 'مرر لاستكشاف' : 'Swipe to explore'}</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => scroll(isRTL ? 'right' : 'left')}
-              disabled={isRTL ? !canScrollRight : !canScrollLeft}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${
-                                  (isRTL ? canScrollRight : canScrollLeft)
-                                    ? 'border-zinc-700 text-white hover:bg-zinc-800'
-                                    : 'border-zinc-800 text-zinc-700'
-                                }`}
-            >
-              <CaretLeft size={16} />
-            </button>
-            <button
-              onClick={() => scroll(isRTL ? 'left' : 'right')}
-              disabled={isRTL ? !canScrollLeft : !canScrollRight}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
-                                ${
-                                  (isRTL ? canScrollLeft : canScrollRight)
-                                    ? 'border-zinc-700 text-white hover:bg-zinc-800'
-                                    : 'border-zinc-800 text-zinc-700'
-                                }`}
-            >
-              <CaretRight size={16} />
-            </button>
-          </div>
+            {t('featureHeadline')}
+          </h2>
+          <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">{t('featureSub')}</p>
         </div>
 
-        {/* Cards - horizontal scroll on mobile, grid on desktop */}
-        {isInView && (
-          <div
-            ref={scrollRef}
-            className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4
-                            overflow-x-auto sm:overflow-visible
-                            pb-4 sm:pb-0 -mx-6 px-6 sm:mx-0 sm:px-0
-                            scrollbar-hide snap-x snap-mandatory sm:snap-none"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            <HeroFeatureCard isRTL={isRTL} />
-            {FEATURES.map((feature) => (
-              <FeatureCard key={feature.title} {...feature} />
-            ))}
-          </div>
-        )}
+        {/* Stats row */}
+        <div
+          className={`grid grid-cols-3 gap-6 mb-16 sm:mb-20 transition-all duration-700 delay-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        >
+          {[
+            { value: '85%', label: isRTL ? 'تنقل أقل بين الأدوات' : 'Less tool switching' },
+            { value: '3hrs', label: isRTL ? 'توفير يومي لكل فريق' : 'Saved daily per team' },
+            { value: '10x', label: isRTL ? 'زيادة في الإنتاجية' : 'Productivity increase' },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-semibold text-white mb-2">{stat.value}</div>
+              <div className="text-xs sm:text-sm text-zinc-500">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Feature cards */}
+        <div className="space-y-4">
+          {FEATURES.map((feature, i) => {
+            const Icon = feature.icon;
+            return (
+              <div
+                key={feature.title}
+                className={`group flex items-center gap-6 p-6 sm:p-8 rounded-2xl border border-zinc-800/60 bg-zinc-900/40
+                  hover:bg-zinc-900/80 hover:border-zinc-700/60 transition-all duration-500
+                  ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                style={{ transitionDelay: `${300 + i * 80}ms` }}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0
+                  group-hover:bg-white group-hover:text-zinc-900 transition-colors duration-300"
+                >
+                  <Icon
+                    size={22}
+                    weight="duotone"
+                    className="text-zinc-400 group-hover:text-zinc-900 transition-colors"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-1">{feature.title}</h3>
+                  <p className="text-sm text-zinc-500 leading-relaxed">{feature.description}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-2xl sm:text-3xl font-semibold text-white">{feature.metric}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {/* CTA */}
-        {isInView && (
-          <div
-            className="text-center mt-10 sm:mt-14"
-            style={{ opacity: 0, animation: 'fadeInUp 0.5s ease-out forwards', animationDelay: '0.6s' }}
+        <div
+          className={`text-center mt-14 transition-all duration-700 delay-700 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <a
+            href="#demo"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors"
           >
-            <button
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full
-                            bg-white text-zinc-900 font-semibold text-sm
-                            hover:bg-zinc-100 transition-colors group"
-            >
-              {isRTL ? 'استكشف جميع المميزات' : 'Explore All Features'}
-              <ArrowIcon
-                size={16}
-                className={`group-hover:${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'} transition-transform`}
-              />
-            </button>
-          </div>
-        )}
+            {isRTL ? 'استكشف جميع المميزات' : 'Explore all features'}
+            <ArrowIcon size={14} weight="bold" />
+          </a>
+        </div>
       </div>
-
-      {/* Keyframes */}
-      <style>{`
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                @keyframes spotlightPulse {
-                    0%, 100% { opacity: 0.6; transform: translate(-50%, 0) scale(1) translateZ(0); }
-                    50% { opacity: 1; transform: translate(-50%, 0) scale(1.1) translateZ(0); }
-                }
-                .scrollbar-hide::-webkit-scrollbar { display: none; }
-            `}</style>
     </section>
   );
 };

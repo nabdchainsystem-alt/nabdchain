@@ -2,7 +2,7 @@
 // Dispute Service - Frontend API Client for Marketplace Disputes (Stage 7)
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import {
   MarketplaceDispute,
   DisputeFilters,
@@ -27,6 +27,24 @@ interface PaginatedDisputeResponse {
 }
 
 // =============================================================================
+// Helper
+// =============================================================================
+
+function buildDisputeQS(filters: DisputeFilters): string {
+  const p = new URLSearchParams();
+  if (filters.status) p.append('status', filters.status);
+  if (filters.reason) p.append('reason', filters.reason);
+  if (filters.priority) p.append('priority', filters.priority);
+  if (filters.search) p.append('search', filters.search);
+  if (filters.dateFrom) p.append('dateFrom', filters.dateFrom);
+  if (filters.dateTo) p.append('dateTo', filters.dateTo);
+  if (filters.page) p.append('page', filters.page.toString());
+  if (filters.limit) p.append('limit', filters.limit.toString());
+  const qs = p.toString();
+  return qs ? `?${qs}` : '';
+}
+
+// =============================================================================
 // Dispute Service
 // =============================================================================
 
@@ -35,369 +53,92 @@ export const disputeService = {
   // Buyer Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Create a new dispute on an order (buyer)
-   */
-  async createDispute(token: string, data: CreateDisputeData): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/buyer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create dispute');
-    }
-
-    return response.json();
+  async createDispute(data: CreateDisputeData): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/buyer`, data);
   },
 
-  /**
-   * Get all disputes for the authenticated buyer
-   */
-  async getBuyerDisputes(
-    token: string,
-    filters: DisputeFilters = {}
-  ): Promise<PaginatedDisputeResponse> {
-    const url = new URL(`${API_URL}/disputes/buyer`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.reason) url.searchParams.append('reason', filters.reason);
-    if (filters.priority) url.searchParams.append('priority', filters.priority);
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch disputes');
-    }
-
-    return response.json();
+  async getBuyerDisputes(filters: DisputeFilters = {}): Promise<PaginatedDisputeResponse> {
+    return portalApiClient.get<PaginatedDisputeResponse>(`/api/disputes/buyer${buildDisputeQS(filters)}`);
   },
 
-  /**
-   * Get buyer dispute statistics
-   */
-  async getBuyerDisputeStats(token: string): Promise<DisputeStats> {
-    const response = await fetch(`${API_URL}/disputes/buyer/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dispute statistics');
-    }
-
-    return response.json();
+  async getBuyerDisputeStats(): Promise<DisputeStats> {
+    return portalApiClient.get<DisputeStats>(`/api/disputes/buyer/stats`);
   },
 
-  /**
-   * Get single dispute for buyer
-   */
-  async getBuyerDispute(token: string, disputeId: string): Promise<MarketplaceDispute | null> {
-    const response = await fetch(`${API_URL}/disputes/buyer/${disputeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getBuyerDispute(disputeId: string): Promise<MarketplaceDispute | null> {
+    try {
+      return await portalApiClient.get<MarketplaceDispute>(`/api/disputes/buyer/${disputeId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dispute');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Accept seller's proposed resolution (buyer)
-   */
-  async acceptResolution(token: string, disputeId: string): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/buyer/${disputeId}/accept`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to accept resolution');
-    }
-
-    return response.json();
+  async acceptResolution(disputeId: string): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/buyer/${disputeId}/accept`);
   },
 
-  /**
-   * Reject seller's response (buyer)
-   */
-  async rejectResolution(
-    token: string,
-    disputeId: string,
-    data: RejectResolutionData
-  ): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/buyer/${disputeId}/reject`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to reject resolution');
-    }
-
-    return response.json();
+  async rejectResolution(disputeId: string, data: RejectResolutionData): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/buyer/${disputeId}/reject`, data);
   },
 
-  /**
-   * Escalate dispute to platform (buyer)
-   */
-  async buyerEscalate(
-    token: string,
-    disputeId: string,
-    data: EscalateDisputeData
-  ): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/buyer/${disputeId}/escalate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to escalate dispute');
-    }
-
-    return response.json();
+  async buyerEscalate(disputeId: string, data: EscalateDisputeData): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/buyer/${disputeId}/escalate`, data);
   },
 
-  /**
-   * Add evidence to dispute (buyer)
-   */
-  async addEvidence(
-    token: string,
-    disputeId: string,
-    data: AddEvidenceData
-  ): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/buyer/${disputeId}/evidence`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to add evidence');
-    }
-
-    return response.json();
+  async addEvidence(disputeId: string, data: AddEvidenceData): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/buyer/${disputeId}/evidence`, data);
   },
 
-  /**
-   * Close dispute (buyer)
-   */
-  async buyerCloseDispute(token: string, disputeId: string): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/buyer/${disputeId}/close`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to close dispute');
-    }
-
-    return response.json();
+  async buyerCloseDispute(disputeId: string): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/buyer/${disputeId}/close`);
   },
 
   // ---------------------------------------------------------------------------
   // Seller Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get all disputes for the authenticated seller
-   */
-  async getSellerDisputes(
-    token: string,
-    filters: DisputeFilters = {}
-  ): Promise<PaginatedDisputeResponse> {
-    const url = new URL(`${API_URL}/disputes/seller`);
-
-    if (filters.status) url.searchParams.append('status', filters.status);
-    if (filters.reason) url.searchParams.append('reason', filters.reason);
-    if (filters.priority) url.searchParams.append('priority', filters.priority);
-    if (filters.search) url.searchParams.append('search', filters.search);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.page) url.searchParams.append('page', filters.page.toString());
-    if (filters.limit) url.searchParams.append('limit', filters.limit.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch disputes');
-    }
-
-    return response.json();
+  async getSellerDisputes(filters: DisputeFilters = {}): Promise<PaginatedDisputeResponse> {
+    return portalApiClient.get<PaginatedDisputeResponse>(`/api/disputes/seller${buildDisputeQS(filters)}`);
   },
 
-  /**
-   * Get seller dispute statistics
-   */
-  async getSellerDisputeStats(token: string): Promise<DisputeStats> {
-    const response = await fetch(`${API_URL}/disputes/seller/stats`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dispute statistics');
-    }
-
-    return response.json();
+  async getSellerDisputeStats(): Promise<DisputeStats> {
+    return portalApiClient.get<DisputeStats>(`/api/disputes/seller/stats`);
   },
 
-  /**
-   * Get single dispute for seller
-   */
-  async getSellerDispute(token: string, disputeId: string): Promise<MarketplaceDispute | null> {
-    const response = await fetch(`${API_URL}/disputes/seller/${disputeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getSellerDispute(disputeId: string): Promise<MarketplaceDispute | null> {
+    try {
+      return await portalApiClient.get<MarketplaceDispute>(`/api/disputes/seller/${disputeId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dispute');
-    }
-
-    return response.json();
   },
 
-  /**
-   * Mark dispute as under review (seller)
-   */
-  async markAsUnderReview(token: string, disputeId: string): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/seller/${disputeId}/review`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to mark dispute as under review');
-    }
-
-    return response.json();
+  async markAsUnderReview(disputeId: string): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/seller/${disputeId}/review`);
   },
 
-  /**
-   * Respond to dispute (seller)
-   */
-  async respondToDispute(
-    token: string,
-    disputeId: string,
-    data: SellerRespondData
-  ): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/seller/${disputeId}/respond`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to submit response');
-    }
-
-    return response.json();
+  async respondToDispute(disputeId: string, data: SellerRespondData): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/seller/${disputeId}/respond`, data);
   },
 
-  /**
-   * Escalate dispute to platform (seller)
-   */
-  async sellerEscalate(
-    token: string,
-    disputeId: string,
-    data: EscalateDisputeData
-  ): Promise<MarketplaceDispute> {
-    const response = await fetch(`${API_URL}/disputes/seller/${disputeId}/escalate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to escalate dispute');
-    }
-
-    return response.json();
+  async sellerEscalate(disputeId: string, data: EscalateDisputeData): Promise<MarketplaceDispute> {
+    return portalApiClient.post<MarketplaceDispute>(`/api/disputes/seller/${disputeId}/escalate`, data);
   },
 
   // ---------------------------------------------------------------------------
   // Shared Operations
   // ---------------------------------------------------------------------------
 
-  /**
-   * Get dispute history (timeline)
-   */
-  async getDisputeHistory(token: string, disputeId: string): Promise<DisputeEvent[]> {
-    const response = await fetch(`${API_URL}/disputes/${disputeId}/history`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dispute history');
-    }
-
-    return response.json();
+  async getDisputeHistory(disputeId: string): Promise<DisputeEvent[]> {
+    return portalApiClient.get<DisputeEvent[]>(`/api/disputes/${disputeId}/history`);
   },
 
-  /**
-   * Get dispute for a specific order
-   */
-  async getDisputeByOrder(token: string, orderId: string): Promise<MarketplaceDispute | null> {
-    const response = await fetch(`${API_URL}/disputes/order/${orderId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 404) {
+  async getDisputeByOrder(orderId: string): Promise<MarketplaceDispute | null> {
+    try {
+      return await portalApiClient.get<MarketplaceDispute>(`/api/disputes/order/${orderId}`);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dispute');
-    }
-
-    return response.json();
   },
 };
 

@@ -40,9 +40,9 @@ router.post('/profile', requireAuth, async (req: Request, res: Response) => {
     });
 
     res.json(profile);
-  } catch (error: any) {
+  } catch (error) {
     apiLogger.error('Error updating seller profile:', error);
-    if (error.message === 'Slug already in use') {
+    if (error instanceof Error && error.message === 'Slug already in use') {
       return res.status(400).json({ error: 'This username is already taken' });
     }
     res.status(500).json({ error: 'Failed to update seller profile' });
@@ -70,9 +70,9 @@ router.put('/profile', requireAuth, async (req: Request, res: Response) => {
     });
 
     res.json(profile);
-  } catch (error: any) {
+  } catch (error) {
     apiLogger.error('Error updating seller profile:', error);
-    if (error.message === 'Slug already in use') {
+    if (error instanceof Error && error.message === 'Slug already in use') {
       return res.status(400).json({ error: 'This username is already taken' });
     }
     res.status(500).json({ error: 'Failed to update seller profile' });

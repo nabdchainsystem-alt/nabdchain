@@ -1,193 +1,219 @@
-import React, { memo } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft } from 'phosphor-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowRight, ArrowLeft, Play } from 'phosphor-react';
 import { useLandingContext } from '../LandingPage';
 
-// Animated grid background with flowing light effects - GPU accelerated CSS animations
-const NetworkBackground = memo(() => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none will-change-transform">
-    {/* Base Grid */}
-    <div
-      className="absolute inset-0 opacity-[0.03] dark:opacity-[0.03]"
-      style={{
-        backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px),
-                                  linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
-        backgroundSize: '60px 60px',
-      }}
-    />
+// Scroll-triggered fade-in hook
+const useScrollReveal = (threshold = 0.15) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
 
-    {/* Flowing horizontal beams */}
-    <div
-      className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"
-      style={{ top: '25%', animation: 'flowBeamH 8s cubic-bezier(0.4, 0, 0.2, 1) infinite' }}
-    />
-    <div
-      className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-violet-500/20 to-transparent"
-      style={{ top: '55%', animation: 'flowBeamH 10s cubic-bezier(0.4, 0, 0.2, 1) infinite', animationDelay: '-3s' }}
-    />
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setVisible(true);
+      },
+      { threshold },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
 
-    {/* Floating gradient orbs - smooth breathing animation */}
-    <div
-      className="absolute top-[15%] left-[10%] w-72 h-72 rounded-full bg-gradient-to-br from-blue-500/10 to-cyan-500/5 blur-3xl"
-      style={{ animation: 'orbFloat 10s ease-in-out infinite' }}
-    />
-    <div
-      className="absolute top-[50%] right-[5%] w-96 h-96 rounded-full bg-gradient-to-br from-violet-500/8 to-purple-500/5 blur-3xl"
-      style={{ animation: 'orbFloat 12s ease-in-out infinite', animationDelay: '-4s' }}
-    />
-
-    {/* CSS Keyframes - GPU accelerated with transform/opacity only */}
-    <style>{`
-            @keyframes flowBeamH {
-                0% { opacity: 0; transform: translateX(-100%) translateZ(0); }
-                10% { opacity: 1; }
-                90% { opacity: 1; }
-                100% { opacity: 0; transform: translateX(100%) translateZ(0); }
-            }
-            @keyframes orbFloat {
-                0%, 100% { opacity: 0.6; transform: translate(0, 0) scale(1) translateZ(0); }
-                33% { opacity: 0.8; transform: translate(20px, -20px) scale(1.05) translateZ(0); }
-                66% { opacity: 0.7; transform: translate(-15px, 15px) scale(0.98) translateZ(0); }
-            }
-        `}</style>
-  </div>
-));
-
-// Fictional company logo with simple geometric icon
-const CompanyLogo: React.FC<{ name: string; icon: React.ReactNode }> = ({ name, icon }) => (
-  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 opacity-40 hover:opacity-70 transition-opacity">
-    <span className="text-zinc-400 dark:text-zinc-500">{icon}</span>
-    <span className="text-sm sm:text-base font-semibold text-zinc-400 dark:text-zinc-500 tracking-wide">{name}</span>
-  </div>
-);
-
-// Simple geometric SVG icons for fictional companies
-const LogoIcons = {
-  cube: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-    </svg>
-  ),
-  hexagon: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z" />
-    </svg>
-  ),
-  circle: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="10" />
-    </svg>
-  ),
-  triangle: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L2 22h20L12 2z" />
-    </svg>
-  ),
-  diamond: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2l10 10-10 10L2 12l10-10z" />
-    </svg>
-  ),
-  square: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-    </svg>
-  ),
+  return { ref, visible };
 };
 
 export const HeroSection: React.FC<{ onEnterSystem?: () => void }> = ({ onEnterSystem }) => {
-  const { _t, isRTL } = useLandingContext();
+  const { t, isRTL } = useLandingContext();
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
-
-  const companies = [
-    { name: 'Nexora', icon: LogoIcons.hexagon },
-    { name: 'Veltrix', icon: LogoIcons.cube },
-    { name: 'Quantix', icon: LogoIcons.diamond },
-    { name: 'Synthra', icon: LogoIcons.triangle },
-    { name: 'Lumina', icon: LogoIcons.circle },
-    { name: 'Zephyr', icon: LogoIcons.square },
-  ];
+  const { ref: heroRef, visible } = useScrollReveal(0.05);
 
   return (
-    <section className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col justify-center overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-white dark:bg-black" />
-      <NetworkBackground />
+    <section
+      ref={heroRef}
+      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-white"
+    >
+      {/* Subtle top gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-zinc-50/80 via-white to-white pointer-events-none" />
 
-      {/* Main Content Container */}
-      <div className="relative z-10 w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-[1200px] mx-auto px-6 sm:px-8 lg:px-12 pt-28 sm:pt-32 lg:pt-36 pb-16 sm:pb-20"
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-[980px] mx-auto px-6 pt-32 sm:pt-40 pb-20 sm:pb-28 text-center">
+        {/* Tagline pill */}
+        <div
+          className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-100 mb-8
+            transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
         >
-          {/* Main Heading */}
-          <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-black dark:text-white leading-[1.08]">
-              {isRTL ? (
-                <>
-                  أكثر من مجرد إدارة مشاريع.
-                  <br />
-                  <span className="bg-gradient-to-r from-violet-600 via-blue-600 to-violet-600 bg-clip-text text-transparent">
-                    عمليات تجارية متكاملة
-                  </span>
-                </>
-              ) : (
-                <>
-                  More than Project Management.
-                  <br />
-                  <span className="bg-gradient-to-r from-violet-600 via-blue-600 to-violet-600 bg-clip-text text-transparent">
-                    Complete Business Operations
-                  </span>
-                </>
-              )}
-            </h1>
-          </div>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-medium text-zinc-600 tracking-wide">{t('heroTagline')}</span>
+        </div>
 
-          {/* Subtitle */}
-          <p className="text-lg sm:text-xl md:text-2xl text-zinc-500 dark:text-zinc-400 text-center max-w-3xl mx-auto mb-10 sm:mb-12 leading-relaxed">
-            {isRTL
-              ? 'المنصة الشاملة لإدارة المشاريع وتشغيل العمليات واستخراج رؤى مبنية على البيانات. مصممة للفرق التي تريد التحرك بسرعة.'
-              : 'The all-in-one platform to manage projects, run operations, and unlock data-driven insights. Built for teams who want to move fast.'}
-          </p>
+        {/* Main headline — Apple massive type */}
+        <h1
+          className={`text-5xl sm:text-6xl md:text-7xl lg:text-[80px] xl:text-[88px] font-semibold tracking-tight leading-[1.04] text-zinc-900 mb-7
+            transition-all duration-700 delay-100 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+          style={{ whiteSpace: 'pre-line' }}
+        >
+          {t('heroHeadline')}
+        </h1>
 
-          {/* CTA Button */}
-          <div className="flex items-center justify-center mb-20 sm:mb-24 lg:mb-28">
-            <button
-              onClick={onEnterSystem}
-              className="group relative h-12 sm:h-14 px-7 sm:px-8 rounded-full bg-black dark:bg-white text-white dark:text-black font-semibold text-base sm:text-lg
-                            hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all duration-200 shadow-lg shadow-black/10 dark:shadow-white/10"
-            >
-              <span className="flex items-center gap-2">
-                {isRTL ? 'ابدأ البناء مجاناً' : 'Start building for free'}
-                <ArrowIcon
-                  size={20}
-                  weight="bold"
-                  className={`group-hover:${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'} transition-transform`}
-                />
-              </span>
-            </button>
-          </div>
+        {/* Subtitle */}
+        <p
+          className={`text-lg sm:text-xl md:text-[22px] text-zinc-500 leading-relaxed max-w-2xl mx-auto mb-12
+            transition-all duration-700 delay-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          {t('heroSub')}
+        </p>
 
-          {/* Trusted By Section */}
-          <div className="text-center">
-            <p className="text-sm sm:text-base text-zinc-400 dark:text-zinc-500 mb-6 sm:mb-8 font-medium">
-              {isRTL
-                ? 'موثوق به من قبل الشركات سريعة النمو في المنطقة'
-                : 'Trusted by fast-growing companies across the region'}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-10">
-              {companies.map((company) => (
-                <CompanyLogo key={company.name} name={company.name} icon={company.icon} />
-              ))}
-            </div>
-          </div>
-        </motion.div>
+        {/* CTA buttons — Apple double-button pattern */}
+        <div
+          className={`flex items-center justify-center gap-4 sm:gap-5 flex-wrap
+            transition-all duration-700 delay-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          <button
+            onClick={onEnterSystem}
+            className="group h-12 sm:h-[52px] px-7 sm:px-9 rounded-full bg-zinc-900 text-white text-[15px] font-semibold
+              hover:bg-zinc-700 active:scale-[0.98] transition-all duration-200 flex items-center gap-2.5
+              shadow-[0_2px_16px_-4px_rgba(0,0,0,0.3)]"
+          >
+            {t('getStarted')}
+            <ArrowIcon
+              size={16}
+              weight="bold"
+              className="group-hover:translate-x-0.5 transition-transform duration-200"
+            />
+          </button>
+          <a
+            href="#demo"
+            className="group h-12 sm:h-[52px] px-7 sm:px-9 rounded-full text-[15px] font-semibold text-zinc-900
+              hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 flex items-center gap-2.5"
+          >
+            <Play size={16} weight="fill" className="text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+            {t('watchTheFilm')}
+          </a>
+        </div>
       </div>
 
-      {/* Gradient fade at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 sm:h-40 bg-gradient-to-t from-white dark:from-black to-transparent pointer-events-none" />
+      {/* Product mockup area — clean floating card */}
+      <div
+        className={`relative z-10 w-full max-w-[1100px] mx-auto px-6 pb-12
+          transition-all duration-1000 delay-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+      >
+        <div className="relative rounded-2xl overflow-hidden bg-zinc-950 shadow-[0_32px_80px_-16px_rgba(0,0,0,0.25)] border border-zinc-200/20">
+          {/* Window chrome */}
+          <div className="flex items-center gap-2 px-5 py-3.5 bg-zinc-900 border-b border-zinc-800">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-zinc-700" />
+              <div className="w-3 h-3 rounded-full bg-zinc-700" />
+              <div className="w-3 h-3 rounded-full bg-zinc-700" />
+            </div>
+            <div className="flex-1 flex justify-center">
+              <div className="h-6 w-48 rounded-md bg-zinc-800 flex items-center justify-center">
+                <span className="text-[10px] text-zinc-500 font-medium">app.nabdchain.com</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mock dashboard content */}
+          <div className="p-6 sm:p-8 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800">
+            {/* Top bar */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded bg-blue-500" />
+                </div>
+                <div>
+                  <div className="h-3 w-28 rounded bg-zinc-700 mb-1.5" />
+                  <div className="h-2 w-20 rounded bg-zinc-800" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-7 w-16 rounded-md bg-zinc-800" />
+                <div className="h-7 w-7 rounded-md bg-zinc-800" />
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              {[
+                { label: 'Revenue', value: '$48.2K', color: 'bg-emerald-500', change: '+12%' },
+                { label: 'Orders', value: '1,284', color: 'bg-blue-500', change: '+8%' },
+                { label: 'Customers', value: '3,621', color: 'bg-violet-500', change: '+23%' },
+                { label: 'Conversion', value: '4.2%', color: 'bg-amber-500', change: '+2%' },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl bg-zinc-800/60 p-4 border border-zinc-700/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-2 h-2 rounded-full ${stat.color}`} />
+                    <span className="text-[11px] text-zinc-500">{stat.label}</span>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <span className="text-lg sm:text-xl font-semibold text-white">{stat.value}</span>
+                    <span className="text-[11px] text-emerald-400 mb-0.5">{stat.change}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Chart area + sidebar */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 rounded-xl bg-zinc-800/40 p-4 border border-zinc-700/20 h-40 sm:h-48">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-3 w-24 rounded bg-zinc-700" />
+                  <div className="flex gap-1.5">
+                    <div className="h-5 w-10 rounded bg-zinc-700/60" />
+                    <div className="h-5 w-10 rounded bg-zinc-700/60" />
+                  </div>
+                </div>
+                {/* Stylized chart bars */}
+                <div className="flex items-end gap-1.5 h-24 sm:h-32 pt-4">
+                  {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-t bg-gradient-to-t from-blue-500/60 to-blue-400/30"
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-xl bg-zinc-800/40 p-4 border border-zinc-700/20">
+                <div className="h-3 w-16 rounded bg-zinc-700 mb-4" />
+                <div className="space-y-3">
+                  {[70, 55, 85, 40].map((w, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <div className="h-2 rounded bg-zinc-700" style={{ width: `${w}%` }} />
+                      <div className="h-1.5 w-full rounded-full bg-zinc-800">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
+                          style={{ width: `${w}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trusted by — subtle, Apple-like */}
+      <div
+        className={`relative z-10 w-full max-w-[800px] mx-auto px-6 py-16 sm:py-20 text-center
+          transition-all duration-700 delay-700 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      >
+        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400 font-medium mb-8">
+          {isRTL ? 'موثوق به من قبل الشركات الرائدة' : 'Trusted by industry leaders'}
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+          {['Nexora', 'Veltrix', 'Quantix', 'Synthra', 'Lumina', 'Zephyr'].map((name) => (
+            <span
+              key={name}
+              className="text-sm sm:text-base font-semibold text-zinc-300 tracking-wide opacity-60 hover:opacity-90 transition-opacity cursor-default"
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+      </div>
     </section>
   );
 };

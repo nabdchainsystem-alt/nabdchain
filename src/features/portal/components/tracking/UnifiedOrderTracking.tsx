@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { featureLogger } from '../../../../utils/logger';
-import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { orderService } from '../../services/orderService';
 import { orderTimelineApiService } from '../../services/orderTimelineService';
@@ -226,7 +225,6 @@ function getCurrentStage(stages: TrackingStage[]): TrackingStage {
 
 export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({ orderId, role, onNavigate, onClose }) => {
   const { styles, t } = usePortal();
-  const { getToken } = useAuth();
 
   const [trackingData, setTrackingData] = useState<UnifiedTrackingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -242,13 +240,10 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({ orde
 
       // Try to fetch from API first
       try {
-        const token = await getToken();
-        if (token) {
-          if (role === 'buyer') {
-            order = await orderService.getBuyerOrder(token, orderId);
-          } else {
-            order = await orderService.getSellerOrder(token, orderId);
-          }
+        if (role === 'buyer') {
+          order = await orderService.getBuyerOrder(orderId);
+        } else {
+          order = await orderService.getSellerOrder(orderId);
         }
       } catch (apiErr) {
         console.error('[UnifiedOrderTracking] API fetch failed:', apiErr);
@@ -299,7 +294,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({ orde
     } finally {
       setIsLoading(false);
     }
-  }, [orderId, role, getToken]);
+  }, [orderId, role]);
 
   useEffect(() => {
     loadTrackingData();
@@ -365,10 +360,7 @@ export const UnifiedOrderTracking: React.FC<UnifiedOrderTrackingProps> = ({ orde
     if (!trackingData) return;
 
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await orderService.updateOrder(token, orderId, { internalNotes: notes });
+      await orderService.updateOrder(orderId, { internalNotes: notes });
 
       // Update local state
       setTrackingData({

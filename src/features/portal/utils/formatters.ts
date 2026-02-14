@@ -34,7 +34,7 @@ export const formatPrice = (price: number, currency: string = 'SAR'): string => 
  */
 export const calculatePriceChange = (
   original: number,
-  current: number
+  current: number,
 ): { amount: number; percentage: number; isIncrease: boolean } => {
   const amount = current - original;
   const percentage = original > 0 ? ((current - original) / original) * 100 : 0;
@@ -61,10 +61,7 @@ export const formatQuantity = (quantity: number, unit: string = 'pcs'): string =
  * @param locale - Locale for formatting (default: 'en-US')
  * @returns Formatted date string
  */
-export const formatDate = (
-  date: Date | string,
-  locale: string = 'en-US'
-): string => {
+export const formatDate = (date: Date | string, locale: string = 'en-US'): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString(locale, {
     year: 'numeric',
@@ -123,4 +120,15 @@ export const formatDocumentNumber = (prefix: string, id: string | number): strin
 export const truncateText = (text: string, maxLength: number): string => {
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 3)}...`;
+};
+
+/**
+ * Format a timestamp with date and time
+ * @param dateStr - ISO date string
+ * @returns Formatted date + time string (e.g., "Jan 15, 2:30 PM"), or '-' if empty
+ */
+export const formatTimestamp = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };

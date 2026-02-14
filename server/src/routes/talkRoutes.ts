@@ -1,10 +1,15 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
 
 const router = express.Router();
+
+// Route params helper type
+type IdParams = { id: string };
+type TaskParams = { taskId: string };
+type ReminderParams = { reminderId: string };
 
 // Input validation schemas
 const createConversationSchema = z.object({
@@ -18,7 +23,7 @@ const sendMessageSchema = z.object({
 });
 
 // Get all conversations for current user
-router.get('/conversations', requireAuth, async (req: any, res: Response) => {
+router.get('/conversations', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
 
@@ -56,24 +61,24 @@ router.get('/conversations', requireAuth, async (req: any, res: Response) => {
         });
 
         // Format response
-        const conversations = participations.map((p: any) => {
+        const conversations = participations.map((p) => {
             const conv = p.conversation;
             const otherParticipants = (conv.participants || [])
-                .filter((part: any) => part.userId !== userId)
-                .map((part: any) => part.user);
+                .filter((part) => part.userId !== userId)
+                .map((part) => part.user);
 
             // Count unread messages
             const lastReadAt = p.lastReadAt;
             const unreadCount = lastReadAt
-                ? (conv.messages || []).filter((m: any) => new Date(m.createdAt) > new Date(lastReadAt)).length
+                ? (conv.messages || []).filter((m) => new Date(m.createdAt) > new Date(lastReadAt)).length
                 : (conv.messages || []).length;
 
             return {
                 id: conv.id,
                 type: conv.type,
                 name: conv.type === 'channel' ? conv.name : null,
-                status: (conv as any).status || 'active',
-                creatorId: (conv as any).creatorId,
+                status: conv.status || 'active',
+                creatorId: conv.creatorId,
                 participants: otherParticipants,
                 lastMessage: conv.messages[0] || null,
                 unreadCount,
@@ -89,13 +94,13 @@ router.get('/conversations', requireAuth, async (req: any, res: Response) => {
 });
 
 // Update conversation status (Close/Delete)
-router.patch('/conversations/:id/status', requireAuth, async (req: any, res: Response) => {
+router.patch('/conversations/:id/status', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { status } = z.object({ status: z.enum(['active', 'closed', 'deleted']) }).parse(req.body);
 
-        const conv = await (prisma.conversation as any).findUnique({ where: { id } });
+        const conv = await prisma.conversation.findUnique({ where: { id } });
         if (!conv) return res.status(404).json({ error: 'Conversation not found' });
 
         // Only creator can change status
@@ -103,7 +108,7 @@ router.patch('/conversations/:id/status', requireAuth, async (req: any, res: Res
             return res.status(403).json({ error: 'Only the creator can manage this chat' });
         }
 
-        const updated = await (prisma.conversation as any).update({
+        const updated = await prisma.conversation.update({
             where: { id },
             data: { status }
         });
@@ -126,19 +131,19 @@ router.patch('/conversations/:id/status', requireAuth, async (req: any, res: Res
 });
 
 // Delete a conversation (hard delete for creator)
-router.delete('/conversations/:id', requireAuth, async (req: any, res: Response) => {
+router.delete('/conversations/:id', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
-        const conv = await (prisma.conversation as any).findUnique({ where: { id } });
+        const conv = await prisma.conversation.findUnique({ where: { id } });
         if (!conv) return res.status(404).json({ error: 'Conversation not found' });
 
         if (conv.creatorId && conv.creatorId !== userId) {
             return res.status(403).json({ error: 'Only the creator can delete this chat' });
         }
 
-        await (prisma.conversation as any).delete({ where: { id } });
+        await prisma.conversation.delete({ where: { id } });
         res.json({ success: true });
     } catch (error) {
         apiLogger.error('Delete conversation error:', error);
@@ -147,7 +152,7 @@ router.delete('/conversations/:id', requireAuth, async (req: any, res: Response)
 });
 
 // Get or create a DM conversation with a user
-router.post('/conversations/dm', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/dm', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
         const { participantId } = z.object({ participantId: z.string() }).parse(req.body);
@@ -192,9 +197,9 @@ router.post('/conversations/dm', requireAuth, async (req: any, res: Response) =>
         });
 
         if (existingConversation) {
-            const existingOtherParticipants = (existingConversation as any).participants
-                .filter((p: any) => p.userId !== userId)
-                .map((p: any) => p.user);
+            const existingOtherParticipants = existingConversation.participants
+                .filter((p) => p.userId !== userId)
+                .map((p) => p.user);
 
             return res.json({
                 id: existingConversation.id,
@@ -234,9 +239,9 @@ router.post('/conversations/dm', requireAuth, async (req: any, res: Response) =>
             }
         });
 
-        const newDMOtherParticipants = (newDMConversation as any).participants
-            .filter((p: any) => p.userId !== userId)
-            .map((p: any) => p.user);
+        const newDMOtherParticipants = newDMConversation.participants
+            .filter((p) => p.userId !== userId)
+            .map((p) => p.user);
 
         res.json({
             id: newDMConversation.id,
@@ -255,7 +260,7 @@ router.post('/conversations/dm', requireAuth, async (req: any, res: Response) =>
 });
 
 // Create a new channel (public group talk)
-router.post('/conversations/channel', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/channel', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
         const { name } = z.object({ name: z.string().min(1) }).parse(req.body);
@@ -289,17 +294,17 @@ router.post('/conversations/channel', requireAuth, async (req: any, res: Respons
             }
         });
 
-        const newChannelOtherParticipants = (newChannelConversation as any).participants
-            .filter((p: any) => p.userId !== userId)
-            .map((p: any) => p.user);
+        const newChannelOtherParticipants = newChannelConversation.participants
+            .filter((p) => p.userId !== userId)
+            .map((p) => p.user);
 
         res.json({
-            id: (newChannelConversation as any).id,
-            type: (newChannelConversation as any).type,
-            name: (newChannelConversation as any).name,
+            id: newChannelConversation.id,
+            type: newChannelConversation.type,
+            name: newChannelConversation.name,
             participants: newChannelOtherParticipants,
             unreadCount: 0,
-            updatedAt: (newChannelConversation as any).updatedAt
+            updatedAt: newChannelConversation.updatedAt
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -311,10 +316,10 @@ router.post('/conversations/channel', requireAuth, async (req: any, res: Respons
 });
 
 // Get messages for a conversation (paginated)
-router.get('/conversations/:id/messages', requireAuth, async (req: any, res: Response) => {
+router.get('/conversations/:id/messages', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
         const before = req.query.before as string | undefined;
 
@@ -333,7 +338,7 @@ router.get('/conversations/:id/messages', requireAuth, async (req: any, res: Res
         }
 
         // Build query
-        const whereClause: any = { conversationId: id };
+        const whereClause: { conversationId: string; createdAt?: { lt: Date } } = { conversationId: id };
         if (before) {
             whereClause.createdAt = { lt: new Date(before) };
         }
@@ -374,10 +379,10 @@ router.get('/conversations/:id/messages', requireAuth, async (req: any, res: Res
 });
 
 // Send a message
-router.post('/conversations/:id/messages', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/:id/messages', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { content } = sendMessageSchema.parse(req.body);
 
         // Verify user is participant
@@ -441,10 +446,10 @@ router.post('/conversations/:id/messages', requireAuth, async (req: any, res: Re
 });
 
 // Mark conversation as read
-router.post('/conversations/:id/read', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/:id/read', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         await prisma.conversationParticipant.update({
             where: {
@@ -466,10 +471,10 @@ router.post('/conversations/:id/read', requireAuth, async (req: any, res: Respon
 // --- Talk Sidebar Data Routes ---
 
 // Get all tasks, reminders, and files for a conversation
-router.get('/conversations/:id/data', requireAuth, async (req: any, res: Response) => {
+router.get('/conversations/:id/data', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         // Verify participant
         const participation = await prisma.conversationParticipant.findUnique({
@@ -491,10 +496,10 @@ router.get('/conversations/:id/data', requireAuth, async (req: any, res: Respons
 });
 
 // Create a task
-router.post('/conversations/:id/tasks', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/:id/tasks', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { name } = z.object({ name: z.string() }).parse(req.body);
 
         const task = await prisma.talkTask.create({
@@ -507,10 +512,10 @@ router.post('/conversations/:id/tasks', requireAuth, async (req: any, res: Respo
 });
 
 // Create a reminder
-router.post('/conversations/:id/reminders', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/:id/reminders', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { text, dueDate } = z.object({ text: z.string(), dueDate: z.string() }).parse(req.body);
 
         const reminder = await prisma.talkReminder.create({
@@ -523,10 +528,10 @@ router.post('/conversations/:id/reminders', requireAuth, async (req: any, res: R
 });
 
 // Create/Upload a file
-router.post('/conversations/:id/files', requireAuth, async (req: any, res: Response) => {
+router.post('/conversations/:id/files', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { name, type, url, size, taskId } = z.object({
             name: z.string(),
             type: z.string(),
@@ -545,9 +550,9 @@ router.post('/conversations/:id/files', requireAuth, async (req: any, res: Respo
 });
 
 // Update objects (generic toggle/update)
-router.patch('/tasks/:taskId', requireAuth, async (req: any, res: Response) => {
+router.patch('/tasks/:taskId', requireAuth, async (req: Request, res: Response) => {
     try {
-        const { taskId } = req.params;
+        const taskId = req.params.taskId as string;
         const data = req.body;
         const task = await prisma.talkTask.update({ where: { id: taskId }, data });
         res.json(task);
@@ -556,9 +561,9 @@ router.patch('/tasks/:taskId', requireAuth, async (req: any, res: Response) => {
     }
 });
 
-router.patch('/reminders/:reminderId', requireAuth, async (req: any, res: Response) => {
+router.patch('/reminders/:reminderId', requireAuth, async (req: Request, res: Response) => {
     try {
-        const { reminderId } = req.params;
+        const reminderId = req.params.reminderId as string;
         const data = req.body;
         const reminder = await prisma.talkReminder.update({ where: { id: reminderId }, data });
         res.json(reminder);
@@ -568,18 +573,18 @@ router.patch('/reminders/:reminderId', requireAuth, async (req: any, res: Respon
 });
 
 // Delete objects
-router.delete('/tasks/:taskId', requireAuth, async (req: any, res: Response) => {
+router.delete('/tasks/:taskId', requireAuth, async (req: Request, res: Response) => {
     try {
-        await prisma.talkTask.delete({ where: { id: req.params.taskId } });
+        await prisma.talkTask.delete({ where: { id: req.params.taskId as string } });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
     }
 });
 
-router.delete('/reminders/:reminderId', requireAuth, async (req: any, res: Response) => {
+router.delete('/reminders/:reminderId', requireAuth, async (req: Request, res: Response) => {
     try {
-        await prisma.talkReminder.delete({ where: { id: req.params.reminderId } });
+        await prisma.talkReminder.delete({ where: { id: req.params.reminderId as string } });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -589,10 +594,10 @@ router.delete('/reminders/:reminderId', requireAuth, async (req: any, res: Respo
 // --- End Talk Sidebar Data Routes ---
 
 // Delete a message (only sender can delete)
-router.delete('/messages/:id', requireAuth, async (req: any, res: Response) => {
+router.delete('/messages/:id', requireAuth, async (req: Request, res: Response) => {
     try {
         const userId = (req as AuthRequest).auth.userId;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const message = await prisma.message.findUnique({
             where: { id }

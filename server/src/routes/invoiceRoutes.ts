@@ -5,7 +5,9 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { PortalAuthRequest } from '../middleware/portalAdminMiddleware';
 import { marketplaceInvoiceService, InvoiceStatus } from '../services/marketplaceInvoiceService';
+import { exportService, InvoiceExportData } from '../services/exportService';
 import { apiLogger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
 import { resolveBuyerId } from '../utils/resolveBuyerId';
@@ -17,7 +19,7 @@ const router = Router();
 // =============================================================================
 async function resolveSellerId(req: Request): Promise<string | null> {
   // First check portal JWT token for sellerId
-  const portalAuth = (req as any).portalAuth;
+  const portalAuth = (req as PortalAuthRequest).portalAuth;
   if (portalAuth?.sellerId) {
     return portalAuth.sellerId;
   }
@@ -334,6 +336,166 @@ router.post('/generate/:orderId', requireAuth, async (req: Request, res: Respons
   } catch (error) {
     apiLogger.error('Error generating invoice:', error);
     return res.status(500).json({ error: 'Failed to generate invoice' });
+  }
+});
+
+// =============================================================================
+// Invoice PDF Routes
+// =============================================================================
+
+/**
+ * Build InvoiceExportData from a MarketplaceInvoice record.
+ * This transforms the DB record into the shape expected by PDFGenerator.
+ */
+async function buildInvoiceExportData(invoiceId: string): Promise<InvoiceExportData | null> {
+  const invoice = await prisma.marketplaceInvoice.findUnique({
+    where: { id: invoiceId },
+    include: {
+      payments: {
+        where: { status: 'confirmed' },
+        select: { amount: true },
+      },
+    },
+  });
+
+  if (!invoice) return null;
+
+  const lineItems = JSON.parse(invoice.lineItems as string) as Array<{
+    sku?: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+
+  const paidAmount = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+  const amountDue = Math.max(0, invoice.totalAmount - paidAmount);
+
+  // Parse buyer address if stored as JSON
+  let billingAddress = { line1: '', city: '', country: '' };
+  if (invoice.buyerAddress) {
+    try {
+      const parsed = JSON.parse(invoice.buyerAddress);
+      billingAddress = {
+        line1: parsed.street1 || parsed.address || parsed.line1 || '',
+        city: parsed.city || '',
+        country: parsed.country || '',
+      };
+    } catch {
+      billingAddress.line1 = invoice.buyerAddress;
+    }
+  }
+
+  // Map payment terms to human-readable
+  const termsMap: Record<string, string> = {
+    NET_0: 'Due on receipt',
+    NET_7: 'Net 7 days',
+    NET_14: 'Net 14 days',
+    NET_30: 'Net 30 days',
+  };
+
+  return {
+    id: invoice.id,
+    invoiceNumber: invoice.invoiceNumber,
+    orderId: invoice.orderId,
+    orderNumber: invoice.orderNumber,
+    status: invoice.status,
+    seller: {
+      id: invoice.sellerId,
+      companyName: invoice.sellerCompany || invoice.sellerName,
+      contactName: invoice.sellerName,
+      email: '',
+      taxId: invoice.sellerVatNumber || undefined,
+    },
+    buyer: {
+      id: invoice.buyerId,
+      companyName: invoice.buyerCompany || invoice.buyerName,
+      contactName: invoice.buyerName,
+      email: '',
+    },
+    billingAddress,
+    items: lineItems.map((item, idx) => ({
+      lineNumber: idx + 1,
+      sku: item.sku,
+      name: item.name,
+      quantity: item.quantity,
+      unit: 'pcs',
+      unitPrice: item.unitPrice,
+      total: item.total,
+    })),
+    subtotal: invoice.subtotal,
+    taxRate: invoice.vatRate,
+    taxAmount: invoice.vatAmount,
+    shipping: 0,
+    total: invoice.totalAmount,
+    amountPaid: paidAmount,
+    amountDue,
+    currency: invoice.currency,
+    issuedAt: invoice.issuedAt || invoice.createdAt,
+    dueAt: invoice.dueDate || new Date(),
+    paidAt: invoice.paidAt || undefined,
+    paymentTerms: (invoice.paymentTerms && termsMap[invoice.paymentTerms]) || invoice.paymentTerms || 'Net 30 days',
+  };
+}
+
+/**
+ * GET /api/invoices/:id/pdf
+ * Generate and download invoice PDF
+ * Auth: buyer or seller of the invoice
+ */
+router.get('/:id/pdf', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const invoiceId = String(req.params.id);
+
+    // Resolve user identity
+    const sellerId = await resolveSellerId(req);
+    const buyerId = await resolveBuyerId(req);
+    const userId = sellerId || buyerId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Verify the user has access to this invoice
+    const invoice = await prisma.marketplaceInvoice.findUnique({
+      where: { id: invoiceId },
+      select: { sellerId: true, buyerId: true, status: true },
+    });
+
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (invoice.sellerId !== userId && invoice.buyerId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to access this invoice' });
+    }
+
+    // Buyers can only see issued invoices or later
+    if (invoice.buyerId === userId && invoice.status === 'draft') {
+      return res.status(403).json({ error: 'Invoice is still in draft' });
+    }
+
+    // Build export data
+    const exportData = await buildInvoiceExportData(invoiceId);
+    if (!exportData) {
+      return res.status(404).json({ error: 'Invoice data not found' });
+    }
+
+    // Generate PDF buffer
+    const { buffer, mimeType, fileName } = await exportService.generateExportBuffer(
+      'invoice',
+      'pdf',
+      exportData,
+    );
+
+    // Stream the PDF back
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length.toString());
+    return res.send(buffer);
+  } catch (error) {
+    apiLogger.error('Error generating invoice PDF:', error);
+    return res.status(500).json({ error: 'Failed to generate invoice PDF' });
   }
 });
 

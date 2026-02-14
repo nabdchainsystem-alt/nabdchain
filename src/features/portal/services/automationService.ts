@@ -2,7 +2,7 @@
 // Automation Service - Frontend API Client for Automation Rules
 // =============================================================================
 
-import { API_URL } from '../../../config/api';
+import { portalApiClient } from './portalApiClient';
 import {
   AutomationRule,
   RuleTemplate,
@@ -27,119 +27,52 @@ export const automationService = {
   /**
    * Get all automation rules for the seller
    */
-  async getRules(token: string, filters: RuleFilters = {}): Promise<RulesResponse> {
-    const url = new URL(`${API_URL}/automation/rules`);
+  async getRules(filters: RuleFilters = {}): Promise<RulesResponse> {
+    const params = new URLSearchParams();
 
-    if (filters.ruleType) url.searchParams.append('ruleType', filters.ruleType);
-    if (filters.triggerType) url.searchParams.append('triggerType', filters.triggerType);
-    if (filters.isEnabled !== undefined) url.searchParams.append('isEnabled', String(filters.isEnabled));
-    if (filters.page) url.searchParams.append('page', String(filters.page));
-    if (filters.limit) url.searchParams.append('limit', String(filters.limit));
+    if (filters.ruleType) params.append('ruleType', filters.ruleType);
+    if (filters.triggerType) params.append('triggerType', filters.triggerType);
+    if (filters.isEnabled !== undefined) params.append('isEnabled', String(filters.isEnabled));
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch automation rules');
-    }
-
-    return response.json();
+    const qs = params.toString();
+    return portalApiClient.get<RulesResponse>(`/api/automation/rules${qs ? `?${qs}` : ''}`);
   },
 
   /**
    * Get a single rule by ID
    */
-  async getRule(token: string, ruleId: string): Promise<AutomationRule> {
-    const response = await fetch(`${API_URL}/automation/rules/${ruleId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch rule');
-    }
-
-    return response.json();
+  async getRule(ruleId: string): Promise<AutomationRule> {
+    return portalApiClient.get<AutomationRule>(`/api/automation/rules/${ruleId}`);
   },
 
   /**
    * Create a new automation rule
    */
-  async createRule(token: string, input: CreateRuleInput): Promise<AutomationRule> {
-    const response = await fetch(`${API_URL}/automation/rules`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create automation rule');
-    }
-
-    return response.json();
+  async createRule(input: CreateRuleInput): Promise<AutomationRule> {
+    return portalApiClient.post<AutomationRule>('/api/automation/rules', input);
   },
 
   /**
    * Update an existing rule
    */
-  async updateRule(token: string, ruleId: string, input: UpdateRuleInput): Promise<AutomationRule> {
-    const response = await fetch(`${API_URL}/automation/rules/${ruleId}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update rule');
-    }
-
-    return response.json();
+  async updateRule(ruleId: string, input: UpdateRuleInput): Promise<AutomationRule> {
+    return portalApiClient.put<AutomationRule>(`/api/automation/rules/${ruleId}`, input);
   },
 
   /**
    * Delete a rule
    */
-  async deleteRule(token: string, ruleId: string): Promise<void> {
-    const response = await fetch(`${API_URL}/automation/rules/${ruleId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete rule');
-    }
+  async deleteRule(ruleId: string): Promise<void> {
+    return portalApiClient.delete<void>(`/api/automation/rules/${ruleId}`);
   },
 
   /**
    * Toggle rule enabled/disabled
    */
-  async toggleRule(token: string, ruleId: string, enabled: boolean): Promise<AutomationRule> {
-    const response = await fetch(`${API_URL}/automation/rules/${ruleId}/toggle`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ enabled }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to toggle rule');
-    }
-
-    return response.json();
+  async toggleRule(ruleId: string, enabled: boolean): Promise<AutomationRule> {
+    return portalApiClient.post<AutomationRule>(`/api/automation/rules/${ruleId}/toggle`, { enabled });
   },
 
   // ---------------------------------------------------------------------------
@@ -149,43 +82,26 @@ export const automationService = {
   /**
    * Get execution history
    */
-  async getExecutions(token: string, filters: ExecutionFilters = {}): Promise<ExecutionsResponse> {
-    const url = new URL(`${API_URL}/automation/executions`);
+  async getExecutions(filters: ExecutionFilters = {}): Promise<ExecutionsResponse> {
+    const params = new URLSearchParams();
 
-    if (filters.ruleId) url.searchParams.append('ruleId', filters.ruleId);
-    if (filters.entityType) url.searchParams.append('entityType', filters.entityType);
-    if (filters.actionResult) url.searchParams.append('actionResult', filters.actionResult);
-    if (filters.dateFrom) url.searchParams.append('dateFrom', filters.dateFrom);
-    if (filters.dateTo) url.searchParams.append('dateTo', filters.dateTo);
-    if (filters.page) url.searchParams.append('page', String(filters.page));
-    if (filters.limit) url.searchParams.append('limit', String(filters.limit));
+    if (filters.ruleId) params.append('ruleId', filters.ruleId);
+    if (filters.entityType) params.append('entityType', filters.entityType);
+    if (filters.actionResult) params.append('actionResult', filters.actionResult);
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
 
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch execution history');
-    }
-
-    return response.json();
+    const qs = params.toString();
+    return portalApiClient.get<ExecutionsResponse>(`/api/automation/executions${qs ? `?${qs}` : ''}`);
   },
 
   /**
    * Get execution statistics
    */
-  async getExecutionStats(token: string, period: 'day' | 'week' | 'month' = 'week'): Promise<ExecutionStats> {
-    const response = await fetch(`${API_URL}/automation/executions/stats?period=${period}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch execution stats');
-    }
-
-    return response.json();
+  async getExecutionStats(period: 'day' | 'week' | 'month' = 'week'): Promise<ExecutionStats> {
+    return portalApiClient.get<ExecutionStats>(`/api/automation/executions/stats?period=${period}`);
   },
 
   // ---------------------------------------------------------------------------
@@ -195,42 +111,15 @@ export const automationService = {
   /**
    * Get available rule templates
    */
-  async getTemplates(token: string): Promise<RuleTemplate[]> {
-    const response = await fetch(`${API_URL}/automation/templates`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch templates');
-    }
-
-    return response.json();
+  async getTemplates(): Promise<RuleTemplate[]> {
+    return portalApiClient.get<RuleTemplate[]>('/api/automation/templates');
   },
 
   /**
    * Create a rule from a template
    */
-  async createFromTemplate(
-    token: string,
-    templateId: string,
-    overrides?: Partial<CreateRuleInput>,
-  ): Promise<AutomationRule> {
-    const response = await fetch(`${API_URL}/automation/templates/create`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ templateId, overrides }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create rule from template');
-    }
-
-    return response.json();
+  async createFromTemplate(templateId: string, overrides?: Partial<CreateRuleInput>): Promise<AutomationRule> {
+    return portalApiClient.post<AutomationRule>('/api/automation/templates/create', { templateId, overrides });
   },
 };
 

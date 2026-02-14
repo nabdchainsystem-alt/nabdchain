@@ -9,6 +9,7 @@ import { useCart } from '../../context/CartContext';
 import { CartEmptyState } from '../components/CartEmptyState';
 import { Container, PageHeader } from '../../components';
 import { CartItem } from '../../types/cart.types';
+import { parseImageUrls } from '../../types/item.types';
 
 // VAT Rate (15% for Saudi Arabia)
 const VAT_RATE = 0.15;
@@ -38,7 +39,7 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onQuantityChange, onRem
   const minOrderQty = item.item?.minOrderQty ?? 1;
   const maxOrderQty = item.item?.maxOrderQty;
   const stock = item.item?.stock ?? 999;
-  const images = item.item?.images ? JSON.parse(item.item.images) : [];
+  const images = parseImageUrls(item.item?.images);
   const imageUrl = images[0] || null;
   const sellerName = item.seller?.companyName || item.seller?.name || 'Seller';
   const category = item.item?.category || '';

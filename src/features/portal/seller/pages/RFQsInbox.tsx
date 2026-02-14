@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../../../../auth-adapter';
 import { sellerRfqInboxService } from '../../services/sellerRfqInboxService';
 import { portalApiClient } from '../../services/portalApiClient';
 import { SubmittedMarketplaceQuote } from '../../types/rfq-marketplace.types';
@@ -224,7 +223,6 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
   });
 
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -256,11 +254,6 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
 
       const filters: InboxFilters = {
         page: currentPage,
@@ -279,7 +272,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
         filters.search = searchQuery;
       }
 
-      const result = await sellerRfqInboxService.getInbox(token, filters);
+      const result = await sellerRfqInboxService.getInbox(filters);
       setRfqs(result.rfqs);
       setStats(result.stats);
       setTotalPages(result.pagination.totalPages);
@@ -290,7 +283,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, currentPage, sorting, statusFilter, priorityFilter, searchQuery]);
+  }, [currentPage, sorting, statusFilter, priorityFilter, searchQuery]);
 
   useEffect(() => {
     fetchRFQs();
@@ -299,14 +292,12 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
   // Fetch pending counter-offers
   const fetchPendingCounterOffers = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-      const result = await counterOfferService.getPendingCounterOffers(token);
+      const result = await counterOfferService.getPendingCounterOffers();
       setPendingCounterOffers(result.counterOffers || []);
     } catch (err) {
       console.error('Failed to fetch pending counter-offers:', err);
     }
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     fetchPendingCounterOffers();
@@ -348,10 +339,8 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
 
       try {
         setIsSubmittingCounterResponse(true);
-        const token = await getToken();
-        if (!token) return;
 
-        await counterOfferService.acceptCounterOffer(token, selectedCounterOffer.id, response);
+        await counterOfferService.acceptCounterOffer(selectedCounterOffer.id, response);
         setShowCounterOfferDialog(false);
         setSelectedCounterOffer(null);
         setSelectedQuoteForCounter(null);
@@ -366,7 +355,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
         setIsSubmittingCounterResponse(false);
       }
     },
-    [getToken, selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers],
+    [selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers],
   );
 
   // Handle rejecting counter-offer
@@ -376,10 +365,8 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
 
       try {
         setIsSubmittingCounterResponse(true);
-        const token = await getToken();
-        if (!token) return;
 
-        await counterOfferService.rejectCounterOffer(token, selectedCounterOffer.id, response);
+        await counterOfferService.rejectCounterOffer(selectedCounterOffer.id, response);
         setShowCounterOfferDialog(false);
         setSelectedCounterOffer(null);
         setSelectedQuoteForCounter(null);
@@ -394,7 +381,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
         setIsSubmittingCounterResponse(false);
       }
     },
-    [getToken, selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers],
+    [selectedCounterOffer, fetchRFQs, fetchPendingCounterOffers],
   );
 
   // Filter RFQs based on smart tab
@@ -439,10 +426,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
   const handleSelectRFQ = useCallback(
     async (rfq: SellerInboxRFQ) => {
       try {
-        const token = await getToken();
-        if (!token) return;
-
-        const detail = await sellerRfqInboxService.getRFQDetail(token, rfq.id);
+        const detail = await sellerRfqInboxService.getRFQDetail(rfq.id);
         if (detail) {
           setSelectedRFQ(detail);
           if (detail.status !== rfq.status) {
@@ -455,7 +439,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
         setSelectedRFQ(rfq);
       }
     },
-    [getToken, fetchRFQs],
+    [fetchRFQs],
   );
 
   // Handle mark as under review - with optimistic UI
@@ -466,10 +450,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
       showToast('Marked as reviewed');
 
       try {
-        const token = await getToken();
-        if (!token) return;
-
-        const updated = await sellerRfqInboxService.markUnderReview(token, rfqId);
+        const updated = await sellerRfqInboxService.markUnderReview(rfqId);
         if (updated) {
           setSelectedRFQ(updated);
           // Sync with server data
@@ -482,7 +463,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
         showToast('Failed to update', 'error');
       }
     },
-    [getToken, fetchRFQs],
+    [fetchRFQs],
   );
 
   // Handle mark as ignored (decline) - with optimistic UI
@@ -501,10 +482,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
     setDialogRFQId(null);
 
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      const updated = await sellerRfqInboxService.markIgnored(token, rfqIdToUpdate, reason);
+      const updated = await sellerRfqInboxService.markIgnored(rfqIdToUpdate, reason);
       if (updated) {
         if (selectedRFQ?.id === rfqIdToUpdate) {
           setSelectedRFQ(updated);
@@ -516,7 +494,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
       fetchRFQs();
       showToast('Failed to decline', 'error');
     }
-  }, [getToken, dialogRFQId, ignoreReason, selectedRFQ, fetchRFQs]);
+  }, [dialogRFQId, ignoreReason, selectedRFQ, fetchRFQs]);
 
   // Handle add note - with optimistic UI
   const handleAddNote = useCallback(async () => {
@@ -537,10 +515,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
     setDialogRFQId(null);
 
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      const updated = await sellerRfqInboxService.addNote(token, rfqIdToUpdate, { note: noteToSave });
+      const updated = await sellerRfqInboxService.addNote(rfqIdToUpdate, { note: noteToSave });
       if (updated) {
         if (selectedRFQ?.id === rfqIdToUpdate) {
           setSelectedRFQ(updated);
@@ -552,27 +527,21 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
       fetchRFQs();
       showToast('Failed to save note', 'error');
     }
-  }, [getToken, dialogRFQId, noteContent, selectedRFQ, fetchRFQs]);
+  }, [dialogRFQId, noteContent, selectedRFQ, fetchRFQs]);
 
   // Handle snooze
-  const handleSnooze = useCallback(
-    async (rfqId: string, option: SnoozeOption) => {
-      try {
-        const _token = await getToken();
-        if (!_token) return;
+  const handleSnooze = useCallback(async (_rfqId: string, option: SnoozeOption) => {
+    try {
+      const _until = getSnoozeUntil(option);
+      // Future: call snooze API endpoint
+      // await sellerRfqInboxService.snoozeRFQ(rfqId, until);
 
-        const _until = getSnoozeUntil(option);
-        // Future: call snooze API endpoint
-        // await sellerRfqInboxService.snoozeRFQ(token, rfqId, until);
-
-        showToast(`Snoozed until ${option === '2h' ? '2 hours' : option === 'tomorrow' ? 'tomorrow' : 'next week'}`);
-        setShowSnoozeMenu(null);
-      } catch (err) {
-        console.error('Failed to snooze RFQ:', err);
-      }
-    },
-    [getToken],
-  );
+      showToast(`Snoozed until ${option === '2h' ? '2 hours' : option === 'tomorrow' ? 'tomorrow' : 'next week'}`);
+      setShowSnoozeMenu(null);
+    } catch (err) {
+      console.error('Failed to snooze RFQ:', err);
+    }
+  }, []);
 
   // Bulk actions
   const handleBulkMarkReviewed = useCallback(async () => {
@@ -591,10 +560,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
     }
 
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await Promise.all(reviewableIds.map((id) => sellerRfqInboxService.markUnderReview(token, id)));
+      await Promise.all(reviewableIds.map((id) => sellerRfqInboxService.markUnderReview(id)));
       fetchRFQs();
       setRowSelection({});
       const skipped = selectedIds.length - reviewableIds.length;
@@ -602,7 +568,7 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
     } catch (err) {
       console.error('Failed to bulk mark reviewed:', err);
     }
-  }, [getToken, rowSelection, rfqs, fetchRFQs]);
+  }, [rowSelection, rfqs, fetchRFQs]);
 
   const handleBulkSnooze = useCallback(
     async (_option: SnoozeOption) => {
@@ -835,6 +801,25 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
         cell: ({ row }) => {
           const rfq = row.original;
           const isNew = rfq.status === 'new';
+          const hasMultiItems = (rfq.lineItems?.length ?? 0) > 1;
+
+          if (hasMultiItems) {
+            const firstItem = rfq.lineItems![0];
+            const remaining = rfq.lineItems!.length - 1;
+            return (
+              <div className="min-w-0">
+                <p
+                  className={`truncate ${isNew ? 'font-semibold' : 'font-medium'}`}
+                  style={{ color: styles.textPrimary, fontSize: '0.79rem' }}
+                >
+                  {firstItem.itemName || firstItem.item?.name || 'Item'}
+                </p>
+                <p className="truncate" style={{ color: styles.info, fontSize: '0.675rem', fontWeight: 500 }}>
+                  +{remaining} more item{remaining > 1 ? 's' : ''}
+                </p>
+              </div>
+            );
+          }
 
           // Backend populates item with parsed part info even for general RFQs (id='general')
           const itemName = rfq.item?.name || t('seller.inbox.generalRfq') || 'General RFQ';
@@ -884,11 +869,28 @@ export const RFQsInbox: React.FC<RFQsInboxProps> = ({ _onNavigate }) => {
       columnHelper.accessor('quantity', {
         meta: { align: 'center' as const },
         header: t('seller.inbox.qty') || 'Qty',
-        cell: ({ row }) => (
-          <span className="font-semibold tabular-nums" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
-            {row.original.quantity}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const rfq = row.original;
+          const hasMultiItems = (rfq.lineItems?.length ?? 0) > 1;
+          if (hasMultiItems) {
+            const totalQty = rfq.lineItems!.reduce((s, li) => s + li.quantity, 0);
+            return (
+              <div className="text-center">
+                <span className="font-semibold tabular-nums" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+                  {totalQty}
+                </span>
+                <p className="text-xs" style={{ color: styles.textMuted }}>
+                  {rfq.lineItems!.length} items
+                </p>
+              </div>
+            );
+          }
+          return (
+            <span className="font-semibold tabular-nums" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+              {rfq.quantity}
+            </span>
+          );
+        },
         size: 70,
       }),
       columnHelper.accessor('status', {
@@ -2216,7 +2218,6 @@ const RFQDetailPanel: React.FC<{
 }> = ({ rfq, isRtl, onClose, onMarkUnderReview, onMarkIgnored, onAddNote, onCreateQuote, _onDeclineRFQ }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { styles, t } = usePortal();
-  const { getToken } = useAuth();
   const [history, setHistory] = useState<RFQEvent[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -2257,9 +2258,7 @@ const RFQDetailPanel: React.FC<{
     const loadHistory = async () => {
       try {
         setLoadingHistory(true);
-        const token = await getToken();
-        if (!token) return;
-        const events = await sellerRfqInboxService.getHistory(token, rfq.id);
+        const events = await sellerRfqInboxService.getHistory(rfq.id);
         if (events) setHistory(events);
       } catch (err) {
         console.error('Failed to load history:', err);
@@ -2268,7 +2267,7 @@ const RFQDetailPanel: React.FC<{
       }
     };
     loadHistory();
-  }, [getToken, rfq.id]);
+  }, [rfq.id]);
 
   if (!isVisible) return null;
 

@@ -86,6 +86,7 @@ export interface SellerHomeKPIs {
   rfqInbox: number;
   newRfqs: number;
   pendingPayout: number;
+  pendingCounterOffers: number;
   currency: string;
 }
 
@@ -188,6 +189,7 @@ const EMPTY_KPIS: SellerHomeKPIs = {
   rfqInbox: 0,
   newRfqs: 0,
   pendingPayout: 0,
+  pendingCounterOffers: 0,
   currency: 'SAR',
 };
 
@@ -464,6 +466,7 @@ const sellerHomeService = {
         totalRfqs,
         newRfqs,
         deliveredOrders,
+        pendingCounterOffers,
       ] = await Promise.all([
         // Current period revenue (last 30 days)
         prisma.marketplaceOrder.aggregate({
@@ -528,6 +531,13 @@ const sellerHomeService = {
           },
           _sum: { totalPrice: true },
         }),
+        // Pending counter-offers on seller's quotes
+        prisma.counterOffer.count({
+          where: {
+            status: 'pending',
+            quote: { sellerId },
+          },
+        }),
       ]);
 
       const currentRevenueValue = currentRevenue._sum.totalPrice || 0;
@@ -551,6 +561,7 @@ const sellerHomeService = {
         rfqInbox: totalRfqs,
         newRfqs,
         pendingPayout: deliveredOrders._sum.totalPrice || 0,
+        pendingCounterOffers,
         currency: 'SAR',
       };
     } catch (error) {

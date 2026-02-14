@@ -7,7 +7,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { buyerAnalyticsService, sellerAnalyticsService } from '../services/analyticsService';
 import { apiLogger } from '../utils/logger';
 import { prisma } from '../lib/prisma';
-import { resolveBuyerId } from '../utils/resolveBuyerId';
+import { getPeriodDates } from '../utils/dates';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ const router = Router();
  */
 router.get('/buyer/overview', requireAuth, async (req: Request, res: Response) => {
   try {
-    const buyerId = await resolveBuyerId(req);
+    const buyerId = (req as AuthRequest).auth.userId;
     if (!buyerId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -42,7 +42,7 @@ router.get('/buyer/overview', requireAuth, async (req: Request, res: Response) =
  */
 router.get('/buyer/summary', requireAuth, async (req: Request, res: Response) => {
   try {
-    const buyerId = await resolveBuyerId(req);
+    const buyerId = (req as AuthRequest).auth.userId;
     const period = (req.query.period as string) || 'month';
 
     if (!buyerId) {
@@ -85,42 +85,14 @@ router.get('/buyer/summary', requireAuth, async (req: Request, res: Response) =>
  */
 router.get('/buyer/kpis', requireAuth, async (req: Request, res: Response) => {
   try {
-    const buyerId = await resolveBuyerId(req);
+    const buyerId = (req as AuthRequest).auth.userId;
     if (!buyerId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const period = (req.query.period as string) || 'month';
-
-    // Import getPeriodDates helper
-    const getPeriodDates = (p: string) => {
-      const now = new Date();
-      const endDate = new Date(now);
-      let startDate: Date;
-      let prevStartDate: Date;
-      let prevEndDate: Date;
-
-      switch (p) {
-        case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'quarter':
-          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case 'year':
-          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-      prevEndDate = new Date(startDate.getTime() - 1);
-      prevStartDate = new Date(prevEndDate.getTime() - (now.getTime() - startDate.getTime()));
-
-      return { period: p, startDate, endDate, prevStartDate, prevEndDate };
-    };
-
     const dates = getPeriodDates(period);
-    const kpis = await buyerAnalyticsService.getKPIs(buyerId, dates as any);
+    const kpis = await buyerAnalyticsService.getKPIs(buyerId, dates);
 
     return res.json(kpis);
   } catch (error) {
@@ -135,30 +107,14 @@ router.get('/buyer/kpis', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/buyer/spend-by-category', requireAuth, async (req: Request, res: Response) => {
   try {
-    const buyerId = await resolveBuyerId(req);
+    const buyerId = (req as AuthRequest).auth.userId;
     if (!buyerId) {
       return res.json([]);
     }
 
     const period = (req.query.period as string) || 'month';
-
-    const getPeriodDates = (p: string) => {
-      const now = new Date();
-      const endDate = new Date(now);
-      let startDate: Date;
-      switch (p) {
-        case 'week': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-        case 'quarter': startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); break;
-        case 'year': startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); break;
-        default: startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-      const prevEndDate = new Date(startDate.getTime() - 1);
-      const prevStartDate = new Date(prevEndDate.getTime() - (now.getTime() - startDate.getTime()));
-      return { period: p, startDate, endDate, prevStartDate, prevEndDate };
-    };
-
     const dates = getPeriodDates(period);
-    const data = await buyerAnalyticsService.getSpendByCategory(buyerId, dates as any);
+    const data = await buyerAnalyticsService.getSpendBySupplier(buyerId, dates);
 
     return res.json(data);
   } catch (error) {
@@ -173,7 +129,7 @@ router.get('/buyer/spend-by-category', requireAuth, async (req: Request, res: Re
  */
 router.get('/buyer/supplier-performance', requireAuth, async (req: Request, res: Response) => {
   try {
-    const buyerId = await resolveBuyerId(req);
+    const buyerId = (req as AuthRequest).auth.userId;
     if (!buyerId) {
       return res.json([]);
     }
@@ -203,7 +159,7 @@ router.get('/buyer/supplier-performance', requireAuth, async (req: Request, res:
  */
 router.get('/buyer/rfq-funnel', requireAuth, async (req: Request, res: Response) => {
   try {
-    const buyerId = await resolveBuyerId(req);
+    const buyerId = (req as AuthRequest).auth.userId;
     const period = (req.query.period as string) || 'month';
 
     if (!buyerId) {
@@ -217,23 +173,8 @@ router.get('/buyer/rfq-funnel', requireAuth, async (req: Request, res: Response)
       });
     }
 
-    const getPeriodDates = (p: string) => {
-      const now = new Date();
-      const endDate = new Date(now);
-      let startDate: Date;
-      switch (p) {
-        case 'week': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-        case 'quarter': startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); break;
-        case 'year': startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); break;
-        default: startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-      const prevEndDate = new Date(startDate.getTime() - 1);
-      const prevStartDate = new Date(prevEndDate.getTime() - (now.getTime() - startDate.getTime()));
-      return { period: p, startDate, endDate, prevStartDate, prevEndDate };
-    };
-
     const dates = getPeriodDates(period);
-    const data = await buyerAnalyticsService.getRFQFunnel(buyerId, dates as any);
+    const data = await buyerAnalyticsService.getRFQFunnel(buyerId, dates);
 
     return res.json(data);
   } catch (error) {
@@ -331,6 +272,14 @@ router.get('/seller/summary', requireAuth, async (req: Request, res: Response) =
           { stage: 'Orders Won', value: 0, percent: 0 },
         ],
         regionDistribution: [],
+        lifecycleMetrics: {
+          outstandingReceivables: 0,
+          avgDeliveryDays: 0,
+          avgPaymentDelayDays: 0,
+          fulfillmentRate: 0,
+          ordersByStatus: {},
+          topBuyers: [],
+        },
         period: mappedPeriod,
       });
     }
@@ -380,23 +329,8 @@ router.get('/seller/kpis', requireAuth, async (req: Request, res: Response) => {
       });
     }
 
-    const getPeriodDates = (p: string) => {
-      const now = new Date();
-      const endDate = new Date(now);
-      let startDate: Date;
-      switch (p) {
-        case 'week': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-        case 'quarter': startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); break;
-        case 'year': startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); break;
-        default: startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-      const prevEndDate = new Date(startDate.getTime() - 1);
-      const prevStartDate = new Date(prevEndDate.getTime() - (now.getTime() - startDate.getTime()));
-      return { period: p, startDate, endDate, prevStartDate, prevEndDate };
-    };
-
     const dates = getPeriodDates(mappedPeriod);
-    const kpis = await sellerAnalyticsService.getKPIs(seller.id, dates as any);
+    const kpis = await sellerAnalyticsService.getKPIs(seller.id, dates);
 
     return res.json(kpis);
   } catch (error) {

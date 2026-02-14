@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
+import type { MarketplaceOrder } from '@prisma/client';
 
 // =============================================================================
 // Types
@@ -562,9 +563,9 @@ function getAuditActionTitle(action: string): string {
  * Assess risk for an order - early warning system
  */
 async function assessOrderRisk(
-  order: any,
+  order: MarketplaceOrder,
   steps: TimelineStep[],
-  metrics: any
+  metrics: OrderTimelineResult['metrics']
 ): Promise<RiskAssessment> {
   const factors: RiskFactor[] = [];
   let riskScore = 0;
@@ -751,7 +752,7 @@ async function getSellerPerformanceStats(sellerId: string): Promise<{
  * Predict delivery date based on current state and history
  */
 async function predictDeliveryDate(
-  order: any,
+  order: MarketplaceOrder,
   steps: TimelineStep[],
   sellerStats: { avgOnTimeRate: number; avgLeadTime: number }
 ): Promise<{ date?: Date; confidence: number }> {

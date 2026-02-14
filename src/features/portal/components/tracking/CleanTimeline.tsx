@@ -71,10 +71,11 @@ interface StageNodeProps {
   isLast: boolean;
   styles: ThemeStyles;
   isRtl: boolean;
+  index: number;
   onAction?: (stageKey: string, action: string) => void;
 }
 
-const StageNode: React.FC<StageNodeProps> = ({ stage, role, isLast, styles, isRtl, onAction }) => {
+const StageNode: React.FC<StageNodeProps> = ({ stage, role, isLast, styles, isRtl, index, onAction }) => {
   const Icon = STAGE_ICONS[stage.icon] || Package;
   const isCompleted = stage.status === 'completed';
   const isCurrent = stage.status === 'current';
@@ -119,7 +120,10 @@ const StageNode: React.FC<StageNodeProps> = ({ stage, role, isLast, styles, isRt
   const label = role === 'buyer' ? stage.buyerLabel : stage.label;
 
   return (
-    <div className={`flex ${isRtl ? 'flex-row-reverse' : ''}`}>
+    <div
+      className={`flex ${isRtl ? 'flex-row-reverse' : ''}`}
+      style={{ animation: `fadeSlideIn 0.4s ease-out ${index * 0.08}s both` }}
+    >
       {/* Timeline indicator column */}
       <div className="flex flex-col items-center" style={{ width: '56px' }}>
         {/* Stage circle */}
@@ -132,6 +136,7 @@ const StageNode: React.FC<StageNodeProps> = ({ stage, role, isLast, styles, isRt
             border: `2px solid ${colors.border}`,
             ringColor: isCurrent ? colors.border : undefined,
             ringOffsetColor: styles.bgPrimary,
+            animation: isCurrent ? 'softPulse 2s ease-in-out infinite' : undefined,
           }}
         >
           {isDelayed ? (
@@ -298,6 +303,7 @@ export const CleanTimeline: React.FC<CleanTimelineProps> = ({ stages, role, _cur
           isLast={index === stages.length - 1}
           styles={styles}
           isRtl={isRtl}
+          index={index}
           onAction={onStageAction}
         />
       ))}

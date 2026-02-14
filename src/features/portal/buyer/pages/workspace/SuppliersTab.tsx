@@ -22,7 +22,6 @@ import {
   TrendDown,
 } from 'phosphor-react';
 import { usePortal } from '../../../context/PortalContext';
-import { useAuth } from '../../../../../auth-adapter';
 import { buyerWorkspaceService, Supplier } from '../../../services/buyerWorkspaceService';
 
 interface SuppliersTabProps {
@@ -34,7 +33,6 @@ const columnHelper = createColumnHelper<Supplier>();
 
 export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRTL = direction === 'rtl';
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -45,10 +43,8 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
   const fetchSuppliers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = await getToken();
-      if (!token) return;
 
-      const data = await buyerWorkspaceService.getSuppliers(token, {
+      const data = await buyerWorkspaceService.getSuppliers({
         search: globalFilter || undefined,
       });
       setSuppliers(data);
@@ -57,7 +53,7 @@ export const SuppliersTab: React.FC<SuppliersTabProps> = ({ onCreatePO }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken, globalFilter]);
+  }, [globalFilter]);
 
   useEffect(() => {
     fetchSuppliers();

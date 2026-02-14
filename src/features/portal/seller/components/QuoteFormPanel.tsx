@@ -28,7 +28,6 @@ import {
   UploadSimple,
   DownloadSimple,
 } from 'phosphor-react';
-import { useAuth } from '../../../../auth-adapter';
 import { usePortal } from '../../context/PortalContext';
 import { PortalDatePicker } from '../../components';
 import { quoteService } from '../../services/quoteService';
@@ -41,6 +40,8 @@ import {
   UpdateQuoteData,
   QuoteAttachment,
   QuoteAttachmentType,
+  CreateQuoteLineItemData,
+  RFQLineItem,
   calculateDiscountAmount,
   canSendQuote,
 } from '../../types/item.types';
@@ -100,7 +101,10 @@ const getInitialFormState = (rfq: SellerInboxRFQ, existingQuote?: Quote | null):
 function getDefaultValidUntil(): string {
   const date = new Date();
   date.setDate(date.getDate() + 14);
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 // =============================================================================
@@ -116,11 +120,30 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   _defaultQuantity,
 }) => {
   const { styles, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
+
+  // Multi-line-item detection
+  const isMultiItem = (rfq.lineItems?.length ?? 0) > 1;
+  const rfqLineItems: RFQLineItem[] = rfq.lineItems ?? [];
+
+  // Line-item pricing state (for multi-item RFQs)
+  const initLineItemPricing = (): CreateQuoteLineItemData[] => {
+    if (!isMultiItem) return [];
+    // Initialize from existing quote line items or from RFQ line items
+    return rfqLineItems.map((li) => {
+      const existingLI = existingQuote?.lineItems?.find((q) => q.rfqLineItemId === li.id);
+      return {
+        rfqLineItemId: li.id,
+        unitPrice: existingLI?.unitPrice ?? li.priceAtRequest ?? 0,
+        quantity: existingLI?.quantity ?? li.quantity,
+        discount: existingLI?.discount ?? undefined,
+      };
+    });
+  };
 
   // Form state
   const [formData, setFormData] = useState<QuoteFormState>(() => getInitialFormState(rfq, existingQuote));
+  const [lineItemPricing, setLineItemPricing] = useState<CreateQuoteLineItemData[]>(() => initLineItemPricing());
   const [errors, setErrors] = useState<QuoteFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -138,15 +161,28 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   const VAT_RATE = 0.15; // 15% VAT
 
   // Calculated values
-  const subtotal = formData.unitPrice * formData.quantity;
-  const discountedSubtotal = subtotal - (formData.discount || 0);
+  const lineItemsSubtotal = isMultiItem
+    ? lineItemPricing.reduce((sum, li) => sum + li.unitPrice * li.quantity - (li.discount || 0), 0)
+    : 0;
+  const subtotal = isMultiItem ? lineItemsSubtotal : formData.unitPrice * formData.quantity;
+  const discountedSubtotal = isMultiItem ? subtotal : subtotal - (formData.discount || 0);
   const vatAmount = includeVat ? discountedSubtotal * VAT_RATE : 0;
   const totalPrice = discountedSubtotal + vatAmount;
+
+  // Helper to update a single line item's pricing
+  const handleLineItemChange = useCallback((index: number, field: keyof CreateQuoteLineItemData, value: number) => {
+    setLineItemPricing((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  }, []);
 
   // Reset form when panel opens or RFQ changes
   useEffect(() => {
     if (isOpen) {
       setFormData(getInitialFormState(rfq, existingQuote));
+      setLineItemPricing(initLineItemPricing());
       setErrors({});
       setSubmitStatus('idle');
       setSubmitMessage('');
@@ -242,10 +278,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     if (!existingQuote) return;
 
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      await quoteService.removeAttachment(token, existingQuote.id, attachmentId);
+      await quoteService.removeAttachment(existingQuote.id, attachmentId);
       setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
     } catch (error) {
       console.error('Failed to remove attachment:', error);
@@ -259,12 +292,9 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   const uploadPendingAttachments = async (quoteId: string) => {
     if (pendingAttachments.length === 0) return;
 
-    const token = await getToken();
-    if (!token) return;
-
     for (const file of pendingAttachments) {
       try {
-        const uploaded = await quoteService.addAttachment(token, quoteId, file, getAttachmentType(file));
+        const uploaded = await quoteService.addAttachment(quoteId, file, getAttachmentType(file));
         setAttachments((prev) => [...prev, uploaded]);
       } catch (error) {
         console.error('Failed to upload attachment:', error);
@@ -377,11 +407,6 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     setSubmitStatus('idle');
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       let quote: Quote;
 
       if (existingQuote) {
@@ -398,9 +423,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
           notes: formData.notes || undefined,
           internalNotes: formData.internalNotes || undefined,
           changeReason: 'Updated quote',
+          ...(isMultiItem ? { lineItems: lineItemPricing } : {}),
         };
 
-        const result = await quoteService.updateQuote(token, existingQuote.id, updateData);
+        const result = await quoteService.updateQuote(existingQuote.id, updateData);
         if (!result) {
           throw new Error('Quote not found');
         }
@@ -419,9 +445,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
           validUntil: formData.validUntil ? new Date(formData.validUntil).toISOString() : getDefaultValidUntil(),
           notes: formData.notes || undefined,
           internalNotes: formData.internalNotes || undefined,
+          ...(isMultiItem ? { lineItems: lineItemPricing } : {}),
         };
 
-        quote = await quoteService.createDraft(token, createData);
+        quote = await quoteService.createDraft(createData);
       }
 
       // Upload any pending attachments
@@ -456,11 +483,6 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
     setSubmitStatus('idle');
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       let quote: Quote;
 
       // First save/update the quote
@@ -476,9 +498,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
           validUntil: new Date(formData.validUntil).toISOString(),
           notes: formData.notes || undefined,
           internalNotes: formData.internalNotes || undefined,
+          ...(isMultiItem ? { lineItems: lineItemPricing } : {}),
         };
 
-        const updated = await quoteService.updateQuote(token, existingQuote.id, updateData);
+        const updated = await quoteService.updateQuote(existingQuote.id, updateData);
         if (!updated) {
           throw new Error('Quote not found');
         }
@@ -496,9 +519,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
           validUntil: new Date(formData.validUntil).toISOString(),
           notes: formData.notes || undefined,
           internalNotes: formData.internalNotes || undefined,
+          ...(isMultiItem ? { lineItems: lineItemPricing } : {}),
         };
 
-        quote = await quoteService.createDraft(token, createData);
+        quote = await quoteService.createDraft(createData);
       }
 
       // Upload any pending attachments before sending
@@ -507,7 +531,7 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
       }
 
       // Now send the quote
-      const sentQuote = await quoteService.sendQuote(token, quote.id);
+      const sentQuote = await quoteService.sendQuote(quote.id);
       if (!sentQuote) {
         throw new Error('Failed to send quote');
       }
@@ -533,7 +557,10 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
   const getMinDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 
   // Check if quote can be sent
@@ -624,44 +651,109 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
               className="p-4 rounded-xl"
               style={{ backgroundColor: styles.bgSecondary, border: `1px solid ${styles.border}` }}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: styles.bgCard }}
-                  >
-                    <Package size={18} style={{ color: styles.textMuted }} />
+              {isMultiItem ? (
+                <>
+                  {/* Multi-item RFQ header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: styles.bgCard }}
+                      >
+                        <Package size={18} style={{ color: styles.textMuted }} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                          {rfqLineItems.length} Items Requested
+                        </p>
+                        <p className="text-xs" style={{ color: styles.textMuted }}>
+                          Total qty: {rfqLineItems.reduce((s, li) => s + li.quantity, 0)} units
+                        </p>
+                      </div>
+                    </div>
+                    {rfq.requiredDeliveryDate && (
+                      <span
+                        className="px-2 py-0.5 rounded text-xs flex items-center gap-1"
+                        style={{ backgroundColor: styles.bgCard, color: styles.textMuted }}
+                      >
+                        <Timer size={10} />
+                        {new Date(rfq.requiredDeliveryDate).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
-                      {rfq.item?.name || 'General Request'}
-                    </p>
-                    {rfq.item?.sku && (
-                      <p className="text-xs" style={{ color: styles.textMuted }}>
-                        {rfq.item.sku}
+                  {/* Line items list */}
+                  <div className="space-y-2 mb-3">
+                    {rfqLineItems.map((li, i) => (
+                      <div
+                        key={li.id}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg"
+                        style={{ backgroundColor: styles.bgCard }}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-mono" style={{ color: styles.textMuted }}>
+                            {i + 1}.
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate" style={{ color: styles.textPrimary }}>
+                              {li.itemName || li.item?.name || 'Item'}
+                            </p>
+                            {(li.itemSku || li.item?.sku) && (
+                              <p className="text-xs truncate" style={{ color: styles.textMuted }}>
+                                {li.itemSku || li.item?.sku}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <span
+                          className="text-xs tabular-nums flex-shrink-0 ml-2"
+                          style={{ color: styles.textSecondary }}
+                        >
+                          {li.quantity} units
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: styles.bgCard }}
+                    >
+                      <Package size={18} style={{ color: styles.textMuted }} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm" style={{ color: styles.textPrimary }}>
+                        {rfq.item?.name || 'General Request'}
                       </p>
+                      {rfq.item?.sku && (
+                        <p className="text-xs" style={{ color: styles.textMuted }}>
+                          {rfq.item.sku}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {/* Quick info badges */}
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className="px-2 py-0.5 rounded text-xs font-medium tabular-nums"
+                      style={{ backgroundColor: styles.bgCard, color: styles.textPrimary }}
+                    >
+                      {rfq.quantity} units requested
+                    </span>
+                    {rfq.requiredDeliveryDate && (
+                      <span
+                        className="px-2 py-0.5 rounded text-xs flex items-center gap-1"
+                        style={{ backgroundColor: styles.bgCard, color: styles.textMuted }}
+                      >
+                        <Timer size={10} />
+                        {new Date(rfq.requiredDeliveryDate).toLocaleDateString()}
+                      </span>
                     )}
                   </div>
                 </div>
-                {/* Quick info badges */}
-                <div className="flex flex-col items-end gap-1">
-                  <span
-                    className="px-2 py-0.5 rounded text-xs font-medium tabular-nums"
-                    style={{ backgroundColor: styles.bgCard, color: styles.textPrimary }}
-                  >
-                    {rfq.quantity} units requested
-                  </span>
-                  {rfq.requiredDeliveryDate && (
-                    <span
-                      className="px-2 py-0.5 rounded text-xs flex items-center gap-1"
-                      style={{ backgroundColor: styles.bgCard, color: styles.textMuted }}
-                    >
-                      <Timer size={10} />
-                      {new Date(rfq.requiredDeliveryDate).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              </div>
+              )}
               {/* Buyer info */}
               <div className="flex items-center gap-2 text-xs" style={{ color: styles.textMuted }}>
                 <span>From:</span>
@@ -669,160 +761,283 @@ export const QuoteFormPanel: React.FC<QuoteFormPanelProps> = ({
               </div>
             </div>
 
-            {/* Unit Price & Currency */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
-                  Unit Price <span style={{ color: styles.error }}>*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.unitPrice || ''}
-                  onChange={(e) => handleChange('unitPrice', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-2.5 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    borderColor: errors.unitPrice ? styles.error : styles.borderLight,
-                    color: styles.textPrimary,
-                  }}
-                  placeholder="0.00"
-                />
-                {errors.unitPrice && (
-                  <p className="text-xs mt-1" style={{ color: styles.error }}>
-                    {errors.unitPrice}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
-                  Currency
-                </label>
-                <select
-                  value={formData.currency}
-                  onChange={(e) => handleChange('currency', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    borderColor: styles.borderLight,
-                    color: styles.textPrimary,
-                  }}
-                >
-                  {CURRENCY_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            {isMultiItem ? (
+              <>
+                {/* Multi-item Pricing Table */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                      Per-Item Pricing <span style={{ color: styles.error }}>*</span>
+                    </label>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => handleChange('currency', e.target.value)}
+                      className="px-2 py-1 rounded border text-xs"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        borderColor: styles.borderLight,
+                        color: styles.textPrimary,
+                      }}
+                    >
+                      {CURRENCY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-            {/* Quantity */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
-                Quantity <span style={{ color: styles.error }}>*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleChange('quantity', Math.max(1, formData.quantity - 1))}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    color: styles.textPrimary,
-                  }}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.quantity}
-                  onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
-                  className="flex-1 px-4 py-2.5 rounded-lg border text-center transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    borderColor: errors.quantity ? styles.error : styles.borderLight,
-                    color: styles.textPrimary,
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleChange('quantity', formData.quantity + 1)}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    color: styles.textPrimary,
-                  }}
-                >
-                  +
-                </button>
-              </div>
-              {errors.quantity && (
-                <p className="text-xs mt-1" style={{ color: styles.error }}>
-                  {errors.quantity}
-                </p>
-              )}
-            </div>
+                  <div className="space-y-3">
+                    {rfqLineItems.map((li, i) => {
+                      const pricing = lineItemPricing[i];
+                      if (!pricing) return null;
+                      const lineTotal = pricing.unitPrice * pricing.quantity - (pricing.discount || 0);
+                      return (
+                        <div
+                          key={li.id}
+                          className="p-3 rounded-lg"
+                          style={{ backgroundColor: styles.bgCard, border: `1px solid ${styles.borderLight}` }}
+                        >
+                          <p className="text-sm font-medium mb-2 truncate" style={{ color: styles.textPrimary }}>
+                            {li.itemName || li.item?.name || 'Item'}{' '}
+                            {(li.itemSku || li.item?.sku) && (
+                              <span className="text-xs font-normal" style={{ color: styles.textMuted }}>
+                                ({li.itemSku || li.item?.sku})
+                              </span>
+                            )}
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="text-xs mb-1 block" style={{ color: styles.textMuted }}>
+                                Unit Price
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={pricing.unitPrice || ''}
+                                onChange={(e) => handleLineItemChange(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                className="w-full px-2 py-1.5 rounded border text-sm"
+                                style={{
+                                  backgroundColor: styles.bgSecondary,
+                                  borderColor: styles.borderLight,
+                                  color: styles.textPrimary,
+                                }}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs mb-1 block" style={{ color: styles.textMuted }}>
+                                Qty
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={pricing.quantity}
+                                onChange={(e) => handleLineItemChange(i, 'quantity', parseInt(e.target.value) || 1)}
+                                className="w-full px-2 py-1.5 rounded border text-sm text-center"
+                                style={{
+                                  backgroundColor: styles.bgSecondary,
+                                  borderColor: styles.borderLight,
+                                  color: styles.textPrimary,
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs mb-1 block" style={{ color: styles.textMuted }}>
+                                Discount
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={pricing.discount || ''}
+                                onChange={(e) => handleLineItemChange(i, 'discount', parseFloat(e.target.value) || 0)}
+                                className="w-full px-2 py-1.5 rounded border text-sm"
+                                style={{
+                                  backgroundColor: styles.bgSecondary,
+                                  borderColor: styles.borderLight,
+                                  color: styles.textPrimary,
+                                }}
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end mt-2">
+                            <span className="text-xs font-medium tabular-nums" style={{ color: styles.textSecondary }}>
+                              Line total: {formData.currency}{' '}
+                              {lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {errors.unitPrice && (
+                    <p className="text-xs mt-1" style={{ color: styles.error }}>
+                      {errors.unitPrice}
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Single-item: Unit Price & Currency */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                      Unit Price <span style={{ color: styles.error }}>*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.unitPrice || ''}
+                      onChange={(e) => handleChange('unitPrice', parseFloat(e.target.value) || 0)}
+                      className="w-full px-4 py-2.5 rounded-lg border transition-colors"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        borderColor: errors.unitPrice ? styles.error : styles.borderLight,
+                        color: styles.textPrimary,
+                      }}
+                      placeholder="0.00"
+                    />
+                    {errors.unitPrice && (
+                      <p className="text-xs mt-1" style={{ color: styles.error }}>
+                        {errors.unitPrice}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                      Currency
+                    </label>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => handleChange('currency', e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-lg border transition-colors"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        borderColor: styles.borderLight,
+                        color: styles.textPrimary,
+                      }}
+                    >
+                      {CURRENCY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            {/* Discount */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium" style={{ color: styles.textPrimary }}>
-                  Discount
-                </label>
-                <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: styles.borderLight }}>
-                  <button
-                    type="button"
-                    onClick={() => setDiscountMode('amount')}
-                    className="px-2 py-1 text-xs transition-colors"
-                    style={{
-                      backgroundColor: discountMode === 'amount' ? styles.info : styles.bgSecondary,
-                      color: discountMode === 'amount' ? '#fff' : styles.textMuted,
-                    }}
-                  >
-                    <Tag size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDiscountMode('percent')}
-                    className="px-2 py-1 text-xs transition-colors"
-                    style={{
-                      backgroundColor: discountMode === 'percent' ? styles.info : styles.bgSecondary,
-                      color: discountMode === 'percent' ? '#fff' : styles.textMuted,
-                    }}
-                  >
-                    <Percent size={14} />
-                  </button>
+                {/* Quantity */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: styles.textPrimary }}>
+                    Quantity <span style={{ color: styles.error }}>*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleChange('quantity', Math.max(1, formData.quantity - 1))}
+                      className="p-2 rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        color: styles.textPrimary,
+                      }}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.quantity}
+                      onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
+                      className="flex-1 px-4 py-2.5 rounded-lg border text-center transition-colors"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        borderColor: errors.quantity ? styles.error : styles.borderLight,
+                        color: styles.textPrimary,
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleChange('quantity', formData.quantity + 1)}
+                      className="p-2 rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        color: styles.textPrimary,
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                  {errors.quantity && (
+                    <p className="text-xs mt-1" style={{ color: styles.error }}>
+                      {errors.quantity}
+                    </p>
+                  )}
                 </div>
-              </div>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: styles.textMuted }}>
-                  {discountMode === 'amount' ? <Tag size={18} /> : <Percent size={18} />}
+
+                {/* Discount */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium" style={{ color: styles.textPrimary }}>
+                      Discount
+                    </label>
+                    <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: styles.borderLight }}>
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode('amount')}
+                        className="px-2 py-1 text-xs transition-colors"
+                        style={{
+                          backgroundColor: discountMode === 'amount' ? styles.info : styles.bgSecondary,
+                          color: discountMode === 'amount' ? '#fff' : styles.textMuted,
+                        }}
+                      >
+                        <Tag size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode('percent')}
+                        className="px-2 py-1 text-xs transition-colors"
+                        style={{
+                          backgroundColor: discountMode === 'percent' ? styles.info : styles.bgSecondary,
+                          color: discountMode === 'percent' ? '#fff' : styles.textMuted,
+                        }}
+                      >
+                        <Percent size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: styles.textMuted }}>
+                      {discountMode === 'amount' ? <Tag size={18} /> : <Percent size={18} />}
+                    </div>
+                    <input
+                      type="number"
+                      step={discountMode === 'percent' ? '0.01' : '1'}
+                      min="0"
+                      max={discountMode === 'percent' ? '100' : subtotal}
+                      value={discountMode === 'amount' ? formData.discount || '' : formData.discountPercent || ''}
+                      onChange={(e) =>
+                        handleChange(
+                          discountMode === 'amount' ? 'discount' : 'discountPercent',
+                          parseFloat(e.target.value) || 0,
+                        )
+                      }
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-colors"
+                      style={{
+                        backgroundColor: styles.bgSecondary,
+                        borderColor: styles.borderLight,
+                        color: styles.textPrimary,
+                      }}
+                      placeholder={discountMode === 'amount' ? '0.00' : '0%'}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  step={discountMode === 'percent' ? '0.01' : '1'}
-                  min="0"
-                  max={discountMode === 'percent' ? '100' : subtotal}
-                  value={discountMode === 'amount' ? formData.discount || '' : formData.discountPercent || ''}
-                  onChange={(e) =>
-                    handleChange(
-                      discountMode === 'amount' ? 'discount' : 'discountPercent',
-                      parseFloat(e.target.value) || 0,
-                    )
-                  }
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: styles.bgSecondary,
-                    borderColor: styles.borderLight,
-                    color: styles.textPrimary,
-                  }}
-                  placeholder={discountMode === 'amount' ? '0.00' : '0%'}
-                />
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Price Summary */}
             <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: styles.bgSecondary }}>

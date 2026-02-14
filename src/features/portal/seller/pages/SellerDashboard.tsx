@@ -23,7 +23,6 @@ import {
 } from 'phosphor-react';
 import { Container, PageHeader } from '../../components';
 import { usePortal } from '../../context/PortalContext';
-import { useAuth } from '../../../../auth-adapter';
 import { Skeleton } from '../../components/LoadingSkeleton';
 import { MemoizedChart } from '../../../../components/common/MemoizedChart';
 import type { EChartsOption } from 'echarts';
@@ -52,7 +51,6 @@ interface SellerDashboardProps {
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate }) => {
   const { styles, t, direction } = usePortal();
-  const { getToken } = useAuth();
   const isRtl = direction === 'rtl';
 
   const [loading, setLoading] = useState(true);
@@ -61,12 +59,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate }) 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await getToken();
-      if (!token) {
-        setData(null);
-        return;
-      }
-      const summary = await sellerHomeSummaryService.getSummary(token, 7);
+      const summary = await sellerHomeSummaryService.getSummary(7);
       setData(summary);
     } catch (err) {
       console.error('[SellerDashboard] Failed to fetch summary:', err);
@@ -74,7 +67,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate }) 
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     fetchData();

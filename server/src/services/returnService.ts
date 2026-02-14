@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { prisma } from '../lib/prisma';
-import type { MarketplaceReturn } from '@prisma/client';
+import type { MarketplaceReturn, Prisma } from '@prisma/client';
 import { apiLogger } from '../utils/logger';
 
 // =============================================================================
@@ -277,26 +277,21 @@ async function getBuyerReturns(
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: any = { buyerId };
+  const dateFilter: Prisma.DateTimeFilter = {};
+  if (filters.dateFrom) dateFilter.gte = new Date(filters.dateFrom);
+  if (filters.dateTo) dateFilter.lte = new Date(filters.dateTo);
 
-  if (filters.status) {
-    where.status = filters.status;
-  }
-
-  if (filters.dateFrom) {
-    where.createdAt = { ...where.createdAt, gte: new Date(filters.dateFrom) };
-  }
-
-  if (filters.dateTo) {
-    where.createdAt = { ...where.createdAt, lte: new Date(filters.dateTo) };
-  }
-
-  if (filters.search) {
-    where.OR = [
-      { returnNumber: { contains: filters.search, mode: 'insensitive' } },
-      { orderNumber: { contains: filters.search, mode: 'insensitive' } },
-    ];
-  }
+  const where: Prisma.MarketplaceReturnWhereInput = {
+    buyerId,
+    ...(filters.status && { status: filters.status }),
+    ...((filters.dateFrom || filters.dateTo) && { createdAt: dateFilter }),
+    ...(filters.search && {
+      OR: [
+        { returnNumber: { contains: filters.search, mode: 'insensitive' as const } },
+        { orderNumber: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
+  };
 
   const [returns, total] = await Promise.all([
     prisma.marketplaceReturn.findMany({
@@ -336,26 +331,21 @@ async function getSellerReturns(
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: any = { sellerId };
+  const sellerDateFilter: Prisma.DateTimeFilter = {};
+  if (filters.dateFrom) sellerDateFilter.gte = new Date(filters.dateFrom);
+  if (filters.dateTo) sellerDateFilter.lte = new Date(filters.dateTo);
 
-  if (filters.status) {
-    where.status = filters.status;
-  }
-
-  if (filters.dateFrom) {
-    where.createdAt = { ...where.createdAt, gte: new Date(filters.dateFrom) };
-  }
-
-  if (filters.dateTo) {
-    where.createdAt = { ...where.createdAt, lte: new Date(filters.dateTo) };
-  }
-
-  if (filters.search) {
-    where.OR = [
-      { returnNumber: { contains: filters.search, mode: 'insensitive' } },
-      { orderNumber: { contains: filters.search, mode: 'insensitive' } },
-    ];
-  }
+  const where: Prisma.MarketplaceReturnWhereInput = {
+    sellerId,
+    ...(filters.status && { status: filters.status }),
+    ...((filters.dateFrom || filters.dateTo) && { createdAt: sellerDateFilter }),
+    ...(filters.search && {
+      OR: [
+        { returnNumber: { contains: filters.search, mode: 'insensitive' as const } },
+        { orderNumber: { contains: filters.search, mode: 'insensitive' as const } },
+      ],
+    }),
+  };
 
   const [returns, total] = await Promise.all([
     prisma.marketplaceReturn.findMany({

@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { marketplaceInvoiceService } from './marketplaceInvoiceService';
 import { enrichOrderWithSLA, type SLAEvaluation } from './orderHealthService';
+import { portalNotificationService } from './portalNotificationService';
 import { apiLogger } from '../utils/logger';
 
 // =============================================================================
@@ -48,11 +49,14 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   refunded: [],
 };
 
+export type OrderPaymentMethod = 'bank_transfer' | 'cod' | 'credit';
+
 export interface AcceptQuoteInput {
   quoteId: string;
   buyerId: string;
   shippingAddress?: string; // JSON string
   buyerNotes?: string;
+  paymentMethod?: OrderPaymentMethod;
 }
 
 export interface RejectQuoteInput {
@@ -279,6 +283,79 @@ export async function acceptQuote(input: AcceptQuoteInput): Promise<{
       return { success: false, error: 'Quote not found' };
     }
 
+    // Check for multi-item RFQ (line items)
+    const rfqLineItems = await prisma.rFQLineItem.findMany({
+      where: { rfqId: quote.rfqId },
+      orderBy: { position: 'asc' },
+    });
+    const isMultiItem = rfqLineItems.length > 1;
+
+    // Resolve item details - try RFQ relation first, then direct lookup, then parse from message
+    let itemName = quote.rfq.item?.name;
+    let itemSku = quote.rfq.item?.sku;
+    let itemImage: string | null = quote.rfq.item?.images ? JSON.parse(quote.rfq.item.images as string)?.[0] : null;
+    let resolvedItemId = quote.rfq.itemId || '';
+
+    if (isMultiItem) {
+      // Multi-item order: use first line item as primary, note total count
+      const firstLineItem = rfqLineItems[0];
+      itemName = rfqLineItems.length === 2
+        ? `${firstLineItem.itemName || 'Item'} + 1 more`
+        : `${firstLineItem.itemName || 'Item'} + ${rfqLineItems.length - 1} more`;
+      itemSku = firstLineItem.itemSku || 'MULTI';
+      resolvedItemId = firstLineItem.itemId || '';
+      // Try to get image from first item
+      if (firstLineItem.itemId) {
+        const firstItem = await prisma.item.findUnique({
+          where: { id: firstLineItem.itemId },
+          select: { images: true },
+        });
+        if (firstItem?.images) {
+          try { itemImage = JSON.parse(firstItem.images as string)?.[0] || null; } catch { /* ignore */ }
+        }
+      }
+    } else {
+      if (!itemName && quote.rfq.itemId) {
+        // RFQ has itemId but item relation didn't load - try direct lookup
+        const item = await prisma.item.findUnique({ where: { id: quote.rfq.itemId } });
+        if (item) {
+          itemName = item.name;
+          itemSku = item.sku;
+          itemImage = item.images ? JSON.parse(item.images as string)?.[0] : null;
+          resolvedItemId = item.id;
+        }
+      }
+
+      // For general RFQs (no linked item), extract part name from the RFQ message
+      if (!itemName && quote.rfq.message) {
+        const lines = quote.rfq.message.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('Part:')) {
+            itemName = trimmed.replace('Part:', '').trim();
+          } else if (trimmed.startsWith('Part Number:') && (!itemSku || itemSku === 'N/A')) {
+            itemSku = trimmed.replace('Part Number:', '').trim() || itemSku;
+          }
+        }
+        // If message doesn't have "Part:" prefix, use the whole message as the item name
+        if (!itemName) {
+          itemName = quote.rfq.message.split('\n')[0].trim();
+        }
+      }
+    }
+
+    // Validate credit eligibility if credit payment method
+    const paymentMethod = input.paymentMethod || 'bank_transfer';
+    if (paymentMethod === 'credit') {
+      const buyerProfile = await prisma.buyerProfile.findUnique({
+        where: { userId: input.buyerId },
+        select: { creditEnabled: true },
+      });
+      if (!buyerProfile?.creditEnabled) {
+        return { success: false, error: 'Your account is not enabled for credit/pay-later purchases' };
+      }
+    }
+
     // Generate order number
     const orderNumber = await generateOrderNumber();
 
@@ -290,10 +367,10 @@ export async function acceptQuote(input: AcceptQuoteInput): Promise<{
           orderNumber,
           buyerId: input.buyerId,
           sellerId: quote.sellerId,
-          itemId: quote.rfq.itemId || '',
-          itemName: quote.rfq.item?.name || 'General Order',
-          itemSku: quote.rfq.item?.sku || 'N/A',
-          itemImage: quote.rfq.item?.images ? JSON.parse(quote.rfq.item.images as string)?.[0] : null,
+          itemId: resolvedItemId,
+          itemName: itemName || 'Custom Order',
+          itemSku: itemSku || 'N/A',
+          itemImage,
           rfqId: quote.rfqId,
           rfqNumber: quote.rfq.rfqNumber,
           quoteId: quote.id,
@@ -304,7 +381,9 @@ export async function acceptQuote(input: AcceptQuoteInput): Promise<{
           totalPrice: quote.totalPrice,
           currency: quote.currency,
           status: 'pending_confirmation',
+          paymentStatus: paymentMethod === 'credit' ? 'unpaid_credit' : 'unpaid',
           source: 'rfq',
+          paymentMethod,
           shippingAddress: input.shippingAddress || quote.rfq.deliveryLocation,
           buyerNotes: input.buyerNotes,
           // Set SLA deadlines
@@ -312,6 +391,48 @@ export async function acceptQuote(input: AcceptQuoteInput): Promise<{
           shippingDeadline: new Date(Date.now() + (quote.deliveryDays + 2) * 24 * 60 * 60 * 1000),
         },
       });
+
+      // 1b. Create OrderLineItems from QuoteLineItems (multi-item support)
+      const quoteLineItems = await tx.quoteLineItem.findMany({
+        where: { quoteId: quote.id },
+        orderBy: { position: 'asc' },
+      });
+
+      if (quoteLineItems.length > 0) {
+        for (const qli of quoteLineItems) {
+          // Look up item image if available
+          let lineItemImage: string | null = null;
+          if (qli.itemId) {
+            const lineItem = await tx.item.findUnique({
+              where: { id: qli.itemId },
+              select: { images: true },
+            });
+            if (lineItem?.images) {
+              try {
+                const parsed = JSON.parse(lineItem.images as string);
+                lineItemImage = parsed?.[0] || null;
+              } catch { /* ignore */ }
+            }
+          }
+
+          await tx.orderLineItem.create({
+            data: {
+              orderId: newOrder.id,
+              itemId: qli.itemId,
+              itemName: qli.itemName || 'Item',
+              itemSku: qli.itemSku || 'N/A',
+              itemImage: lineItemImage,
+              unitPrice: qli.unitPrice,
+              quantity: qli.quantity,
+              discount: qli.discount,
+              totalPrice: qli.totalPrice,
+              rfqLineItemId: qli.rfqLineItemId,
+              quoteLineItemId: qli.id,
+              position: qli.position,
+            },
+          });
+        }
+      }
 
       // 2. Update the quote status to ACCEPTED
       await tx.quote.update({
@@ -397,6 +518,18 @@ export async function acceptQuote(input: AcceptQuoteInput): Promise<{
         currency: order.currency,
       });
     }
+
+    // Notify seller: new order received
+    portalNotificationService.create({
+      userId: quote.sellerId,
+      portalType: 'seller',
+      type: 'order_created',
+      entityType: 'order',
+      entityId: order.id,
+      entityName: `Order ${order.orderNumber}`,
+      actorId: input.buyerId,
+      metadata: { orderNumber: order.orderNumber, totalPrice: order.totalPrice, currency: order.currency },
+    }).catch(() => {});
 
     return { success: true, order };
   } catch (error) {
@@ -552,15 +685,52 @@ export async function getBuyerOrders(
       ...(filters.source && { source: filters.source }),
     };
 
-    const [orders, total] = await Promise.all([
+    const [rawOrders, total] = await Promise.all([
       prisma.marketplaceOrder.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: {
+          invoice: {
+            select: { id: true, status: true, invoiceNumber: true, totalAmount: true },
+          },
+        },
       }),
       prisma.marketplaceOrder.count({ where }),
     ]);
+
+    // Flatten invoice fields onto each order
+    const orders = rawOrders.map((o) => ({
+      ...o,
+      invoiceId: o.invoice?.id || null,
+      invoiceStatus: o.invoice?.status || null,
+      invoiceNumber: o.invoice?.invoiceNumber || null,
+    }));
+
+    // Enrich with payment aggregates
+    const orderIds = rawOrders.map(o => o.id);
+    const payments = orderIds.length > 0 ? await prisma.marketplacePayment.findMany({
+      where: { orderId: { in: orderIds }, status: { in: ['pending', 'confirmed'] } },
+      select: { orderId: true, amount: true, status: true },
+    }) : [];
+
+    const paymentsByOrder = new Map<string, typeof payments>();
+    for (const p of payments) {
+      const arr = paymentsByOrder.get(p.orderId) || [];
+      arr.push(p);
+      paymentsByOrder.set(p.orderId, arr);
+    }
+
+    const enrichedOrders = orders.map((order) => {
+      const op = paymentsByOrder.get(order.id) || [];
+      const confirmedTotal = op.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + p.amount, 0);
+      return {
+        ...order,
+        paidAmount: confirmedTotal,
+        remainingAmount: Math.max(0, order.totalPrice - confirmedTotal),
+      };
+    });
 
     // DEV-only trace
     if (process.env.NODE_ENV === 'development') {
@@ -569,7 +739,7 @@ export async function getBuyerOrders(
 
     return {
       success: true,
-      orders,
+      orders: enrichedOrders,
       pagination: {
         page,
         limit,
@@ -623,6 +793,37 @@ export async function getSellerOrders(
     // Enrich orders with SLA evaluation for frontend display
     const ordersWithSLA = orders.map((order) => enrichOrderWithSLA(order));
 
+    // Enrich with payment aggregates for seller visibility
+    const orderIds = orders.map(o => o.id);
+    const payments = orderIds.length > 0 ? await prisma.marketplacePayment.findMany({
+      where: { orderId: { in: orderIds }, status: { in: ['pending', 'confirmed'] } },
+      select: { orderId: true, amount: true, status: true, createdAt: true, bankReference: true },
+      orderBy: { createdAt: 'desc' },
+    }) : [];
+
+    const paymentsByOrder = new Map<string, typeof payments>();
+    for (const p of payments) {
+      const arr = paymentsByOrder.get(p.orderId) || [];
+      arr.push(p);
+      paymentsByOrder.set(p.orderId, arr);
+    }
+
+    const enrichedOrders = ordersWithSLA.map((order) => {
+      const orderPayments = paymentsByOrder.get(order.id) || [];
+      const confirmedTotal = orderPayments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + p.amount, 0);
+      const pendingTotal = orderPayments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+      const lastPayment = orderPayments[0] || null;
+      return {
+        ...order,
+        paidAmount: confirmedTotal,
+        pendingAmount: pendingTotal,
+        remainingAmount: Math.max(0, order.totalPrice - confirmedTotal),
+        paymentCount: orderPayments.length,
+        lastPaymentAt: lastPayment?.createdAt?.toISOString() || null,
+        lastPaymentReference: lastPayment?.bankReference || null,
+      };
+    });
+
     // DEV-only trace
     if (process.env.NODE_ENV === 'development') {
       apiLogger.debug('[DEV TRACE] getSellerOrders returned:', { count: orders.length, total });
@@ -630,7 +831,7 @@ export async function getSellerOrders(
 
     return {
       success: true,
-      orders: ordersWithSLA,
+      orders: enrichedOrders,
       pagination: {
         page,
         limit,
@@ -734,6 +935,33 @@ export async function confirmOrder(
       'pending_confirmation',
       'confirmed'
     );
+
+    // Credit method: auto-generate invoice immediately on confirmation
+    if ((updatedOrder.paymentMethod || 'bank_transfer') === 'credit') {
+      try {
+        const { marketplaceInvoiceService } = await import('./marketplaceInvoiceService');
+        const invoiceResult = await marketplaceInvoiceService.createFromConfirmedOrder(orderId);
+        if (invoiceResult.success) {
+          apiLogger.info(`Credit invoice ${invoiceResult.invoice?.invoiceNumber} created for order ${updatedOrder.orderNumber}`);
+        } else {
+          apiLogger.warn(`Credit invoice creation failed for order ${updatedOrder.orderNumber}: ${invoiceResult.error}`);
+        }
+      } catch (invoiceError) {
+        apiLogger.error('Credit invoice creation error:', invoiceError);
+      }
+    }
+
+    // Notify buyer: order confirmed
+    portalNotificationService.create({
+      userId: order.buyerId,
+      portalType: 'buyer',
+      type: 'order_confirmed',
+      entityType: 'order',
+      entityId: orderId,
+      entityName: `Order ${order.orderNumber}`,
+      actorId: order.sellerId,
+      metadata: { orderNumber: order.orderNumber },
+    }).catch(() => {});
 
     return { success: true, order: updatedOrder };
   } catch (error) {

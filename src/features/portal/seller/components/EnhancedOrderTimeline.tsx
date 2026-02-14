@@ -514,14 +514,14 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({ or
     );
   }
 
-  // Use timeline data if provided, otherwise build from order
-  const steps = timeline?.steps || buildStepsFromOrder(order);
-
   const getStepState = (step: DefaultTimelineStep): 'completed' | 'active' | 'pending' => {
     if (step.completedStatuses.includes(order.status)) return 'completed';
     if (step.activeStatuses.includes(order.status)) return 'active';
     return 'pending';
   };
+
+  // Use timeline data if provided, otherwise build from order
+  const steps = timeline?.steps || buildStepsFromOrder(order);
 
   function buildStepsFromOrder(order: Order): TimelineStep[] {
     return DEFAULT_TIMELINE_STEPS.map((step) => {
@@ -550,7 +550,7 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({ or
   }
 
   return (
-    <div className="pb-4">
+    <div className="pt-4 pb-4">
       {/* Risk Assessment Banner */}
       {timeline?.riskAssessment && <RiskBanner riskAssessment={timeline.riskAssessment} styles={styles} />}
 
@@ -581,7 +581,14 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({ or
             isCompleted && step.promisedAt && step.actualAt && new Date(step.actualAt) > new Date(step.promisedAt);
 
           return (
-            <div key={step.key} className={`flex gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}>
+            <div
+              key={step.key}
+              className={`flex gap-4 ${isRtl ? 'flex-row-reverse' : ''}`}
+              style={{
+                animation: 'fadeSlideIn 0.4s ease-out both',
+                animationDelay: `${index * 80}ms`,
+              }}
+            >
               {/* Timeline indicator */}
               <div className="flex flex-col items-center">
                 {/* Step circle */}
@@ -598,6 +605,7 @@ export const EnhancedOrderTimeline: React.FC<EnhancedOrderTimelineProps> = ({ or
                           ? `${styles.info}20`
                           : styles.bgSecondary,
                     ringColor: isActive ? styles.info : undefined,
+                    animation: isActive ? 'softPulse 2s ease-in-out infinite' : undefined,
                   }}
                 >
                   <Icon

@@ -5,6 +5,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { PortalAuthRequest } from '../middleware/portalAdminMiddleware';
 import { idempotency } from '../middleware/idempotencyMiddleware';
 import { itemService, ItemStatus, ItemVisibility, ItemType } from '../services/itemService';
 import { prisma } from '../lib/prisma';
@@ -12,6 +13,7 @@ import rfqScoringService, { PriorityTier } from '../services/rfqScoringService';
 import { sellerRfqInboxService } from '../services/sellerRfqInboxService';
 import { quoteService } from '../services/quoteService';
 import { marketplaceOrderService } from '../services/marketplaceOrderService';
+import { marketplacePaymentService } from '../services/marketplacePaymentService';
 import { portalNotificationService } from '../services/portalNotificationService';
 import { apiLogger } from '../utils/logger';
 import { resolveBuyerId } from '../utils/resolveBuyerId';
@@ -23,7 +25,7 @@ const router = Router();
 // NOTE: Item model uses userId (User.id), not sellerId (SellerProfile.id)
 // =============================================================================
 async function resolveSellerId(req: Request): Promise<string | null> {
-  const portalAuth = (req as any).portalAuth;
+  const portalAuth = (req as PortalAuthRequest).portalAuth;
   const authUserId = (req as AuthRequest).auth?.userId;
 
   // Get the userId - prefer portalAuth.userId, fall back to auth.userId
@@ -57,7 +59,7 @@ async function resolveSellerId(req: Request): Promise<string | null> {
 // NOTE: ItemRFQ.sellerId may store either SellerProfile.id OR User.id depending on how the RFQ was created
 // =============================================================================
 async function resolveSellerProfileId(req: Request): Promise<string | null> {
-  const portalAuth = (req as any).portalAuth;
+  const portalAuth = (req as PortalAuthRequest).portalAuth;
   const authUserId = (req as AuthRequest).auth?.userId;
 
   // First try: direct sellerId from portal token
@@ -86,7 +88,7 @@ async function resolveSellerProfileId(req: Request): Promise<string | null> {
 
 // Helper: Get all possible seller IDs for inbox query (both SellerProfile.id and User.id)
 async function resolveAllSellerIds(req: Request): Promise<string[]> {
-  const portalAuth = (req as any).portalAuth;
+  const portalAuth = (req as PortalAuthRequest).portalAuth;
   const authUserId = (req as AuthRequest).auth?.userId;
   const sellerIds: string[] = [];
 
@@ -349,6 +351,7 @@ const orderStatusEnum = z.enum([
 const acceptQuoteSchema = z.object({
   shippingAddress: z.string().max(1000).optional(),
   buyerNotes: z.string().max(2000).optional(),
+  paymentMethod: z.enum(['bank_transfer', 'cod', 'credit']).default('bank_transfer'),
 });
 
 const rejectQuoteSchema = z.object({
@@ -373,7 +376,7 @@ const orderListQuerySchema = z.object({
 router.get('/', requireAuth, async (req, res: Response) => {
   try {
     const authUserId = (req as AuthRequest).auth?.userId;
-    const portalAuth = (req as any).portalAuth;
+    const portalAuth = (req as PortalAuthRequest).portalAuth;
 
     apiLogger.info('[GET /items] Auth context:', {
       authUserId,
@@ -998,6 +1001,7 @@ router.post('/rfq/:id/cancel', requireAuth, async (req, res: Response) => {
       include: {
         item: true,
         quotes: true,
+        lineItems: { orderBy: { position: 'asc' } },
       },
     });
 
@@ -1051,6 +1055,7 @@ router.post('/rfq/:id/reactivate', requireAuth, async (req, res: Response) => {
       include: {
         item: true,
         quotes: true,
+        lineItems: { orderBy: { position: 'asc' } },
       },
     });
 
@@ -2388,6 +2393,7 @@ router.post('/quotes/:id/accept', requireAuth, idempotency({ required: true, ent
       buyerId,
       shippingAddress: data.shippingAddress,
       buyerNotes: data.buyerNotes,
+      paymentMethod: data.paymentMethod,
     });
 
     if (!result.success) {
@@ -2474,7 +2480,10 @@ const rejectCounterOfferSchema = z.object({
  */
 router.post('/quotes/:id/counter-offer', requireAuth, async (req, res: Response) => {
   try {
-    const buyerId = (req as AuthRequest).auth.userId;
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Buyer profile not found' });
+    }
     const quoteId = req.params.id as string as string;
     const data = createCounterOfferSchema.parse(req.body);
 
@@ -2825,6 +2834,89 @@ router.get('/orders/buyer', requireAuth, async (req, res: Response) => {
     }
     apiLogger.error('Error fetching buyer orders:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+/**
+ * POST /api/items/orders/buyer/:id/payments
+ * Record a payment for an order (buyer) - works with or without invoice
+ */
+const recordOrderPaymentSchema = z.object({
+  method: z.enum(['bank_transfer', 'card', 'wallet', 'cod']).default('bank_transfer'),
+  reference: z.string().min(1, 'Bank reference is required'),
+  amount: z.number().positive().optional(),
+  bankName: z.string().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+router.post('/orders/buyer/:id/payments', requireAuth, async (req, res: Response) => {
+  try {
+    const buyerId = await resolveBuyerId(req);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Unauthorized - no buyer profile found' });
+    }
+    const orderId = req.params.id as string;
+    const data = recordOrderPaymentSchema.parse(req.body);
+
+    const result = await marketplacePaymentService.recordOrderPayment({
+      orderId,
+      buyerId,
+      amount: data.amount,
+      paymentMethod: data.method as 'bank_transfer' | 'card' | 'wallet' | 'cod',
+      bankReference: data.reference,
+      bankName: data.bankName,
+      notes: data.notes,
+    });
+
+    if (!result.success) {
+      const statusCode = result.code === 'UNAUTHORIZED' ? 403
+        : result.code === 'ORDER_NOT_FOUND' ? 404
+        : 400;
+      return res.status(statusCode).json({ error: result.error, code: result.code });
+    }
+
+    res.status(201).json(result.payment);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid input', details: error.issues });
+    }
+    apiLogger.error('Error recording order payment:', error);
+    res.status(500).json({ error: 'Failed to record payment' });
+  }
+});
+
+/**
+ * GET /api/items/orders/:id/payment-summary
+ * Get payment summary for an order (buyer or seller)
+ */
+router.get('/orders/:id/payment-summary', requireAuth, async (req, res: Response) => {
+  try {
+    const orderId = req.params.id as string;
+    const userId = (req as AuthRequest).auth?.userId;
+    const sellerIds = await resolveAllSellerIds(req);
+
+    // Verify user is buyer or seller of this order
+    const order = await prisma.marketplaceOrder.findUnique({
+      where: { id: orderId },
+      select: { buyerId: true, sellerId: true },
+    });
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    const isBuyer = order.buyerId === userId;
+    const isSeller = sellerIds.includes(order.sellerId);
+    if (!isBuyer && !isSeller) {
+      return res.status(403).json({ error: 'Not authorized to view this order' });
+    }
+
+    const summary = await marketplacePaymentService.getOrderPaymentSummary(orderId);
+    if (!summary) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json(summary);
+  } catch (error) {
+    apiLogger.error('Error getting payment summary:', error);
+    res.status(500).json({ error: 'Failed to get payment summary' });
   }
 });
 
@@ -3190,11 +3282,16 @@ router.post('/orders/:id/deliver', requireAuth, async (req, res: Response) => {
       where: { id: orderId },
       select: { buyerId: true, sellerId: true },
     });
-    const userRole = order?.sellerId === userId ? 'seller' : 'buyer';
+
+    // Use resolveAllSellerIds for proper seller detection (sellerId may be SellerProfile.id)
+    const sellerIds = await resolveAllSellerIds(req);
+    const isSeller = order ? sellerIds.includes(order.sellerId) : false;
+    const isBuyer = order?.buyerId === userId;
+    const userRole = isSeller ? 'seller' : isBuyer ? 'buyer' : 'buyer';
 
     const result = await marketplaceOrderService.markDelivered({
       orderId,
-      userId,
+      userId: isSeller ? order!.sellerId : userId,
       userRole,
       buyerNotes: validation.data.buyerNotes,
     });

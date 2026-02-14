@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import type { Prisma, QuickNote } from '@prisma/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { apiLogger } from '../utils/logger';
@@ -19,7 +20,7 @@ const updateNoteSchema = createNoteSchema.partial().extend({
 });
 
 // Helper to serialize note for response
-function serializeNote(note: any) {
+function serializeNote(note: QuickNote) {
     return {
         ...note,
         deletedAt: note.deletedAt?.getTime() || null,
@@ -35,7 +36,7 @@ router.get('/', requireAuth, async (req, res: Response) => {
         const userId = (req as AuthRequest).auth.userId;
         const { includeDeleted } = req.query;
 
-        const where: any = { userId };
+        const where: Prisma.QuickNoteWhereInput = { userId };
         if (includeDeleted !== 'true') where.isDeleted = false;
 
         const notes = await prisma.quickNote.findMany({
@@ -122,7 +123,7 @@ router.put('/:id', requireAuth, async (req, res: Response) => {
             });
         }
 
-        const updateData: any = { version: existing.version + 1 };
+        const updateData: Prisma.QuickNoteUpdateInput = { version: existing.version + 1 };
         if (data.content !== undefined) updateData.content = data.content;
         if (data.tags !== undefined) updateData.tags = JSON.stringify(data.tags);
         if (data.pinned !== undefined) updateData.pinned = data.pinned;

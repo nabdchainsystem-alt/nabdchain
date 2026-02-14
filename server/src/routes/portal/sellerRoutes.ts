@@ -12,10 +12,10 @@ import { prisma } from '../../lib/prisma';
 
 // Import existing services (no rewrites, just call them)
 import itemService from '../../services/itemService';
-import { quoteService } from '../../services/quoteService';
-import { marketplaceOrderService } from '../../services/marketplaceOrderService';
-import { marketplaceInvoiceService } from '../../services/marketplaceInvoiceService';
-import { sellerRfqInboxService } from '../../services/sellerRfqInboxService';
+import { quoteService, QuoteStatus } from '../../services/quoteService';
+import { marketplaceOrderService, OrderStatus } from '../../services/marketplaceOrderService';
+import { marketplaceInvoiceService, InvoiceStatus } from '../../services/marketplaceInvoiceService';
+import { sellerRfqInboxService, Stage2RFQStatus } from '../../services/sellerRfqInboxService';
 import sellerHomeService from '../../services/sellerHomeService';
 import { counterOfferService } from '../../services/counterOfferService';
 
@@ -155,13 +155,13 @@ router.get('/rfq/inbox', requireAuth, async (req, res: Response) => {
     const { status, isRead, isArchived, search, page, limit, sortBy, sortOrder } = req.query;
 
     const result = await sellerRfqInboxService.getInbox(sellerId, {
-      status: status as any,
+      status: status as Stage2RFQStatus | 'all' | undefined,
       isRead: isRead === 'true' ? true : isRead === 'false' ? false : undefined,
       isArchived: isArchived === 'true',
       search: search as string,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
-      sortBy: sortBy as any,
+      sortBy: sortBy as 'newest' | 'oldest' | 'priority' | undefined,
     });
 
     res.json(result);
@@ -277,7 +277,7 @@ router.get('/quotes', requireAuth, async (req, res: Response) => {
     const { status, page, limit } = req.query;
 
     const result = await quoteService.getSellerQuotes(sellerId, {
-      status: status as any,
+      status: status as QuoteStatus | undefined,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
     });
@@ -555,7 +555,7 @@ router.get('/orders', requireAuth, async (req, res: Response) => {
     const { status, page, limit } = req.query;
 
     const result = await marketplaceOrderService.getSellerOrders(sellerId, {
-      status: status as any,
+      status: status as OrderStatus | undefined,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
     });
@@ -735,7 +735,7 @@ router.get('/invoices', requireAuth, async (req, res: Response) => {
     const { status, page, limit } = req.query;
 
     const result = await marketplaceInvoiceService.getSellerInvoices(sellerId, {
-      status: status as any,
+      status: status as InvoiceStatus | undefined,
       page: page ? parseInt(page as string) : 1,
       limit: limit ? parseInt(limit as string) : 20,
     });
