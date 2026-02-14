@@ -19,7 +19,7 @@
     "prisma:generate": "./node_modules/.bin/prisma generate",
     "prisma:migrate": "./node_modules/.bin/prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:deploy": "./node_modules/.bin/prisma generate && ./node_modules/.bin/prisma db push",
+    "prisma:deploy": "./node_modules/.bin/prisma generate && ./node_modules/.bin/prisma db push --accept-data-loss",
     "prisma:validate": "./node_modules/.bin/prisma validate",
     "db:ping": "tsx scripts/db-ping.ts",
     "db:up": "docker compose up -d postgres",

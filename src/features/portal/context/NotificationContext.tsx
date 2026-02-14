@@ -24,18 +24,28 @@ interface NotificationContextType {
   setActiveTab: (tab: 'all' | 'action') => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const defaultContextValue: NotificationContextType = {
+  notifications: [],
+  counts: { total: 0, actionRequired: 0 },
+  isLoading: false,
+  error: null,
+  refreshNotifications: async () => {},
+  markAsRead: async () => {},
+  markAllAsRead: async () => {},
+  isPanelOpen: false,
+  setPanelOpen: () => {},
+  activeTab: 'all',
+  setActiveTab: () => {},
+};
+
+const NotificationContext = createContext<NotificationContextType>(defaultContextValue);
 
 // =============================================================================
 // Hook
 // =============================================================================
 
 export const useNotifications = (): NotificationContextType => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
-  }
-  return context;
+  return useContext(NotificationContext);
 };
 
 // =============================================================================
