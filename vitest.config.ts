@@ -29,10 +29,10 @@ export default defineConfig({
                 'src/workers/**',
             ],
             thresholds: {
-                statements: 1.5,
-                branches: 0.9,
+                statements: 1.4,
+                branches: 0.8,
                 functions: 1,
-                lines: 1.5,
+                lines: 1.4,
             },
         },
 

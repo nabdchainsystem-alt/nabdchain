@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar, ContentTopBar, ToastProvider } from '../components';
 import { PortalProvider, usePortal } from '../context/PortalContext';
+import { NotificationProvider } from '../context/NotificationContext';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { portalAdminService } from '../services/portalAdminService';
 import { Users, ClipboardText, GearSix, Warning, Spinner } from 'phosphor-react';
@@ -146,7 +147,9 @@ export const AdminPortalPage: React.FC<AdminPortalPageProps> = (props) => {
   return (
     <PortalProvider>
       <ToastProvider position="bottom-right">
-        <AdminPortalContent {...props} />
+        <NotificationProvider portalType="buyer">
+          <AdminPortalContent {...props} />
+        </NotificationProvider>
       </ToastProvider>
     </PortalProvider>
   );

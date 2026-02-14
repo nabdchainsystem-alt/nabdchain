@@ -63,6 +63,10 @@ class RatingService {
         canSellerRateBuyer: false,
         buyerAlreadyRated: false,
         sellerAlreadyRated: false,
+        canBuyerRateOrder: false,
+        canSellerRateOrder: false,
+        buyerOrderRated: false,
+        sellerOrderRated: false,
         reasonIfBlocked: 'Order not found',
       };
     }
