@@ -265,8 +265,8 @@ export const BuyerInvoices: React.FC<BuyerInvoicesProps> = ({ onNavigate: _onNav
   const columns = useMemo(
     () => [
       columnHelper.accessor('invoiceNumber', {
-        meta: { align: 'start' as const },
-        header: t('buyer.invoices.colInvoice') || 'Invoice',
+        meta: { align: 'center' as const },
+        header: 'Invoice',
         cell: (info) => (
           <div>
             <div className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
@@ -280,8 +280,8 @@ export const BuyerInvoices: React.FC<BuyerInvoicesProps> = ({ onNavigate: _onNav
         size: 140,
       }),
       columnHelper.accessor('sellerName', {
-        meta: { align: 'start' as const },
-        header: t('buyer.invoices.colSeller') || 'Seller',
+        meta: { align: 'center' as const },
+        header: 'Seller',
         cell: (info) => (
           <div>
             <div style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>{info.getValue()}</div>
@@ -292,21 +292,21 @@ export const BuyerInvoices: React.FC<BuyerInvoicesProps> = ({ onNavigate: _onNav
             )}
           </div>
         ),
-        size: 160,
+        size: 140,
       }),
       columnHelper.accessor('totalAmount', {
-        meta: { align: 'end' as const },
-        header: t('buyer.invoices.colAmount') || 'Amount',
+        meta: { align: 'center' as const },
+        header: 'Amount',
         cell: (info) => (
           <div className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
             {formatInvoiceAmount(info.getValue(), info.row.original.currency)}
           </div>
         ),
-        size: 100,
+        size: 110,
       }),
       columnHelper.display({
         id: 'paidBalance',
-        meta: { align: 'end' as const },
+        meta: { align: 'center' as const },
         header: 'Paid / Balance',
         cell: (info) => {
           const inv = info.row.original;
@@ -327,13 +327,13 @@ export const BuyerInvoices: React.FC<BuyerInvoicesProps> = ({ onNavigate: _onNav
       }),
       columnHelper.accessor('status', {
         meta: { align: 'center' as const },
-        header: t('buyer.invoices.colStatus') || 'Status',
+        header: 'Status',
         cell: (info) => <StatusBadge status={info.getValue()} styles={styles} />,
-        size: 100,
+        size: 90,
       }),
       columnHelper.accessor('dueDate', {
         meta: { align: 'center' as const },
-        header: t('buyer.invoices.colDueDate') || 'Due Date',
+        header: 'Due Date',
         cell: (info) => {
           const dueDate = info.getValue();
           if (!dueDate) return <span style={{ color: styles.textMuted }}>-</span>;
@@ -367,7 +367,7 @@ export const BuyerInvoices: React.FC<BuyerInvoicesProps> = ({ onNavigate: _onNav
       }),
       columnHelper.accessor('createdAt', {
         meta: { align: 'center' as const },
-        header: t('buyer.invoices.colCreated') || 'Created',
+        header: 'Created',
         cell: (info) => (
           <span style={{ color: styles.textMuted, fontSize: '0.675rem' }}>{formatRelativeTime(info.getValue())}</span>
         ),
