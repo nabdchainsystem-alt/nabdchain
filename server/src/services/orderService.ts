@@ -236,6 +236,16 @@ export const orderService = {
         auditMap.get(log.orderId)!.push(log);
       });
 
+      // Batch-fetch item priceUnit for UoM display
+      const itemIds = [...new Set(orders.map((o) => o.itemId))];
+      const items = itemIds.length
+        ? await prisma.item.findMany({
+            where: { id: { in: itemIds } },
+            select: { id: true, priceUnit: true },
+          })
+        : [];
+      const itemUomMap = new Map(items.map((i) => [i.id, i.priceUnit]));
+
       const result = orders.map((order) => ({
         ...order,
         shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
@@ -243,6 +253,7 @@ export const orderService = {
         invoiceId: order.invoice?.id || null,
         invoiceStatus: order.invoice?.status || null,
         invoiceNumber: order.invoice?.invoiceNumber || null,
+        unitOfMeasure: itemUomMap.get(order.itemId) || 'unit',
       }));
 
       // Return actual data (empty array if no orders - production mode)
@@ -630,12 +641,23 @@ export const orderService = {
       },
     });
 
+    // Batch-fetch item priceUnit for UoM display
+    const itemIds = [...new Set(orders.map((o) => o.itemId))];
+    const items = itemIds.length
+      ? await prisma.item.findMany({
+          where: { id: { in: itemIds } },
+          select: { id: true, priceUnit: true },
+        })
+      : [];
+    const itemUomMap = new Map(items.map((i) => [i.id, i.priceUnit]));
+
     return orders.map((order) => ({
       ...order,
       shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
       invoiceId: order.invoice?.id || null,
       invoiceStatus: order.invoice?.status || null,
       invoiceNumber: order.invoice?.invoiceNumber || null,
+      unitOfMeasure: itemUomMap.get(order.itemId) || 'unit',
     }));
   },
 

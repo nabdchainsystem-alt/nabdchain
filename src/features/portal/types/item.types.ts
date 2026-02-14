@@ -1592,6 +1592,7 @@ export interface MarketplaceOrder {
   unitPrice: number;
   totalPrice: number;
   currency: string;
+  unitOfMeasure?: string;
 
   // Status
   status: MarketplaceOrderStatus;

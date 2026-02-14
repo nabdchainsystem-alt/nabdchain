@@ -138,6 +138,7 @@ describe('orderService', () => {
       const orders = [createMockOrder(), createMockOrder({ id: 'o2', orderNumber: 'ORD-2026-0002' })];
       prismaMock.marketplaceOrder.findMany.mockResolvedValue(orders);
       prismaMock.marketplaceOrderAudit.findMany.mockResolvedValue([]);
+      prismaMock.item.findMany.mockResolvedValue([]);
 
       const result = await orderService.getSellerOrders('seller-1');
 
@@ -184,6 +185,7 @@ describe('orderService', () => {
       const order = createMockOrder({ shippingAddress: JSON.stringify(addr) });
       prismaMock.marketplaceOrder.findMany.mockResolvedValue([order]);
       prismaMock.marketplaceOrderAudit.findMany.mockResolvedValue([]);
+      prismaMock.item.findMany.mockResolvedValue([]);
 
       const result = await orderService.getSellerOrders('seller-1');
 
@@ -513,6 +515,7 @@ describe('orderService', () => {
     it('returns orders for a buyer', async () => {
       const orders = [createMockOrder({ buyerId: 'buyer-1' })];
       prismaMock.marketplaceOrder.findMany.mockResolvedValue(orders);
+      prismaMock.item.findMany.mockResolvedValue([]);
 
       const result = await orderService.getBuyerOrders('buyer-1');
 

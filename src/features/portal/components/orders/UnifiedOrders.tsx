@@ -372,30 +372,66 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
                   <Cube size={13} style={{ color: styles.textMuted }} />
                 )}
               </div>
-              <div
-                className="min-w-0"
-                title={
-                  hasLineItems
-                    ? `${order.itemName || 'Item'} — ${order.lineItems!.length} items · Qty: ${order.lineItems!.reduce((s, li) => s + li.quantity, 0)}`
-                    : `${order.itemName || 'Item'}${order.itemSku && order.itemSku !== 'N/A' ? ` — ${order.itemSku}` : ''} · Qty: ${order.quantity}`
-                }
-              >
+              <div className="min-w-0">
                 <p
                   className="font-medium truncate leading-tight"
                   style={{ color: styles.textPrimary, fontSize: '0.75rem' }}
                 >
                   {order.itemName || 'Item'}
                 </p>
-                <p className="truncate leading-tight" style={{ color: styles.textMuted, fontSize: '0.6rem' }}>
-                  {hasLineItems
-                    ? `${order.lineItems!.length} items · Qty: ${order.lineItems!.reduce((s, li) => s + li.quantity, 0)}`
-                    : `Qty: ${order.quantity}`}
-                </p>
+                {hasLineItems && (
+                  <p className="truncate leading-tight" style={{ color: styles.textMuted, fontSize: '0.6rem' }}>
+                    {order.lineItems!.length} items
+                  </p>
+                )}
+                {!hasLineItems && order.itemSku && order.itemSku !== 'N/A' && (
+                  <p className="truncate leading-tight" style={{ color: styles.textMuted, fontSize: '0.6rem' }}>
+                    {order.itemSku}
+                  </p>
+                )}
               </div>
             </div>
           );
         },
-        size: 180,
+        size: 150,
+      }),
+    );
+
+    // Qty
+    cols.push(
+      columnHelper.accessor('quantity', {
+        meta: { align: 'center' as const },
+        header: 'Qty',
+        cell: ({ row }) => {
+          const order = row.original;
+          const hasLineItems = (order.lineItems?.length ?? 0) > 1;
+          const qty = hasLineItems ? order.lineItems!.reduce((s, li) => s + li.quantity, 0) : order.quantity;
+          return (
+            <p className="font-medium" style={{ color: styles.textPrimary, fontSize: '0.79rem' }}>
+              {qty}
+            </p>
+          );
+        },
+        size: 60,
+      }),
+    );
+
+    // UoM
+    cols.push(
+      columnHelper.display({
+        id: 'uom',
+        meta: { align: 'center' as const },
+        header: 'UoM',
+        cell: ({ row }) => {
+          const uom = row.original.unitOfMeasure || 'unit';
+          const label = uom.replace(/^per_/, '');
+          return (
+            <p className="capitalize" style={{ color: styles.textSecondary, fontSize: '0.75rem' }}>
+              {label}
+            </p>
+          );
+        },
+        size: 70,
       }),
     );
 
