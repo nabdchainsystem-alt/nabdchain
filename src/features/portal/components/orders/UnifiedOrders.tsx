@@ -359,7 +359,6 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
         header: 'Item',
         cell: ({ row }) => {
           const order = row.original;
-          const hasLineItems = (order.lineItems?.length ?? 0) > 1;
           return (
             <div className="flex items-center gap-2">
               <div
@@ -372,24 +371,12 @@ export const UnifiedOrders: React.FC<UnifiedOrdersProps> = ({ role, onNavigate }
                   <Cube size={13} style={{ color: styles.textMuted }} />
                 )}
               </div>
-              <div className="min-w-0">
-                <p
-                  className="font-medium truncate leading-tight"
-                  style={{ color: styles.textPrimary, fontSize: '0.75rem' }}
-                >
-                  {order.itemName || 'Item'}
-                </p>
-                {hasLineItems && (
-                  <p className="truncate leading-tight" style={{ color: styles.textMuted, fontSize: '0.6rem' }}>
-                    {order.lineItems!.length} items
-                  </p>
-                )}
-                {!hasLineItems && order.itemSku && order.itemSku !== 'N/A' && (
-                  <p className="truncate leading-tight" style={{ color: styles.textMuted, fontSize: '0.6rem' }}>
-                    {order.itemSku}
-                  </p>
-                )}
-              </div>
+              <p
+                className="font-medium truncate leading-tight min-w-0"
+                style={{ color: styles.textPrimary, fontSize: '0.75rem' }}
+              >
+                {order.itemName || 'Item'}
+              </p>
             </div>
           );
         },
